@@ -135,3 +135,46 @@ export const apiErrorSchema = z.object({
   }),
 });
 export type ApiError = z.infer<typeof apiErrorSchema>;
+
+export const memberRoleSchema = z.enum(["owner", "sender"]);
+export type MemberRole = z.infer<typeof memberRoleSchema>;
+
+/** `PUT /api/settings/members/:id/role`. Only an owner may, and the last owner stays one. */
+export const memberRoleInputSchema = z.object({ role: memberRoleSchema });
+
+/** One row of Settings → Members. */
+export const settingsMemberSchema = z.object({
+  id: z.string(),
+  role: memberRoleSchema,
+  slackUserId: z.string(),
+  name: z.string(),
+  displayName: z.string().nullable(),
+  avatarUrl: z.string().nullable(),
+  joinedAt: z.string(),
+  isYou: z.boolean(),
+});
+export type SettingsMember = z.infer<typeof settingsMemberSchema>;
+
+/** Settings → Workspace: the Slack workspace, its install and its directory. */
+export const settingsWorkspaceSchema = z.object({
+  name: z.string(),
+  iconUrl: z.string().nullable(),
+  slackDomain: z.string().nullable(),
+  installed: z.boolean(),
+  uninstalledAt: z.string().nullable(),
+  installedAt: z.string().nullable(),
+  installedBy: z.string().nullable(),
+  people: z.number().int(),
+  directorySyncedAt: z.string().nullable(),
+});
+export type SettingsWorkspace = z.infer<typeof settingsWorkspaceSchema>;
+
+/** `GET /api/install/status`: what the install page shows whoever opened it. */
+export const installStatusSchema = z.object({
+  signedIn: z.boolean(),
+  member: z.boolean(),
+  /** The Slack workspace the person last signed in to, when they did. */
+  teamName: z.string().nullable(),
+  enterprise: z.boolean(),
+});
+export type InstallStatus = z.infer<typeof installStatusSchema>;
