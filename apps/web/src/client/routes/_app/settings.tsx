@@ -137,7 +137,7 @@ function WorkspacePlate({
               : "Holler is not in Slack. Sending is paused."}
           </span>
           {isOwner && (
-            <a href="/slack/oauth/install" className={buttonClasses("primary", "sm")}>
+            <a href="/slack/oauth/install" className={buttonClasses("secondary", "sm")}>
               Add to Slack again
             </a>
           )}
