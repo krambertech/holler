@@ -22,6 +22,7 @@ Seven areas are built in parallel, each in its own session, branch and pull requ
 | `recordResponse`, `resultsFor` (exist)                                                                             | Foundations                                  | Slack delivery, Results, API and MCP |
 | `GET /api/hollers/:id/export?format=csv\|md`, `exportCsv`, `exportMarkdown` in `services/exports.ts`               | Results                                      | API and MCP                          |
 | `workspaces.plan` changes only through `services/billing.ts`                                                       | Billing                                      | Everyone reads `monthlyUsage`        |
+| Settings is one page, `routes/_app/settings.tsx`. Another area adds a section as one import and one line there      | Slack install                                | Billing, API and MCP                 |
 
 Until a contract's owner merges, build against its shape and stub it in tests.
 
@@ -33,7 +34,7 @@ Make a real Slack workspace able to install Holler and its people able to sign i
 - Sign in with Slack through Better Auth: on first sign-in, link the user to the workspace in the ID token's team claim and create their `members` row. A person whose workspace has not installed Holler sees how to install it.
 - Directory sync: fill `slack_people` and `slack_groups` from `users.list`, `usergroups.list` and channels, on install, daily from the cron, and on `user_change` and `team_join` events.
 - `/slack/events` with signature checks: `app_uninstalled` and `tokens_revoked` set `workspaces.uninstalled_at`.
-- Settings page: the workspace, its members and their roles, reinstall.
+- Settings page: the workspace, its members and their roles, reinstall. One scrolling page; billing and API keys are sections on it. Access rules are in [DECISIONS.md](../DECISIONS.md), Access.
 
 Owns: `src/server/slack/oauth.ts`, `src/server/slack/events.ts`, `src/server/services/workspaces.ts`, `src/server/services/members.ts`, `src/server/services/directory-sync.ts`, `src/client/routes/_app/settings*.tsx`, `src/client/routes/install*.tsx`. Shares: `auth.ts` (hooks), `app.ts`, `index.ts` (one cron line).
 
@@ -83,7 +84,7 @@ The same product through two more doors.
 - Principal resolution for keys and tokens in `principal.ts`, with `via: "api"` or `"mcp"`.
 - Connected apps in Settings: what each can do, and revoke.
 
-Owns: `src/server/routes/v1/**`, `src/server/mcp/**`, `src/server/openapi.ts`, `src/client/routes/consent.tsx`, `src/client/routes/_app/settings.api.tsx`. Shares: `principal.ts`, `auth.ts`.
+Owns: `src/server/routes/v1/**`, `src/server/mcp/**`, `src/server/openapi.ts`, `src/client/routes/consent.tsx`, `src/client/components/api-keys/**` (the API keys and connected apps sections of Settings). Shares: `principal.ts`, `auth.ts`, `routes/_app/settings.tsx` (one import, one line).
 
 ## 6. Billing
 
@@ -92,9 +93,9 @@ Free sends a few hollers a month; Team pays per workspace through Polar.
 - `@polar-sh/better-auth`: checkout, the customer portal, webhooks. The Polar customer is the workspace, not the person.
 - `services/billing.ts` is the only writer of `workspaces.plan`, `polar_*` and `plan_ends_at`, from verified webhooks.
 - The plan and this month's usage in Settings; the limit reached state everywhere a send can fail.
-- Prices in Polar; the Free number stays in `packages/core/src/plans.ts`.
+- Prices in Polar: Team is $12 a month or $120 a year. Free is 5 hollers a month to any number of recipients, in `packages/core/src/plans.ts`. [DECISIONS.md](../DECISIONS.md), Plans.
 
-Owns: `src/server/services/billing.ts`, `src/server/routes/billing.ts`, `src/client/routes/_app/settings.billing.tsx`, `src/client/components/billing/**`. Shares: `auth.ts` (one plugin).
+Owns: `src/server/services/billing.ts`, `src/server/routes/billing.ts`, `src/client/components/billing/**` (including the plan section of Settings). Shares: `auth.ts` (one plugin), `routes/_app/settings.tsx` (one import, one line).
 
 ## 7. Marketing site
 
