@@ -1,0 +1,35 @@
+@import "tailwindcss";
+@import "@holler/design/tokens.css";
+@import "@holler/design/fonts.css";
+
+@layer base {
+  html {
+    background: var(--canvas);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    font-weight: var(--weight-body);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Zero specificity, so font-normal and font-medium on small text still win. */
+  :where(.text-xs, .text-sm) {
+    font-weight: var(--weight-small);
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-weight: 400;
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+}

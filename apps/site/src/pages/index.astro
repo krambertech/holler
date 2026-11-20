@@ -1,0 +1,85 @@
+---
+import { plans } from "@holler/core";
+import Mark from "../components/Mark.astro";
+import Base from "../layouts/Base.astro";
+
+const app = "https://app.holler.team";
+const steps = [
+  { title: "Ask", body: "Write a pulse, a survey or a form chase in about two minutes, and pick who it goes to." },
+  { title: "Holler chases", body: "Each person gets it in Slack and answers in one tap. Holler reminds the ones who have not, politely, until it closes." },
+  { title: "Read the results", body: "See who answered and what they said, in Holler, in Slack, as a CSV, or through your AI assistant." },
+];
+---
+
+<Base
+  title="Holler: ask your team in Slack"
+  description="Holler sends your question to each person in Slack, reminds the ones who have not answered, and shows you the results."
+>
+  <main class="mx-auto max-w-[1080px] px-4 sm:px-8">
+    <section class="grid items-center gap-12 pt-10 pb-20 lg:grid-cols-[1.1fr_1fr] lg:pt-16">
+      <div>
+        <h1 class="text-5xl tracking-display sm:text-7xl">Ask your team.<br />Stop chasing them.</h1>
+        <p class="mt-6 max-w-[46ch] text-lg text-ink-2">
+          Holler sends your question to each person in Slack, reminds the ones who have not answered, and shows you the results.
+        </p>
+        <div class="mt-8 flex flex-wrap items-center gap-3">
+          <a href={`${app}/sign-in`} class="inline-flex h-11 items-center rounded-control bg-primary px-5 font-medium text-on-primary hover:bg-primary-hover">
+            Add Holler to Slack
+          </a>
+          <span class="text-sm text-muted">Free for {plans.free.monthlyHollers} hollers a month</span>
+        </div>
+      </div>
+
+      <figure class="rounded-plate bg-plate p-5 shadow-[0_0_0_1px_var(--edge)]" aria-label="A Holler arriving in Slack">
+        <div class="flex gap-3">
+          <Mark size={36} />
+          <div class="flex flex-1 flex-col gap-1.5 text-md">
+            <span><span class="font-medium">Holler</span> <span class="text-xs text-muted">Mon 9:00</span></span>
+            <span>Mira sent you a Holler.</span>
+            <span class="font-normal">How was your week?</span>
+            <span class="text-sm text-muted">One tap. Closes Friday at 18:00.</span>
+            <span class="mt-1 flex flex-wrap gap-1.5">
+              {["Great", "Good", "Okay", "Rough"].map((label) => (
+                <span class="rounded-[7px] bg-plate px-3 py-1 text-sm font-normal shadow-[0_0_0_1px_var(--edge-2)]">{label}</span>
+              ))}
+            </span>
+          </div>
+        </div>
+        <div class="mt-5 flex gap-3 border-t border-divider pt-5">
+          <Mark size={36} />
+          <div class="flex flex-1 flex-col gap-1.5 text-md">
+            <span><span class="font-medium">Holler</span> <span class="text-xs text-muted">Tue 10:00</span></span>
+            <span>A reminder: Mira still needs your answer to <span class="font-normal">How was your week?</span></span>
+          </div>
+        </div>
+      </figure>
+    </section>
+
+    <section aria-labelledby="how" class="py-16">
+      <h2 id="how" class="text-4xl tracking-title">How it works</h2>
+      <ol class="mt-8 grid gap-4 md:grid-cols-3">
+        {steps.map((step, index) => (
+          <li class="rounded-plate bg-plate p-6 shadow-[0_0_0_1px_var(--edge)]">
+            <span class="grid size-8 place-items-center rounded-full bg-tint text-sm font-normal text-tint-ink">{index + 1}</span>
+            <h3 class="mt-4 text-xl">{step.title}</h3>
+            <p class="mt-2 text-ink-2">{step.body}</p>
+          </li>
+        ))}
+      </ol>
+    </section>
+
+    <section id="pricing" aria-labelledby="pricing-title" class="py-16">
+      <h2 id="pricing-title" class="text-4xl tracking-title">Pricing</h2>
+      <div class="mt-8 grid gap-4 md:grid-cols-2">
+        <div class="rounded-plate bg-plate p-6 shadow-[0_0_0_1px_var(--edge)]">
+          <h3 class="text-xl">{plans.free.label}</h3>
+          <p class="mt-2 text-ink-2">{plans.free.monthlyHollers} hollers a month for the whole workspace, up to {plans.free.maxRecipients} people each. Reminders, exports, the API and MCP included.</p>
+        </div>
+        <div class="rounded-plate bg-plate p-6 shadow-[0_0_0_1px_var(--edge)]">
+          <h3 class="text-xl">{plans.team.label}</h3>
+          <p class="mt-2 text-ink-2">As many hollers as you need, up to {plans.team.maxRecipients.toLocaleString("en")} people each. One price per workspace.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+</Base>

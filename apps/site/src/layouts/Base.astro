@@ -1,0 +1,41 @@
+---
+import Mark from "../components/Mark.astro";
+import "../styles.css";
+
+interface Props {
+  title: string;
+  description: string;
+}
+const { title, description } = Astro.props;
+const app = "https://app.holler.team";
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+    <link rel="canonical" href={new URL(Astro.url.pathname, Astro.site)} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+  </head>
+  <body class="min-h-dvh">
+    <header class="mx-auto flex max-w-[1080px] items-center justify-between px-4 py-6 sm:px-8">
+      <a href="/" class="inline-flex items-center gap-2.5 rounded-control" aria-label="Holler home">
+        <Mark />
+        <span class="text-xl font-semibold tracking-[-0.02em]">holler</span>
+      </a>
+      <nav class="flex items-center gap-1 text-md">
+        <a href="/#pricing" class="hidden rounded-control px-3 py-2 text-ink-2 hover:text-ink sm:inline">Pricing</a>
+        <a href={`${app}/sign-in`} class="rounded-control px-3 py-2 text-ink-2 hover:text-ink">Sign in</a>
+      </nav>
+    </header>
+    <slot />
+    <footer class="mx-auto mt-24 flex max-w-[1080px] flex-wrap items-center justify-between gap-4 border-t border-divider px-4 py-8 text-sm text-muted sm:px-8">
+      <span>Holler. Ask your team, stop chasing them.</span>
+    </footer>
+  </body>
+</html>

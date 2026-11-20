@@ -1,0 +1,19 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "holler",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@holler/web", "dev", "--port", "5280"],
+      "port": 5280,
+      "autoPort": true
+    },
+    {
+      "name": "holler-site",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@holler/site", "dev", "--port", "5281"],
+      "port": 5281,
+      "autoPort": true
+    }
+  ]
+}

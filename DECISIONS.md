@@ -1,0 +1,178 @@
+# Holler: decisions so far
+
+Last updated: 2026-11-20. The stack is in docs/stack.md.
+
+Holler is a public product based on Tally, the internal Buffer tool. You ask your team
+something in Slack, Holler reminds the people who have not answered, and you read the
+results. It covers surveys, pulse checks, and form chasing, and it has an MCP server.
+
+This file records what is decided, what was rejected, and what is still open. The
+mockups for every round are on one canvas:
+[Holler directions](https://claude.ai/artifact/JygoSbzdb9vUx6dehbjEVP). The canvas is
+private until it is shared from its Share menu.
+
+## Decided
+
+| Area        | Decision                                                           |
+| ----------- | ------------------------------------------------------------------ |
+| Name        | Holler                                                             |
+| Domain      | `holler.team`                                                      |
+| Logo        | The calling h: the letter h with two sound lines, in a plum square |
+| Main colour | Plum `#7A2A68`, with pink as the highlight                         |
+| Font        | Geologica, set light                                               |
+| Surfaces    | Warm canvas with white rounded plates                              |
+| Layout      | Tally's layout: one column, no sidebar                             |
+| Voice       | Plain words. "Holler" is only a noun                               |
+| Sign-in     | Sign in with Slack only. Recipients never sign in                  |
+| Billing     | Polar, as merchant of record, on the Estonian OÜ                   |
+| Licence     | Public source, all rights reserved                                 |
+| Node        | 24                                                                 |
+
+## Name: Holler
+
+The name had to work in the sentence people already say at work: "send me a Holler".
+It also carries the reminder idea. You holler again when nobody answers.
+
+- "Tally" is not available. tally.so is a form builder with its own Slack app.
+- Yoyo was the runner-up. Its short domains were premium, at $65 a year and up.
+- Slip, Muster, and the invented names were rejected.
+
+## Domain: holler.team
+
+Porkbun prices on 2026-11-20. These are not purchases. Nothing is bought yet.
+
+| Domain           | First year | Renews at |
+| ---------------- | ---------- | --------- |
+| `holler.team`    | $4.63      | $32.44    |
+| `sendholler.com` | $11.81     | $11.81    |
+| `sendholler.app` | $8.75      | $14.93    |
+
+`sendholler.com` is worth adding for email and as a backup. `holler.com`, `.app`, `.io`,
+`.chat`, `.co`, and `.dev` are taken. The owner of `holler.app` asks $15,000.
+
+## Product shape: Tally's UX, kept
+
+Holler keeps the UX decisions that work in Tally. It is a simple tool, so it has no
+sidebar.
+
+- One column, with a slim header.
+- Home shows three numbers: live now, people still to answer, scheduled.
+- Tabs for **Mine** and **Shared with me**.
+- Rows grouped as **Live**, **Scheduled**, and **Closed**.
+- The detail page shows the answered count, the people, the results, and the export.
+
+Rejected layouts: a left rail, and a top bar with a filter side panel and a people table.
+Both looked like a generic SaaS dashboard.
+
+## Look: warm canvas, white plates
+
+The look borrows one thing from Lymi: a warm off-white page with white rounded plates.
+
+- Rows that belong together share one plate, with a hairline between them.
+- A tinted strip can close a plate, for example "9 people still to answer".
+- Plates have a 22 px radius. Controls have 13 px. Chips are pills.
+- Depth is one hairline edge. There are no drop shadows.
+- Icons are 2 px line icons with round ends.
+
+**The theme lives in the logo, not in the interface.** The first round put the theme
+everywhere: speech-bubble corners, hills, a loudspeaker block, a dark radio screen. All
+four looked cartoonish and not like a proper tool.
+
+## Logo: the calling h
+
+The mark is a lowercase h with two pink sound lines at its top right. It sits in a plum
+square with rounded corners, so the same shape is the app icon and the Slack bot avatar.
+
+- The wordmark is lowercase "holler" in Geologica 600.
+- The sound lines are soft pink `#F29BD0` on plum.
+- Rejected marks: a megaphone, a message with its reply, and an o drawn as an open mouth.
+
+The current mark is a hand-drawn SVG draft. It needs a proper drawing pass.
+
+## Colour: plum to act, pink to call out
+
+Most of a screen is warm neutral. Plum marks the one main action and what is live. Pink
+is for the logo's sound lines and small highlights.
+
+| Token       | Hex       | Use                                          |
+| ----------- | --------- | -------------------------------------------- |
+| Plum        | `#7A2A68` | Main button, live state, logo, bars          |
+| Deep plum   | `#3D1233` | Text on soft pink, darkest chart step        |
+| Holler pink | `#D9499A` | Marks and large type only                    |
+| Soft pink   | `#F29BD0` | Sound lines, main colour at night            |
+| Tint        | `#F4E1EF` | Under chips, count pills, the reminder strip |
+| Tint ink    | `#5C1C4E` | Text on tint                                 |
+| Canvas      | `#F8F6F4` | The page                                     |
+| Plate       | `#FFFFFF` | Cards and row groups                         |
+| Well        | `#F2F0EC` | Tracks, quiet chips                          |
+| Edge        | `#E6E2DE` | Hairlines                                    |
+| Muted       | `#6B5F58` | Secondary text                               |
+| Text 2      | `#49403A` | Supporting text                              |
+| Ink         | `#1C140F` | Main text                                    |
+
+Rules:
+
+- One plum button on a screen. Every other button is white with a hairline.
+- Holler pink never carries body text. White on it is about 3.4 to 1.
+- White on plum is about 9 to 1.
+- Status always has a word next to the colour: Live, Answered, Waiting, Away, Closed.
+- A chart ramp runs from deep plum to pale pink: `#3D1233`, `#7A2A68`, `#B04A93`,
+  `#E08CC4`, `#F4CFE6`.
+- At night, soft pink takes plum's job, with deep plum text on it. Night canvas is
+  `#171115` and night plate is `#231A21`.
+
+Rejected colours: tomato, ink with yellow, green, and cobalt blue. Tally's red stays with
+Tally.
+
+## Type: Geologica, set light
+
+One family, Geologica. It is free on Google Fonts, variable, and has Latin and Cyrillic.
+
+Geologica first looked cartoonish. The cause was the weights, not the font: almost every
+piece of text sat between 400 and 600. The fix is a weight ladder.
+
+| Weight | Use                        |
+| ------ | -------------------------- |
+| 300    | Body text and captions     |
+| 400    | Titles, names, and numbers |
+| 500    | Buttons only               |
+| 600    | The wordmark only          |
+
+- Never use 700.
+- Size makes the hierarchy. Weight only separates a name from the text around it.
+- Titles tighten to -0.025em.
+- Sentence case everywhere. No all caps.
+
+Onest and Hanken Grotesk were the other two candidates. Onest is Lymi's font, so Holler
+would have shared it.
+
+## Voice: plain, warm, brief
+
+Holler talks like a helpful colleague in Slack. The name is the only playful word.
+
+| Say                    | Do not say            |
+| ---------------------- | --------------------- |
+| 7 of 12 answered       | 7 hollered back       |
+| Waiting on 5 people    | Radio silence         |
+| Send reminder          | Holler again          |
+| New holler             | Create survey         |
+| Closes Friday at 18:00 | Deadline approaching! |
+
+- "Holler" is a noun: a Holler, your hollers. It is never a verb in the interface.
+- Capital H for the product and in Slack. Lowercase in the wordmark.
+- No exclamation marks. No emoji in the product.
+
+## Still open
+
+- **Trademark.** No search is done. A US company named Holler made stickers and GIFs
+  for messaging apps. Check before money goes into the logo.
+- **Slack Marketplace.** No name check is done.
+- **Domain purchase.** Not bought.
+- **Screens.** Only the home screen exists in the final brand. Results and editor still
+  need a version.
+- **Teams.** Teams needs a separate bot. The suggestion was to leave it out of the first
+  version. This is not decided.
+- **Copyright holder.** LICENSE names Kateryna Porshnieva. Swap in the OÜ's legal name.
+- **Price.** The gap in the market is a low price. Polly charges per sender, from $19 a
+  month. Simple Poll is about $49 a workspace. No Holler price is set. Free is 3 hollers a
+  month for now, in `packages/core/src/plans.ts`.

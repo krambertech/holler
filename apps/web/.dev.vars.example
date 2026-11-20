@@ -1,0 +1,11 @@
+# Copy to .dev.vars for local development. Never commit .dev.vars.
+BETTER_AUTH_SECRET=local-secret-at-least-thirty-two-characters-long
+# A 32-byte key, base64. Generate with: openssl rand -base64 32
+SLACK_TOKEN_KEY=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+# From the Slack app's Basic Information page. Leave empty to use the dev personas only.
+SLACK_CLIENT_ID=
+SLACK_CLIENT_SECRET=
+SLACK_SIGNING_SECRET=
+# Polar, sandbox. Leave empty until billing is wired.
+POLAR_ACCESS_TOKEN=
+POLAR_WEBHOOK_SECRET=

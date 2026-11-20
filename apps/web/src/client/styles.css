@@ -1,0 +1,68 @@
+@import "tailwindcss";
+/* Colours, type steps, radii and curves, shared with the site. */
+@import "@holler/design/tokens.css";
+@import "@holler/design/fonts.css";
+
+@layer base {
+  html {
+    background: var(--canvas);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    font-weight: var(--weight-body);
+    font-size: 100%;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    min-height: 100dvh;
+    font-size: var(--text-base);
+    line-height: 1.45;
+  }
+
+  /* Zero specificity, so font-normal and font-medium on small text still win. */
+  :where(.text-xs, .text-sm) {
+    font-weight: var(--weight-small);
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-weight: 400;
+    text-wrap: balance;
+  }
+
+  /* The ring is plum by day and soft pink at night, 2 px, outside the shape. */
+  :focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background: var(--tint);
+    color: var(--tint-ink);
+  }
+
+  button {
+    cursor: pointer;
+  }
+
+  /* Reduced motion beats every component's own timing, so these must win. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      /* biome-ignore lint/complexity/noImportantStyles: reduced motion must override component timing. */
+      animation-duration: 1ms !important;
+      /* biome-ignore lint/complexity/noImportantStyles: reduced motion must override component timing. */
+      animation-iteration-count: 1 !important;
+      /* biome-ignore lint/complexity/noImportantStyles: reduced motion must override component timing. */
+      transition-duration: 1ms !important;
+    }
+  }
+}
+
+@utility tabular {
+  font-variant-numeric: tabular-nums;
+}

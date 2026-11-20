@@ -1,0 +1,133 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.6.8/schema.json",
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "useIgnoreFile": true
+  },
+  "files": {
+    "includes": [
+      "**",
+      "!**/dist",
+      "!**/.astro",
+      "!**/*.astro",
+      "!**/node_modules",
+      "!**/.wrangler",
+      "!**/routeTree.gen.ts",
+      "!**/migrations",
+      "!**/public",
+      "!**/worker-configuration.d.ts",
+      "!apps/web/index.html",
+      "!**/*.md",
+      "!design"
+    ]
+  },
+  "formatter": {
+    "enabled": true,
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineWidth": 100
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "preset": "recommended",
+      "a11y": {
+        "preset": "recommended",
+        "noSvgWithoutTitle": "off"
+      },
+      "suspicious": {
+        "noExplicitAny": "error"
+      },
+      "style": {
+        "useImportType": "error"
+      }
+    }
+  },
+  "overrides": [
+    {
+      "includes": ["apps/web/src/client/**", "!apps/web/src/client/routes/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "useFilenamingConvention": {
+              "level": "error",
+              "options": {
+                "filenameCases": ["kebab-case"]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": [
+        "apps/web/src/server/routes/**",
+        "apps/web/src/server/slack/**",
+        "apps/web/src/server/mcp/**"
+      ],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "paths": {
+                  "@holler/core/db": "Routes, Slack handlers and MCP tools call a service in src/server/services; only services touch Drizzle.",
+                  "drizzle-orm": "Routes, Slack handlers and MCP tools call a service in src/server/services; only services touch Drizzle."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": [
+        "apps/web/src/client/**",
+        "!**/*.test.tsx",
+        "!apps/web/src/client/lib/use-reduce-motion.ts"
+      ],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "paths": {
+                  "motion/react": {
+                    "importNames": ["useReducedMotion"],
+                    "message": "Use useReduceMotion() from @/lib/use-reduce-motion, which also honours the design page's reduced-motion switch."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["apps/web/src/server/**", "packages/core/src/**"],
+      "plugins": ["./biome-plugins/no-sql-lower.grit"]
+    }
+  ],
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "double",
+      "semicolons": "always",
+      "trailingCommas": "all"
+    }
+  },
+  "assist": {
+    "actions": {
+      "source": {
+        "organizeImports": "on"
+      }
+    }
+  },
+  "css": {
+    "parser": {
+      "tailwindDirectives": true
+    }
+  }
+}

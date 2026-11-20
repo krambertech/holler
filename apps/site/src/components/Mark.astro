@@ -1,0 +1,19 @@
+---
+import { mark } from "@holler/design";
+
+interface Props {
+  size?: number;
+}
+const { size = 32 } = Astro.props;
+---
+
+<span
+  aria-hidden="true"
+  class="grid shrink-0 place-items-center bg-plum"
+  style={`width:${size}px;height:${size}px;border-radius:${size * mark.cornerRadius}px`}
+>
+  <svg width={size * 0.62} height={size * 0.62} viewBox={mark.viewBox} fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d={mark.letter} stroke="white" stroke-width={mark.letterStroke}></path>
+    <path d={mark.sound} class="stroke-soft-pink" stroke-width={mark.soundStroke}></path>
+  </svg>
+</span>

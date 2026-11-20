@@ -1,0 +1,49 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "holler",
+  "main": "src/server/index.ts",
+  "compatibility_date": "2026-11-01",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "observability": {
+    "enabled": true,
+    "redact_query_string": true,
+    "logs": { "enabled": true, "head_sampling_rate": 1 }
+  },
+  // Send scheduled hollers, per-time-zone deliveries and reminders, and close what is due.
+  "triggers": { "crons": ["* * * * *"] },
+  "version_metadata": { "binding": "CF_VERSION_METADATA" },
+  "workers_dev": true,
+  "preview_urls": false,
+  "assets": {
+    "binding": "ASSETS",
+    "html_handling": "none",
+    "not_found_handling": "single-page-application",
+    // Auth, the API, Slack and MCP route before any SPA fallback is served.
+    "run_worker_first": true
+  },
+  // Production values. Local dev overrides them from .dev.vars.
+  "vars": {
+    "PUBLIC_SITE_URL": "https://holler.team",
+    "PRODUCT_URL": "https://app.holler.team",
+    // `true` only locally and in tests: /api/dev/* and the dev personas.
+    "DEV_ROUTES": "false"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "holler",
+      // Replaced by the real id once the database exists: `wrangler d1 create holler`.
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "kv_namespaces": [
+    // Better Auth's secondary storage and rate limits.
+    { "binding": "SESSIONS", "id": "00000000000000000000000000000000" }
+  ],
+  "queues": {
+    // One message per Slack send: invites, reminders, thank-yous, close notices. docs/stack.md, Sending.
+    // The consumer is added with src/server/slack/queue.ts, which owns sending.
+    "producers": [{ "binding": "SLACK_SENDS", "queue": "holler-slack-sends" }]
+  }
+}

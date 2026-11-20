@@ -1,0 +1,34 @@
+{
+  "name": "holler",
+  "private": true,
+  "version": "0.0.1",
+  "license": "SEE LICENSE IN LICENSE",
+  "description": "Ask your team in Slack. Holler reminds the quiet ones and shows the results.",
+  "packageManager": "pnpm@10.16.1",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "dev": "pnpm --parallel --stream --filter @holler/site --filter @holler/web dev",
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test && node --test scripts/*.test.mjs",
+    "test:e2e": "playwright test",
+    "test:e2e:chromium": "playwright test --project=chromium",
+    "check": "biome check . && pnpm check:design && pnpm check:styling",
+    "check:design": "node scripts/check-design.mjs",
+    "check:styling": "node scripts/check-styling.mjs",
+    "check:migrations": "pnpm --filter @holler/web db:check && node scripts/check-migrations.mjs",
+    "check:boundaries": "node scripts/check-boundaries.mjs",
+    "verify": "pnpm check && pnpm check:migrations && pnpm typecheck && pnpm test && pnpm build && pnpm check:boundaries",
+    "fix": "biome check --write .",
+    "db:generate": "pnpm --filter @holler/web db:generate",
+    "db:migrate": "pnpm --filter @holler/web db:migrate"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.11.0",
+    "@biomejs/biome": "^2.5.15",
+    "@playwright/test": "1.64.0",
+    "typescript": "^6.0.3"
+  }
+}

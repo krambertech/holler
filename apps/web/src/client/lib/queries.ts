@@ -1,0 +1,56 @@
+import type { HollerSummary, HomeCounts, Results } from "@holler/core";
+import { queryOptions } from "@tanstack/react-query";
+import { api } from "./api";
+
+export interface Me {
+  member: {
+    id: string;
+    role: "owner" | "sender";
+    slackUserId: string;
+    name: string;
+    avatarUrl: string | null;
+  };
+  workspace: {
+    id: string;
+    name: string;
+    iconUrl: string | null;
+    slackDomain: string | null;
+    installed: boolean;
+  };
+  usage: {
+    plan: "free" | "team";
+    sentThisMonth: number;
+    monthlyLimit: number | null;
+    remaining: number | null;
+  };
+}
+
+export const meQuery = queryOptions({
+  queryKey: ["me"],
+  queryFn: () => api<Me>("/me"),
+});
+
+export const homeCountsQuery = queryOptions({
+  queryKey: ["hollers", "counts"],
+  queryFn: () => api<HomeCounts>("/hollers/counts"),
+});
+
+export const hollersQuery = (
+  scope: "mine" | "shared",
+  filters: { tag?: string | undefined; q?: string | undefined } = {},
+) =>
+  queryOptions({
+    queryKey: ["hollers", "list", scope, filters],
+    queryFn: () => {
+      const params = new URLSearchParams({ scope });
+      if (filters.tag) params.set("tag", filters.tag);
+      if (filters.q) params.set("q", filters.q);
+      return api<{ hollers: HollerSummary[] }>(`/hollers?${params}`).then((r) => r.hollers);
+    },
+  });
+
+export const resultsQuery = (id: string) =>
+  queryOptions({
+    queryKey: ["hollers", id, "results"],
+    queryFn: () => api<Results>(`/hollers/${id}/results`),
+  });

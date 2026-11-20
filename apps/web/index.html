@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Holler</title>
+    <meta name="description" content="Ask your team in Slack. Holler reminds the people who have not answered and shows the results." />
+    <meta name="theme-color" content="#f8f6f4" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#171115" media="(prefers-color-scheme: dark)" />
+    <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+    <script>
+      // The saved theme applies before first paint, so there is no flash.
+      try {
+        var t = localStorage.getItem("holler-theme");
+        if (t === "light" || t === "dark") document.documentElement.dataset.theme = t;
+      } catch (e) {}
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/client/main.tsx"></script>
+  </body>
+</html>
