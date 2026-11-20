@@ -13,21 +13,82 @@ One Slack app, distributed through OAuth to any workspace. Bot scopes:
 | `users:read`, `users:read.email` | The audience picker, names, avatars, time zones           |
 | `usergroups:read`                | Send to a user group                                      |
 | `channels:read`, `groups:read`   | Send to a channel's members, pick an announcement channel |
+| `team:read`                      | The workspace's name, subdomain and icon in Settings      |
 | `commands`                       | `/holler`                                                 |
 | `app_mentions:read`              | Not used in the first version                             |
 
 User sign-in is "Sign in with Slack" (OpenID Connect, scopes `openid profile email`), handled by Better Auth. Installing ("Add to Slack") and signing in are two flows; the install page runs the second straight after the first.
 
-Endpoints, all on the product Worker, all signature-checked with `verifySlackRequest` before anything reads the body:
+Endpoints, all on the product Worker. Slack signs every request it sends, and each handler checks it with `verifySlackRequest` before anything reads the body. The two OAuth paths are browser redirects that Slack does not sign; a one-time state cookie proves the install started on Holler.
 
 | Path                    | Slack sends                                                                                    |
 | ----------------------- | ---------------------------------------------------------------------------------------------- |
+| `/slack/oauth/install`  | Nothing. "Add to Slack" starts here and redirects to Slack with the bot scopes and a state     |
 | `/slack/oauth/callback` | The install redirect. Stores the bot token encrypted (`encryptToken`)                          |
 | `/slack/events`         | Events API: `app_home_opened`, `app_uninstalled`, `tokens_revoked`, `user_change`, `team_join` |
 | `/slack/interactions`   | Buttons, modals, shortcuts                                                                     |
 | `/slack/commands`       | `/holler`                                                                                      |
 
 Every handler acknowledges within three seconds. Anything slower runs in `waitUntil` or goes on the `SLACK_SENDS` queue. Retries are dropped by recording Slack's event or view id in `slack_deliveries`. Every Slack call goes through `SlackClient` in `apps/web/src/server/slack/client.ts`; tests use `FakeSlack`.
+
+## Installing and signing in
+
+"Add to Slack" and "Sign in with Slack" are two OAuth flows, and the install page runs the second straight after the first, so they feel like one step.
+
+```mermaid
+sequenceDiagram
+  participant P as Person
+  participant H as Holler Worker
+  participant S as Slack
+  P->>H: GET /slack/oauth/install
+  H->>P: Redirect to Slack, with state cookie
+  P->>S: Approve the bot scopes
+  S->>H: GET /slack/oauth/callback?code&state
+  H->>S: oauth.v2.access, team.info
+  H->>H: completeInstall: workspace, encrypted token, owner rule
+  H-->>H: waitUntil: first directory sync step
+  H->>P: Redirect to /install?installed=1
+  P->>S: Sign in with Slack (OpenID Connect)
+  S->>H: GET /api/auth/callback/slack
+  H->>H: Better Auth account hook: linkSlackAccount makes the member
+  H->>P: Holler home
+```
+
+- **The workspace.** `completeInstall` in `services/workspaces.ts` creates or updates the `workspaces` row from the team id, stores the bot in `slack_installations` with `encryptToken`, and clears `uninstalled_at`. A reinstall replaces the bot.
+- **The member.** Better Auth stores the Slack ID token on every sign-in, and its account hooks call `linkSlackAccount`. The token's `https://slack.com/team_id` claim names the workspace. Sign-in is open, so everyone in an installed workspace becomes a sender.
+- **Owners.** The installer becomes an owner when the workspace has no owner, on their first sign-in or at once if they signed in before. A reinstaller becomes an owner only when no owner is left. Owners make other members owners or senders in Settings; the last owner stays one.
+- **No install yet.** Someone who signs in to a workspace without Holler has no member row, and `/install` offers **Add to Slack**. If the workspace needs an admin to approve apps, Slack sends the admin a request instead of installing.
+- **Enterprise Grid.** An install that reports an enterprise is refused and its token revoked, and a Grid sign-in gets no member.
+- **Uninstall.** `app_uninstalled`, or `tokens_revoked` for the bot, sets `workspaces.uninstalled_at` and deletes the installation. Every page says sending is paused, and owners see **Add to Slack again**.
+
+## Keeping the directory fresh
+
+`services/directory-sync.ts` copies people from `users.list`, user groups from `usergroups.list`, and channels from `conversations.list` into `slack_people` and `slack_groups`. `conversations.list` returns public channels and the private channels the bot was added to. Names are folded for search in JavaScript into `search_name`, because SQLite's `lower()` is ASCII only.
+
+A sync runs in steps of two pages, and `directory_syncs` keeps Slack's cursor between them. The install runs the first steps; the cron carries on every minute until the sync is done, then starts the next one a day later. A rate limit ends the step early with its place saved. `user_change` and `team_join` update one person as they happen. Groups and channels that Slack stops listing are removed when a sync finishes; people stay, marked deleted.
+
+## How to create the Slack app
+
+The app is defined in [`slack-app-manifest.json`](../slack-app-manifest.json) at the repo root. It sets the scopes, the redirect URLs, the event subscriptions, the interactivity URL and `/holler`.
+
+1. Go to [api.slack.com/apps](https://api.slack.com/apps) and click **Create New App**, then **From a manifest**.
+2. Pick a workspace to develop in, paste the manifest, and create the app.
+3. For a local or staging app, replace `https://app.holler.team` with your own public URL everywhere in the manifest. Slack needs an HTTPS URL it can reach, so use a tunnel such as `cloudflared tunnel --url http://localhost:5280` locally, and set `PRODUCT_URL` in `.dev.vars` to the same URL.
+4. Under **Basic Information**, copy the client id, the client secret and the signing secret into `.dev.vars` as `SLACK_CLIENT_ID`, `SLACK_CLIENT_SECRET` and `SLACK_SIGNING_SECRET`. In production, set them with `wrangler secret put`.
+5. Under **Manage Distribution**, turn on public distribution so other workspaces can install it.
+6. Open `/install` and click **Add to Slack**.
+
+| Manifest setting  | Value                                                                                   |
+| ----------------- | --------------------------------------------------------------------------------------- |
+| Bot scopes        | `chat:write`, `im:write`, `users:read`, `users:read.email`, `usergroups:read`, `channels:read`, `groups:read`, `team:read`, `commands` |
+| User scopes       | `openid`, `profile`, `email`, for Sign in with Slack                                     |
+| Redirect URLs     | `/slack/oauth/callback` for the install, `/api/auth/callback/slack` for Better Auth     |
+| Event request URL | `/slack/events`                                                                         |
+| Bot events        | `app_home_opened`, `app_uninstalled`, `tokens_revoked`, `user_change`, `team_join`      |
+| Interactivity URL | `/slack/interactions`                                                                   |
+| Slash command     | `/holler`, at `/slack/commands`                                                         |
+
+**Keep the bot scopes in the manifest and `BOT_SCOPES` in `apps/web/src/server/slack/oauth.ts` the same.** A scope added to one and not the other means a reinstall asks for something the code does not request, or the other way round.
 
 ## Answering: as few taps as the question allows
 

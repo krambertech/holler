@@ -1,4 +1,11 @@
-import type { HollerSummary, HomeCounts, Results } from "@holler/core";
+import type {
+  HollerSummary,
+  HomeCounts,
+  InstallStatus,
+  Results,
+  SettingsMember,
+  SettingsWorkspace,
+} from "@holler/core";
 import { queryOptions } from "@tanstack/react-query";
 import { api } from "./api";
 
@@ -54,3 +61,18 @@ export const resultsQuery = (id: string) =>
     queryKey: ["hollers", id, "results"],
     queryFn: () => api<Results>(`/hollers/${id}/results`),
   });
+
+export const workspaceSettingsQuery = queryOptions({
+  queryKey: ["settings", "workspace"],
+  queryFn: () => api<SettingsWorkspace>("/settings/workspace"),
+});
+
+export const membersQuery = queryOptions({
+  queryKey: ["settings", "members"],
+  queryFn: () => api<{ members: SettingsMember[] }>("/settings/members").then((r) => r.members),
+});
+
+export const installStatusQuery = queryOptions({
+  queryKey: ["install", "status"],
+  queryFn: () => api<InstallStatus>("/install/status"),
+});

@@ -1,5 +1,7 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { app } from "../app";
+import { BOT_SCOPES } from "./oauth";
 
 const env = {
   SLACK_CLIENT_ID: "123.456",
@@ -36,5 +38,14 @@ describe("Add to Slack", () => {
   it("says so when the person cancels on Slack's page", async () => {
     const response = await app.request("/slack/oauth/callback?error=access_denied", {}, env);
     expect(response.headers.get("location")).toBe("/install?problem=denied");
+  });
+});
+
+describe("slack-app-manifest.json", () => {
+  it("asks for the same bot scopes the install requests", () => {
+    const manifest = JSON.parse(
+      readFileSync(new URL("../../../../../slack-app-manifest.json", import.meta.url), "utf8"),
+    ) as { oauth_config: { scopes: { bot: string[] } } };
+    expect([...manifest.oauth_config.scopes.bot].sort()).toEqual([...BOT_SCOPES].sort());
   });
 });

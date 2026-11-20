@@ -30,6 +30,7 @@ erDiagram
 | `slack_installations`                                     | The workspace's bot                         | The token is AES-GCM ciphertext. A reinstall replaces the row               |
 | `members`                                                 | A person signed in to Holler in a workspace | Links a Better Auth `user` to a Slack user id. `owner` or `sender`          |
 | `slack_people`, `slack_groups`                            | Holler's copy of the Slack directory        | For the picker and names. `search_name` is folded in JavaScript             |
+| `directory_syncs`                                         | Where each workspace's directory sync stands | Slack's cursor between steps, so a big workspace syncs over several cron runs |
 | `hollers`                                                 | One Holler, from draft to closed            | A draft is a Holler with status `draft`                                     |
 | `questions`, `options`                                    | What a Holler asks                          | Replaced wholesale while a draft; frozen once sent                          |
 | `recipients`                                              | One person a Holler went to                 | The completion ledger: invited, answered, reminders, the DM to update       |
