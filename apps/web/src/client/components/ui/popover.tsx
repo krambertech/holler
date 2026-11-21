@@ -20,7 +20,8 @@ function PopoverTrigger(props: TriggerProps) {
 }
 
 interface ContentProps
-  extends Omit<PopoverPrimitive.Popup.Props, "className">,
+  extends
+    Omit<PopoverPrimitive.Popup.Props, "className">,
     Pick<
       PopoverPrimitive.Positioner.Props,
       "anchor" | "align" | "alignOffset" | "side" | "sideOffset"

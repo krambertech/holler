@@ -151,7 +151,7 @@ The English sentence in the component is the message. There is no translation ca
 
 ### Tooling
 
-TypeScript strict. Biome for lint and format. Vitest for packages and Worker services, against a real local D1. Playwright for browser journeys in Chromium and WebKit, with `@axe-core/playwright` on every journey. GitHub Actions runs `pnpm verify` and the browser journeys on every pull request. GitHub Actions deploys `main` and a preview of every pull request; [operations.md](operations.md). Alternative considered: Cloudflare Workers Builds. Its build settings live in the dashboard, where an agent cannot read or change them, and ordering migrations before the upload would need a custom deploy command anyway.
+TypeScript strict. Oxlint for lint, with Holler's own rules in `oxlint-plugin-holler`, and oxfmt for format; [ADR 0001](adr/0001-oxlint-and-oxfmt-replace-biome.md) has why Biome lost. Vitest for packages and Worker services, against a real local D1. Playwright for browser journeys in Chromium and WebKit, with `@axe-core/playwright` on every journey. GitHub Actions runs `pnpm verify` and the browser journeys on every pull request. GitHub Actions deploys `main` and a preview of every pull request; [operations.md](operations.md). Alternative considered: Cloudflare Workers Builds. Its build settings live in the dashboard, where an agent cannot read or change them, and ordering migrations before the upload would need a custom deploy command anyway.
 
 ## Decided
 

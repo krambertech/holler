@@ -288,9 +288,10 @@ export async function getHoller(ctx: ServiceContext, id: string) {
       questions: presented,
     }).where,
     problems: unsent
-      ? sendProblems({ ...holler, questions: presented }, ctx.now()).map(
-          (p): SendProblem => ({ message: p.message, field: p.field ?? null }),
-        )
+      ? sendProblems({ ...holler, questions: presented }, ctx.now()).map((p): SendProblem => ({
+          message: p.message,
+          field: p.field ?? null,
+        }))
       : [],
     questions: stored,
   };

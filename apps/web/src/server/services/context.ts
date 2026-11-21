@@ -13,7 +13,7 @@ export type Actor =
 
 /**
  * What every service function takes first. Routes, Slack handlers and MCP tools build one and
- * never reach the database themselves; Biome refuses a Drizzle import outside services.
+ * never reach the database themselves; Oxlint refuses a Drizzle import outside services.
  */
 export interface ServiceContext {
   db: Db;

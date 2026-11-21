@@ -2,7 +2,7 @@
 
 // Drive features from the map on a running instance and keep the evidence. See ../SKILL.md.
 
-import { existsSync, mkdirSync, readdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, readdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";

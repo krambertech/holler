@@ -118,7 +118,7 @@ function QuestionPlate({ question }: { question: QuestionResult }) {
           <PlateRow className="px-5 py-3 text-muted">No written answers yet.</PlateRow>
         ) : (
           question.texts.map((answer, index) => (
-            // biome-ignore lint/suspicious/noArrayIndexKey: text answers have no id of their own and never reorder.
+            // oxlint-disable-next-line react/no-array-index-key -- text answers have no id of their own and never reorder
             <PlateRow key={index} className="px-5 py-3 text-ink-2">
               <q className="before:content-none after:content-none">{answer.text}</q>
             </PlateRow>
