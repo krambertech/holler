@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { StatusChip } from "@/components/ui/chip";
 import { Plate, PlateRow, PlateStrip } from "@/components/ui/plate";
 import { ApiError, api } from "@/lib/api";
-import { count, shortDate } from "@/lib/format";
+import { count, dayAndTime, shortDate } from "@/lib/format";
 import { membersQuery, meQuery, workspaceSettingsQuery } from "@/lib/queries";
 
 /**
@@ -59,15 +59,6 @@ function Section({
     </section>
   );
 }
-
-const dayAndTime = (iso: string) =>
-  new Intl.DateTimeFormat(undefined, {
-    day: "numeric",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-    hourCycle: "h23",
-  }).format(new Date(iso));
 
 function WorkspaceSection({ isOwner }: { isOwner: boolean }) {
   const workspace = useQuery(workspaceSettingsQuery);

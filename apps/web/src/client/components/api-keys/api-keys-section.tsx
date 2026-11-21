@@ -10,7 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Plate, PlateRow, PlateStrip } from "@/components/ui/plate";
 import { Select, SelectContent, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ApiError } from "@/lib/api";
-import { CopyButton, SettingsSection, whenLabel } from "./parts";
+import { whenLabel } from "@/lib/format";
+import { CopyButton, SettingsSection } from "./parts";
 import { apiKeysQuery, createApiKey, DOCS_URL, revokeApiKey } from "./queries";
 
 const scopeLabel = { read: "Read only", write: "Read and write" } as const;

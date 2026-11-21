@@ -1,6 +1,6 @@
 # Data model
 
-The schema is in `packages/core/src/schema`. This page explains the shape and the rules the schema cannot say by itself. Every product table carries `workspace_id`, and every service query filters by the context's workspace.
+The schema is in `packages/core/src/schema`. This page explains the shape and the rules the schema cannot say by itself. Every top-level product table carries `workspace_id`. The tables that hang off a Holler (`questions`, `options`, `recipients`, `viewers`, `responses` and `answers`) do not: they are scoped through `holler_id`, so a service reaches them only after it has loaded the Holler filtered by the context's workspace.
 
 ```mermaid
 erDiagram

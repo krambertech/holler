@@ -78,19 +78,4 @@ function CopyButton({ text, size = "sm", ...props }: CopyButtonProps) {
   );
 }
 
-const relative = new Intl.RelativeTimeFormat(undefined, { numeric: "auto" });
-
-/** "today", "yesterday", "3 days ago", then a date. */
-function whenLabel(iso: string, now = new Date()): string {
-  const days = Math.round(
-    (new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime() -
-      new Date(new Date(iso).setHours(0, 0, 0, 0)).getTime()) /
-      86_400_000,
-  );
-  if (days >= 0 && days < 7) return relative.format(-days, "day");
-  return new Intl.DateTimeFormat(undefined, { day: "numeric", month: "short" }).format(
-    new Date(iso),
-  );
-}
-
-export { CopyButton, SettingsSection, whenLabel };
+export { CopyButton, SettingsSection };

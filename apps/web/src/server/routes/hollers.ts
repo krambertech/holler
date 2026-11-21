@@ -8,7 +8,7 @@ import { requireMember } from "./context";
 
 /**
  * The web app's routes for hollers. The public REST API under /api/v1 mirrors these through the
- * same services; see docs/api.md once it exists.
+ * same services; see docs/api.md.
  */
 export const hollerRoutes = new Hono<AppEnv>()
   .get("/counts", async (c) => c.json(await homeCounts(requireMember(c))))

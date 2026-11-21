@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Chip } from "@/components/ui/chip";
 import { Plate, PlateRow, PlateStrip } from "@/components/ui/plate";
 import { ApiError } from "@/lib/api";
-import { CopyButton, SettingsSection, whenLabel } from "./parts";
+import { whenLabel } from "@/lib/format";
+import { CopyButton, SettingsSection } from "./parts";
 import { connectedAppsQuery, DOCS_URL, disconnectApp } from "./queries";
 
 /** The address an MCP client is given. It is this app's own origin. */

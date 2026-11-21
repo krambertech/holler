@@ -10,7 +10,7 @@ import {
 import type { ZodType } from "zod";
 import type { AppEnv } from "../../app";
 import { apiKeyFrom, principalFor, principalForApiKey } from "../../principal";
-import { type ServiceContext, ServiceError } from "../../services/context";
+import { ServiceError } from "../../services/context";
 
 /**
  * The plumbing every `/api/v1` route shares: who is calling, what they may do, how inputs are
@@ -44,18 +44,6 @@ export const authenticate: MiddlewareHandler<AppEnv> = async (c, next) => {
   c.set("principal", principal);
   await next();
 };
-
-/** The service context for the caller. `authenticate` has run, so there is always one. */
-export function ctxOf(c: Context<AppEnv>): ServiceContext {
-  const principal = c.get("principal");
-  if (!principal) throw new ServiceError("forbidden", "Sign in or send an API key to continue.");
-  return {
-    db: c.get("db"),
-    workspaceId: principal.workspaceId,
-    actor: principal.actor,
-    now: c.get("now"),
-  };
-}
 
 /**
  * Validates one part of the request and documents it. A failure is an `invalid` error in the

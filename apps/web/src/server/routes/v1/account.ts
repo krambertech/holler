@@ -6,8 +6,6 @@ import {
   directoryOutSchema,
   meOutSchema,
   okOutSchema,
-  plans,
-  remainingThisMonth,
 } from "@holler/core";
 import { Hono } from "hono";
 import { z } from "zod";
@@ -16,8 +14,9 @@ import { createApiKey, listApiKeys, revokeApiKey } from "../../services/api-keys
 import { disconnectApp, listConnectedApps } from "../../services/connected-apps";
 import { searchDirectory } from "../../services/directory";
 import { describeMe } from "../../services/members";
-import { monthlyUsage } from "../../services/usage";
-import { ctxOf, describe, input } from "./http";
+import { usageSummary } from "../../services/usage";
+import { requireMember } from "../context";
+import { describe, input } from "./http";
 
 const idParam = z.object({ id: z.string().min(1) });
 
@@ -33,9 +32,8 @@ export const v1Account = new Hono<AppEnv>()
       ok: { schema: meOutSchema, description: "The caller" },
     }),
     async (c) => {
-      const ctx = ctxOf(c);
-      const [me, usage] = await Promise.all([describeMe(ctx), monthlyUsage(ctx)]);
-      const remaining = remainingThisMonth(usage);
+      const ctx = requireMember(c);
+      const [me, usage] = await Promise.all([describeMe(ctx), usageSummary(ctx)]);
       const principal = c.get("principal");
       return c.json({
         ...me,
@@ -46,14 +44,7 @@ export const v1Account = new Hono<AppEnv>()
               : "web",
           scope: principal?.scope ?? "read",
         },
-        usage: {
-          plan: usage.plan,
-          sentThisMonth: usage.sentThisMonth,
-          monthlyLimit: Number.isFinite(plans[usage.plan].monthlyHollers)
-            ? plans[usage.plan].monthlyHollers
-            : null,
-          remaining: Number.isFinite(remaining) ? remaining : null,
-        },
+        usage,
       });
     },
   )
@@ -68,7 +59,7 @@ export const v1Account = new Hono<AppEnv>()
       errors: [400],
     }),
     input("query", z.object({ q: z.string().max(100).default("") })),
-    async (c) => c.json(await searchDirectory(ctxOf(c), c.req.valid("query").q)),
+    async (c) => c.json(await searchDirectory(requireMember(c), c.req.valid("query").q)),
   )
   .get(
     "/keys",
@@ -79,7 +70,7 @@ export const v1Account = new Hono<AppEnv>()
       sessionOnly: true,
       ok: { schema: z.array(apiKeyOutSchema), description: "Keys, newest first" },
     }),
-    async (c) => c.json(await listApiKeys(ctxOf(c))),
+    async (c) => c.json(await listApiKeys(requireMember(c))),
   )
   .post(
     "/keys",
@@ -92,7 +83,8 @@ export const v1Account = new Hono<AppEnv>()
       errors: [400],
     }),
     input("json", apiKeyInputSchema),
-    async (c) => c.json(await createApiKey(ctxOf(c), c.get("auth"), c.req.valid("json")), 201),
+    async (c) =>
+      c.json(await createApiKey(requireMember(c), c.get("auth"), c.req.valid("json")), 201),
   )
   .delete(
     "/keys/:id",
@@ -106,7 +98,7 @@ export const v1Account = new Hono<AppEnv>()
     }),
     input("param", idParam),
     async (c) => {
-      await revokeApiKey(ctxOf(c), c.req.valid("param").id);
+      await revokeApiKey(requireMember(c), c.req.valid("param").id);
       return c.json({ ok: true as const });
     },
   )
@@ -119,7 +111,7 @@ export const v1Account = new Hono<AppEnv>()
       sessionOnly: true,
       ok: { schema: z.array(connectedAppOutSchema), description: "Connected apps, newest first" },
     }),
-    async (c) => c.json(await listConnectedApps(ctxOf(c))),
+    async (c) => c.json(await listConnectedApps(requireMember(c))),
   )
   .delete(
     "/connected-apps/:id",
@@ -134,7 +126,7 @@ export const v1Account = new Hono<AppEnv>()
     }),
     input("param", idParam),
     async (c) => {
-      await disconnectApp(ctxOf(c), c.req.valid("param").id);
+      await disconnectApp(requireMember(c), c.req.valid("param").id);
       return c.json({ ok: true as const });
     },
   );
