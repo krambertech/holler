@@ -163,4 +163,67 @@ describe("anonymousTime", () => {
     expect(q.notes).toEqual([{ text: "Long week", slackUserId: "U1" }]);
     expect(q.otherTexts).toEqual([]);
   });
+
+  it("gives the same anonymous results whatever order the answers arrived in", () => {
+    // Every question type, with written answers, notes, Other and numbers, in many orders.
+    const choice: ResultsQuestion = {
+      id: "c",
+      prompt: "Pick",
+      type: "single",
+      style: "plain",
+      options: [
+        { id: "a", label: "A", score: null },
+        { id: "other", label: "Other", score: null, isOther: true },
+      ],
+    };
+    const qs: ResultsQuestion[] = [
+      choice,
+      mood,
+      blockers,
+      { id: "n", prompt: "Days", type: "number", style: "plain", options: [] },
+      { id: "p", prompt: "Who", type: "person", style: "plain", options: [] },
+    ];
+    const answers = Array.from({ length: 8 }, (_, i) => [
+      { responseId: `r${i}`, questionId: "c", optionId: i % 2 ? "a" : "other", text: null },
+      { responseId: `r${i}`, questionId: "q1", optionId: `o${(i % 3) + 1}`, text: null },
+      { responseId: `r${i}`, questionId: "q2", optionId: null, text: `blocker ${(i * 5) % 8}` },
+      { responseId: `r${i}`, questionId: "n", optionId: null, text: String((i * 3) % 7) },
+      { responseId: `r${i}`, questionId: "p", optionId: null, text: `U${i % 3}` },
+    ])
+      .flat()
+      .map((a) => ({ ...a, slackUserId: null }));
+    const notes = Array.from({ length: 8 }, (_, i) => [
+      { responseId: `r${i}`, questionId: "c", kind: "note" as const, text: `note ${(i * 3) % 8}` },
+      {
+        responseId: `r${i}`,
+        questionId: "c",
+        kind: "other" as const,
+        text: `other ${(i * 7) % 8}`,
+      },
+    ])
+      .flat()
+      .map((n) => ({ ...n, slackUserId: null }));
+    const run = (seed: number) => {
+      // A fixed shuffle per seed, so a failure names the order that broke it.
+      let state = seed;
+      const random = () => {
+        state = (state * 1103515245 + 12345) % 2 ** 31;
+        return state / 2 ** 31;
+      };
+      const shuffle = <T>(list: T[]) =>
+        list
+          .map((item) => ({ item, key: random() }))
+          .sort((x, y) => x.key - y.key)
+          .map(({ item }) => item);
+      return summarize({
+        anonymous: true,
+        responseCount: 8,
+        questions: qs,
+        answers: shuffle(answers),
+        notes: shuffle(notes),
+      });
+    };
+    const first = run(1);
+    for (let seed = 2; seed <= 25; seed++) expect(run(seed), `seed ${seed}`).toEqual(first);
+  });
 });
