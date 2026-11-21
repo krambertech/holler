@@ -10,7 +10,6 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AppRouteImport } from './routes/_app'
-import { Route as DesignRouteImport } from './routes/design'
 import { Route as InstallRouteImport } from './routes/install'
 import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
@@ -19,11 +18,6 @@ import { Route as AppHollersIdRouteImport } from './routes/_app/hollers.$id'
 
 const AppRoute = AppRouteImport.update({
   id: '/_app',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DesignRoute = DesignRouteImport.update({
-  id: '/design',
-  path: '/design',
   getParentRoute: () => rootRouteImport,
 } as any)
 const InstallRoute = InstallRouteImport.update({
@@ -54,14 +48,12 @@ const AppHollersIdRoute = AppHollersIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
-  '/design': typeof DesignRoute
   '/install': typeof InstallRoute
   '/sign-in': typeof SignInRoute
   '/settings': typeof AppSettingsRoute
   '/hollers/$id': typeof AppHollersIdRoute
 }
 export interface FileRoutesByTo {
-  '/design': typeof DesignRoute
   '/install': typeof InstallRoute
   '/sign-in': typeof SignInRoute
   '/settings': typeof AppSettingsRoute
@@ -71,7 +63,6 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_app': typeof AppRouteWithChildren
-  '/design': typeof DesignRoute
   '/install': typeof InstallRoute
   '/sign-in': typeof SignInRoute
   '/_app/settings': typeof AppSettingsRoute
@@ -80,14 +71,12 @@ export interface FileRoutesById {
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths:
-    '/' | '/design' | '/install' | '/sign-in' | '/settings' | '/hollers/$id'
+  fullPaths: '/' | '/install' | '/sign-in' | '/settings' | '/hollers/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/design' | '/install' | '/sign-in' | '/settings' | '/' | '/hollers/$id'
+  to: '/install' | '/sign-in' | '/settings' | '/' | '/hollers/$id'
   id:
     | '__root__'
     | '/_app'
-    | '/design'
     | '/install'
     | '/sign-in'
     | '/_app/settings'
@@ -97,7 +86,6 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren
-  DesignRoute: typeof DesignRoute
   InstallRoute: typeof InstallRoute
   SignInRoute: typeof SignInRoute
 }
@@ -109,13 +97,6 @@ declare module '@tanstack/react-router' {
       path: ''
       fullPath: '/'
       preLoaderRoute: typeof AppRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/design': {
-      id: '/design'
-      path: '/design'
-      fullPath: '/design'
-      preLoaderRoute: typeof DesignRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/install': {
@@ -172,7 +153,6 @@ const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
-  DesignRoute: DesignRoute,
   InstallRoute: InstallRoute,
   SignInRoute: SignInRoute,
 }

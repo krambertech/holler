@@ -38,7 +38,7 @@ pnpm db:migrate
 pnpm dev
 ```
 
-Open `http://localhost:5280/api/dev/sign-in?as=lead` to sign in as the seeded lead. The site runs on port 5281. Every component, in both themes, is at `http://localhost:5280/design`.
+Open `http://localhost:5280/api/dev/sign-in?as=lead` to sign in as the seeded lead. The site runs on port 5281. The design system site runs with `pnpm --filter @holler/web design:dev` on port 5282.
 
 ## Commands
 

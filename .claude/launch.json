@@ -14,6 +14,13 @@
       "runtimeArgs": ["--filter", "@holler/site", "dev", "--port", "5281"],
       "port": 5281,
       "autoPort": true
+    },
+    {
+      "name": "holler-design",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@holler/web", "design:dev", "--port", "5282"],
+      "port": 5282,
+      "autoPort": true
     }
   ]
 }

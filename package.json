@@ -15,7 +15,7 @@
     "test": "pnpm -r test && node --test scripts/*.test.mjs",
     "test:e2e": "playwright test",
     "test:e2e:chromium": "playwright test --project=chromium",
-    "check": "biome check . && pnpm check:design && pnpm check:styling",
+    "check": "biome check . && pnpm check:design && pnpm check:design-coverage && pnpm check:styling",
     "check:design": "node scripts/check-design.mjs",
     "check:styling": "node scripts/check-styling.mjs",
     "check:migrations": "pnpm --filter @holler/web db:check && node scripts/check-migrations.mjs",
@@ -23,7 +23,8 @@
     "verify": "pnpm check && pnpm check:migrations && pnpm typecheck && pnpm test && pnpm build && pnpm check:boundaries",
     "fix": "biome check --write .",
     "db:generate": "pnpm --filter @holler/web db:generate",
-    "db:migrate": "pnpm --filter @holler/web db:migrate"
+    "db:migrate": "pnpm --filter @holler/web db:migrate",
+    "check:design-coverage": "node scripts/check-design-coverage.mjs"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.11.0",

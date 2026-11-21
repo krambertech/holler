@@ -1,4 +1,5 @@
 import { type BillingOverview, plans } from "@holler/core";
+import type { ComponentProps } from "react";
 import { Button } from "@/components/ui/button";
 import { StatusChip } from "@/components/ui/chip";
 import { Plate, PlateRow, PlateStrip } from "@/components/ui/plate";
@@ -8,7 +9,7 @@ import { endDay, ownersToAsk, resetDay, useBillingRedirect } from "./billing-que
 
 const plural = new Intl.PluralRules("en");
 
-interface Props {
+interface Props extends ComponentProps<typeof Plate> {
   overview: BillingOverview;
 }
 
@@ -16,13 +17,13 @@ interface Props {
  * The workspace's plan, this month's sends, and what an owner can do about it. A sender sees the
  * same numbers and who to ask, with no buttons.
  */
-export function PlanPlate({ overview }: Props) {
+function PlanPlate({ overview, ...props }: Props) {
   const checkout = useBillingRedirect("checkout");
   const portal = useBillingRedirect("portal");
   const failed = checkout.error ?? portal.error;
 
   return (
-    <Plate>
+    <Plate data-slot="plan-plate" {...props}>
       <PlateRow className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2 px-5 py-4">
         <div className="flex flex-col gap-0.5">
           <h3 className="text-lg">{plans[overview.plan].label}</h3>
@@ -77,7 +78,7 @@ export function PlanPlate({ overview }: Props) {
   );
 }
 
-function UsageLine({ overview }: Props) {
+function UsageLine({ overview }: { overview: BillingOverview }) {
   const sent = count(overview.sentThisMonth);
   if (overview.monthlyLimit === null) {
     return (
@@ -135,3 +136,5 @@ function stripLine(overview: BillingOverview): string {
     ? `Sending stops until ${resetDay(overview)}. Team sends without a monthly limit.`
     : "Team sends without a monthly limit.";
 }
+
+export { PlanPlate };

@@ -32,3 +32,16 @@ test("someone signed out lands on Sign in with Slack", async ({ page }) => {
   await expect(page.getByRole("button", { name: "Sign in with Slack" })).toBeVisible();
   await expectAccessible(page);
 });
+
+test("the interface is set in Geologica, not a fallback", async ({ page }) => {
+  await signInAs(page, "lead");
+  await expect(page.getByRole("heading", { name: "Your hollers" })).toBeVisible();
+  const loaded = await page.evaluate(async () => {
+    await document.fonts.ready;
+    return document.fonts.check('300 15px "Geologica Variable"');
+  });
+  expect(
+    loaded,
+    "Geologica failed to load; check the url() paths in packages/design/fonts.css",
+  ).toBe(true);
+});

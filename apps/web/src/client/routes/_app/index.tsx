@@ -1,15 +1,18 @@
 import type { HollerSummary } from "@holler/core";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Plus, Search, X } from "lucide-react";
+import { Plus, Radio, Search, X } from "lucide-react";
 import { useState } from "react";
 import { z } from "zod";
-import { EmptyState } from "@/components/empty-state";
+import { EmptySection, EmptyState, NoResults } from "@/components/empty-state";
+import { ErrorState } from "@/components/error-state";
 import { HollerRow } from "@/components/holler-row";
-import { Button, buttonClasses } from "@/components/ui/button";
+import { Skeleton } from "@/components/skeleton";
+import { Button } from "@/components/ui/button";
 import { StatusDot } from "@/components/ui/chip";
+import { Input, InputGroup } from "@/components/ui/input";
 import { Plate, PlateStrip } from "@/components/ui/plate";
-import { Segmented } from "@/components/ui/segmented";
+import { Segmented, SegmentedItem } from "@/components/ui/segmented";
 import { count } from "@/lib/format";
 import { hollersQuery, homeCountsQuery } from "@/lib/queries";
 
@@ -32,14 +35,16 @@ function Home() {
   const shared = useQuery(hollersQuery("shared", { tag, q }));
   const list = tab === "mine" ? mine : shared;
   const [searching, setSearching] = useState(Boolean(q));
+  // On a first visit the empty state carries the one plum New holler, so the header's steps back.
+  const firstVisit = tab === "mine" && !tag && !q && mine.data?.length === 0;
 
   return (
     <>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-3xl tracking-title">Your hollers</h1>
+        <h1 className="text-4xl tracking-title">Your hollers</h1>
         <div className="flex gap-2">
           <Button
-            variant="icon"
+            size="icon"
             aria-label={searching ? "Close search" : "Search"}
             aria-expanded={searching}
             onClick={() => {
@@ -47,26 +52,24 @@ function Home() {
               setSearching(!searching);
             }}
           >
-            {searching ? <X size={18} strokeWidth={2} /> : <Search size={18} strokeWidth={2} />}
+            {searching ? <X aria-hidden strokeWidth={2} /> : <Search aria-hidden strokeWidth={2} />}
           </Button>
           {/* The editor owns /new; until it lands this link reaches the not-found page. */}
-          <a href="/new" className={buttonClasses("primary")}>
-            <Plus aria-hidden size={18} strokeWidth={2} />
+          <Button variant={firstVisit ? "secondary" : "primary"} render={<a href="/new" />}>
+            <Plus aria-hidden strokeWidth={2} />
             New holler
-          </a>
+          </Button>
         </div>
       </div>
 
       {searching && (
-        <label className="flex h-10 items-center gap-2 rounded-control bg-plate px-3 shadow-[0_0_0_1px_var(--edge-2)] focus-within:outline-2 focus-within:outline-focus focus-within:outline-offset-2">
-          <Search aria-hidden size={16} strokeWidth={2} className="text-muted" />
-          <span className="sr-only">Search hollers by title</span>
-          <input
+        <InputGroup icon={<Search />}>
+          <Input
+            aria-label="Search hollers by title"
             // biome-ignore lint/a11y/noAutofocus: the search field opens because the member asked for it.
             autoFocus
             defaultValue={q}
             placeholder="Search by title"
-            className="h-full flex-1 bg-transparent text-md outline-none placeholder:text-muted"
             onChange={(event) =>
               navigate({
                 search: (s) => ({ ...s, q: event.target.value || undefined }),
@@ -74,51 +77,56 @@ function Home() {
               })
             }
           />
-        </label>
+        </InputGroup>
       )}
 
       <HomeNumbers counts={counts.data} />
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Segmented
-          label="Whose hollers"
+          aria-label="Whose hollers"
           value={tab}
-          onValueChange={(next) => navigate({ search: (s) => ({ ...s, tab: next }) })}
-          items={[
-            { value: "mine", label: "Mine", ...(mine.data ? { count: mine.data.length } : {}) },
-            {
-              value: "shared",
-              label: "Shared with me",
-              ...(shared.data ? { count: shared.data.length } : {}),
-            },
-          ]}
-        />
+          onValueChange={(next: "mine" | "shared") =>
+            navigate({ search: (s) => ({ ...s, tab: next }) })
+          }
+        >
+          <SegmentedItem value="mine" count={mine.data?.length ?? null}>
+            Mine
+          </SegmentedItem>
+          <SegmentedItem value="shared" count={shared.data?.length ?? null}>
+            Shared with me
+          </SegmentedItem>
+        </Segmented>
         {tag && (
-          <button
-            type="button"
+          <Button
+            size="sm"
+            aria-label={`Remove the tag filter: ${tag}`}
             onClick={() => navigate({ search: (s) => ({ ...s, tag: undefined }) })}
-            className="inline-flex h-7 items-center gap-1.5 rounded-full bg-plate px-2.5 text-sm shadow-[0_0_0_1px_var(--edge-2)] hover:bg-well"
+            className="rounded-full"
           >
             Tag: {tag}
-            <X
-              aria-label="Remove the tag filter"
-              size={14}
-              strokeWidth={2}
-              className="text-muted"
-            />
-          </button>
+            <X aria-hidden strokeWidth={2} className="text-muted" />
+          </Button>
         )}
       </div>
 
       {list.isPending ? (
         <ListSkeleton />
       ) : list.isError ? (
-        <Plate className="flex flex-wrap items-center justify-between gap-3 px-5 py-4">
-          <span className="text-ink-2">{list.error.message}</span>
-          <Button onClick={() => list.refetch()}>Try again</Button>
-        </Plate>
+        <ErrorState
+          title="We could not load your hollers"
+          onRetry={() => list.refetch()}
+          pending={list.isRefetching}
+        />
       ) : list.data.length === 0 ? (
-        <EmptyList tab={tab} filtered={Boolean(tag || q)} />
+        <EmptyList
+          tab={tab}
+          filtered={Boolean(tag || q)}
+          onClear={() => {
+            setSearching(false);
+            navigate({ search: (s) => ({ ...s, q: undefined, tag: undefined }) });
+          }}
+        />
       ) : (
         <Groups hollers={list.data} />
       )}
@@ -143,8 +151,8 @@ function HomeNumbers({
           key={cell.label}
           className="border-divider border-s px-4 py-3.5 first:border-s-0 sm:px-5"
         >
-          <div className="tabular font-normal text-2xl">
-            {cell.value === undefined ? <span className="text-faint">–</span> : count(cell.value)}
+          <div className="tabular font-normal text-3xl">
+            {cell.value === undefined ? <Skeleton className="my-1 h-6 w-8" /> : count(cell.value)}
           </div>
           <div className="mt-[3px] flex items-center gap-1.5 text-sm text-muted">
             {cell.dot && <StatusDot status="live" />}
@@ -187,7 +195,7 @@ function Groups({ hollers }: { hollers: HollerSummary[] }) {
             {group.status === "live" && (
               <div
                 aria-hidden
-                className="hidden grid-cols-[minmax(0,1fr)_92px_96px_96px] gap-4 px-5 text-xs text-muted sm:grid"
+                className="hidden grid-cols-[minmax(0,1fr)_112px_96px_96px] gap-4 px-5 text-xs text-muted sm:grid"
               >
                 <span>Holler</span>
                 <span>People</span>
@@ -216,31 +224,46 @@ function Groups({ hollers }: { hollers: HollerSummary[] }) {
   );
 }
 
-function EmptyList({ tab, filtered }: { tab: "mine" | "shared"; filtered: boolean }) {
+function EmptyList({
+  tab,
+  filtered,
+  onClear,
+}: {
+  tab: "mine" | "shared";
+  filtered: boolean;
+  onClear: () => void;
+}) {
   if (filtered) {
     return (
-      <EmptyState
-        title="Nothing matches"
-        body="No holler has that title or tag. Clear the search or the tag to see them all."
+      <NoResults
+        icon={<Search />}
+        title="No holler matches"
+        description="Search looks at titles, and the tag filter at exact tags."
+        action={
+          <Button size="sm" onClick={onClear}>
+            Clear search and filters
+          </Button>
+        }
       />
     );
   }
   if (tab === "shared") {
     return (
-      <EmptyState
+      <EmptySection
+        icon={<Radio />}
         title="Nothing shared with you yet"
-        body="When someone shares a Holler's results with you, or with the whole workspace, it shows up here."
+        description="When someone shares a Holler's results with you, or with the whole workspace, it shows up here."
       />
     );
   }
   return (
     <EmptyState
       title="Ask your team something"
-      body="Holler sends your question to each person in Slack, reminds the ones who have not answered, and shows you the results here."
+      description="Holler sends your question to each person in Slack, reminds the ones who have not answered, and shows you the results here."
       action={
-        <a href="/new" className={buttonClasses("primary")}>
+        <Button variant="primary" render={<a href="/new" />}>
           New holler
-        </a>
+        </Button>
       }
     />
   );
@@ -254,10 +277,10 @@ function ListSkeleton() {
           key={i}
           className="flex items-center gap-3 border-divider border-t px-5 py-[13px] first:border-t-0"
         >
-          <span className="size-[38px] animate-pulse rounded-glyph bg-well" />
+          <Skeleton className="size-[38px] rounded-glyph" />
           <span className="flex flex-1 flex-col gap-2">
-            <span className="h-3.5 w-2/5 animate-pulse rounded-full bg-well" />
-            <span className="h-3 w-1/4 animate-pulse rounded-full bg-well" />
+            <Skeleton className="h-3.5 w-2/5 rounded-full" />
+            <Skeleton className="h-3 w-1/4 rounded-full" />
           </span>
         </div>
       ))}

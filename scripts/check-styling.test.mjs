@@ -57,9 +57,7 @@ test("checks only added lines, and honours the allow comment", () => {
 });
 
 test("skips tests and generated files", () => {
-  const diff = ["+++ b/apps/web/src/client/x.browser.test.tsx", "@@ -0,0 +1 @@", '+ "#fff"'].join(
-    "\n",
-  );
+  const diff = ["+++ b/apps/web/src/client/x.test.tsx", "@@ -0,0 +1 @@", '+ "#fff"'].join("\n");
   assert.deepEqual(check(diff), []);
 });
 

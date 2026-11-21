@@ -1,0 +1,15 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "holler-design",
+  "main": "design/worker.ts",
+  "compatibility_date": "2026-11-01",
+  "workers_dev": true,
+  "preview_urls": false,
+  "version_metadata": { "binding": "CF_VERSION_METADATA" },
+  "assets": {
+    "directory": "dist-design",
+    "binding": "ASSETS",
+    "html_handling": "none",
+    "run_worker_first": true
+  }
+}

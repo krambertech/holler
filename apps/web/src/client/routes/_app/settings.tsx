@@ -5,7 +5,7 @@ import { useState } from "react";
 import { PlanSection } from "@/components/billing/plan-section";
 import { MemberRow } from "@/components/settings/member-row";
 import { WorkspaceIcon } from "@/components/settings/workspace-icon";
-import { buttonClasses } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { StatusChip } from "@/components/ui/chip";
 import { Plate, PlateRow, PlateStrip } from "@/components/ui/plate";
 import { ApiError, api } from "@/lib/api";
@@ -26,7 +26,7 @@ function Settings() {
   const isOwner = me.data?.member.role === "owner";
   return (
     <>
-      <h1 className="text-3xl tracking-title">Settings</h1>
+      <h1 className="text-4xl tracking-title">Settings</h1>
       <WorkspaceSection isOwner={isOwner} />
       <MembersSection isOwner={isOwner} />
       <PlanSection />
@@ -104,7 +104,7 @@ function WorkspacePlate({
           {workspace.slackDomain && (
             <a
               href={`https://${workspace.slackDomain}.slack.com`}
-              className="max-w-full truncate text-muted text-sm underline-offset-2 hover:text-ink hover:underline"
+              className="max-w-full truncate text-muted text-sm underline-offset-2 hoverable:hover:text-ink hoverable:hover:underline"
             >
               {workspace.slackDomain}.slack.com
             </a>
@@ -139,18 +139,18 @@ function WorkspacePlate({
               : "Holler is not in Slack. Sending is paused."}
           </span>
           {isOwner && (
-            <a href="/slack/oauth/install" className={buttonClasses("secondary", "sm")}>
+            <Button size="sm" render={<a href="/slack/oauth/install" />}>
               Add to Slack again
-            </a>
+            </Button>
           )}
         </PlateStrip>
       ) : (
         isOwner && (
           <PlateStrip>
             <span>Reinstall when Slack asks Holler for new permissions.</span>
-            <a href="/slack/oauth/install" className={buttonClasses("secondary", "sm")}>
+            <Button size="sm" render={<a href="/slack/oauth/install" />}>
               Reinstall
-            </a>
+            </Button>
           </PlateStrip>
         )
       )}

@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
+import { type ComponentProps, useState } from "react";
+import { ErrorState } from "@/components/error-state";
+import { Skeleton } from "@/components/skeleton";
 import { Plate } from "@/components/ui/plate";
 import { meQuery } from "@/lib/queries";
 import { billingQuery } from "./billing-queries";
@@ -14,7 +15,7 @@ const CONFIRM_FOR_MS = 90_000;
  * month's sends; owners can upgrade and manage billing. It loads its own data and takes no props,
  * so Settings places it with one line.
  */
-export function PlanSection() {
+function PlanSection(props: Omit<ComponentProps<"section">, "children">) {
   const me = useQuery(meQuery);
   // Polar sends an owner back to /settings?checkout=<id>#billing. Read once, outside the router,
   // so the Settings route's search schema need not know about it.
@@ -34,7 +35,13 @@ export function PlanSection() {
   });
 
   return (
-    <section id="billing" aria-labelledby="billing-heading" className="flex flex-col gap-3">
+    <section
+      id="billing"
+      data-slot="plan-section"
+      aria-labelledby="billing-heading"
+      className="flex flex-col gap-3"
+      {...props}
+    >
       <div>
         <h2 id="billing-heading" className="text-lg">
           Billing
@@ -49,10 +56,12 @@ export function PlanSection() {
       {billing.isPending ? (
         <PlanSkeleton />
       ) : billing.isError ? (
-        <Plate className="flex flex-wrap items-center justify-between gap-3 px-5 py-4">
-          <span className="text-ink-2">{billing.error.message}</span>
-          <Button onClick={() => billing.refetch()}>Try again</Button>
-        </Plate>
+        <ErrorState
+          title="We could not load the plan"
+          description={billing.error.message}
+          onRetry={() => billing.refetch()}
+          pending={billing.isRefetching}
+        />
       ) : (
         <>
           {returnedFromCheckout && <CheckoutReturn onTeam={billing.data.plan === "team"} />}
@@ -87,14 +96,16 @@ function PlanSkeleton() {
   return (
     <Plate aria-busy aria-label="Loading the plan">
       <div className="flex flex-col gap-2 px-5 py-4">
-        <span className="h-4 w-24 animate-pulse rounded-full bg-well" />
-        <span className="h-3.5 w-3/5 animate-pulse rounded-full bg-well" />
+        <Skeleton className="h-4 w-24 rounded-full" />
+        <Skeleton className="h-3.5 w-3/5 rounded-full" />
       </div>
       <div className="flex flex-col gap-3 border-divider border-t px-5 py-4">
-        <span className="h-6 w-2/5 animate-pulse rounded-full bg-well" />
-        <span className="h-1.5 w-full animate-pulse rounded-full bg-well" />
+        <Skeleton className="h-6 w-2/5 rounded-full" />
+        <Skeleton className="h-1.5 w-full rounded-full" />
       </div>
       <div className="h-[60px] bg-tint" />
     </Plate>
   );
 }
+
+export { PlanSection };

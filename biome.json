@@ -18,6 +18,7 @@
       "!**/public",
       "!**/worker-configuration.d.ts",
       "!apps/web/index.html",
+      "!apps/web/design/index.html",
       "!**/*.md",
       "!design"
     ]

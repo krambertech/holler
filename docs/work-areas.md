@@ -61,7 +61,7 @@ Writing a Holler in about two minutes: `/new` and editing a draft.
 - Autosave as the sender types, through `PUT /api/hollers/:id`. Show every send problem beside its field at once.
 - **Send** and **Schedule** call the send contract above. The limit message from `402` links to billing.
 
-Owns: `src/client/routes/_app/new.tsx`, `src/client/routes/_app/hollers.$id.edit.tsx`, `src/client/components/editor/**`, new primitives it needs in `src/client/components/ui/` (input, textarea, switch, select, combobox, date-time picker, each on the design page).
+Owns: `src/client/routes/_app/new.tsx`, `src/client/routes/_app/hollers.$id.edit.tsx`, `src/client/components/editor/**`, new primitives it needs in `src/client/components/ui/` (input, textarea, switch, select, combobox, date-time picker, each with an entry on the design site).
 
 ## 4. Results, sharing and exports
 

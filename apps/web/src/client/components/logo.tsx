@@ -38,7 +38,12 @@ export function Logo({ size = 32 }: { size?: number }) {
   return (
     <span className="inline-flex items-center gap-2.5">
       <Mark size={size} />
-      <span className="font-semibold text-xl tracking-[-0.02em]">holler</span>
+      <span
+        className="font-semibold tracking-[-0.02em]"
+        style={{ fontSize: Math.round(size * 0.6) }}
+      >
+        holler
+      </span>
     </span>
   );
 }

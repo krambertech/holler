@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { z } from "zod";
 import { Logo } from "@/components/logo";
-import { Button, buttonClasses } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { Plate } from "@/components/ui/plate";
 import { authClient } from "@/lib/auth-client";
 
@@ -36,7 +36,7 @@ function SignIn() {
       <Plate className="flex w-full flex-col gap-6 px-7 py-8">
         <Logo />
         <div>
-          <h1 className="text-2xl tracking-title">Sign in to Holler</h1>
+          <h1 className="text-4xl tracking-title">Sign in to Holler</h1>
           <p className="mt-1.5 text-ink-2">
             Use your Slack account. Holler opens the workspace you sign in to.
           </p>
@@ -53,18 +53,22 @@ function SignIn() {
           <div className="flex flex-col gap-2 border-divider border-t pt-5">
             <span className="text-sm text-muted">Local development</span>
             <div className="flex flex-wrap gap-2">
-              <a
-                href={`/api/dev/sign-in?as=lead&to=${encodeURIComponent(destination)}`}
-                className={buttonClasses("secondary", "sm")}
+              <Button
+                size="sm"
+                render={
+                  <a href={`/api/dev/sign-in?as=lead&to=${encodeURIComponent(destination)}`} />
+                }
               >
                 Lead, with hollers
-              </a>
-              <a
-                href={`/api/dev/sign-in?as=sender&to=${encodeURIComponent(destination)}`}
-                className={buttonClasses("secondary", "sm")}
+              </Button>
+              <Button
+                size="sm"
+                render={
+                  <a href={`/api/dev/sign-in?as=sender&to=${encodeURIComponent(destination)}`} />
+                }
               >
                 Sender, empty
-              </a>
+              </Button>
             </div>
           </div>
         )}

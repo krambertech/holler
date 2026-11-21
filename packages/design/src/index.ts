@@ -19,11 +19,8 @@ export const mark = {
 /** The wordmark is always lowercase, in Geologica 600, tracked in. */
 export const wordmark = { text: "holler", weight: 600, tracking: "-0.035em" } as const;
 
-/** One question's chart colours, darkest first. A single-series chart uses chart-2 only. */
-export const chartRamp = ["chart-1", "chart-2", "chart-3", "chart-4", "chart-5"] as const;
-
 /** Every status the interface shows. Each has a surface, an ink and a dot token of the same name. */
-export const statuses = ["answered", "waiting", "away", "closed", "danger"] as const;
-export type Status = (typeof statuses)[number];
+export type Status = "answered" | "waiting" | "away" | "closed" | "danger";
 
+export * from "./motion";
 export { type Pair, pairs } from "./pairs";
