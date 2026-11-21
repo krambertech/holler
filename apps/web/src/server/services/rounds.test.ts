@@ -9,7 +9,7 @@ import { sendDueHollers, sendHoller } from "./delivery";
 import { workspaceFixture } from "./fixtures";
 import { createDraft } from "./hollers";
 import { recordResponse } from "./responses";
-import { nextRound, roundColumns, stopRepeating } from "./rounds";
+import { listRounds, nextRound, roundColumns, stopRepeating } from "./rounds";
 import { devSlack } from "./slack-connection";
 
 let db: Db;
@@ -292,5 +292,60 @@ describe("repeating pulses", () => {
     expect((await rounds(first.id)).map((h) => [h.status, h.repeatRule])).toEqual([
       ["scheduled", null],
     ]);
+  });
+  it("lists every round newest first, with each one's average, from any round", async () => {
+    const { ctx, env, first } = await series();
+    await sendDueHollers(env, db, FIRST);
+    const options = await db.query.options.findMany();
+    const question = (await db.query.questions.findMany()).find((q) => q.hollerId === first.id);
+    const answer = (slackUserId: string, label: string) =>
+      recordResponse(
+        { ...ctx, now: () => FIRST, actor: { via: "slack", recipientSlackUserId: slackUserId } },
+        {
+          hollerId: first.id,
+          slackUserId,
+          via: "slack_button",
+          response: {
+            answers: [
+              {
+                questionId: question?.id ?? "",
+                optionIds: [
+                  options.find((o) => o.questionId === question?.id && o.label === label)?.id ?? "",
+                ],
+              },
+            ],
+          },
+        },
+      );
+    await answer("UA", "Good");
+    await answer("UB", "Fine");
+    const next = (await rounds(first.id))[1];
+    const out = await listRounds(ctx, next?.id ?? "");
+    expect(out.repeat).toBe("week");
+    expect(out.rounds.map((r) => [r.id, r.status])).toEqual([
+      [next?.id, "scheduled"],
+      [first.id, "live"],
+    ]);
+    expect(out.rounds[1]).toMatchObject({
+      recipientCount: 3,
+      responseCount: 2,
+      gated: false,
+      scores: [{ position: 0, prompt: "How was your week?", average: 2.5, top: 3 }],
+    });
+
+    await stopRepeating(ctx, first.id);
+    expect((await listRounds(ctx, first.id)).repeat).toBeNull();
+    const stranger = {
+      ...ctx,
+      actor: { via: "web" as const, memberId: "mem_other", slackUserId: "UB" },
+    };
+    await expect(listRounds(stranger, first.id)).rejects.toMatchObject({ code: "not_found" });
+  });
+
+  it("shows an anonymous round's counts only, under five responses", async () => {
+    const { ctx, env, first } = await series({ anonymous: true });
+    await sendDueHollers(env, db, FIRST);
+    const [round] = (await listRounds(ctx, first.id)).rounds.filter((r) => r.id === first.id);
+    expect(round).toMatchObject({ gated: true, scores: [] });
   });
 });

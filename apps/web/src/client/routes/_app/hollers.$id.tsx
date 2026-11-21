@@ -8,6 +8,7 @@ import { ErrorState } from "@/components/error-state";
 import { ModeGlyph } from "@/components/mode-glyph";
 import { HollerActions } from "@/components/results/holler-actions";
 import { HollerPeople } from "@/components/results/holler-people";
+import { HollerRounds } from "@/components/results/holler-rounds";
 import { type PersonLookup, QuestionResult } from "@/components/results/question-result";
 import { Skeleton } from "@/components/skeleton";
 import { StatusChip } from "@/components/ui/chip";
@@ -15,7 +16,7 @@ import { Plate } from "@/components/ui/plate";
 import { toast } from "@/components/ui/toast";
 import { api } from "@/lib/api";
 import { closesLabel, count, dayAndTime, momentLabel } from "@/lib/format";
-import { hollerPeopleQuery, resultsQuery } from "@/lib/queries";
+import { hollerPeopleQuery, resultsQuery, roundsQuery } from "@/lib/queries";
 
 export const Route = createFileRoute("/_app/hollers/$id")({
   component: HollerPage,
@@ -40,6 +41,9 @@ function HollerPage() {
   const results = useQuery({ ...resultsQuery(id), enabled: sent });
   const people = useQuery({ ...hollerPeopleQuery(id), enabled: sent });
   const isCreator = holler.data?.isCreator ?? false;
+  const inSeries = Boolean(holler.data?.repeat || holler.data?.repeatOfId);
+  const rounds = useQuery({ ...roundsQuery(id), enabled: inSeries });
+  const nextRound = rounds.data?.rounds.find((round) => round.status === "scheduled");
 
   const refresh = () => queryClient.invalidateQueries({ queryKey: ["hollers"] });
   const remind = useMutation({
@@ -60,6 +64,14 @@ function HollerPage() {
     mutationFn: () => api<HollerOut>(`/hollers/${id}/close`, { method: "POST" }),
     onSuccess: () => {
       toast.add({ title: "Closed. It takes no more answers." });
+      void refresh();
+    },
+    onError: (error) => toast.add({ tone: "danger", title: error.message }),
+  });
+  const stopRepeating = useMutation({
+    mutationFn: () => api<HollerOut>(`/hollers/${id}/stop-repeating`, { method: "POST" }),
+    onSuccess: () => {
+      toast.add({ title: "This pulse no longer repeats. Every answer stays." });
       void refresh();
     },
     onError: (error) => toast.add({ tone: "danger", title: error.message }),
@@ -133,6 +145,10 @@ function HollerPage() {
             onClose={() => close.mutate()}
             copying={copy.isPending}
             closing={close.isPending}
+            repeats={rounds.data?.repeat != null}
+            nextRoundAt={nextRound?.sendAt ?? null}
+            onStopRepeating={() => stopRepeating.mutate()}
+            stopping={stopRepeating.isPending}
           />
         )}
       </div>
@@ -166,6 +182,10 @@ function HollerPage() {
           onRemind={() => remind.mutate()}
           reminding={remind.isPending}
         />
+      )}
+
+      {rounds.data && rounds.data.rounds.length > 1 && (
+        <HollerRounds rounds={rounds.data} currentId={h.id} />
       )}
 
       {results.data?.state === "gated" && (

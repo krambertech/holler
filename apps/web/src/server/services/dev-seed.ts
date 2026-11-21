@@ -124,6 +124,8 @@ export async function seedLeadHollers(db: Db, workspaceId: string, creatorId: st
     sendAt?: Date;
     closesAt?: Date;
     closedAt?: Date;
+    roundOf?: number;
+    repeat?: "week";
     questions: {
       type: "single" | "multi" | "text";
       style?: "plain" | "scale" | "binary";
@@ -146,6 +148,9 @@ export async function seedLeadHollers(db: Db, workspaceId: string, creatorId: st
       tags: ["weekly"],
       recipients: [...team.slice(0, 12), "U0SENDER"],
       answered: 7,
+      roundOf: 4,
+      repeat: "week",
+      sendAt: at(-2 * DAY),
       sentAt: at(-2 * DAY),
       closesAt: at(2 * DAY),
       questions: [mood, { type: "text", prompt: "Anything in your way?" }],
@@ -201,6 +206,8 @@ export async function seedLeadHollers(db: Db, workspaceId: string, creatorId: st
       tags: ["weekly"],
       recipients: ["U0SENDER", ...team.slice(0, 12)],
       answered: 12,
+      repeat: "week",
+      sendAt: at(-40 * DAY),
       sentAt: at(-40 * DAY),
       closesAt: at(-36 * DAY),
       closedAt: at(-36 * DAY),
@@ -240,10 +247,24 @@ export async function seedLeadHollers(db: Db, workspaceId: string, creatorId: st
         { type: "text", prompt: "What would make it easier?" },
       ],
     },
+    {
+      mode: "pulse",
+      status: "scheduled",
+      title: "How was your week?",
+      tags: ["weekly"],
+      recipients: [],
+      audience: [...team.slice(0, 12), "U0SENDER"],
+      answered: 0,
+      roundOf: 4,
+      repeat: "week",
+      sendAt: at(5 * DAY),
+      questions: [mood, { type: "text", prompt: "Anything in your way?" }],
+    },
   ];
+  const seedIds = seeds.map(() => newId("holler"));
 
   for (const [order, seed] of seeds.entries()) {
-    const hollerId = newId("holler");
+    const hollerId = seedIds[order] ?? newId("holler");
     // The key's unique index lets each seeded holler in once when two lead sign-ins race.
     const idempotencyKey = `dev-seed ${order}`;
     const statements: BatchItem<"sqlite">[] = [];
@@ -267,6 +288,8 @@ export async function seedLeadHollers(db: Db, workspaceId: string, creatorId: st
         closeQueuedAt: seed.closedAt ?? null,
         createdVia: "web",
         idempotencyKey,
+        repeatRule: seed.repeat ?? null,
+        repeatOfId: seed.roundOf === undefined ? null : (seedIds[seed.roundOf] ?? null),
         createdAt: seed.sentAt ?? at(-1 * HOUR),
         updatedAt: seed.closedAt ?? seed.sentAt ?? at(-1 * HOUR),
       }),

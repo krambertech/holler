@@ -22,6 +22,7 @@ A change is verified when every feature it reaches has been driven in a running 
 | A holler goes out in Slack and comes back answered | [slack-send.md](features/slack-send.md) |
 | Your answers, named and anonymous | [answers.md](features/answers.md) |
 | The Holler page chases and closes | [holler-page.md](features/holler-page.md) |
+| A repeating pulse shows its rounds and stops repeating | [rounds.md](features/rounds.md) |
 
 ## Launch
 

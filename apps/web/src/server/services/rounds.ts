@@ -1,12 +1,15 @@
-import { newId, nextRoundAt } from "@holler/core";
-import { and, type BatchItem, eq, inArray, not, sql } from "@holler/core/db";
+import { newId, nextRoundAt, type RoundOut, type RoundsOut } from "@holler/core";
+import { and, type BatchItem, desc, eq, inArray, not, or, sql } from "@holler/core/db";
 import { runBatch } from "../batch";
 import { schema } from "../db";
 import { auditStatement } from "./audit";
 import { memberOf, type ServiceContext, ServiceError } from "./context";
-import { getHoller } from "./hollers";
+import { getHoller, visibleTo } from "./hollers";
+import { resultsFor } from "./responses";
 
-const { hollers, questions, options, activity } = schema;
+const { hollers, questions, options, activity, recipients } = schema;
+
+export const ROUNDS_SHOWN = 26;
 
 type HollerRow = typeof hollers.$inferSelect;
 
@@ -184,4 +187,68 @@ export async function stopRepeating(ctx: ServiceContext, hollerId: string) {
     }),
   ]);
   return getHoller(ctx, seriesId);
+}
+
+export async function listRounds(ctx: ServiceContext, hollerId: string): Promise<RoundsOut> {
+  const holler = await getHoller(ctx, hollerId);
+  const seriesId = holler.repeatOfId ?? holler.id;
+  const rows = await ctx.db
+    .select({
+      id: hollers.id,
+      status: hollers.status,
+      sendAt: hollers.sendAt,
+      repeatRule: hollers.repeatRule,
+      recipientCount: sql<number>`(select count(*) from ${recipients} where ${recipients.hollerId} = ${hollers.id})`,
+    })
+    .from(hollers)
+    .where(
+      and(
+        or(eq(hollers.id, seriesId), eq(hollers.repeatOfId, seriesId)),
+        visibleTo(ctx, memberOf(ctx)),
+      ),
+    )
+    .orderBy(desc(hollers.sendAt), desc(hollers.createdAt))
+    .limit(ROUNDS_SHOWN);
+  const first = rows.find((row) => row.id === seriesId);
+  const rounds: RoundOut[] = [];
+  for (const row of rows) {
+    const sent = row.status === "live" || row.status === "closed";
+    const results = sent ? await resultsFor(ctx, row.id) : null;
+    const tops = sent ? await scaleTops(ctx, row.id) : new Map<number, number>();
+    const scores =
+      results?.state === "open"
+        ? results.questions.flatMap((question, position) =>
+            question.type === "single" && question.style === "scale"
+              ? [
+                  {
+                    position,
+                    prompt: question.prompt,
+                    average: question.average,
+                    top: tops.get(position) ?? 0,
+                  },
+                ]
+              : [],
+          )
+        : [];
+    rounds.push({
+      id: row.id,
+      status: row.status,
+      sendAt: row.sendAt?.toISOString() ?? null,
+      recipientCount: Number(row.recipientCount),
+      responseCount: results?.responseCount ?? 0,
+      gated: results?.state === "gated",
+      scores,
+    });
+  }
+  return { repeat: (first ?? holler).repeatRule ?? null, rounds };
+}
+
+async function scaleTops(ctx: ServiceContext, hollerId: string) {
+  const rows = await ctx.db
+    .select({ position: questions.position, top: sql<number | null>`max(${options.score})` })
+    .from(options)
+    .innerJoin(questions, eq(questions.id, options.questionId))
+    .where(eq(questions.hollerId, hollerId))
+    .groupBy(questions.id);
+  return new Map(rows.map((row) => [row.position, Number(row.top ?? 0)]));
 }
