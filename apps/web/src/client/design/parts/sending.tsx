@@ -310,6 +310,19 @@ function PickerDemo({ start }: { start: Audience }) {
   );
 }
 
+/** The draft knew the design team at 9; the directory now says 11. */
+function StalePickerDemo() {
+  return (
+    <AudiencePicker
+      className="w-full"
+      defaultValue={{ people: [], groups: ["S0DES"], everyone: false }}
+      known={{ groups: [{ ...(groups[0] as DirectoryGroup), memberCount: 9 }] }}
+      workspaceSize={WORKSPACE}
+      search={search}
+    />
+  );
+}
+
 function PreviewDemo({
   holler,
   recipient,
@@ -362,6 +375,11 @@ export const sending: Group = {
               ),
             },
             { label: "Everyone", render: () => <PickerDemo start={everyone} /> },
+            {
+              label: "A size that changed",
+              note: "Saved at 9 people. Open the search: the directory's newer count replaces it.",
+              render: () => <StalePickerDemo />,
+            },
             {
               label: "A large audience",
               render: () => (

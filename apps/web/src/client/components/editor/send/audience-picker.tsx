@@ -148,6 +148,10 @@ function AudienceChip({
   );
 }
 
+function sameEntry(a: AudienceEntry | undefined, b: AudienceEntry) {
+  return a !== undefined && JSON.stringify(a) === JSON.stringify(b);
+}
+
 function matchesEveryone(query: string) {
   const q = query.trim().toLocaleLowerCase();
   return q === "" || "everyone in the workspace".includes(q) || "all".startsWith(q);
@@ -182,7 +186,7 @@ function AudiencePicker({
   const [query, setQuery] = useState("");
   const directory = useDirectory(search, query, open);
 
-  // Every entry seen, so a chip keeps its name and size after the search moves on.
+  // Every entry seen, newest data kept, so a chip keeps its name and size after the search moves on.
   const [seen, setSeen] = useState(() => {
     const map = new Map<string, AudienceEntry>();
     for (const person of known?.people ?? []) map.set(person.slackUserId, personEntry(person));
@@ -195,7 +199,10 @@ function AudiencePicker({
     return matchesEveryone(query) ? [everyoneEntry, ...found] : found;
   }, [directory.data, query]);
   useEffect(() => {
-    const fresh = results.filter((entry) => entry.kind !== "everyone" && !seen.has(entry.id));
+    // New entries and newer data for known ones, such as a group that grew past 50 people.
+    const fresh = results.filter(
+      (entry) => entry.kind !== "everyone" && !sameEntry(seen.get(entry.id), entry),
+    );
     if (fresh.length === 0) return;
     setSeen((previous) => {
       const next = new Map(previous);
