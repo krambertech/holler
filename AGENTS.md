@@ -68,6 +68,7 @@ Project skills live in `.agents/skills/`; `.claude/skills` links to it so every 
 | Every journey page passes axe at WCAG 2.2 AA                                | `e2e/`                                               |
 | Concurrent first dev sign-ins all succeed and seed once                    | `apps/web/src/server/routes/dev-concurrency.test.ts` |
 | Every e2e sign-in lands where the test goes next, so no redirect races its navigation | `holler/sign-in-lands` in `oxlint-plugin-holler`; `signInAs` in `e2e/a11y.ts` |
+| axe reads a page only once its transitions have finished, so a fade never reads as low contrast | `expectAccessible` in `e2e/a11y.ts` waits for every finite animation |
 | Pull request titles follow `type(scope): summary` within 72 characters      | `scripts/check-pr-title.mjs` in CI                   |
 | Server inserts one row per statement, inside D1's 100-value limit | `holler/no-multi-row-insert` in `oxlint-plugin-holler` |
 | Every Slack message and view fits Block Kit's limits | `FakeSlack` refuses what Slack would; `slack/blocks/messages.test.ts` sends the largest Holler |
