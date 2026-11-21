@@ -40,9 +40,9 @@ test("a recipient answers every question type, with a follow-up after some answe
   await expectAccessible(page);
 
   await page.getByRole("button", { name: "Send answers" }).click();
-  await expect(page.getByText("7 answers need another look.")).toBeVisible();
+  await expect(page.getByText("7 questions above still need your answer.")).toBeVisible();
   await expect(
-    question(page, "Will you fly?").getByText("Needs an answer", { exact: true }),
+    question(page, "Will you fly?").getByText("This question needs an answer."),
   ).toBeVisible();
   await expect(page.locator("fieldset [aria-invalid=true]")).toHaveCount(0);
   await expectAccessible(page);

@@ -15,7 +15,7 @@ export default async function drive({ page, step, api, post, expect }) {
 
   await step("Sending with nothing answered puts each problem beside its question", async () => {
     await page.getByRole("button", { name: "Send answers" }).click();
-    await expect(page.getByText("7 answers need another look.")).toBeVisible();
+    await expect(page.getByText("7 questions above still need your answer.")).toBeVisible();
     const before = await survey();
     expect(before.answered).toBe(0);
     return before;

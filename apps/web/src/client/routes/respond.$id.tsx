@@ -366,8 +366,9 @@ function OpenForm({ form, id, link, onSent }: OpenFormProps) {
 }
 
 function problemsLine(n: number, questions: readonly RespondQuestion[]): string {
-  if (questions.length === 1 || n === 1) return "One answer needs another look.";
-  return `${count(n)} answers need another look.`;
+  if (questions.length === 1) return "Answer the question above to send.";
+  if (n === 1) return "One question above still needs your answer.";
+  return `${count(n)} questions above still need your answer.`;
 }
 
 function SendBar({
@@ -382,7 +383,7 @@ function SendBar({
   return (
     <PlateRow className="flex flex-col-reverse items-stretch gap-3 bg-canvas/60 px-6 py-5 sm:flex-row sm:items-center sm:justify-end sm:px-8">
       {message && (
-        <p role="alert" className="text-danger-ink text-sm sm:me-auto">
+        <p role="alert" className="text-center text-danger-ink text-sm sm:me-auto sm:text-start">
           {message}
         </p>
       )}

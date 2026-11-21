@@ -1,9 +1,9 @@
 import { Radio as RadioPrimitive } from "@base-ui/react/radio";
 import { RadioGroup as RadioGroupPrimitive } from "@base-ui/react/radio-group";
 import type { RespondPerson, RespondQuestion } from "@holler/core";
-import { needsAnswer, otherOption } from "@holler/core";
+import { otherOption } from "@holler/core";
 import { EASE_OUT } from "@holler/design";
-import { Check, CircleAlert, CornerDownRight, X } from "lucide-react";
+import { Check, CornerDownRight, X } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import {
   type ComponentProps,
@@ -58,7 +58,6 @@ function AnswerQuestion({
 }: Props) {
   const legendId = useId();
   const hint = hintFor(question);
-  const missing = error === needsAnswer;
   return (
     <FieldSet
       data-slot="answer-question"
@@ -70,24 +69,18 @@ function AnswerQuestion({
         id={legendId}
         className={cn(
           "flex w-full items-baseline gap-3 text-lg",
-          question.description || hint ? "mb-1" : "mb-3",
+          question.description || hint || error ? "mb-1" : "mb-3",
         )}
       >
         {number !== undefined && (
           <span className="w-6 shrink-0 text-muted tabular">{count(number)}</span>
         )}
         <span className="min-w-0 flex-1 text-pretty">{question.prompt}</span>
-        {missing ? (
-          <span className="flex shrink-0 items-center gap-1 self-center text-danger-ink text-sm">
-            <CircleAlert aria-hidden size={14} strokeWidth={2} />
-            Needs an answer
-          </span>
-        ) : (
-          !question.required && <span className="shrink-0 text-muted text-sm">Optional</span>
-        )}
+        {!question.required && <span className="shrink-0 text-muted text-sm">Optional</span>}
       </FieldLegend>
-      {(question.description || hint) && (
+      {(question.description || hint || error) && (
         <div className="flex flex-col gap-0.5 text-muted text-sm">
+          <FieldError className="mb-0.5">{error}</FieldError>
           {question.description && <p>{question.description}</p>}
           {hint && <p>{hint}</p>}
         </div>
@@ -97,10 +90,8 @@ function AnswerQuestion({
         value={value}
         onValueChange={onValueChange}
         legendId={legendId}
-        invalid={Boolean(error)}
         searchPeople={searchPeople}
       />
-      <FieldError>{missing ? null : error}</FieldError>
       <Reveal shown={noteShown(question, value)}>
         <Field data-slot="follow-up" className="gap-2.5 rounded-control bg-well p-4">
           <FieldLabel aside="Optional" className="flex items-center gap-2 text-ink">
@@ -148,7 +139,6 @@ interface ControlProps {
   value: DraftAnswer;
   onValueChange: (next: DraftAnswer) => void;
   legendId: string;
-  invalid: boolean;
   searchPeople: (query: string) => Promise<RespondPerson[]>;
 }
 
@@ -198,7 +188,7 @@ function Control(props: ControlProps) {
 const numbered = (question: RespondQuestion) =>
   question.options.every((o) => /^\d+$/.test(o.label));
 
-function OtherText({ question, value, onValueChange, invalid }: ControlProps) {
+function OtherText({ question, value, onValueChange }: ControlProps) {
   const ref = useRef<HTMLInputElement>(null);
   const shown = otherShown(question, value);
   const wasShown = useRef(shown);
@@ -212,7 +202,6 @@ function OtherText({ question, value, onValueChange, invalid }: ControlProps) {
         ref={ref}
         aria-label="If Other, what?"
         placeholder="If Other, what?"
-        aria-invalid={(invalid && !value.otherText.trim()) || undefined}
         value={value.otherText}
         maxLength={1000}
         onChange={(e) => onValueChange({ ...value, otherText: e.target.value })}
