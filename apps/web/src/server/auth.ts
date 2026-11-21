@@ -74,6 +74,7 @@ export function createAuth(env: Bindings, db: Db) {
     },
     advanced: {
       cookiePrefix: "holler",
+      disableOriginCheck: false,
       database: { generateId: () => crypto.randomUUID() },
     },
     plugins: [

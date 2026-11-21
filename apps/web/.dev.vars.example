@@ -1,6 +1,4 @@
 # Copy to .dev.vars for local development. Never commit .dev.vars.
-# The origin you open the product on. Better Auth refuses sign-out and other writes from any other origin.
-PRODUCT_URL=http://localhost:5280
 BETTER_AUTH_SECRET=local-secret-at-least-thirty-two-characters-long
 # A 32-byte key, base64. Generate with: openssl rand -base64 32
 SLACK_TOKEN_KEY=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=

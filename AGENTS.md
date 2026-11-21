@@ -82,6 +82,7 @@ Project skills live in `.agents/skills/`; `.claude/skills` links to it so every 
 | Anonymous results and exports keep no trace of answer order | `packages/core/src/results.test.ts` shuffles every answer; `services/exports.test.ts` |
 | Only Your answers reads who gave an anonymous response | `holler/no-response-owners` in `oxlint-plugin-holler`; `services/own-answers.test.ts`, "never reaches results or exports" |
 | Sign-out and other auth writes pass Better Auth's origin check where the product runs in tests | `PRODUCT_URL` from `e2e/origin.mjs`; `e2e/sign-out.spec.ts` |
+| Sign-out and every auth write work from any local port, and tests run the real origin check | `localOrigins` in `server/env.ts`; `disableOriginCheck: false` in `server/auth.ts`; `routes/local-origins.test.ts` |
 
 ## Generated files
 
