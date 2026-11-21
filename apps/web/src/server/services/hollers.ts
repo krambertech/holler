@@ -29,6 +29,7 @@ import {
   or,
   sql,
 } from "@holler/core/db";
+import { readInChunks } from "../batch";
 import { schema } from "../db";
 import { type AuditEntry, auditStatement } from "./audit";
 import { memberOf, type ServiceContext, ServiceError } from "./context";
@@ -168,23 +169,25 @@ export async function listHollers(
 
 /** A few recipients per Holler for the avatar stack, answered first. */
 async function peopleFor(ctx: ServiceContext, hollerIds: string[]) {
-  const rows = await ctx.db
-    .select({
-      hollerId: recipients.hollerId,
-      slackUserId: recipients.slackUserId,
-      answeredAt: recipients.answeredAt,
-      name: slackPeople.name,
-      avatarUrl: slackPeople.avatarUrl,
-    })
-    .from(recipients)
-    .leftJoin(
-      slackPeople,
-      and(
-        eq(slackPeople.workspaceId, ctx.workspaceId),
-        eq(slackPeople.slackUserId, recipients.slackUserId),
-      ),
-    )
-    .where(inArray(recipients.hollerId, hollerIds));
+  const rows = await readInChunks(hollerIds, (chunk) =>
+    ctx.db
+      .select({
+        hollerId: recipients.hollerId,
+        slackUserId: recipients.slackUserId,
+        answeredAt: recipients.answeredAt,
+        name: slackPeople.name,
+        avatarUrl: slackPeople.avatarUrl,
+      })
+      .from(recipients)
+      .leftJoin(
+        slackPeople,
+        and(
+          eq(slackPeople.workspaceId, ctx.workspaceId),
+          eq(slackPeople.slackUserId, recipients.slackUserId),
+        ),
+      )
+      .where(inArray(recipients.hollerId, chunk)),
+  );
   const byHoller = new Map<string, HollerSummary["people"]>();
   for (const row of rows) {
     const list = byHoller.get(row.hollerId) ?? [];
@@ -273,6 +276,7 @@ export async function getHoller(ctx: ServiceContext, id: string) {
           .where(
             inArray(
               options.questionId,
+              // oxlint-disable-next-line holler/bounded-in-array -- a Holler has at most 30 questions
               qs.map((q) => q.id),
             ),
           )
@@ -564,6 +568,7 @@ async function syncQuestions(
           .where(
             inArray(
               options.questionId,
+              // oxlint-disable-next-line holler/bounded-in-array -- a Holler has at most 30 questions
               storedQuestions.map((q) => q.id),
             ),
           );
