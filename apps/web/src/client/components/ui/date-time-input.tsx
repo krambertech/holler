@@ -1,7 +1,7 @@
 import { type ComponentProps, useId } from "react";
 import { cn } from "@/lib/cn";
 import { useControllableState } from "@/lib/use-controllable-state";
-import { useFieldControl } from "./field";
+import { useField, useFieldControl } from "./field";
 import { controlBase, controlSize } from "./input";
 
 const pad = (n: number) => String(n).padStart(2, "0");
@@ -26,7 +26,7 @@ interface Props extends Omit<ComponentProps<"div">, "onChange" | "defaultValue">
 /**
  * A day and a time, side by side. The browser's own date and time pickers, which suit every
  * keyboard, screen reader and phone. A half-cleared box keeps the last whole value. Inside a Field,
- * both boxes take the Field's description and invalid state.
+ * both boxes take the Field's description, invalid and disabled state.
  */
 function DateTimeInput({
   value: valueProp,
@@ -38,11 +38,13 @@ function DateTimeInput({
   id: idProp,
   "aria-describedby": describedBy,
   "aria-invalid": invalid,
-  disabled,
+  disabled: disabledProp,
   className,
   ...props
 }: Props) {
   const own = useId();
+  const field = useField();
+  const disabled = disabledProp || field?.disabled;
   const a11y = useFieldControl({
     id: idProp,
     "aria-describedby": describedBy,

@@ -146,8 +146,13 @@ export const forms: Group = {
               ),
             },
             {
-              label: "Disabled",
-              render: () => <DateTimeInput defaultValue={mondayNine} disabled />,
+              label: "In a disabled Field",
+              render: () => (
+                <Field disabled className={box}>
+                  <FieldLabel>Sends</FieldLabel>
+                  <DateTimeInput defaultValue={mondayNine} />
+                </Field>
+              ),
             },
           ]}
         />
