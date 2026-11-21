@@ -4,6 +4,8 @@ import type {
   HollerSummary,
   HomeCounts,
   InstallStatus,
+  OwnAnswer,
+  OwnHoller,
   Results,
   SettingsMember,
   SettingsWorkspace,
@@ -96,4 +98,15 @@ export const directoryLookupQuery = (ids: readonly string[]) =>
             `/directory/lookup?ids=${encodeURIComponent(ids.join(","))}`,
           ),
     staleTime: 5 * 60_000,
+  });
+
+export const ownAnswersQuery = queryOptions({
+  queryKey: ["answers", "list"],
+  queryFn: () => api<{ hollers: OwnHoller[] }>("/answers").then((r) => r.hollers),
+});
+
+export const ownAnswerQuery = (id: string) =>
+  queryOptions({
+    queryKey: ["answers", id],
+    queryFn: () => api<OwnAnswer>(`/answers/${id}`),
   });

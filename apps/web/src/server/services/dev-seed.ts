@@ -144,7 +144,7 @@ export async function seedLeadHollers(db: Db, workspaceId: string, creatorId: st
       status: "live",
       title: "How was your week?",
       tags: ["weekly"],
-      recipients: team.slice(0, 12),
+      recipients: [...team.slice(0, 12), "U0SENDER"],
       answered: 7,
       sentAt: at(-2 * DAY),
       closesAt: at(2 * DAY),
@@ -154,7 +154,7 @@ export async function seedLeadHollers(db: Db, workspaceId: string, creatorId: st
       mode: "survey",
       status: "live",
       title: "Offsite: which dates work?",
-      recipients: [...team, "U0LEAD", "U0SENDER"].slice(0, 18),
+      recipients: ["U0SENDER", ...team.slice(0, 16), "U0LEAD"],
       answered: 14,
       sentAt: at(-3 * DAY),
       closesAt: at(1 * DAY),
@@ -177,7 +177,7 @@ export async function seedLeadHollers(db: Db, workspaceId: string, creatorId: st
       status: "live",
       title: "Submit your Q4 expenses",
       externalUrl: "https://example.com/expenses",
-      recipients: team.slice(6, 14),
+      recipients: ["U0SENDER", ...team.slice(6, 13)],
       answered: 4,
       sentAt: at(-1 * DAY),
       closesAt: at(10 * DAY),
@@ -199,8 +199,8 @@ export async function seedLeadHollers(db: Db, workspaceId: string, creatorId: st
       status: "closed",
       title: "How was your week?",
       tags: ["weekly"],
-      recipients: team.slice(0, 12),
-      answered: 11,
+      recipients: ["U0SENDER", ...team.slice(0, 12)],
+      answered: 12,
       sentAt: at(-40 * DAY),
       closesAt: at(-36 * DAY),
       closedAt: at(-36 * DAY),
@@ -210,7 +210,7 @@ export async function seedLeadHollers(db: Db, workspaceId: string, creatorId: st
       mode: "survey",
       status: "closed",
       title: "New laptop: Mac or Framework?",
-      recipients: team.slice(0, 6),
+      recipients: [...team.slice(0, 6), "U0SENDER"],
       answered: 6,
       sentAt: at(-50 * DAY),
       closesAt: at(-46 * DAY),
@@ -218,6 +218,26 @@ export async function seedLeadHollers(db: Db, workspaceId: string, creatorId: st
       questions: [
         { type: "single", style: "binary", prompt: "Mac?", options: ["Yes", "No"] },
         { type: "text", prompt: "Why?" },
+      ],
+    },
+    {
+      mode: "survey",
+      status: "closed",
+      title: "Team health check",
+      anonymous: true,
+      recipients: ["U0SENDER", ...team.slice(0, 9)],
+      answered: 8,
+      sentAt: at(-45 * DAY),
+      closesAt: at(-41 * DAY),
+      closedAt: at(-41 * DAY),
+      questions: [
+        {
+          type: "single",
+          style: "scale",
+          prompt: "How sustainable is your workload?",
+          options: ["Not at all", "Barely", "Mostly", "Fully"],
+        },
+        { type: "text", prompt: "What would make it easier?" },
       ],
     },
   ];
@@ -280,7 +300,8 @@ export async function seedLeadHollers(db: Db, workspaceId: string, creatorId: st
     }
     seed.recipients.forEach((slackUserId, index) => {
       const answered = index < seed.answered;
-      const answeredAt = answered && seed.sentAt ? at(-DAY + index * HOUR) : null;
+      const answeredAt =
+        answered && seed.sentAt ? new Date(seed.sentAt.getTime() + (index + 1) * HOUR) : null;
       statements.push(
         db.insert(schema.recipients).values({
           hollerId,
@@ -315,9 +336,15 @@ export async function seedLeadHollers(db: Db, workspaceId: string, creatorId: st
           hollerId,
           slackUserId: seed.anonymous ? null : slackUserId,
           via: index % 3 === 0 ? "slack_modal" : "slack_button",
-          submittedAt: answeredAt ?? now,
+          submittedAt:
+            answeredAt && seed.anonymous ? anonymousTime(answeredAt) : (answeredAt ?? now),
         }),
       );
+      if (seed.anonymous) {
+        statements.push(
+          db.insert(schema.responseOwners).values({ responseId, hollerId, slackUserId }),
+        );
+      }
       for (const q of questionRows) {
         if (q.type === "text") {
           if (index % 2 === 1) continue;

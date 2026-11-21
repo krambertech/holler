@@ -4,6 +4,7 @@ import { Brand } from "./brand";
 import { Colour } from "./colour";
 import { Motion } from "./motion";
 import { actions } from "./parts/actions";
+import { answers } from "./parts/answers";
 import { apiAccess } from "./parts/api-access";
 import { billing } from "./parts/billing";
 import { choosing } from "./parts/choosing";
@@ -74,6 +75,7 @@ export const GROUPS: Group[] = [
   states,
   surfaces,
   lists,
+  answers,
   labels,
   people,
   feedback,
