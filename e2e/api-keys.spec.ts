@@ -1,10 +1,10 @@
-import { expectAccessible } from "./a11y";
+import { expectAccessible, signInAs } from "./a11y";
 import { expect, test } from "./fixtures";
 
 test("a lead makes an API key, uses it once, and revokes it", async ({ page, request }) => {
   // Both browser projects run this at once as the same persona, so each makes its own key.
   const name = `Script ${test.info().project.name} ${Date.now()}`;
-  await page.goto("/api/dev/sign-in?as=lead&to=/settings");
+  await signInAs(page, "lead", "/settings");
   await expect(page.getByRole("heading", { name: "API keys" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Connected apps" })).toBeVisible();
   await expect(page.getByText(/MCP server:/)).toBeVisible();
@@ -54,7 +54,7 @@ test("an assistant asking for access shows what it may do, with write on by defa
   const { client_id: clientId } = await registered.json();
 
   const consent = `/consent?${new URLSearchParams({ client_id: clientId, scope: "read write offline_access" })}`;
-  await page.goto(`/api/dev/sign-in?as=lead&to=${encodeURIComponent(consent)}`);
+  await signInAs(page, "lead", consent);
   await expect(
     page.getByRole("heading", { name: "Allow Test assistant to use Holler?" }),
   ).toBeVisible();

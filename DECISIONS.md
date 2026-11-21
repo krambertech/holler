@@ -230,7 +230,7 @@ Decided on 2026-11-21. The editor starts from Tally's builder (`apps/kateryna/ta
 | Sending | The button names the reach. Sending to everyone or to more than 50 people asks once more | Always confirming; never confirming |
 | Anonymity | The sender sees how many answered, never who. Results stay live once 5 people answered. Holler still reminds people itself | Showing who answered beside live results, which lets a sender match an answer to a person; sealing results until close |
 | AI drafting | Not in the editor. Assistants create hollers over MCP | A "Draft it for me" box |
-| Repeating pulses | Shaped separately, later | |
+| Repeating pulses | A pulse repeats every week or every fortnight, on the day and time its first round goes out. Each round is its own Holler with its own results; the next round is scheduled when one goes out, so it shows under Scheduled and can be edited on its own. Each round closes before the next. Stopping deletes the next round and keeps every answer | Monthly and custom rules; one Holler collecting every round's answers; skipping single rounds |
 
 ## Still open
 

@@ -116,6 +116,13 @@
       }
     },
     {
+      "files": ["e2e/**"],
+      "excludeFiles": ["e2e/a11y.ts", "e2e/global-setup.ts"],
+      "rules": {
+        "holler/sign-in-lands": "error"
+      }
+    },
+    {
       "files": ["apps/web/src/server/**", "packages/core/src/**"],
       "rules": {
         "holler/no-sql-lower": "error",

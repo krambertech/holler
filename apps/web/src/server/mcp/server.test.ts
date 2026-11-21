@@ -100,6 +100,7 @@ describe("tools", () => {
         "list_hollers",
         "send_holler",
         "send_reminder",
+        "stop_repeating",
         "update_holler",
       ].sort(),
     );
