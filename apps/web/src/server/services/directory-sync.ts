@@ -1,3 +1,4 @@
+import { foldForSearch } from "@holler/core";
 import { and, asc, eq, isNotNull, isNull, lt, or, sql } from "@holler/core/db";
 import { runBatch } from "../batch";
 import { type Db, schema } from "../db";
@@ -24,14 +25,6 @@ export const PAGES_PER_STEP = 2;
 const DAY = 24 * 60 * 60 * 1000;
 
 type Phase = "users" | "groups" | "channels";
-
-/** Folds a name for search in JavaScript, because SQLite's lower() is ASCII only. */
-export function foldForSearch(...parts: (string | null | undefined)[]): string {
-  return parts
-    .filter((part): part is string => Boolean(part))
-    .join(" ")
-    .toLocaleLowerCase();
-}
 
 function personRow(workspaceId: string, user: SlackUser, now: Date) {
   const name = user.profile?.real_name?.trim() || user.name;

@@ -1,8 +1,9 @@
+import { directoryResolveInSchema } from "@holler/core";
 import { sValidator } from "@hono/standard-validator";
 import { Hono } from "hono";
 import { z } from "zod";
 import type { AppEnv } from "../app";
-import { lookupDirectory, searchDirectory } from "../services/directory";
+import { lookupDirectory, resolveDirectory, searchDirectory } from "../services/directory";
 import { requireMember } from "./context";
 
 export const directoryRoutes = new Hono<AppEnv>()
@@ -21,4 +22,8 @@ export const directoryRoutes = new Hono<AppEnv>()
         .filter(Boolean);
       return c.json(await lookupDirectory(requireMember(c), ids));
     },
+  )
+  // Names, handles or emails pasted as a list, each matched to one person or group.
+  .post("/resolve", sValidator("json", directoryResolveInSchema), async (c) =>
+    c.json(await resolveDirectory(requireMember(c), c.req.valid("json").terms)),
   );

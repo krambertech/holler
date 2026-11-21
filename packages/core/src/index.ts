@@ -4,6 +4,7 @@ export * from "./modes";
 export * from "./plans";
 export * from "./reminders";
 export * from "./results";
+export * from "./search";
 export * from "./surfaces";
 export * from "./templates";
 export * from "./types";

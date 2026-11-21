@@ -1,4 +1,4 @@
-import type { directoryOutSchema } from "@holler/core";
+import type { directoryOutSchema, directoryResolveOutSchema } from "@holler/core";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import type { z } from "zod";
@@ -13,6 +13,14 @@ export type DirectorySearch = (query: string) => Promise<Directory>;
 
 export const searchDirectory: DirectorySearch = (query) =>
   api<Directory>(`/directory?q=${encodeURIComponent(query)}`);
+
+export type Resolved = z.infer<typeof directoryResolveOutSchema>;
+
+/** Matches pasted names, handles and emails, each to one person or group. */
+export type DirectoryResolve = (terms: string[]) => Promise<Resolved>;
+
+export const resolveDirectory: DirectoryResolve = (terms) =>
+  api<Resolved>("/directory/resolve", { method: "POST", json: { terms } });
 
 /** One thing the audience can hold: a person, a user group, a channel's members, or everyone. */
 export type AudienceEntry =
@@ -63,11 +71,14 @@ function useSettled(value: string, ms: number) {
 /** The directory for what was typed, once typing pauses. Holds the last list while the next loads. */
 export function useDirectory(search: DirectorySearch, query: string, enabled: boolean) {
   const settled = useSettled(query.trim(), 150);
-  return useQuery({
+  const result = useQuery({
     queryKey: ["directory", idOf(search), settled],
     queryFn: () => search(settled),
     enabled,
     placeholderData: keepPreviousData,
     staleTime: 60_000,
   });
+  /** True when the data answers what is typed now, not an earlier search. */
+  const current = Boolean(result.data) && !result.isPlaceholderData && settled === query.trim();
+  return { ...result, current };
 }

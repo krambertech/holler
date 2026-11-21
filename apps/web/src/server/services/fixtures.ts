@@ -1,4 +1,4 @@
-import { newId } from "@holler/core";
+import { foldForSearch, newId } from "@holler/core";
 import { eq } from "@holler/core/db";
 import { runBatch } from "../batch";
 import { type Db, schema } from "../db";
@@ -29,7 +29,7 @@ export async function workspaceFixture(db: Db, now = new Date("2026-11-20T10:00:
         workspaceId,
         slackUserId,
         name: `Person ${slackUserId}`,
-        searchName: `person ${slackUserId}`.toLocaleLowerCase(),
+        searchName: foldForSearch(`Person ${slackUserId}`),
       }),
     ),
   ]);
