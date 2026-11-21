@@ -1,6 +1,6 @@
 # Holler
 
-Ask your team in Slack. Holler sends your question to each person, reminds the ones who have not answered, and shows you the results. Pulses, surveys and form chases, with an API and an MCP server.
+Ask your team in Slack. Holler sends your question to each person, reminds the ones who have not answered, and shows you the results. Pulses, surveys and chases, with an API and an MCP server.
 
 The source is public to read. It is not open source: see [LICENSE](LICENSE).
 

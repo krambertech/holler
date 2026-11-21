@@ -14,7 +14,7 @@ The job to be done is "ask my team, stop chasing them, read the answers." Writin
 
 ## Product Purpose
 
-Holler sends a question to people in Slack, reminds the ones who have not answered, and shows the results. It has three modes: a pulse (one or two quick questions, often on a schedule), a survey (several questions), and a form chase (a link to someone else's form, and Holler tracks who says they submitted it).
+Holler sends a question to people in Slack, reminds the ones who have not answered, and shows the results. It has three modes: a pulse (one or two quick questions, often on a schedule), a survey (several questions), and a chase (a link to someone else's form, and Holler tracks who says they submitted it).
 
 It exists because the tools on either side each fail in one way. Form builders collect answers well but leave the chasing to the sender. Slack poll apps live in channels, where people answer in public or not at all. Holler asks each person directly, keeps asking politely until they answer or the Holler closes, and treats anonymity as a real promise.
 

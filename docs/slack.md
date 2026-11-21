@@ -92,14 +92,31 @@ The app is defined in [`slack-app-manifest.json`](../slack-app-manifest.json) at
 
 ## Answering: as few taps as the question allows
 
-The invite DM adapts to the Holler, so answering costs the least the question allows.
+The invite DM adapts to the Holler, so answering costs the least the question allows. `answerSurface` in `packages/core/src/surfaces.ts` decides which, and the editor says so before it is sent.
 
-| The Holler                                                                                 | How it is answered                                                                                               |
-| ------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------- |
-| A pulse with one single-choice question of at most 5 options                               | One tap on a button in the DM. No modal                                                                          |
-| A pulse or survey that fits a modal (at most 100 blocks, at most 100 options per question) | **Answer** opens a modal. Radio buttons and checkboxes up to 10 options, a select menu above that                |
-| Anything bigger                                                                            | **Answer** links to the web form at `/respond/<id>`, which identifies the person through a signed link in the DM |
-| A form chase                                                                               | **Open the form** links out; **I submitted it** records the response                                             |
+| The Holler                                                                                      | How it is answered                                                                                                |
+| ----------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| A pulse with one single-choice question of at most 25 options and no Other                     | One tap on a button in the DM, then an optional note in the DM. No modal                                          |
+| A pulse with one free-text question                                                             | A text box in the DM                                                                                              |
+| A pulse or survey that fits a modal (at most 100 blocks, at most 100 options per question)      | **Answer** opens a modal                                                                                          |
+| A follow-up shown only after some answers, a question over 100 options, or more than 100 blocks | **Answer** links to the web form at `/respond/<id>`, which identifies the person through a signed link in the DM |
+| A chase                                                                                         | **Open the form** links out; **I submitted it** records the response                                              |
+
+**Answering in the DM.** The buttons are one actions block. A tap records the answer at once through `recordResponse`, then the DM is updated in place: what they picked, and, when the question has a follow-up, the follow-up prompt over an input block holding a plain-text input with `dispatch_action: true` and `dispatch_action_config.trigger_actions_on: ["on_enter_pressed"]`. Pressing Enter sends a `block_actions` payload with the note, which is saved as the response's `note` row in `answer_notes`; an empty box saves nothing, and the note stays optional even when the question is required. A free-text pulse uses the same input block for the answer itself. Notes in the DM never use thread replies, which would need `im:history`.
+
+**In a modal.** Each question is one input block, with the question's description as the block's `hint`, and `optional` set when the question is not required. Slack checks what it can; `recordResponse` checks everything again and its messages come back as `response_action: "errors"` keyed by block.
+
+| Question                  | Element                                                                                                                                                      |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Single choice             | `radio_buttons` up to 10 options, `static_select` above that                                                                                                 |
+| Multiple choice           | `checkboxes` up to 10 options, `multi_static_select` above that. A pick limit is `max_selected_items` on the select, and the label says "Pick up to 3"; checkboxes have no limit of their own, so the service refuses too many |
+| Yes or no                 | `radio_buttons` with the two options                                                                                                                        |
+| Scale, named or numbered  | `radio_buttons` in order, 0 or 1 up to 10. A custom scale's words at each end go in the label of the first and last option, such as "1, Chaos" and "5, Calm" |
+| Free text                 | `plain_text_input`, `multiline` true                                                                                                                         |
+| Number                    | `number_input` with `is_decimal_allowed: false`, and `min_value` and `max_value` from the question                                                          |
+| Person                    | `users_select`, or `multi_users_select` with `max_selected_items` from the pick limit                                                                       |
+| Other                     | The Other option sits last in the radio buttons or checkboxes, followed by an optional `plain_text_input` block labelled "If Other, what?". Text there without Other picked is refused, and so is Other with no text |
+| Follow-up note            | A `plain_text_input` block after the question, labelled with the follow-up prompt, always optional. A follow-up shown only after some answers cannot be shown or hidden in a modal, so that Holler goes to the web form |
 
 After a response, the DM is updated in place with a short thank-you and what they answered (or "Answered anonymously"), so the conversation never shows a stale question. An answer to a closed Holler gets a polite line saying it closed, not an error.
 

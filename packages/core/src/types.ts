@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { modes, questionStyles, questionTypes } from "./modes";
+import { isChoice, modes, questionStyles, questionTypes, scaleBounds } from "./modes";
 
 /**
  * The API contract. Every route parses its input with one of these, and every client infers its
@@ -15,25 +15,111 @@ export const tagSchema = z
   .max(40)
   .transform((tag) => tag.toLocaleLowerCase());
 
+/**
+ * An option as the editor and the API send it. The label may be empty while it is a draft;
+ * sendProblems refuses to send an empty one. The "Other" write-in is not an option here: it is
+ * `allowOther` on the question, and the service keeps one option row for it.
+ */
 export const optionInputSchema = z.object({
   id: z.string().optional(),
-  label: trimmed(150).min(1),
+  label: trimmed(150),
   score: z.number().int().nullable().optional(),
 });
 
+/**
+ * A note asked for after a choice question. `onlyAfter` lists the positions of the options that
+ * show it (the Other write-in counts as the position after the last option); null shows it after
+ * any answer. Showing it only after some answers needs the web form, because a Slack modal cannot
+ * show or hide a field.
+ */
+export const followUpInputSchema = z.object({
+  prompt: trimmed(300),
+  onlyAfter: z.array(z.number().int().min(0).max(100)).max(101).nullable().default(null),
+});
+
+/**
+ * One question as the editor and the API send it. A draft may be half-written: the prompt and
+ * option labels may be empty, and sendProblems names whatever must be filled in before sending.
+ * The shape itself is checked here, because a wrong shape is a bug, not a half-finished draft.
+ */
 export const questionInputSchema = z
   .object({
     id: z.string().optional(),
     type: z.enum(questionTypes),
     style: z.enum(questionStyles).default("plain"),
-    prompt: trimmed(300).min(1),
+    prompt: trimmed(300).default(""),
+    /** One line of help under the prompt. */
+    description: trimmed(300).default(""),
     required: z.boolean().default(true),
     options: z.array(optionInputSchema).max(100).default([]),
+    /** A plain choice question may add an "Other" option that takes a written answer. */
+    allowOther: z.boolean().default(false),
+    /** The most options (multiple choice) or people (person) someone may pick. Null is no limit. */
+    maxChoices: z.number().int().min(1).max(100).nullable().default(null),
+    followUp: followUpInputSchema.nullable().default(null),
+    /** Words at the low and high end of a numbered scale. */
+    lowLabel: trimmed(60).nullable().default(null),
+    highLabel: trimmed(60).nullable().default(null),
+    /** The smallest and largest whole number a number question takes. */
+    numberMin: z.number().int().min(-1_000_000_000).max(1_000_000_000).nullable().default(null),
+    numberMax: z.number().int().min(-1_000_000_000).max(1_000_000_000).nullable().default(null),
   })
-  .refine((q) => (q.type === "text" ? q.options.length === 0 : q.options.length >= 2), {
-    message: "A choice question needs at least two options, and a text question none.",
-    path: ["options"],
+  .superRefine((q, ctx) => {
+    const issue = (message: string, path: string) =>
+      ctx.addIssue({ code: "custom", message, path: [path] });
+    const choice = isChoice(q.type);
+    if (choice && q.options.length < 2) {
+      issue("A choice question needs at least two options.", "options");
+    }
+    if (!choice && q.options.length > 0) {
+      issue("Only a choice question has options.", "options");
+    }
+    if (q.style !== "plain" && q.type !== "single") {
+      issue("Only single choice can be a scale or yes or no.", "style");
+    }
+    if (q.allowOther && !(choice && q.style === "plain")) {
+      issue("Only a plain choice question can add Other.", "allowOther");
+    }
+    if (q.maxChoices !== null) {
+      if (q.type !== "multi" && q.type !== "person") {
+        issue("Only multiple choice and person questions have a pick limit.", "maxChoices");
+      } else if (q.type === "multi" && q.maxChoices > q.options.length + (q.allowOther ? 1 : 0)) {
+        issue("The pick limit is more than the options there are.", "maxChoices");
+      }
+    }
+    if (q.followUp) {
+      if (!choice) issue("Only a choice question has a follow-up note.", "followUp");
+      const last = q.options.length + (q.allowOther ? 1 : 0) - 1;
+      if (q.followUp.onlyAfter?.some((at) => at > last)) {
+        issue("The follow-up names an option the question does not have.", "followUp");
+      }
+    }
+    if ((q.lowLabel !== null || q.highLabel !== null) && q.style !== "scale") {
+      issue("Only a scale has words at its ends.", "lowLabel");
+    }
+    if (q.style === "scale" && q.type === "single") {
+      const numbered = q.options.every((o) => /^\d+$/.test(o.label));
+      if (numbered) {
+        const low = Number(q.options[0]?.label);
+        const high = Number(q.options.at(-1)?.label);
+        if (
+          !(scaleBounds.lowest as readonly number[]).includes(low) ||
+          high < scaleBounds.highest.min ||
+          high > scaleBounds.highest.max
+        ) {
+          issue("A scale runs from 0 or 1 to between 2 and 10.", "options");
+        }
+      }
+    }
+    if ((q.numberMin !== null || q.numberMax !== null) && q.type !== "number") {
+      issue("Only a number question has a smallest and largest number.", "numberMin");
+    }
+    if (q.numberMin !== null && q.numberMax !== null && q.numberMin > q.numberMax) {
+      issue("The smallest number is larger than the largest.", "numberMin");
+    }
   });
+export type QuestionInput = z.input<typeof questionInputSchema>;
+export type QuestionDraft = z.output<typeof questionInputSchema>;
 
 export const audienceSchema = z.object({
   /** Slack user ids. */
@@ -56,6 +142,11 @@ export const hollerDraftSchema = z.object({
   announceChannelId: z.string().nullable().default(null),
   sendAt: z.coerce.date().nullable().default(null),
   sendInRecipientTimeZone: z.boolean().default(false),
+  /**
+   * A fixed close time, such as Friday at 18:00. Null closes it `closeAfterHours` after the last
+   * send instead.
+   */
+  closesAt: z.coerce.date().nullable().default(null),
   closeAfterHours: z
     .number()
     .int()
@@ -118,8 +209,18 @@ export const listHollersQuerySchema = z.object({
 /** An answer as it arrives from Slack, the web form or the API. */
 export const answerInputSchema = z.object({
   questionId: z.string(),
+  /** Choice questions: the options picked, the Other option included. */
   optionIds: z.array(z.string()).default([]),
+  /** Free text questions. */
   text: z.string().trim().max(4000).nullable().default(null),
+  /** Number questions. */
+  number: z.number().int().nullable().default(null),
+  /** Person questions: the people picked. */
+  slackUserIds: z.array(z.string()).max(100).default([]),
+  /** What someone wrote beside the Other option. */
+  otherText: z.string().trim().max(1000).nullable().default(null),
+  /** The follow-up note after a choice question. */
+  note: z.string().trim().max(4000).nullable().default(null),
 });
 export const responseInputSchema = z.object({
   answers: z.array(answerInputSchema).max(30),

@@ -4,8 +4,10 @@ import {
   hollerListOutSchema,
   hollerOutSchema,
   listHollersQuerySchema,
+  okOutSchema,
   recipientsOutSchema,
   resultsOutSchema,
+  sendPreviewOutSchema,
 } from "@holler/core";
 import { Hono } from "hono";
 import { z } from "zod";
@@ -13,8 +15,16 @@ import type { AppEnv } from "../../app";
 import { closeHoller, remindWaiting, sendHoller } from "../../services/delivery";
 import { exportCsv, exportMarkdown } from "../../services/exports";
 import { hollerPeople } from "../../services/holler-people";
-import { createDraft, getHoller, listHollers, updateDraft } from "../../services/hollers";
+import {
+  copyHoller,
+  createDraft,
+  deleteDraft,
+  getHoller,
+  listHollers,
+  updateDraft,
+} from "../../services/hollers";
 import { resultsFor } from "../../services/responses";
+import { previewSend } from "../../services/send-preview";
 import { requireMember } from "../context";
 import { describe, input } from "./http";
 import { hollerOut } from "./present";
@@ -87,7 +97,7 @@ export const v1Hollers = new Hono<AppEnv>()
       tags,
       summary: "Update a Holler",
       description:
-        "Replaces a draft or scheduled Holler's fields and questions. Send a question's or option's `id` back to keep it; leave one out to remove it. The mode never changes, and a sent Holler cannot change.",
+        "Replaces a draft or scheduled Holler's fields and questions. Send a question's or option's `id` back to keep it; leave one out to remove it. The mode may change until it is sent (a chase keeps no questions), and a sent Holler cannot change.",
       ok: { schema: hollerOutSchema, description: "The saved Holler" },
       errors: [400, 404, 409],
     }),
@@ -99,6 +109,49 @@ export const v1Hollers = new Hono<AppEnv>()
           await updateDraft(requireMember(c), c.req.valid("param").id, c.req.valid("json")),
         ),
       ),
+  )
+  .delete(
+    "/:id",
+    describe({
+      tags,
+      summary: "Delete a draft",
+      description:
+        "Deletes a draft you made. A scheduled or sent Holler cannot be deleted; close a sent one instead.",
+      ok: { schema: okOutSchema, description: "Deleted" },
+      errors: [404, 409],
+    }),
+    input("param", idParam),
+    async (c) => {
+      await deleteDraft(requireMember(c), c.req.valid("param").id);
+      return c.json({ ok: true as const });
+    },
+  )
+  .post(
+    "/:id/copy",
+    describe({
+      tags,
+      summary: "Copy a Holler",
+      description:
+        "Makes a new draft of yours with the same questions, audience and settings, and no send or close time.",
+      ok: { status: 201, schema: hollerOutSchema, description: "The new draft" },
+      errors: [404],
+    }),
+    input("param", idParam),
+    async (c) =>
+      c.json(hollerOut(await copyHoller(requireMember(c), c.req.valid("param").id)), 201),
+  )
+  .get(
+    "/:id/preview",
+    describe({
+      tags,
+      summary: "Preview a send",
+      description:
+        "Who a send would reach, when it would close, and every problem that stops it. Sends nothing.",
+      ok: { schema: sendPreviewOutSchema, description: "The preview" },
+      errors: [404, 409],
+    }),
+    input("param", idParam),
+    async (c) => c.json(await previewSend(requireMember(c), c.req.valid("param").id)),
   )
   .post(
     "/:id/send",
@@ -146,7 +199,7 @@ export const v1Hollers = new Hono<AppEnv>()
       tags,
       summary: "Who answered",
       description:
-        "Everyone the Holler went to and whether they answered. Holler knows who answered an anonymous Holler, never which response is theirs.",
+        "Everyone the Holler went to and whether they answered. On an anonymous Holler you see how many answered, never who: every `answered` is null and the list is in name order.",
       ok: { schema: recipientsOutSchema, description: "Recipients, answered first" },
       errors: [404],
     }),

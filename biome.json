@@ -20,7 +20,8 @@
       "!apps/web/index.html",
       "!apps/web/design/index.html",
       "!**/*.md",
-      "!design"
+      "!design",
+      "!docs/design"
     ]
   },
   "formatter": {

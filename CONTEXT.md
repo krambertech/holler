@@ -12,13 +12,23 @@ Holler asks a team something in Slack, reminds the people who have not answered,
 
 - **Pulse**: One or two quick questions, answered in Slack in one tap or a small modal, often sent on a schedule. `pulse` in code.
 - **Survey**: Several questions, answered in a Slack modal when they fit and on the web when they do not. `survey` in code.
-- **Form chase**: A link to a form that lives somewhere else. It has no questions; the recipient marks it done with **I submitted it**. "Form chase" in the interface, `chase` in code. _Avoid_: Form, external survey, link
+- **Chase**: A link to a form that lives somewhere else. It has no questions; the recipient marks it done with **I submitted it**, and Holler chases everyone else until it closes. `chase` in code too. _Avoid_: Form chase (the earlier name), form, external survey, link
 
-**Question**: One thing a Holler asks. A form chase has none. Every question has a **type** (`single`, `multi`, `text`) and a **style** (`plain`, `scale`, `binary`) that says how it looks. _Avoid_: Field, item, prompt (for the whole question; `prompt` is the question's text)
+**Question**: One thing a Holler asks. A chase has none. Every question has a **type** (`single`, `multi`, `text`, `number`, `person`) and a **style** (`plain`, `scale`, `binary`) that says how a single-choice question looks. A question can carry a **description** (one line of help under it). _Avoid_: Field, item, prompt (for the whole question; `prompt` is the question's text), hint, caption
 
 **Option**: One choice in a single- or multiple-choice question. _Avoid_: Answer (for the choice), choice (in code)
 
 **Question template**: A preset that fills in a question's type, style and options: Single choice, Multiple choice, Free text, Rating 1–5, Agreement scale, Frequency scale, Yes or no. A template is how a question is made; once made it is an ordinary question. _Avoid_: Question type (in copy)
+
+**Other**: An option a plain choice question can add that lets someone write their own answer. `allowOther` on the question; one option row with `is_other`. _Avoid_: Custom answer, write-in (in copy)
+
+**Pick limit**: The most options (multiple choice) or people (person) someone may pick: "Pick up to 3". `maxChoices` in code. _Avoid_: Max selections
+
+**Follow-up note**: An optional text box after a choice question, such as "Anything to add?". It shows after any answer, or only after chosen answers, which needs the web form. _Avoid_: Comment, reason field
+
+**Template**: A ready Holler to start from, such as Weekly pulse, Retro or eNPS. Picking one opens the editor filled in; from then on it is an ordinary draft. In copy "template" means only this, never a question template. _Avoid_: Starter, preset, example
+
+**Answered in**: Where people answer a Holler: right in the DM (a pulse of one single-choice or free-text question), in a Slack form (a modal), or on a web page. The editor says which before it is sent. `answerSurface` in code. _Avoid_: Channel, delivery method
 
 ### People
 
@@ -48,7 +58,7 @@ Holler asks a team something in Slack, reminds the people who have not answered,
 
 ### Answering
 
-**Response**: One recipient's set of answers to one Holler, or their **I submitted it** in a form chase. A recipient has at most one. _Avoid_: Submission (in copy), reply, entry, result
+**Response**: One recipient's set of answers to one Holler, or their **I submitted it** in a chase. A recipient has at most one. _Avoid_: Submission (in copy), reply, entry, result
 
 **Answer**: What a response holds for one question: chosen options or text. _Avoid_: Value, input
 
@@ -58,7 +68,7 @@ Holler asks a team something in Slack, reminds the people who have not answered,
 
 **Snooze**: A recipient's "Remind me later" on a reminder, which moves only their next reminder. _Avoid_: Mute, dismiss
 
-**Anonymous**: A Holler whose responses carry no link to who sent them. Holler still knows who answered, so it can stop reminding them, but not which response is theirs. Results open only once at least five people answered. _Avoid_: Private (which is about who can see results), confidential
+**Anonymous**: A Holler whose responses carry no link to who sent them. Holler still knows who answered, so it can stop reminding them, but not which response is theirs, and its sender sees how many answered, never who. Results open only once at least five people answered. _Avoid_: Private (which is about who can see results), confidential
 
 **Results**: What a Holler's responses add up to: counts per option, averages for scales, and the text answers. _Avoid_: Report (for the in-app view), analytics, stats, insights
 

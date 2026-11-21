@@ -90,7 +90,9 @@ describe("tools", () => {
     expect(tools.map((t) => t.name).sort()).toEqual(
       [
         "close_holler",
+        "copy_holler",
         "create_holler",
+        "delete_draft",
         "export_results",
         "find_people",
         "get_holler",
@@ -118,6 +120,42 @@ describe("tools", () => {
     expect(result.isError).toBe(true);
     expect(result.content[0]?.text).toMatch(/can only read/);
     expect(JSON.stringify(result._meta)).toMatch(/insufficient_scope/);
+  });
+
+  it("copies a Holler into a new draft and deletes a draft", async () => {
+    const { callTool, ctx } = await connect("write");
+    const holler = await createDraft(ctx, pulse);
+    const copy = await callTool("copy_holler", { hollerId: holler.id });
+    expect(copy.structuredContent).toMatchObject({ status: "draft", title: pulse.title });
+    expect(copy.structuredContent?.id).not.toBe(holler.id);
+    const deleted = await callTool("delete_draft", { hollerId: holler.id });
+    expect(deleted.structuredContent).toEqual({ ok: true });
+    const gone = await callTool("get_holler", { hollerId: holler.id });
+    expect(gone.isError).toBe(true);
+  });
+
+  it("shows how many answered an anonymous Holler, never who", async () => {
+    const { callTool, ctx, now } = await connect("read");
+    const holler = await createDraft(ctx, { ...pulse, anonymous: true });
+    await makeLive(db, holler.id, ["UA", "UB"], now);
+    const [question] = holler.questions;
+    await recordResponse(ctx, {
+      hollerId: holler.id,
+      slackUserId: "UB",
+      via: "slack_button",
+      response: {
+        answers: [{ questionId: question?.id ?? "", optionIds: [question?.options[0]?.id ?? ""] }],
+      },
+    });
+    const result = await callTool("get_holler", { hollerId: holler.id });
+    expect(result.structuredContent?.people).toMatchObject({
+      answeredCount: 1,
+      waitingCount: 1,
+      recipients: [
+        { slackUserId: "UA", answered: null },
+        { slackUserId: "UB", answered: null },
+      ],
+    });
   });
 
   it("finds people for an audience", async () => {

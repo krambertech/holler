@@ -210,6 +210,28 @@ Decided on 2026-11-21.
   Holler's bot was added to.
 - Settings is one scrolling page. Billing and API keys are sections on it.
 
+## Creating a Holler
+
+Decided on 2026-11-21. The editor starts from Tally's builder (`apps/kateryna/tally` in internal-tools) and goes further. The agreed mockup is [`docs/design/editor-mockup.html`](docs/design/editor-mockup.html); where it and this table differ, this table wins.
+
+| Question | Decision | Rejected |
+| --- | --- | --- |
+| Where it is answered | Slack first. An extra that Slack cannot show (a follow-up only after certain answers) may send people to the web form, and the editor says so before sending | Slack only, dropping such extras; Tally's silent fallback |
+| New question types | Custom scales (any range up to 0–10, words at each end), person picker, number | Date options (a multiple-choice question with dates as options does the job); ranking, matrix grids, logic jumps |
+| Question extras | Hint line, Other write-in, pick limit, follow-up note | |
+| Answering in the DM | A pulse with one single-choice question shows its options as buttons in the DM. A tap records the answer, and the DM then offers an optional note in a text box. A pulse of one free-text question takes the answer in a box in the DM | A modal for every pulse; notes as thread replies, which need `im:history` |
+| Mode | Can change while a Holler is a draft. A third question on a pulse offers to make it a survey | Fixed once chosen |
+| Starting | **New holler** opens a start screen: three mode cards (Pulse, Survey, Chase), each with a small drawing of what people receive, and below them a separate row of templates with **See all**. One click on a card opens Write in that mode; a template opens Write filled in. Opening a draft skips the start screen. Copying lives on the Holler itself as **Copy into a new draft** | Mode chosen inside Write on every visit; a third numbered step; templates listed under each mode |
+| Editor shape | The page has a title naming what it is, "New survey", with the mode as a picker in it that can change later. Two stages, **Compose** (title, questions) and **Send** (who, when, how), both reachable at any time. **Preview** is a button that opens what people see in Slack in a dialog. Templates open in a dialog. The bar at the bottom is sticky while you scroll and settles at the end of the page | One long page; Tally's three steps; "Write" as the first stage's name; a preview always on the page; a templates page |
+| Names and icons | The third mode is **Chase** (was Form chase), shown with a running figure | A link-out icon; a ticked clipboard |
+| Question cards | All open, as in Tally. The drag handle sits beside the number. Description, Other, Duplicate and Delete live in the card's menu. Other sits on white like every option. An empty question offers its types first; templates are a quiet link | Folding cards to one line; a grey Other row; a prominent template button in the empty question |
+| Close time | 1 day, 3 days or 1 week after sending, or a fixed date and time | Relative only |
+| Editing a scheduled Holler | Edits wait for **Update schedule**, so a half-finished edit never goes out | Editing pauses the schedule; edits saved live |
+| Sending | The button names the reach. Sending to everyone or to more than 50 people asks once more | Always confirming; never confirming |
+| Anonymity | The sender sees how many answered, never who. Results stay live once 5 people answered. Holler still reminds people itself | Showing who answered beside live results, which lets a sender match an answer to a person; sealing results until close |
+| AI drafting | Not in the editor. Assistants create hollers over MCP | A "Draft it for me" box |
+| Repeating pulses | Shaped separately, later | |
+
 ## Still open
 
 - **Trademark.** No search is done. A US company named Holler made stickers and GIFs
