@@ -68,15 +68,15 @@ function AnswerQuestion({
       <FieldLegend
         id={legendId}
         className={cn(
-          "flex w-full items-baseline gap-3 text-lg",
+          "flex w-full items-baseline gap-2 text-lg",
           question.description || hint || error ? "mb-1" : "mb-3",
         )}
       >
         {number !== undefined && (
-          <span className="w-6 shrink-0 text-muted tabular">{count(number)}</span>
+          <span className="shrink-0 text-muted tabular">{count(number)}.</span>
         )}
         <span className="min-w-0 flex-1 text-pretty">{question.prompt}</span>
-        {!question.required && <span className="shrink-0 text-muted text-sm">Optional</span>}
+        {!question.required && <span className="shrink-0 ps-2 text-muted text-sm">Optional</span>}
       </FieldLegend>
       {(question.description || hint || error) && (
         <div className="flex flex-col gap-0.5 text-muted text-sm">
