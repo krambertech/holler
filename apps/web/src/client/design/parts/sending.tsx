@@ -1,7 +1,13 @@
 import { answerSurface, type HollerDraft } from "@holler/core";
 import { ArrowLeft } from "lucide-react";
 import { useState } from "react";
-import type { DirectoryGroup, DirectoryPerson } from "@/components/editor/send/directory";
+import { AudiencePicker } from "@/components/editor/send/audience-picker";
+import type {
+  Directory,
+  DirectoryGroup,
+  DirectoryPerson,
+  DirectorySearch,
+} from "@/components/editor/send/directory";
 import { type BigSend, SendBar, SendButton } from "@/components/editor/send/send-bar";
 import {
   answeredInLabel,
@@ -58,9 +64,22 @@ const groups: DirectoryGroup[] = [
 
 const WORKSPACE = 214;
 
+const search: DirectorySearch = async (query) => {
+  await new Promise((resolve) => setTimeout(resolve, 250));
+  const q = query.trim().toLocaleLowerCase();
+  const hit = (name: string) => name.toLocaleLowerCase().includes(q);
+  const found: Directory = {
+    people: team.filter((p) => hit(p.name)),
+    groups: groups.filter((g) => hit(g.name) || hit(g.handle ?? "")),
+  };
+  return found;
+};
+
+const known = { people: team, groups };
 const sizeOf = (id: string) => groups.find((g) => g.slackId === id)?.memberCount;
 
 type Audience = HollerDraft["audience"];
+const none: Audience = { people: [], groups: [], everyone: false };
 const four: Audience = { people: ["U0JB", "U0AT", "U0KL", "U0MK"], groups: [], everyone: false };
 const big: Audience = { people: ["U0JB", "U0AT"], groups: ["S0ENG", "C0GEN"], everyone: false };
 const everyone: Audience = { people: [], groups: [], everyone: true };
@@ -261,6 +280,49 @@ function SendButtonDemo({ audience, start }: { audience: Audience; start?: Parti
   );
 }
 
+/** Who, with the send refused while nobody is chosen: the editor shell owns the value. */
+function RefusedPickerDemo() {
+  const [value, setValue] = useState(none);
+  const empty = !value.everyone && value.people.length === 0 && value.groups.length === 0;
+  return (
+    <AudiencePicker
+      className="w-full"
+      value={value}
+      onValueChange={setValue}
+      problem={empty ? "Choose who to send it to." : undefined}
+      known={known}
+      workspaceSize={WORKSPACE}
+      search={search}
+    />
+  );
+}
+
+/** The picker keeping its own value. */
+function PickerDemo({ start }: { start: Audience }) {
+  return (
+    <AudiencePicker
+      className="w-full"
+      defaultValue={start}
+      known={known}
+      workspaceSize={WORKSPACE}
+      search={search}
+    />
+  );
+}
+
+/** The draft knew the design team at 9; the directory now says 11. */
+function StalePickerDemo() {
+  return (
+    <AudiencePicker
+      className="w-full"
+      defaultValue={{ people: [], groups: ["S0DES"], everyone: false }}
+      known={{ groups: [{ ...(groups[0] as DirectoryGroup), memberCount: 9 }] }}
+      workspaceSize={WORKSPACE}
+      search={search}
+    />
+  );
+}
+
 function PreviewDemo({
   holler,
   recipient,
@@ -289,6 +351,51 @@ export const sending: Group = {
   title: "Sending",
   lede: "The Send stage of the editor: who it goes to, when and how, what they see in Slack, and the bar that sends it. Each part reads as plain facts until you change one.",
   entries: [
+    {
+      slug: "audience-picker",
+      name: "AudiencePicker",
+      source: "components/editor/send/audience-picker.tsx",
+      note: "People, user groups and channels from the Slack directory, or everyone. Chosen ones are chips with a way out; the count beside Who is approximate once groups are in, since groups overlap. Picking Everyone replaces the list, and a pick after it narrows back to that pick.",
+      Demo: () => (
+        <Variants
+          stack
+          items={[
+            {
+              label: "No one yet",
+              note: "The send refused: its problem sits under the plate until someone is chosen.",
+              render: () => <RefusedPickerDemo />,
+            },
+            { label: "People only", render: () => <PickerDemo start={four} /> },
+            {
+              label: "Groups and people",
+              render: () => (
+                <PickerDemo
+                  start={{ people: ["U0JB", "U0AT"], groups: ["S0DES", "C0LDS"], everyone: false }}
+                />
+              ),
+            },
+            { label: "Everyone", render: () => <PickerDemo start={everyone} /> },
+            {
+              label: "A size that changed",
+              note: "Saved at 9 people. Open the search: the directory's newer count replaces it.",
+              render: () => <StalePickerDemo />,
+            },
+            {
+              label: "A large audience",
+              render: () => (
+                <PickerDemo
+                  start={{
+                    people: team.map((p) => p.slackUserId),
+                    groups: ["S0ENG", "C0GEN"],
+                    everyone: false,
+                  }}
+                />
+              ),
+            },
+          ]}
+        />
+      ),
+    },
     {
       slug: "slack-preview",
       name: "SlackPreview",
