@@ -26,6 +26,7 @@ import { auditStatement } from "./audit";
 import { type ServiceContext, ServiceError } from "./context";
 import { getHoller, presentQuestion, sendProblems } from "./hollers";
 import { respondUrl } from "./respond-links";
+import { nextRound } from "./rounds";
 import { slackFor } from "./slack-connection";
 import { claimSlackDelivery, releaseSlackDelivery } from "./slack-deliveries";
 import { assertCanSend } from "./usage";
@@ -356,9 +357,13 @@ async function goLive(
       .where(eq(slackPeople.workspaceId, ctx.workspaceId));
     for (const row of rows) zones.set(row.slackUserId, row.timeZone);
   }
+  const theirTime = (at: Date, slackUserId: string) =>
+    holler.sendInRecipientTimeZone
+      ? sameWallClockIn(at, creatorZone, zones.get(slackUserId) ?? null)
+      : at;
   const sendAtFor = (slackUserId: string) => {
     if (!holler.sendInRecipientTimeZone || !holler.sendAt) return now;
-    const theirs = sameWallClockIn(holler.sendAt, creatorZone, zones.get(slackUserId) ?? null);
+    const theirs = theirTime(holler.sendAt, slackUserId);
     // Someone whose time already passed gets it at once.
     return new Date(Math.max(theirs.getTime(), now.getTime()));
   };
@@ -367,7 +372,11 @@ async function goLive(
     return { slackUserId, addedVia, sendAt, invitedAt: sendAt <= now ? now : null };
   });
   const lastSend = Math.max(...rows.map((row) => row.sendAt.getTime()));
-  const closesAt = new Date(lastSend + holler.closeAfterHours * HOUR);
+  const next = await nextRound(ctx, holler.id, creatorZone);
+  const nextInvite = next
+    ? Math.min(...rows.map((row) => theirTime(next.sendAt, row.slackUserId).getTime()))
+    : Number.POSITIVE_INFINITY;
+  const closesAt = new Date(Math.min(lastSend + holler.closeAfterHours * HOUR, nextInvite));
 
   const [claimed] = await ctx.db
     .update(hollers)
@@ -382,12 +391,15 @@ async function goLive(
       ctx.db.insert(recipients).values({ hollerId: holler.id, ...row }),
     );
     for (const chunk of chunks(inserts)) await runBatch(ctx.db, chunk);
-    await auditStatement(ctx, {
-      action: "holler.sent",
-      subjectType: "holler",
-      subjectId: holler.id,
-      data: { recipients: rows.length },
-    });
+    await runBatch(ctx.db, [
+      auditStatement(ctx, {
+        action: "holler.sent",
+        subjectType: "holler",
+        subjectId: holler.id,
+        data: { recipients: rows.length },
+      }),
+      ...(next?.statements ?? []),
+    ]);
   } catch (error) {
     // D1 runs each batch as a transaction but not the chunks together, so undo the send by hand.
     await ctx.db.delete(recipients).where(eq(recipients.hollerId, holler.id));

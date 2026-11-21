@@ -83,6 +83,11 @@ Project skills live in `.agents/skills/`; `.claude/skills` links to it so every 
 | No cell of a CSV export runs as a formula, whatever anyone typed | `csvCell`; `services/exports.test.ts` writes every formula start into every field |
 | Anonymous results and exports keep no trace of answer order | `packages/core/src/results.test.ts` shuffles every answer; `services/exports.test.ts` |
 | Only Your answers reads who gave an anonymous response | `holler/no-response-owners` in `oxlint-plugin-holler`; `services/own-answers.test.ts`, "never reaches results or exports" |
+| Every round of a repeating pulse lands on the first round's day and time, in every zone, for a year | `packages/core/src/repeats.test.ts` sweep |
+| A round that goes out schedules exactly one next round, never in the past | `services/rounds.test.ts` |
+| Every Holler column is either copied to the next round or set for each round | `roundColumns` in `services/rounds.ts` (typecheck); `services/rounds.test.ts` |
+| Every round of a repeating pulse closes before anyone gets the next, across clock changes and late sends | `goLive` caps `closesAt` at the next round's first invite; `services/rounds.test.ts` |
+| Once Stop repeating returns, no further round goes out, whichever write lands first | `unlessStillRepeating` in `services/rounds.ts`; `services/rounds.test.ts`, both race cases |
 | Sign-out and other auth writes pass Better Auth's origin check where the product runs in tests | `PRODUCT_URL` from `e2e/origin.mjs`; `e2e/sign-out.spec.ts` |
 | Sign-out and every auth write work from any local port, and tests run the real origin check | `localOrigins` in `server/env.ts`; `disableOriginCheck: false` in `server/auth.ts`; `routes/local-origins.test.ts` |
 

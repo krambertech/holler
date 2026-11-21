@@ -27,6 +27,8 @@ export function hollerOut(holler: HollerDetail): HollerOut {
     closeAfterHours: holler.closeAfterHours,
     answeredIn: holler.answeredIn,
     remindersEnabled: holler.remindersEnabled,
+    repeat: holler.repeatRule,
+    repeatOfId: holler.repeatOfId,
     sentAt: iso(holler.sentAt),
     closesAt: iso(holler.closesAt),
     closedAt: iso(holler.closedAt),
