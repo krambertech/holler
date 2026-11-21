@@ -1,0 +1,126 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["eslint", "typescript", "unicorn", "oxc", "react", "jsx-a11y", "import"],
+  "jsPlugins": ["./oxlint-plugin-holler/index.mjs"],
+  "categories": {
+    "correctness": "error"
+  },
+  "ignorePatterns": [
+    "**/dist",
+    "**/dist-design",
+    "**/.astro",
+    "**/node_modules",
+    "**/.wrangler",
+    "**/routeTree.gen.ts",
+    "**/migrations",
+    "**/public",
+    "**/worker-configuration.d.ts",
+    "apps/web/index.html",
+    "apps/web/design/index.html",
+    "docs/design",
+    ".claude"
+  ],
+  "rules": {
+    "react/react-in-jsx-scope": "off",
+    "react/no-array-index-key": "error",
+    "react-hooks/exhaustive-deps": "error",
+    "typescript/no-explicit-any": "error",
+    "typescript/consistent-type-imports": [
+      "error",
+      {
+        "disallowTypeAnnotations": false
+      }
+    ],
+    "react/refs": "off",
+    "react/set-state-in-effect": "off",
+    "react/purity": "off",
+    "react/immutability": "off",
+    "react/use-memo": "off",
+    "react/globals": "off",
+    "react/preserve-manual-memoization": "off",
+    "jsx-a11y/prefer-tag-over-role": "off",
+    "jsx-a11y/no-autofocus": "off",
+    "jsx-a11y/control-has-associated-label": "off",
+    "unicorn/no-useless-spread": "off",
+    "unicorn/no-useless-fallback-in-spread": "off",
+    "unicorn/no-new-array": "off",
+    "unicorn/prefer-string-starts-ends-with": "off",
+    "typescript/triple-slash-reference": "off",
+    "oxc/only-used-in-recursion": "off",
+    "oxc/erasing-op": "off",
+    "holler/no-comments": "error",
+    "eslint/no-unused-vars": [
+      "warn",
+      {
+        "argsIgnorePattern": "^_",
+        "varsIgnorePattern": "^_",
+        "caughtErrorsIgnorePattern": "^_",
+        "destructuredArrayIgnorePattern": "^_",
+        "ignoreRestSiblings": true
+      }
+    ]
+  },
+  "overrides": [
+    {
+      "files": ["apps/web/src/client/**"],
+      "excludeFiles": ["apps/web/src/client/routes/**"],
+      "rules": {
+        "unicorn/filename-case": [
+          "error",
+          {
+            "case": "kebabCase"
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "apps/web/src/server/routes/**",
+        "apps/web/src/server/slack/**",
+        "apps/web/src/server/mcp/**"
+      ],
+      "rules": {
+        "eslint/no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              {
+                "name": "@holler/core/db",
+                "message": "Routes, Slack handlers and MCP tools call a service in src/server/services; only services touch Drizzle."
+              },
+              {
+                "name": "drizzle-orm",
+                "message": "Routes, Slack handlers and MCP tools call a service in src/server/services; only services touch Drizzle."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["apps/web/src/client/**"],
+      "excludeFiles": ["**/*.test.tsx", "apps/web/src/client/lib/use-reduce-motion.ts"],
+      "rules": {
+        "eslint/no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              {
+                "name": "motion/react",
+                "importNames": ["useReducedMotion"],
+                "message": "Use useReduceMotion() from @/lib/use-reduce-motion, which also honours the design page's reduced-motion switch."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["apps/web/src/server/**", "packages/core/src/**"],
+      "rules": {
+        "holler/no-sql-lower": "error",
+        "holler/no-multi-row-insert": "error"
+      }
+    }
+  ]
+}

@@ -41,7 +41,10 @@ export const hollers = sqliteTable(
       .notNull()
       .default("private"),
     /** Lowercased, at most 10, each at most 40 characters. JSON array. */
-    tags: text("tags", { mode: "json" }).$type<string[]>().notNull().default(sql`'[]'`),
+    tags: text("tags", { mode: "json" })
+      .$type<string[]>()
+      .notNull()
+      .default(sql`'[]'`),
     /** The audience as the sender chose it, kept so a draft reopens as it was. JSON. */
     audience: text("audience", { mode: "json" })
       .$type<AudienceSelection>()

@@ -231,9 +231,9 @@ export const v1Hollers = new Hono<AppEnv>()
       tags,
       summary: "Export results",
       description:
-        "`format=csv` for spreadsheets, `format=md` for docs. The same anonymity gate as results applies.",
+        "`format=csv` is every response, one row each, for spreadsheets; `format=md` is the results summary for docs and names no one. An anonymous Holler under five answers returns `403`, the same gate as results.",
       ok: { description: "The export file", media: ["text/csv", "text/markdown"] },
-      errors: [400, 404, 503],
+      errors: [400, 404],
     }),
     input("param", idParam),
     input("query", z.object({ format: exportFormatSchema.default("csv") })),

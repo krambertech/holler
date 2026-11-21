@@ -1,8 +1,0 @@
-`$table.values($rows)` where {
-  $rows <: or {
-    `[$...]`,
-    `$_.map($_)`,
-    `$_.flatMap($_)`
-  },
-  register_diagnostic(span=$rows, message="D1 binds at most 100 values in one statement, so a multi-row insert fails once the list grows. Insert one row per statement and run them with runBatch, in chunks of 100.")
-}

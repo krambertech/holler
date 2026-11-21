@@ -121,6 +121,10 @@ export function summarize(input: {
   names?: ReadonlyMap<string, string> | undefined;
 }): Results {
   const { anonymous, responseCount, questions, answers, notes = [], names } = input;
+  // On an anonymous Holler the order answers arrived in could be matched to when someone was
+  // reminded or thanked, so written answers come back sorted by what they say instead.
+  const inArrivalOrderUnlessAnonymous = <T extends { text: string }>(list: T[]): T[] =>
+    anonymous ? [...list].sort((x, y) => (x.text < y.text ? -1 : x.text > y.text ? 1 : 0)) : list;
   if (anonymous && responseCount < anonymousThreshold) {
     return { state: "gated", responseCount, needed: anonymousThreshold - responseCount };
   }
@@ -163,7 +167,7 @@ export function summarize(input: {
                 : oneDecimal(((sorted[middle - 1] as number) + (sorted[middle] as number)) / 2),
           min: sorted[0] ?? null,
           max: sorted.at(-1) ?? null,
-          values,
+          values: anonymous ? [...values].sort((x, y) => x.value - y.value) : values,
         };
       }
       if (question.type === "person") {
@@ -200,8 +204,8 @@ export function summarize(input: {
           type: "text",
           style: question.style,
           answeredCount,
-          texts: own.flatMap((a) =>
-            a.text?.trim() ? [{ text: a.text, slackUserId: who(a) }] : [],
+          texts: inArrivalOrderUnlessAnonymous(
+            own.flatMap((a) => (a.text?.trim() ? [{ text: a.text, slackUserId: who(a) }] : [])),
           ),
         };
       }
@@ -229,9 +233,11 @@ export function summarize(input: {
         }
       }
       const written = (kind: ResultsNote["kind"]) =>
-        notes
-          .filter((n) => n.questionId === question.id && n.kind === kind && n.text.trim())
-          .map((n) => ({ text: n.text, slackUserId: who(n) }));
+        inArrivalOrderUnlessAnonymous(
+          notes
+            .filter((n) => n.questionId === question.id && n.kind === kind && n.text.trim())
+            .map((n) => ({ text: n.text, slackUserId: who(n) })),
+        );
       return {
         id: question.id,
         prompt: question.prompt,

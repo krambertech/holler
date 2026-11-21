@@ -47,7 +47,7 @@ Open `http://localhost:5280/api/dev/sign-in?as=lead` to sign in as the seeded le
 | `pnpm verify`      | Every check, test and build. Run it before you push |
 | `pnpm test`        | Unit and service tests                              |
 | `pnpm test:e2e`    | Browser journeys in Chromium and WebKit             |
-| `pnpm fix`         | Biome's formatting and lint fixes                   |
+| `pnpm fix`         | oxfmt's formatting and Oxlint's fixes               |
 | `pnpm db:generate` | A migration from schema changes                     |
 
 [AGENTS.md](AGENTS.md) has the working agreements; [docs/stack.md](docs/stack.md) has every technical decision.

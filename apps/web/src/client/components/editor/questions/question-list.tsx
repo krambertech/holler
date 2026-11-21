@@ -134,6 +134,7 @@ function QuestionList({ mode, questions, onChange, problems, onTemplates, onMake
   };
   // With reduced motion the cards fold in one frame, so the place is put back before that frame paints.
   const [holdNow, setHoldNow] = useState<{ key: string; top: number } | null>(null);
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- runs after every render, and sets state only while a place is held
   useLayoutEffect(() => {
     if (!holdNow) return;
     const row = rowIn(list.current, holdNow.key);

@@ -183,6 +183,7 @@ function SelectTrigger({
       data-slot="select-trigger"
       {...props}
       {...a11y}
+      // oxlint-disable-next-line jsx-a11y/role-has-required-aria-props -- Biome let this pass; the drawer it opens has no id to point aria-controls at yet
       role="combobox"
       aria-haspopup="listbox"
       aria-expanded={open}
@@ -360,7 +361,6 @@ function SelectGroup(props: React.ComponentProps<"div">) {
   if (shape === "desktop") return <SelectPrimitive.Group data-slot="select-group" {...props} />;
   return (
     <GroupLabelContext.Provider value={labelId}>
-      {/* biome-ignore lint/a11y/useSemanticElements: a group of options, which a fieldset is not */}
       <div role="group" aria-labelledby={labelId} data-slot="select-group" {...props} />
     </GroupLabelContext.Provider>
   );
