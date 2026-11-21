@@ -90,7 +90,7 @@ export const hollerQuery = (id: string) =>
 export const directoryLookupQuery = (ids: readonly string[]) =>
   queryOptions({
     queryKey: ["directory", "lookup", [...ids].sort().join(",")],
-    queryFn: () =>
+    queryFn: (): Promise<z.infer<typeof directoryOutSchema>> =>
       ids.length === 0
         ? Promise.resolve({ people: [], groups: [] })
         : api<z.infer<typeof directoryOutSchema>>(

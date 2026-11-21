@@ -1,4 +1,4 @@
-import { anonymousTime, newId } from "@holler/core";
+import { anonymousTime, foldForSearch, newId } from "@holler/core";
 import { and, type BatchItem, eq } from "@holler/core/db";
 import { runBatch } from "../batch";
 import type { Db } from "../db";
@@ -70,7 +70,7 @@ export async function seedDevWorkspace(db: Db): Promise<{ workspaceId: string }>
           displayName: name.split(" ")[0] ?? name,
           email: `${slackUserId.toLowerCase()}@northwind.example`,
           timeZone,
-          searchName: name.toLocaleLowerCase(),
+          searchName: foldForSearch(name, name.split(" ")[0]),
         }),
       ),
       db.insert(schema.slackGroups).values({
@@ -80,7 +80,7 @@ export async function seedDevWorkspace(db: Db): Promise<{ workspaceId: string }>
         name: "Design team",
         handle: "design",
         memberCount: 6,
-        searchName: "design team",
+        searchName: foldForSearch("Design team", "design"),
       }),
       db.insert(schema.slackGroups).values({
         workspaceId,
