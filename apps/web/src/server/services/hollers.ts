@@ -1,4 +1,5 @@
 import {
+  type HollerDraft,
   type HollerDraftInput,
   type HollerSummary,
   type HomeCounts,
@@ -214,12 +215,82 @@ export async function getHoller(ctx: ServiceContext, id: string) {
   };
 }
 
-/** Creates a draft. Nothing is sent until sendHoller. */
-export async function createDraft(ctx: ServiceContext, input: HollerDraftInput) {
+/**
+ * Creates a draft. Nothing is sent until sendHoller.
+ *
+ * With an idempotency key (the API's `Idempotency-Key`), a retry with the same body returns
+ * the Holler the first call made, and the same key with a different body is refused, because
+ * that is a bug in the caller's script. The column holds the key and a fingerprint of the body.
+ */
+export async function createDraft(
+  ctx: ServiceContext,
+  input: HollerDraftInput,
+  opts: { idempotencyKey?: string | undefined } = {},
+) {
   const memberId = memberOf(ctx);
   const draft = hollerDraftSchema.parse(input);
+  let idempotencyKey: string | null = null;
+  if (opts.idempotencyKey) {
+    const fingerprint = await fingerprintOf(draft);
+    idempotencyKey = `${opts.idempotencyKey} ${fingerprint}`;
+    const earlier = await earlierCreate(ctx, opts.idempotencyKey);
+    if (earlier) return replay(ctx, earlier, idempotencyKey);
+  }
   const id = newId("holler");
   const now = ctx.now();
+  try {
+    await insertDraft(ctx, memberId, id, draft, now, idempotencyKey);
+  } catch (error) {
+    // Two retries raced; the unique index let one through. Answer as the winner did.
+    const earlier = opts.idempotencyKey ? await earlierCreate(ctx, opts.idempotencyKey) : null;
+    if (earlier && idempotencyKey) return replay(ctx, earlier, idempotencyKey);
+    throw error;
+  }
+  return getHoller(ctx, id);
+}
+
+async function earlierCreate(ctx: ServiceContext, key: string) {
+  const rows = await ctx.db
+    .select({ id: hollers.id, idempotencyKey: hollers.idempotencyKey })
+    .from(hollers)
+    .where(
+      and(
+        eq(hollers.workspaceId, ctx.workspaceId),
+        sql`instr(${hollers.idempotencyKey}, ${`${key} `}) = 1`,
+      ),
+    );
+  return rows.find((row) => row.idempotencyKey?.slice(0, key.length + 1) === `${key} `) ?? null;
+}
+
+async function replay(
+  ctx: ServiceContext,
+  earlier: { id: string; idempotencyKey: string | null },
+  idempotencyKey: string,
+) {
+  if (earlier.idempotencyKey !== idempotencyKey) {
+    throw new ServiceError(
+      "conflict",
+      "This Idempotency-Key was already used to create a different Holler. Use a new key for a new Holler.",
+      "Idempotency-Key",
+    );
+  }
+  return { ...(await getHoller(ctx, earlier.id)), replayed: true as const };
+}
+
+async function fingerprintOf(draft: HollerDraft): Promise<string> {
+  const bytes = new TextEncoder().encode(JSON.stringify(draft));
+  const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", bytes));
+  return [...digest].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+async function insertDraft(
+  ctx: ServiceContext,
+  memberId: string,
+  id: string,
+  draft: HollerDraft,
+  now: Date,
+  idempotencyKey: string | null,
+) {
   await ctx.db.batch([
     ctx.db.insert(hollers).values({
       id,
@@ -241,16 +312,20 @@ export async function createDraft(ctx: ServiceContext, input: HollerDraftInput) 
       closeAfterHours: draft.closeAfterHours,
       remindersEnabled: draft.remindersEnabled,
       createdVia: ctx.actor.via === "system" ? "web" : ctx.actor.via,
+      idempotencyKey,
       createdAt: now,
       updatedAt: now,
     }),
-    ...questionStatements(ctx, id, draft.questions),
+    ...questionStatements(ctx, id, draft.questions, new Map()),
     auditStatement(ctx, { action: "holler.created", subjectType: "holler", subjectId: id }),
   ]);
-  return getHoller(ctx, id);
 }
 
-/** Replaces a draft's fields and questions. Only the creator may, and only while it is a draft or scheduled. */
+/**
+ * Saves a draft's fields and questions. Only the creator may, and only while it is a draft or
+ * scheduled. A question or option sent back with its id is updated in place, so ids stay
+ * stable across autosaves and API edits; one without an id is new; one left out is removed.
+ */
 export async function updateDraft(ctx: ServiceContext, id: string, input: HollerDraftInput) {
   const memberId = memberOf(ctx);
   const existing = await ctx.db.query.hollers.findFirst({
@@ -289,41 +364,101 @@ export async function updateDraft(ctx: ServiceContext, id: string, input: Holler
         updatedAt: ctx.now(),
       })
       .where(eq(hollers.id, id)),
-    ctx.db.delete(questions).where(eq(questions.hollerId, id)),
-    ...questionStatements(ctx, id, draft.questions),
+    ...(await syncQuestions(ctx, id, draft.questions)),
   ]);
   return getHoller(ctx, id);
 }
 
+/** The statements that turn a Holler's stored questions into `input`, touching only what changed. */
+async function syncQuestions(
+  ctx: ServiceContext,
+  hollerId: string,
+  input: HollerDraft["questions"],
+) {
+  const storedQuestions = await ctx.db
+    .select()
+    .from(questions)
+    .where(eq(questions.hollerId, hollerId));
+  const storedOptions =
+    storedQuestions.length === 0
+      ? []
+      : await ctx.db
+          .select()
+          .from(options)
+          .where(
+            inArray(
+              options.questionId,
+              storedQuestions.map((q) => q.id),
+            ),
+          );
+  const byId = new Map(
+    storedQuestions.map((q) => [
+      q.id,
+      { ...q, options: storedOptions.filter((o) => o.questionId === q.id) },
+    ]),
+  );
+  const kept = new Set(input.map((q) => q.id).filter((qid) => qid && byId.has(qid)));
+  const statements: BatchItem<"sqlite">[] = storedQuestions
+    .filter((q) => !kept.has(q.id))
+    .map((q) => ctx.db.delete(questions).where(eq(questions.id, q.id)));
+  return [...statements, ...questionStatements(ctx, hollerId, input, byId)];
+}
+
+type StoredQuestion = typeof questions.$inferSelect & { options: (typeof options.$inferSelect)[] };
+
 function questionStatements(
   ctx: ServiceContext,
   hollerId: string,
-  input: ReturnType<typeof hollerDraftSchema.parse>["questions"],
+  input: HollerDraft["questions"],
+  stored: Map<string, StoredQuestion>,
 ) {
   return input.flatMap((question, position) => {
-    const questionId = newId("question");
-    const statements: BatchItem<"sqlite">[] = [
-      ctx.db.insert(questions).values({
-        id: questionId,
-        hollerId,
-        position,
-        type: question.type,
-        style: question.style,
-        prompt: question.prompt,
-        required: question.required,
-      }),
-    ];
+    const existing = question.id ? stored.get(question.id) : undefined;
+    const questionId = existing?.id ?? newId("question");
+    const statements: BatchItem<"sqlite">[] = [];
+    const fields = {
+      position,
+      type: question.type,
+      style: question.style,
+      prompt: question.prompt,
+      required: question.required,
+    };
+    if (!existing) {
+      statements.push(ctx.db.insert(questions).values({ id: questionId, hollerId, ...fields }));
+    } else if (
+      existing.position !== position ||
+      existing.type !== question.type ||
+      existing.style !== question.style ||
+      existing.prompt !== question.prompt ||
+      existing.required !== question.required
+    ) {
+      statements.push(ctx.db.update(questions).set(fields).where(eq(questions.id, questionId)));
+    }
+    const storedOptions = new Map((existing?.options ?? []).map((o) => [o.id, o]));
+    const keptOptions = new Set<string>();
     // One option per statement: D1 binds at most 100 values in one query, and a question may have 100 options.
     for (const [index, option] of question.options.entries()) {
-      statements.push(
-        ctx.db.insert(options).values({
-          id: newId("option"),
-          questionId,
-          position: index,
-          label: option.label,
-          score: option.score ?? null,
-        }),
-      );
+      const before = option.id ? storedOptions.get(option.id) : undefined;
+      const values = { position: index, label: option.label, score: option.score ?? null };
+      if (!before) {
+        statements.push(
+          ctx.db.insert(options).values({ id: newId("option"), questionId, ...values }),
+        );
+        continue;
+      }
+      keptOptions.add(before.id);
+      if (
+        before.position !== index ||
+        before.label !== option.label ||
+        before.score !== values.score
+      ) {
+        statements.push(ctx.db.update(options).set(values).where(eq(options.id, before.id)));
+      }
+    }
+    for (const option of storedOptions.values()) {
+      if (!keptOptions.has(option.id)) {
+        statements.push(ctx.db.delete(options).where(eq(options.id, option.id)));
+      }
     }
     return statements;
   });

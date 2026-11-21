@@ -3,6 +3,8 @@ import { secureHeaders } from "hono/secure-headers";
 import { type Auth, createAuth } from "./auth";
 import { createDb, type Db } from "./db";
 import { type Bindings, devRoutesEnabled } from "./env";
+import { handleMcpRequest } from "./mcp";
+import { mountOpenApi } from "./openapi";
 import { type Principal, principalFor } from "./principal";
 import { billingRoutes } from "./routes/billing";
 import { devRoutes } from "./routes/dev";
@@ -12,6 +14,7 @@ import { hollerRoutes } from "./routes/hollers";
 import { installRoutes } from "./routes/install";
 import { meRoutes } from "./routes/me";
 import { settingsRoutes } from "./routes/settings";
+import { v1Routes } from "./routes/v1";
 import { ServiceError } from "./services/context";
 import { slackEventRoutes } from "./slack/events";
 import { slackOAuthRoutes } from "./slack/oauth";
@@ -41,9 +44,36 @@ app.use("*", async (c, next) => {
 
 app.on(["GET", "POST"], "/api/auth/*", (c) => c.get("auth").handler(c.req.raw));
 
+// OAuth discovery lives at the site root by RFC 8414 and RFC 9728; Better Auth answers it.
+app.on(
+  ["GET", "HEAD"],
+  [
+    "/.well-known/oauth-authorization-server",
+    "/.well-known/oauth-authorization-server/*",
+    "/.well-known/oauth-protected-resource",
+    "/.well-known/oauth-protected-resource/*",
+  ],
+  (c) => c.get("auth").handler(c.req.raw),
+);
+
+// The MCP server. Its own authentication: an OAuth access token this Worker issued.
+app.all("/mcp", (c) =>
+  handleMcpRequest(c.req.raw, {
+    auth: c.get("auth"),
+    db: c.get("db"),
+    env: c.env,
+    now: c.get("now"),
+  }),
+);
+
+// Public, so it sits before any authentication.
+mountOpenApi(app);
+
 /** Resolves the caller for every product API route. Routes that need one use `requireMember`. */
 app.use("/api/*", async (c, next) => {
-  if (!c.req.path.startsWith("/api/auth/") && !c.req.path.startsWith("/api/health")) {
+  // The public API resolves keys as well as sessions, in routes/v1.
+  const own = ["/api/auth/", "/api/health", "/api/v1/", "/api/openapi.json"];
+  if (!own.some((prefix) => c.req.path.startsWith(prefix))) {
     c.set("principal", await principalFor(c.get("auth"), c.get("db"), c.req.raw));
   }
   await next();
@@ -56,6 +86,7 @@ app.route("/api/directory", directoryRoutes);
 app.route("/api/settings", settingsRoutes);
 app.route("/api/install", installRoutes);
 app.route("/api/billing", billingRoutes);
+app.route("/api/v1", v1Routes);
 app.use("/api/dev/*", async (c, next) => {
   if (!devRoutesEnabled(c.env)) return c.notFound();
   await next();

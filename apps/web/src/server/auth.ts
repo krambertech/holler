@@ -1,4 +1,5 @@
 import { apiKey } from "@better-auth/api-key";
+import { cimd } from "@better-auth/cimd";
 import { mcp } from "@better-auth/mcp";
 import { polar, webhooks } from "@polar-sh/better-auth";
 import { betterAuth } from "better-auth";
@@ -8,6 +9,9 @@ import type { Db } from "./db";
 import { schema } from "./db";
 import { type Bindings, devRoutesEnabled } from "./env";
 import { applyPolarEvent, polarClient, polarConfigured } from "./services/billing";
+import { fetchClientMetadataResource } from "./mcp/cimd-fetch";
+import { API_KEY_PERMISSION, MCP_MEMBER_CLAIM } from "./principal";
+import { consentMemberFor } from "./services/connected-apps";
 import { linkSlackAccount } from "./services/members";
 
 /**
@@ -72,10 +76,18 @@ export function createAuth(env: Bindings, db: Db) {
       database: { generateId: () => crypto.randomUUID() },
     },
     plugins: [
+      // Keys for scripts. Each is pinned to the member who made it (metadata.memberId) and
+      // carries one scope, stored as permissions { holler: ["read"] } or ["read", "write"].
       apiKey({
         defaultPrefix: "hlr_",
+        requireName: true,
+        // The same bound as apiKeyInputSchema in packages/core.
+        maximumNameLength: 60,
         enableMetadata: true,
+        // Enough of the key to tell two apart in Settings: "hlr_k3v9q2…".
+        startingCharactersConfig: { shouldStore: true, charactersLength: 10 },
         rateLimit: { enabled: true, timeWindow: 60_000, maxRequests: 600 },
+        permissions: { defaultPermissions: { [API_KEY_PERMISSION]: ["read"] } },
       }),
       // Signing keys for OAuth access tokens, published at /api/auth/jwks.
       jwt(),
@@ -86,7 +98,27 @@ export function createAuth(env: Bindings, db: Db) {
         consentPage: "/consent",
         resource: `${env.PRODUCT_URL}/mcp`,
         scopes: ["read", "write", "offline_access"],
+        // MCP 2026-07-28 prefers Client ID Metadata Documents (cimd below). Dynamic
+        // registration stays open for clients that have not moved yet.
+        allowDynamicClientRegistration: true,
+        allowUnauthenticatedClientRegistration: true,
+        // A connection acts in the workspace the person was in when they approved it, so it
+        // never switches teams because they later signed in somewhere else.
+        postLogin: {
+          page: "/consent",
+          shouldRedirect: () => false,
+          consentReferenceId: async ({ user }) => {
+            const memberId = await consentMemberFor(db, user.id);
+            if (!memberId)
+              throw new Error("This Slack account is not in a workspace that installed Holler.");
+            return memberId;
+          },
+        },
+        customAccessTokenClaims: ({ referenceId }) =>
+          referenceId ? { [MCP_MEMBER_CLAIM]: referenceId } : {},
       }),
+      // Clients identify themselves with a metadata document at their client_id URL.
+      cimd({ fetchClientMetadataResource, metadataProfile: "mcp-2026-07-28" }),
       // Polar's webhooks, at /api/auth/polar/webhooks. The plugin checks the signature; billing.ts
       // is the only thing that changes the plan. Checkout and the portal are Holler routes in
       // routes/billing.ts, because the Polar customer is the workspace, not the signed-in person.
