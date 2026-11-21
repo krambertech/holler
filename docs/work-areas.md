@@ -50,6 +50,7 @@ Everything that sends and everything a recipient does. The design is [slack.md](
 - The channel announcement with its live count.
 - `/respond/$id`: the web form for hollers too big for a modal, reached by a signed link.
 - App Home for senders and recipients, and `/holler`.
+- What `FakeSlack` sent, added to `/api/dev/state`, and a verify recipe for each message, so a run proves a send, a reminder and a close notice went out.
 
 Owns: `src/server/slack/blocks/**`, `src/server/slack/interactions.ts`, `src/server/slack/queue.ts`, `src/server/slack/commands.ts`, `src/server/slack/home.ts`, `src/server/services/delivery.ts`, `src/server/services/reminders.ts`, `src/client/routes/respond*.tsx`. Shares: `routes/hollers.ts` (send, close, remind routes), `index.ts`, `wrangler.jsonc`.
 

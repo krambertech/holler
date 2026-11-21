@@ -34,4 +34,4 @@ Personas are in `apps/web/src/server/services/dev-seed.ts`: `lead` has live, sch
 
 ## Proving a change in the browser
 
-Start the product with the `holler` entry in `.claude/launch.json` (port 5280). Sign in at `/api/dev/sign-in?as=lead`. Components are on the design site (`pnpm --filter @holler/web design:dev`, the `holler-design` entry in `.claude/launch.json`, port 5282). Check day and night, and a phone width of 375 px.
+The [`verify`](../.agents/skills/verify/SKILL.md) skill is the proof for a change a person sees. It starts the product (or uses the `holler` entry in `.claude/launch.json`, port 5280), signs in through `/api/dev/sign-in?as=<persona>&reset=1`, drives each feature in its map by role and accessible name at 1280 px and 375 px, in day and night, and keeps a screenshot, an ARIA snapshot and the stored state for every step. `/api/dev/state`, `/api/dev/tick` and `/api/dev/answer` let a recipe read back what it did, let a close time pass, and answer as a recipient. Components are on the design site (`pnpm --filter @holler/web design:dev`, the `holler-design` entry, port 5282).

@@ -20,9 +20,11 @@ Holler needs Node 24 (`.nvmrc`).
 pnpm verify
 ```
 
-It runs formatting, lint, the design, styling and migration checks, typechecking, every test, both builds and the bundle boundary check. `pnpm fix` writes Biome's fixes. For a change a person sees, also drive it in the browser at desktop and 375 px wide, in day and night, and run `pnpm test:e2e`.
+It runs formatting, lint, the design, styling and migration checks, typechecking, every test, both builds and the bundle boundary check. `pnpm fix` writes Biome's fixes. For a change a person sees, also run `pnpm test:e2e` and prove it with the [`verify`](.agents/skills/verify/SKILL.md) skill: it drives each feature the diff reaches at 1280 px and 375 px, in day and night, and keeps the evidence. A product change is not done until it has been driven.
 
-For branches, commit messages, pull request titles and merging, follow [`docs/git-workflow.md`](docs/git-workflow.md).
+Open pull requests with the [`open-pr`](.agents/skills/open-pr/SKILL.md) skill and the [template](.github/pull_request_template.md). For branches, commit messages, pull request titles and merging, follow [`docs/git-workflow.md`](docs/git-workflow.md).
+
+Project skills live in `.agents/skills/`; `.claude/skills` links to it so every agent reads the same files.
 
 ## Conventions
 
@@ -61,6 +63,14 @@ For branches, commit messages, pull request titles and merging, follow [`docs/gi
 | Files under `apps/web/src/client` are kebab-case                            | Biome `useFilenamingConvention`                      |
 | Every journey page passes axe at WCAG 2.2 AA                                | `e2e/`                                               |
 | Pull request titles follow `type(scope): summary` within 72 characters      | `scripts/check-pr-title.mjs` in CI                   |
+
+## Generated files
+
+Edit the source and rerun the generator; never edit these by hand. `apps/web/migrations/**` and `scripts/migration-manifest.json`: `pnpm db:generate`, then `node scripts/check-migrations.mjs --write`. `packages/core/src/schema/auth.ts`: `pnpm --filter @holler/web auth:schema` after a Better Auth config change. `apps/*/worker-configuration.d.ts`: that app's `cf-typegen` after a Wrangler binding change. `apps/web/src/client/routeTree.gen.ts`: the Vite dev server or build rewrites it. DESIGN.md's colours: `node scripts/check-design.mjs --write` after changing `packages/design/tokens.css`.
+
+## Leave alone
+
+Production belongs to Kateryna. Deploys (`pnpm deploy`, `wrangler deploy`), `db:migrate:prod`, remote D1 commands, Wrangler secrets, pushing to `main` and merging pull requests are hers to run; `.claude/settings.json` denies them. Ask, and hand over the exact command. `apps/*/.dev.vars` holds real secrets and stays git-ignored.
 
 ## Licence
 
