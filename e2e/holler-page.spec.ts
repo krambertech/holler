@@ -83,7 +83,7 @@ test("Send reminder wakes up when the wait between reminders ends", async ({ pag
   await expect(remind).toBeEnabled();
 });
 
-test("a repeating pulse shows its rounds side by side, and Stop repeating asks first", async ({
+test("a repeating pulse shows its rounds from any round, and Stop repeating asks first", async ({
   page,
 }) => {
   await signInAs(page, "lead");
@@ -106,7 +106,13 @@ test("a repeating pulse shows its rounds side by side, and Stop repeating asks f
   await dialog.getByRole("button", { name: "Keep repeating" }).click();
   await expect(dialog).toBeHidden();
 
-  await rounds.getByRole("link").filter({ hasText: "Closed" }).click();
+  const first = rounds.getByRole("link").filter({ hasText: "Closed" });
+  const firstId = (await first.getAttribute("href"))?.split("/").at(-1) ?? "";
+  await page.route(`**/api/hollers/${firstId}`, async (route) => {
+    const response = await route.fetch();
+    await route.fulfill({ response, json: { ...(await response.json()), repeat: null } });
+  });
+  await first.click();
   await expect(page.getByRole("heading", { level: 1, name: "How was your week?" })).toBeVisible();
   await expect(page.getByRole("region", { name: "Rounds" }).getByText("This round")).toBeVisible();
 });

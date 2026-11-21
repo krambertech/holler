@@ -90,6 +90,8 @@ Project skills live in `.agents/skills/`; `.claude/skills` links to it so every 
 | Every Holler column is either copied to the next round or set for each round | `roundColumns` in `services/rounds.ts` (typecheck); `services/rounds.test.ts` |
 | Every round of a repeating pulse closes before anyone gets the next, across clock changes and late sends | `goLive` caps `closesAt` at the next round's first invite; `services/rounds.test.ts` |
 | Once Stop repeating returns, no further round goes out, whichever write lands first | `unlessStillRepeating` in `services/rounds.ts`; `services/rounds.test.ts`, both race cases |
+| A round's page shows its series whether or not the pulse still repeats | The Holler page asks for rounds on every sent Holler; `e2e/holler-page.spec.ts` opens a first round whose repeat stopped |
+| Racing dev sign-ins seed one weekly series whose rounds all name a first round that exists | `linkSeededRounds` in `services/dev-seed.ts` links by idempotency key; `routes/dev-concurrency.test.ts` |
 
 ## Generated files
 

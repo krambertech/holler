@@ -34,6 +34,12 @@ describe("concurrent first dev sign-ins", () => {
     expect(users.map((u) => u.name).sort()).toEqual(["Mira Kask", "Tom Okafor"]);
     expect(await db.query.members.findMany()).toHaveLength(2);
     expect(await db.query.slackPeople.findMany()).toHaveLength(18);
-    expect(await db.query.hollers.findMany()).toHaveLength(8);
+    const hollers = await db.query.hollers.findMany();
+    expect(hollers).toHaveLength(8);
+    const ids = new Set(hollers.map((h) => h.id));
+    const rounds = hollers.filter((h) => h.repeatOfId !== null);
+    expect(rounds).toHaveLength(2);
+    expect(new Set(rounds.map((h) => h.repeatOfId)).size).toBe(1);
+    expect(rounds.every((h) => ids.has(h.repeatOfId ?? ""))).toBe(true);
   });
 });

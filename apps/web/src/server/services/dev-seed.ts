@@ -1,5 +1,5 @@
 import { anonymousTime, newId } from "@holler/core";
-import { and, type BatchItem, eq } from "@holler/core/db";
+import { and, type BatchItem, eq, sql } from "@holler/core/db";
 import { runBatch } from "../batch";
 import type { Db } from "../db";
 import { schema } from "../db";
@@ -261,10 +261,8 @@ export async function seedLeadHollers(db: Db, workspaceId: string, creatorId: st
       questions: [mood, { type: "text", prompt: "Anything in your way?" }],
     },
   ];
-  const seedIds = seeds.map(() => newId("holler"));
-
   for (const [order, seed] of seeds.entries()) {
-    const hollerId = seedIds[order] ?? newId("holler");
+    const hollerId = newId("holler");
     // The key's unique index lets each seeded holler in once when two lead sign-ins race.
     const idempotencyKey = `dev-seed ${order}`;
     const statements: BatchItem<"sqlite">[] = [];
@@ -289,7 +287,6 @@ export async function seedLeadHollers(db: Db, workspaceId: string, creatorId: st
         createdVia: "web",
         idempotencyKey,
         repeatRule: seed.repeat ?? null,
-        repeatOfId: seed.roundOf === undefined ? null : (seedIds[seed.roundOf] ?? null),
         createdAt: seed.sentAt ?? at(-1 * HOUR),
         updatedAt: seed.closedAt ?? seed.sentAt ?? at(-1 * HOUR),
       }),
@@ -408,6 +405,33 @@ export async function seedLeadHollers(db: Db, workspaceId: string, creatorId: st
       if (!winner) throw error;
     }
   }
+  await linkSeededRounds(db, workspaceId, seeds);
+}
+
+async function linkSeededRounds(
+  db: Db,
+  workspaceId: string,
+  seeds: readonly { roundOf?: number | undefined }[],
+) {
+  const seeded = (order: number) =>
+    and(
+      eq(schema.hollers.workspaceId, workspaceId),
+      eq(schema.hollers.idempotencyKey, `dev-seed ${order}`),
+    );
+  const links = seeds.flatMap((seed, order) => {
+    if (seed.roundOf === undefined) return [];
+    const first = db
+      .select({ id: schema.hollers.id })
+      .from(schema.hollers)
+      .where(seeded(seed.roundOf));
+    return [
+      db
+        .update(schema.hollers)
+        .set({ repeatOfId: sql`(${first})` })
+        .where(seeded(order)),
+    ];
+  });
+  await runBatch(db, links);
 }
 
 const sampleTexts = [

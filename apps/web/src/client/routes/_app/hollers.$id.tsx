@@ -41,8 +41,10 @@ function HollerPage() {
   const results = useQuery({ ...resultsQuery(id), enabled: sent });
   const people = useQuery({ ...hollerPeopleQuery(id), enabled: sent });
   const isCreator = holler.data?.isCreator ?? false;
-  const inSeries = Boolean(holler.data?.repeat || holler.data?.repeatOfId);
-  const rounds = useQuery({ ...roundsQuery(id), enabled: inSeries });
+  const rounds = useQuery({
+    ...roundsQuery(id),
+    enabled: holler.data !== undefined && holler.data.status !== "draft",
+  });
   const nextRound = rounds.data?.rounds.find((round) => round.status === "scheduled");
 
   const refresh = () => queryClient.invalidateQueries({ queryKey: ["hollers"] });
