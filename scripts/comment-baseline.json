@@ -189,7 +189,7 @@
   "packages/core/src/schema/activity.ts": 9,
   "packages/core/src/schema/billing.ts": 7,
   "packages/core/src/schema/directory.ts": 7,
-  "packages/core/src/schema/hollers.ts": 44,
+  "packages/core/src/schema/hollers.ts": 42,
   "packages/core/src/schema/notes.ts": 5,
   "packages/core/src/schema/responses.ts": 6,
   "packages/core/src/schema/workspaces.ts": 16,

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { isChoice, modes, questionStyles, questionTypes, scaleBounds } from "./modes";
+import { repeatEvery } from "./repeats";
 
 /**
  * The API contract. Every route parses its input with one of these, and every client infers its
@@ -154,6 +155,7 @@ export const hollerDraftSchema = z.object({
     .max(24 * 60)
     .default(72),
   remindersEnabled: z.boolean().default(true),
+  repeat: z.enum(repeatEvery).nullable().default(null),
   questions: z.array(questionInputSchema).max(30).default([]),
 });
 export type HollerDraftInput = z.input<typeof hollerDraftSchema>;

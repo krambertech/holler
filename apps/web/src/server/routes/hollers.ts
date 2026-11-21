@@ -22,6 +22,7 @@ import {
   updateDraft,
 } from "../services/hollers";
 import { resultsFor } from "../services/responses";
+import { stopRepeating } from "../services/rounds";
 import { previewSend } from "../services/send-preview";
 import {
   addViewers,
@@ -64,6 +65,9 @@ export const hollerRoutes = new Hono<AppEnv>()
   )
   .post("/:id/close", async (c) =>
     c.json(hollerOut(await closeHoller(requireMember(c), c.env, c.req.param("id")))),
+  )
+  .post("/:id/stop-repeating", async (c) =>
+    c.json(hollerOut(await stopRepeating(requireMember(c), c.req.param("id")))),
   )
   .post("/:id/remind", async (c) =>
     c.json(hollerOut(await remindWaiting(requireMember(c), c.env, c.req.param("id")))),

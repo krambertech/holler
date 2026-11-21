@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "fd273959-e8c6-4f7f-b40d-ecedb3c70675",
+  "id": "eb310e3a-6aa4-499a-9bde-60d838c17098",
   "prevId": "267f49ef-8385-46cd-b9a8-129a12f4767d",
   "tables": {
     "activity": {
@@ -2144,6 +2144,14 @@
           ],
           "isUnique": false
         },
+        "hollers_round": {
+          "name": "hollers_round",
+          "columns": [
+            "repeat_of_id",
+            "send_at"
+          ],
+          "isUnique": true
+        },
         "hollers_send_at": {
           "name": "hollers_send_at",
           "columns": [
@@ -2591,8 +2599,8 @@
           "notNull": true,
           "autoincrement": false
         },
-        "slack_user_id": {
-          "name": "slack_user_id",
+        "member_id": {
+          "name": "member_id",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
@@ -2621,22 +2629,7 @@
           "autoincrement": false
         }
       },
-      "indexes": {
-        "viewers_slack_user": {
-          "name": "viewers_slack_user",
-          "columns": [
-            "slack_user_id"
-          ],
-          "isUnique": false
-        },
-        "viewers_unnotified": {
-          "name": "viewers_unnotified",
-          "columns": [
-            "notified_at"
-          ],
-          "isUnique": false
-        }
-      },
+      "indexes": {},
       "foreignKeys": {
         "viewers_holler_id_hollers_id_fk": {
           "name": "viewers_holler_id_hollers_id_fk",
@@ -2644,6 +2637,19 @@
           "tableTo": "hollers",
           "columnsFrom": [
             "holler_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "viewers_member_id_members_id_fk": {
+          "name": "viewers_member_id_members_id_fk",
+          "tableFrom": "viewers",
+          "tableTo": "members",
+          "columnsFrom": [
+            "member_id"
           ],
           "columnsTo": [
             "id"
@@ -2666,12 +2672,12 @@
         }
       },
       "compositePrimaryKeys": {
-        "viewers_holler_id_slack_user_id_pk": {
+        "viewers_holler_id_member_id_pk": {
           "columns": [
             "holler_id",
-            "slack_user_id"
+            "member_id"
           ],
-          "name": "viewers_holler_id_slack_user_id_pk"
+          "name": "viewers_holler_id_member_id_pk"
         }
       },
       "uniqueConstraints": {},

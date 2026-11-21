@@ -7,6 +7,7 @@ import {
   text,
   uniqueIndex,
 } from "drizzle-orm/sqlite-core";
+import { repeatEvery } from "../repeats";
 import { members, workspaces } from "./workspaces";
 
 const now = sql`(unixepoch() * 1000)`;
@@ -75,16 +76,15 @@ export const hollers = sqliteTable(
     createdVia: text("created_via", { enum: ["web", "slack", "api", "mcp"] }).notNull(),
     /** The API caller's Idempotency-Key, so a retried create returns the same Holler. */
     idempotencyKey: text("idempotency_key"),
-    /** When a scheduled pulse repeats, the Holler it was copied from. */
     repeatOfId: text("repeat_of_id"),
-    /** A cron-like rule for repeating pulses, such as "weekly:mon:09:00". Null when it does not repeat. */
-    repeatRule: text("repeat_rule"),
+    repeatRule: text("repeat_rule", { enum: repeatEvery }),
     createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull().default(now),
     updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull().default(now),
   },
   (t) => [
     index("hollers_workspace_status").on(t.workspaceId, t.status),
     index("hollers_creator").on(t.creatorId),
+    uniqueIndex("hollers_round").on(t.repeatOfId, t.sendAt),
     index("hollers_send_at").on(t.status, t.sendAt),
     index("hollers_closes_at").on(t.status, t.closesAt),
     uniqueIndex("hollers_report_token").on(t.reportToken),
