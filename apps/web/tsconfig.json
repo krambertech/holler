@@ -6,5 +6,12 @@
     "types": ["vite/client"],
     "paths": { "@/*": ["./src/client/*"] }
   },
-  "include": ["src/client", "src/shared", "vite.config.ts", "drizzle.config.ts"]
+  "include": [
+    "src/client",
+    "src/shared",
+    "design",
+    "vite.config.ts",
+    "vite.design.config.ts",
+    "drizzle.config.ts"
+  ]
 }

@@ -12,9 +12,9 @@
     -moz-osx-font-smoothing: grayscale;
   }
 
-  /* Zero specificity, so font-normal and font-medium on small text still win. */
-  :where(.text-xs, .text-sm) {
-    font-weight: var(--weight-small);
+  /* A frame set to one theme inside a page of the other takes that theme's body weight. */
+  [data-theme] {
+    font-weight: var(--weight-body);
   }
 
   h1,

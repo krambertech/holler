@@ -10,7 +10,7 @@ import { fileURLToPath } from "node:url";
 const root = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const SCOPE = ["apps/web/src/client", "apps/site/src"];
 const CHECKED = /\.(tsx?|astro|css|mdx)$/;
-const SKIPPED = /\.(test|browser\.test|gen)\.|\/locales\//;
+const SKIPPED = /\.(test|gen)\./;
 /** Put this on the line, or the line above, for a colour that is not Holler's, such as Slack's own grey. */
 export const ALLOW = "check-styling: allow";
 

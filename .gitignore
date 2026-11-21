@@ -14,3 +14,4 @@ coverage
 *.tsbuildinfo
 .DS_Store
 .impeccable/live/*.log
+dist-design

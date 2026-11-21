@@ -9,6 +9,7 @@ import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { palette } from "../packages/design/scripts/colour.mjs";
+import { exportedNames } from "./exports.mjs";
 
 const root = resolve(import.meta.dirname, "..");
 const read = (path) => readFileSync(resolve(root, path), "utf8");
@@ -31,7 +32,7 @@ export function namedComponents(markdown) {
   return [...prose.matchAll(/`([A-Z][a-z]+[A-Za-z]*)`/g)].map((m) => m[1]);
 }
 
-function exportedNames() {
+function exportedAcrossApps() {
   const names = new Set();
   const walk = (dir) => {
     for (const entry of readdirSync(resolve(root, dir), { withFileTypes: true })) {
@@ -39,11 +40,7 @@ function exportedNames() {
       if (entry.isDirectory()) {
         if (entry.name !== "node_modules") walk(path);
       } else if (/\.(tsx?|astro)$/.test(entry.name)) {
-        const source = read(path);
-        for (const m of source.matchAll(
-          /export\s+(?:default\s+)?(?:const|function|class|type|interface)\s+([A-Z]\w*)/g,
-        ))
-          names.add(m[1]);
+        for (const name of exportedNames(read(path))) names.add(name);
         if (entry.name.endsWith(".astro")) names.add(entry.name.replace(".astro", ""));
       }
     }
@@ -86,7 +83,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
         problems.push(`${path} declares ${selector}, which packages/design/tokens.css owns`);
   }
 
-  const exported = exportedNames();
+  const exported = exportedAcrossApps();
   for (const name of new Set(namedComponents(design)))
     if (!exported.has(name)) problems.push(`DESIGN.md names \`${name}\`, which nothing exports`);
 

@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && pnpm design:build",
     "preview": "vite preview",
     "deploy": "vite build && wrangler deploy -c dist/holler/wrangler.json",
     "deploy:check": "wrangler deploy --dry-run -c dist/holler/wrangler.json",
@@ -17,7 +17,11 @@
     "db:check": "drizzle-kit check",
     "db:migrate": "wrangler d1 migrations apply holler --local",
     "db:migrate:prod": "wrangler d1 migrations apply holler --remote",
-    "auth:schema": "auth generate --config src/server/auth-cli.ts --output ../../packages/core/src/schema/auth.ts -y"
+    "auth:schema": "auth generate --config src/server/auth-cli.ts --output ../../packages/core/src/schema/auth.ts -y",
+    "design:dev": "vite --config vite.design.config.ts",
+    "design:build": "vite build --config vite.design.config.ts",
+    "design:deploy": "pnpm design:build && wrangler deploy -c wrangler.design.jsonc",
+    "design:check": "pnpm design:build && wrangler deploy --dry-run -c wrangler.design.jsonc"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",

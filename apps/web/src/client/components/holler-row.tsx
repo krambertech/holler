@@ -1,7 +1,8 @@
 import type { HollerSummary } from "@holler/core";
 import { modeLabels } from "@holler/core";
 import { Link } from "@tanstack/react-router";
-import { closesLabel, shortDate } from "@/lib/format";
+import { cn } from "@/lib/cn";
+import { closesLabel, count, peopleLabel, questionsLabel, shortDate } from "@/lib/format";
 import { ModeGlyph } from "./mode-glyph";
 import { AvatarStack } from "./ui/avatar";
 import { Chip } from "./ui/chip";
@@ -16,22 +17,31 @@ export function HollerRow({ holler }: { holler: HollerSummary }) {
   const quiet = holler.status !== "live";
   const subtitle = [
     modeLabels[holler.mode],
-    holler.mode === "survey" ? `${holler.questionCount} questions` : null,
+    holler.mode === "survey" ? questionsLabel(holler.questionCount) : null,
     holler.anonymous ? "anonymous" : null,
   ]
     .filter(Boolean)
     .join(" · ");
 
   return (
-    <PlateRow className="relative transition-colors hover:bg-hover">
-      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1 px-5 py-[13px] sm:grid-cols-[minmax(0,1fr)_92px_96px_96px]">
+    <PlateRow
+      className={cn(
+        "relative transition-colors hoverable:hover:bg-hover",
+        // The link stretches over the row, so the row draws the link's focus ring.
+        "has-[a:focus-visible]:outline-2 has-[a:focus-visible]:outline-focus has-[a:focus-visible]:-outline-offset-2",
+      )}
+    >
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1 px-5 py-[13px] sm:grid-cols-[minmax(0,1fr)_112px_96px_96px]">
         <span className="flex min-w-0 items-center gap-3">
           <ModeGlyph mode={holler.mode} quiet={quiet} />
           <span className="min-w-0">
             <Link
               to="/hollers/$id"
               params={{ id: holler.id }}
-              className={`block truncate font-normal text-md after:absolute after:inset-0 after:content-[''] focus-visible:outline-none ${quiet && holler.status === "closed" ? "text-muted" : ""}`}
+              className={cn(
+                "block truncate font-normal text-base outline-none after:absolute after:inset-0 after:content-['']",
+                holler.status === "closed" && "text-muted",
+              )}
             >
               {holler.title || "Untitled"}
             </Link>
@@ -42,12 +52,12 @@ export function HollerRow({ holler }: { holler: HollerSummary }) {
         <span className="hidden sm:flex">
           {holler.status === "live" ? (
             <AvatarStack
-              people={holler.people}
+              people={holler.people.slice(0, 3)}
               total={holler.recipientCount}
-              label={`${holler.recipientCount} people`}
+              aria-label={`${peopleLabel(holler.recipientCount)}, ${count(holler.answeredCount)} answered`}
             />
           ) : (
-            <span className="text-sm text-muted">{holler.recipientCount || "No"} people</span>
+            <span className="text-sm text-muted">{peopleLabel(holler.recipientCount)}</span>
           )}
         </span>
 
@@ -70,7 +80,7 @@ export function HollerRow({ holler }: { holler: HollerSummary }) {
 
         <span className="col-span-2 ps-[50px] text-sm text-muted sm:col-span-1 sm:ps-0">
           {holler.status === "scheduled" && holler.sendAt ? (
-            <Chip tone="tint">{closesLabel(holler.sendAt)}</Chip>
+            <Chip variant="tint">{closesLabel(holler.sendAt)}</Chip>
           ) : holler.status === "closed" && holler.closedAt ? (
             <>
               <span className="sm:hidden">Closed </span>

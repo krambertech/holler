@@ -34,4 +34,4 @@ Personas are in `apps/web/src/server/services/dev-seed.ts`: `lead` has live, sch
 
 ## Proving a change in the browser
 
-Start the product with the `holler` entry in `.claude/launch.json` (port 5280). Sign in at `/api/dev/sign-in?as=lead`. The design page is at `/design`. Check day and night, and a phone width of 375 px.
+Start the product with the `holler` entry in `.claude/launch.json` (port 5280). Sign in at `/api/dev/sign-in?as=lead`. Components are on the design site (`pnpm --filter @holler/web design:dev`, the `holler-design` entry in `.claude/launch.json`, port 5282). Check day and night, and a phone width of 375 px.

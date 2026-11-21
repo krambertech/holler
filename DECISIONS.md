@@ -30,6 +30,20 @@ private until it is shared from its Share menu.
 | Licence     | Public source, all rights reserved                                 |
 | Node        | 24                                                                 |
 
+## Token review: 21 November 2026
+
+Round 4 on the canvas reopened the tokens before the design system is built on them. The brief is in `docs/design/system-brief.md`.
+
+| Question | Decision | Rejected |
+| --- | --- | --- |
+| Canvas temperature | A: warm off-white, as before | Neutral; tinted toward plum |
+| Type scale | 1.125 from 15 px; body 300 by day, 330 at night (350 read thick once Geologica loaded) | The mockup's sizes; 1.2; 300 with heavier captions and night text |
+| Radii | Plates 16, controls 10, glyphs 9, chips pills | 22 and 13; 12 and 8 |
+| Pink | Plum by day, soft pink at night, and pink marks what is live | Pink in the logo only; plum at night |
+| Overlays | Plates flat; floating layers get the hairline and one soft shadow | Hairline only; tinted layers |
+
+These supersede the plate and control radii, the 300 body weight and "pink only for marks" in the sections below.
+
 ## Name: Holler
 
 The name had to work in the sentence people already say at work: "send me a Holler".

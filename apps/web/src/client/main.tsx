@@ -2,6 +2,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createRouter, RouterProvider } from "@tanstack/react-router";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
+import { Toaster } from "./components/ui/toast";
+import { TooltipProvider } from "./components/ui/tooltip";
 import { ApiError } from "./lib/api";
 import { routeTree } from "./routeTree.gen";
 import "./styles.css";
@@ -35,7 +37,10 @@ if (!root) throw new Error("#root is missing from index.html");
 createRoot(root).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
+      <TooltipProvider>
+        <RouterProvider router={router} />
+        <Toaster aria-label="Notifications" closeLabel="Dismiss" />
+      </TooltipProvider>
     </QueryClientProvider>
   </StrictMode>,
 );

@@ -21,9 +21,9 @@
     line-height: 1.45;
   }
 
-  /* Zero specificity, so font-normal and font-medium on small text still win. */
-  :where(.text-xs, .text-sm) {
-    font-weight: var(--weight-small);
+  /* A frame set to one theme inside a page of the other takes that theme's body weight. */
+  [data-theme] {
+    font-weight: var(--weight-body);
   }
 
   h1,
@@ -65,4 +65,133 @@
 
 @utility tabular {
   font-variant-numeric: tabular-nums;
+}
+
+/* One hairline edge as a shadow, so it never changes layout. Forced colours drop shadows, so there it
+   becomes an outline the system paints. */
+@utility edge {
+  box-shadow: 0 0 0 1px var(--edge);
+  @media (forced-colors: active) {
+    &:not(:focus-visible) {
+      outline: 1px solid transparent;
+      outline-offset: -1px;
+    }
+  }
+}
+@utility edge-2 {
+  box-shadow: 0 0 0 1px var(--edge-2);
+  @media (forced-colors: active) {
+    &:not(:focus-visible) {
+      outline: 1px solid transparent;
+      outline-offset: -1px;
+    }
+  }
+}
+@utility edge-3 {
+  box-shadow: 0 0 0 1px var(--edge-3);
+  @media (forced-colors: active) {
+    &:not(:focus-visible) {
+      outline: 1px solid transparent;
+      outline-offset: -1px;
+    }
+  }
+}
+/* The edge of a control whose value is wrong, kept under hover, focus and an open list. */
+@utility edge-danger {
+  box-shadow: 0 0 0 1px var(--danger-dot);
+  @media (forced-colors: active) {
+    &:not(:focus-visible) {
+      outline: 1px solid transparent;
+      outline-offset: -1px;
+    }
+  }
+}
+/* Hover on anything with a fill: the hover tint laid over its own fill. */
+@utility veil {
+  background-image: linear-gradient(var(--hover), var(--hover));
+}
+/* What floats over the page: the plate and one soft shadow. Holler has no blur. */
+@utility floating {
+  background-color: var(--plate);
+  box-shadow: var(--float);
+  @media (forced-colors: active) {
+    outline: 1px solid transparent;
+    outline-offset: -1px;
+  }
+}
+
+@custom-variant hoverable (@media (hover: hover) and (pointer: fine));
+
+/* Base UI's presence attributes, where a part can also write the attribute as "false". */
+@custom-variant data-open {
+  &:where([data-open]:not([data-open="false"])) {
+    @slot;
+  }
+}
+@custom-variant data-checked {
+  &:where([data-checked]:not([data-checked="false"])) {
+    @slot;
+  }
+}
+@custom-variant data-disabled {
+  &:where([data-disabled]:not([data-disabled="false"])) {
+    @slot;
+  }
+}
+@custom-variant data-horizontal {
+  &:where([data-orientation="horizontal"]) {
+    @slot;
+  }
+}
+@custom-variant data-vertical {
+  &:where([data-orientation="vertical"]) {
+    @slot;
+  }
+}
+
+/* A loading shape: the track colour with a slow sheen. Reduced motion keeps the shape and drops the sheen. */
+@utility skeleton {
+  background-color: var(--track);
+  background-image: linear-gradient(90deg, transparent 0%, var(--plate) 50%, transparent 100%);
+  background-size: 200% 100%;
+  background-repeat: no-repeat;
+  animation: skeleton-sheen 1.6s ease-in-out infinite;
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+    background-image: none;
+  }
+}
+@keyframes skeleton-sheen {
+  from {
+    background-position: 150% 0;
+  }
+  to {
+    background-position: -50% 0;
+  }
+}
+
+/*
+ * One fill behind a list, sliding to the nearest row instead of blinking off in the gaps. It remounts
+ * when it reappears, so it fades in under the pointer rather than sliding from where it last was, and
+ * it leaves faster than it came.
+ */
+.fluid-highlight {
+  opacity: 1;
+  transition:
+    translate 150ms var(--ease-out),
+    width 150ms var(--ease-out),
+    height 150ms var(--ease-out),
+    opacity 150ms var(--ease-out);
+  @starting-style {
+    opacity: 0;
+  }
+}
+.fluid-highlight[data-hidden] {
+  opacity: 0;
+  transition-duration: 100ms;
+}
+@media (prefers-reduced-motion: reduce) {
+  .fluid-highlight {
+    transition-property: opacity;
+  }
 }

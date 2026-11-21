@@ -1,0 +1,347 @@
+import { AlertCircle } from "lucide-react";
+import * as React from "react";
+import { cn } from "@/lib/cn";
+
+// The parts of a form row, wired by context: no id is written by hand.
+
+type Kind = "description" | "error";
+
+interface Describer {
+  register: (id: string, kind: Kind) => () => void;
+}
+
+interface FieldContextValue {
+  controlId: string;
+  describedBy: string | undefined;
+  invalid: boolean;
+  hasError: boolean;
+  disabled: boolean;
+  /** A control that brings its own id; the label follows it. */
+  claimId: (id: string) => () => void;
+  /** The rendered `FieldLabel`'s id, which names a list the control opens. */
+  labelId: string | undefined;
+  claimLabelId: (id: string) => () => void;
+}
+
+const DescriberContext = React.createContext<Describer | null>(null);
+const FieldContext = React.createContext<FieldContextValue | null>(null);
+
+function useDescribers() {
+  const [parts, setParts] = React.useState<readonly { id: string; kind: Kind }[]>([]);
+  const register = React.useCallback((id: string, kind: Kind) => {
+    setParts((current) => [...current.filter((part) => part.id !== id), { id, kind }]);
+    return () => setParts((current) => current.filter((part) => part.id !== id));
+  }, []);
+  // The error first, so a screen reader says what is wrong before how the field works.
+  const ordered = [
+    ...parts.filter((part) => part.kind === "error"),
+    ...parts.filter((part) => part.kind === "description"),
+  ];
+  return {
+    describer: React.useMemo(() => ({ register }), [register]),
+    describedBy: ordered.map((part) => part.id).join(" ") || undefined,
+    hasError: parts.some((part) => part.kind === "error"),
+  };
+}
+
+function useDescribe(id: string | null, kind: Kind) {
+  const describer = React.useContext(DescriberContext);
+  React.useLayoutEffect(() => {
+    if (describer && id) return describer.register(id, kind);
+  }, [describer, id, kind]);
+}
+
+const joinIds = (...ids: (string | undefined)[]) => ids.filter(Boolean).join(" ") || undefined;
+
+/** The nearest Field, or null for a control that stands alone. */
+function useField() {
+  return React.useContext(FieldContext);
+}
+
+/** Inside a control made of controls, such as a radio group, each item answers to its own Field rather than the group's. */
+function FieldItems({ children }: { children: React.ReactNode }) {
+  return <FieldContext.Provider value={null}>{children}</FieldContext.Provider>;
+}
+
+interface ControlProps {
+  id?: string | undefined;
+  "aria-describedby"?: string | undefined;
+  "aria-invalid"?: React.AriaAttributes["aria-invalid"];
+}
+
+/**
+ * The id, description and invalid state a control inside a Field takes from it. Outside a Field the
+ * control's own props pass through unchanged.
+ */
+function useFieldControl(props: ControlProps) {
+  const field = useField();
+  const claimId = field?.claimId;
+  React.useLayoutEffect(() => {
+    if (claimId && props.id) return claimId(props.id);
+  }, [claimId, props.id]);
+  if (!field) {
+    return {
+      id: props.id,
+      "aria-describedby": props["aria-describedby"],
+      "aria-invalid": props["aria-invalid"],
+    };
+  }
+  return {
+    id: props.id ?? field.controlId,
+    "aria-describedby": joinIds(props["aria-describedby"], field.describedBy),
+    // The Field decides, so `data-invalid` on it and `aria-invalid` here can never disagree.
+    "aria-invalid": field.invalid || undefined,
+  };
+}
+
+function FieldSet({
+  className,
+  "aria-describedby": describedByProp,
+  ...props
+}: React.ComponentProps<"fieldset">) {
+  const { describer, describedBy } = useDescribers();
+  return (
+    <DescriberContext.Provider value={describer}>
+      <fieldset
+        data-slot="field-set"
+        aria-describedby={joinIds(describedByProp, describedBy)}
+        className={cn("flex min-w-0 flex-col gap-4", className)}
+        {...props}
+      />
+    </DescriberContext.Provider>
+  );
+}
+
+interface FieldLegendProps extends React.ComponentProps<"legend"> {
+  /** `label` reads like a field's label, for a set that stands in for one field. */
+  variant?: "legend" | "label" | undefined;
+}
+
+function FieldLegend({ className, variant = "legend", ...props }: FieldLegendProps) {
+  return (
+    <legend
+      data-slot="field-legend"
+      data-variant={variant}
+      className={cn(
+        "mb-1.5 p-0 font-normal",
+        variant === "legend" ? "text-base text-ink" : "text-sm text-ink-2",
+        className,
+      )}
+      {...props}
+    />
+  );
+}
+
+/** Fields stacked with the form's rhythm. */
+function FieldGroup({ className, ...props }: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="field-group"
+      className={cn("flex w-full flex-col gap-4", className)}
+      {...props}
+    />
+  );
+}
+
+interface FieldProps extends React.ComponentProps<"div"> {
+  orientation?: "vertical" | "horizontal" | undefined;
+  /** Marks the field invalid without a `FieldError` inside it. A rendered error already does. */
+  invalid?: boolean | undefined;
+  /** Disables the control inside as well. */
+  disabled?: boolean | undefined;
+}
+
+function Field({
+  className,
+  orientation = "vertical",
+  invalid: invalidProp = false,
+  disabled = false,
+  ...props
+}: FieldProps) {
+  const generatedId = React.useId();
+  const [claimedId, setClaimedId] = React.useState<string | null>(null);
+  const claimId = React.useCallback((id: string) => {
+    setClaimedId(id);
+    return () => setClaimedId((current) => (current === id ? null : current));
+  }, []);
+  const [labelId, setLabelId] = React.useState<string>();
+  const claimLabelId = React.useCallback((id: string) => {
+    setLabelId(id);
+    return () => setLabelId((current) => (current === id ? undefined : current));
+  }, []);
+  const { describer, describedBy, hasError } = useDescribers();
+  const invalid = invalidProp || hasError;
+  const context = React.useMemo(
+    () => ({
+      controlId: claimedId ?? generatedId,
+      describedBy,
+      invalid,
+      hasError,
+      disabled,
+      claimId,
+      labelId,
+      claimLabelId,
+    }),
+    [
+      claimedId,
+      generatedId,
+      describedBy,
+      invalid,
+      hasError,
+      disabled,
+      claimId,
+      labelId,
+      claimLabelId,
+    ],
+  );
+  return (
+    <DescriberContext.Provider value={describer}>
+      <FieldContext.Provider value={context}>
+        {/* biome-ignore lint/a11y/useSemanticElements: one control and its text, which a fieldset is not */}
+        <div
+          role="group"
+          data-slot="field"
+          data-orientation={orientation}
+          data-invalid={invalid || undefined}
+          data-disabled={disabled || undefined}
+          className={cn(
+            "group/field flex w-full min-w-0",
+            orientation === "vertical"
+              ? "flex-col gap-1.5"
+              : "flex-row items-center gap-3 has-[>[data-slot=field-content]]:items-start",
+            className,
+          )}
+          {...props}
+        />
+      </FieldContext.Provider>
+    </DescriberContext.Provider>
+  );
+}
+
+/** The control's side of a horizontal field, holding it with its description and error. */
+function FieldContent({ className, ...props }: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="field-content"
+      className={cn("flex min-w-0 flex-1 flex-col gap-1.5", className)}
+      {...props}
+    />
+  );
+}
+
+interface FieldLabelProps extends React.ComponentProps<"label"> {
+  /** Small text at the end of the label row, such as "Optional". */
+  aside?: React.ReactNode | undefined;
+}
+
+function FieldLabel({ className, id, htmlFor, aside, ...props }: FieldLabelProps) {
+  const field = useField();
+  const generatedId = React.useId();
+  const ownId = id ?? generatedId;
+  const claimLabelId = field?.claimLabelId;
+  React.useLayoutEffect(() => claimLabelId?.(ownId), [claimLabelId, ownId]);
+  const label = (
+    // biome-ignore lint/a11y/noLabelWithoutControl: the Field supplies htmlFor.
+    <label
+      id={ownId}
+      data-slot="field-label"
+      htmlFor={htmlFor ?? field?.controlId}
+      className={cn(
+        "w-fit text-sm font-normal text-ink-2",
+        // A label beside a checkbox, radio or switch presses it, so it takes the control's cursor,
+        // and reads the control's own disabled state, which the Field does not always know.
+        "group-has-[[role=checkbox],[role=radio],[role=switch]]/field:cursor-pointer",
+        "group-has-[[role=checkbox][data-disabled],[role=radio][data-disabled],[role=switch][data-disabled]]/field:cursor-not-allowed",
+        "group-has-[[role=checkbox][data-disabled],[role=radio][data-disabled],[role=switch][data-disabled]]/field:text-muted",
+        "group-data-disabled/field:cursor-not-allowed group-data-disabled/field:text-muted",
+        className,
+      )}
+      {...props}
+    />
+  );
+  if (!aside) return label;
+  return (
+    <div data-slot="field-label-row" className="flex items-baseline justify-between gap-3">
+      {label}
+      {/* `ms-auto`: a label hidden with `sr-only` leaves the flex row, and the aside still sits at the end. */}
+      <span data-slot="field-label-aside" className="ms-auto text-xs text-muted">
+        {aside}
+      </span>
+    </div>
+  );
+}
+
+/** Steps aside while its field shows an error, so the error takes its place. */
+function FieldDescription({ className, id, ...props }: React.ComponentProps<"p">) {
+  const generatedId = React.useId();
+  const ownId = id ?? generatedId;
+  const hidden = Boolean(useField()?.hasError);
+  useDescribe(hidden ? null : ownId, "description");
+  if (hidden) return null;
+  return (
+    <p
+      id={ownId}
+      data-slot="field-description"
+      className={cn(
+        // Under its label in a vertical field it reads as part of the label, so it sits closer than the control does.
+        "[[data-orientation=vertical]>[data-slot=field-label]:not(.sr-only)+&]:-mt-1.5 [[data-orientation=vertical]>[data-slot=field-label-row]+&]:-mt-1.5",
+        "text-sm text-muted [&>a]:underline [&>a]:underline-offset-4 hoverable:[&>a:hover]:text-ink",
+        className,
+      )}
+      {...props}
+    />
+  );
+}
+
+interface FieldErrorProps extends React.ComponentProps<"div"> {
+  /** Issues from a form library; repeats of one message show once. `children` wins when given. */
+  errors?: readonly ({ message?: string | undefined } | undefined)[] | undefined;
+}
+
+/** Renders nothing without a message, so it can sit in the field before anything is wrong. */
+function FieldError({ className, id, children, errors, ...props }: FieldErrorProps) {
+  const generatedId = React.useId();
+  const ownId = id ?? generatedId;
+  const messages = [
+    ...new Set((errors ?? []).map((error) => error?.message).filter((message) => !!message)),
+  ];
+  const hasChildren =
+    children !== undefined && children !== null && children !== false && children !== "";
+  const lines = hasChildren ? [children] : messages;
+  useDescribe(lines.length > 0 ? ownId : null, "error");
+  if (lines.length === 0) return null;
+  return (
+    <div
+      id={ownId}
+      role="alert"
+      data-slot="field-error"
+      className={cn("flex flex-col gap-1 text-sm text-danger-ink", className)}
+      {...props}
+    >
+      {lines.map((line) => (
+        <div
+          key={typeof line === "string" ? line : "children"}
+          className="flex items-start gap-1.5"
+        >
+          {/* Never colour alone: the icon marks each line as an error in any palette. */}
+          <AlertCircle className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
+          <div className="min-w-0">{line}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export {
+  Field,
+  FieldContent,
+  FieldDescription,
+  FieldError,
+  FieldGroup,
+  FieldItems,
+  FieldLabel,
+  FieldLegend,
+  FieldSet,
+  useField,
+  useFieldControl,
+};

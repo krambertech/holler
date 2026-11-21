@@ -10,7 +10,7 @@ Two deployables: `apps/site` is the Astro public site at `holler.team`; `apps/we
 
 ## Testing locally
 
-Copy `apps/web/.dev.vars.example` to `apps/web/.dev.vars`, add `DEV_ROUTES=true`, and run `pnpm db:migrate`. Start the product with the `holler` entry in `.claude/launch.json` (port 5280). Sign in by navigating to `/api/dev/sign-in?as=lead` (or `sender` for the empty states); never type a Slack password. The design page with every component in both themes is at `/design`. [`docs/testing.md`](docs/testing.md) has what each gate proves.
+Copy `apps/web/.dev.vars.example` to `apps/web/.dev.vars`, add `DEV_ROUTES=true`, and run `pnpm db:migrate`. Start the product with the `holler` entry in `.claude/launch.json` (port 5280). Sign in by navigating to `/api/dev/sign-in?as=lead` (or `sender` for the empty states); never type a Slack password. Every component, in day and night, is on the design site (`pnpm --filter @holler/web design:dev`, the `holler-design` entry in `.claude/launch.json`, port 5282); a new component gets an entry in `apps/web/src/client/design/parts/` or `pnpm check:design-coverage` fails. [`docs/testing.md`](docs/testing.md) has what each gate proves.
 
 Holler needs Node 24 (`.nvmrc`).
 
@@ -34,6 +34,8 @@ For branches, commit messages, pull request titles and merging, follow [`docs/gi
 
 **Styling.** Tailwind v4 utilities over the Holler tokens: `bg-plate`, `text-ink-2`, `bg-tint text-tint-ink`. Token values live in `packages/design/tokens.css`; DESIGN.md's colours are generated from it. A raw hex or a stock Tailwind colour in a component is a bug: dark mode is its own palette, not an inversion. Use logical directions (`ms-`, `pe-`, `text-start`). One plum button per screen.
 
+**Component APIs.** One shape for every component, Holler's own and the primitives alike. `interface Props extends ComponentProps<…>`, spread the rest, set `data-slot`, export once at the bottom. Optional props are written `?: T | undefined`. Render as another element with `render`, never a class-string helper: `<Button render={<Link to="/" />}>`. `variant` is the visual treatment, `tone` is the meaning (`neutral`, `live`, `warning`, `danger`), `size` takes tokens (`sm`, `md`, …), never pixels. `aria-label` names a thing for screen readers; `label` is only ever visible text. Secondary text is `description`; in-flight is `pending`; icons are passed as `ReactNode` children. Hover uses the `hoverable:` variant so it never sticks on touch, hairlines use the `edge` utilities so forced-colours mode keeps them, and every control keeps a 44 px hit area on touch.
+
 **Interface text.** Plain, warm, brief, in sentence case, with no exclamation marks and no emoji. Say what happens: "7 of 12 answered". Never build a sentence from fragments or from a ternary on `=== 1`; write both sentences. Dates and numbers go through `Intl`.
 
 **Server layering.** `routes/*` parse input with a core schema, call one service and return. `services/*` hold the logic and own the database; each function takes a `ServiceContext` (db, workspace, actor, clock). Routes, Slack handlers and MCP tools never import Drizzle; Biome refuses it. Every write records Activity through `services/audit.ts` in the same batch. A rule kept in one door (web, Slack, API, MCP) is kept in all of them because they call the same service.
@@ -55,6 +57,7 @@ For branches, commit messages, pull request titles and merging, follow [`docs/gi
 | Every text pair meets WCAG AA in both themes                                | `packages/design/src/contrast.test.ts`               |
 | Applied migrations never change                                             | `pnpm check:migrations`                              |
 | No dev tools in the production bundle                                       | `pnpm check:boundaries`                              |
+| Every exported component has an entry on the design site | `pnpm check:design-coverage` |
 | Files under `apps/web/src/client` are kebab-case                            | Biome `useFilenamingConvention`                      |
 | Every journey page passes axe at WCAG 2.2 AA                                | `e2e/`                                               |
 | Pull request titles follow `type(scope): summary` within 72 characters      | `scripts/check-pr-title.mjs` in CI                   |

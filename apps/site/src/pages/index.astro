@@ -18,7 +18,7 @@ const steps = [
   <main class="mx-auto max-w-[1080px] px-4 sm:px-8">
     <section class="grid items-center gap-12 pt-10 pb-20 lg:grid-cols-[1.1fr_1fr] lg:pt-16">
       <div>
-        <h1 class="text-5xl tracking-display sm:text-7xl">Ask your team.<br />Stop chasing them.</h1>
+        <h1 class="text-6xl tracking-display sm:text-8xl">Ask your team.<br />Stop chasing them.</h1>
         <p class="mt-6 max-w-[46ch] text-lg text-ink-2">
           Holler sends your question to each person in Slack, reminds the ones who have not answered, and shows you the results.
         </p>
@@ -33,21 +33,21 @@ const steps = [
       <figure class="rounded-plate bg-plate p-5 shadow-[0_0_0_1px_var(--edge)]" aria-label="A Holler arriving in Slack">
         <div class="flex gap-3">
           <Mark size={36} />
-          <div class="flex flex-1 flex-col gap-1.5 text-md">
+          <div class="flex flex-1 flex-col gap-1.5 text-base">
             <span><span class="font-medium">Holler</span> <span class="text-xs text-muted">Mon 9:00</span></span>
             <span>Mira sent you a Holler.</span>
             <span class="font-normal">How was your week?</span>
             <span class="text-sm text-muted">One tap. Closes Friday at 18:00.</span>
             <span class="mt-1 flex flex-wrap gap-1.5">
               {["Great", "Good", "Okay", "Rough"].map((label) => (
-                <span class="rounded-[7px] bg-plate px-3 py-1 text-sm font-normal shadow-[0_0_0_1px_var(--edge-2)]">{label}</span>
+                <span class="rounded-sm bg-plate px-3 py-1 text-sm font-normal shadow-[0_0_0_1px_var(--edge-2)]">{label}</span>
               ))}
             </span>
           </div>
         </div>
         <div class="mt-5 flex gap-3 border-t border-divider pt-5">
           <Mark size={36} />
-          <div class="flex flex-1 flex-col gap-1.5 text-md">
+          <div class="flex flex-1 flex-col gap-1.5 text-base">
             <span><span class="font-medium">Holler</span> <span class="text-xs text-muted">Tue 10:00</span></span>
             <span>A reminder: Mira still needs your answer to <span class="font-normal">How was your week?</span></span>
           </div>
@@ -56,7 +56,7 @@ const steps = [
     </section>
 
     <section aria-labelledby="how" class="py-16">
-      <h2 id="how" class="text-4xl tracking-title">How it works</h2>
+      <h2 id="how" class="text-5xl tracking-title">How it works</h2>
       <ol class="mt-8 grid gap-4 md:grid-cols-3">
         {steps.map((step, index) => (
           <li class="rounded-plate bg-plate p-6 shadow-[0_0_0_1px_var(--edge)]">
@@ -69,7 +69,7 @@ const steps = [
     </section>
 
     <section id="pricing" aria-labelledby="pricing-title" class="py-16">
-      <h2 id="pricing-title" class="text-4xl tracking-title">Pricing</h2>
+      <h2 id="pricing-title" class="text-5xl tracking-title">Pricing</h2>
       <div class="mt-8 grid gap-4 md:grid-cols-2">
         <div class="rounded-plate bg-plate p-6 shadow-[0_0_0_1px_var(--edge)]">
           <h3 class="text-xl">{plans.free.label}</h3>

@@ -4,7 +4,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { z } from "zod";
 import { Logo } from "@/components/logo";
-import { Button, buttonClasses } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { Plate } from "@/components/ui/plate";
 import { authClient } from "@/lib/auth-client";
 import { installStatusQuery } from "@/lib/queries";
@@ -71,7 +71,7 @@ function InstallBody({
   return (
     <>
       <div>
-        <h1 className="text-2xl tracking-title">
+        <h1 className="text-4xl tracking-title">
           {status.signedIn && status.teamName
             ? `Add Holler to ${status.teamName}`
             : "Add Holler to Slack"}
@@ -95,9 +95,9 @@ function InstallBody({
         </p>
       )}
       <div className="flex flex-col gap-3">
-        <a href="/slack/oauth/install" className={`${buttonClasses("primary")} w-full`}>
+        <Button variant="primary" className="w-full" render={<a href="/slack/oauth/install" />}>
           Add to Slack
-        </a>
+        </Button>
         <p className="text-muted text-sm">
           If your workspace needs an admin to approve apps, Slack sends them your request. Come back
           here once they approve it.
@@ -170,7 +170,7 @@ function SignInAfterInstall() {
   return (
     <>
       <div>
-        <h1 className="text-2xl tracking-title">Holler is in Slack</h1>
+        <h1 className="text-4xl tracking-title">Holler is in Slack</h1>
         <p className="mt-1.5 text-ink-2">
           Sign in with the same Slack account to send your first Holler.
         </p>
@@ -191,14 +191,12 @@ function Enterprise() {
   return (
     <>
       <div>
-        <h1 className="text-2xl tracking-title">Enterprise Grid is not supported yet</h1>
+        <h1 className="text-4xl tracking-title">Enterprise Grid is not supported yet</h1>
         <p className="mt-1.5 text-ink-2">
           Holler works with standard Slack workspaces for now, so nothing was installed.
         </p>
       </div>
-      <Link to="/sign-in" className={buttonClasses("secondary")}>
-        Back to sign in
-      </Link>
+      <Button render={<Link to="/sign-in" />}>Back to sign in</Button>
     </>
   );
 }

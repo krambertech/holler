@@ -22,6 +22,7 @@ export const pairs: Pair[] = [
   { text: "on-primary", on: "primary", min: TEXT },
   { text: "on-primary", on: "primary-hover", min: TEXT },
   { text: "tint-ink", on: "tint", min: TEXT },
+  { text: "live-ink", on: "live", min: TEXT },
   { text: "primary", on: "plate", min: TEXT },
   { text: "primary", on: "canvas", min: TEXT },
   { text: "answered-ink", on: "answered", min: TEXT },
@@ -30,10 +31,19 @@ export const pairs: Pair[] = [
   { text: "closed-ink", on: "closed", min: TEXT },
   { text: "danger-ink", on: "danger", min: TEXT },
   { text: "danger-ink", on: "plate", min: TEXT },
+  // Notice: ink text on its tinted boxes.
+  ...["waiting", "danger", "tint", "well"].flatMap((on) => [
+    { text: "ink", on, min: TEXT },
+    { text: "ink-2", on, min: TEXT },
+  ]),
+  // Toast: canvas text on an ink plate, and its action.
+  { text: "canvas", on: "ink", min: TEXT },
+  { text: "toast-action", on: "ink", min: TEXT },
   ...[1, 2, 3, 4, 5, 6].map((n) => ({ text: `avatar-${n}-ink`, on: `avatar-${n}`, min: TEXT })),
-  // A status dot sits beside its word, so it needs only to be seen, not read.
+  // A status dot sits beside its word, so it needs only to be seen: WCAG 1.4.11, 3:1 for non-text.
+  { text: "live-dot", on: "plate", min: LARGE },
   { text: "answered-dot", on: "plate", min: LARGE },
-  { text: "waiting-dot", on: "plate", min: 2 },
+  { text: "waiting-dot", on: "plate", min: LARGE },
   { text: "danger-dot", on: "plate", min: LARGE },
   { text: "focus", on: "plate", min: LARGE },
   { text: "focus", on: "canvas", min: LARGE },

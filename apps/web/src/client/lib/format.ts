@@ -33,3 +33,23 @@ export function shortDate(iso: string): string {
 export function count(n: number): string {
   return new Intl.NumberFormat().format(n);
 }
+
+/** "No people", "1 person", "12 people". Both forms written out, never built from a ternary on 1. */
+export function peopleLabel(n: number): string {
+  if (n === 0) return "No people";
+  if (n === 1) return "1 person";
+  return `${count(n)} people`;
+}
+
+/** "1 question", "3 questions". */
+export function questionsLabel(n: number): string {
+  if (n === 1) return "1 question";
+  return `${count(n)} questions`;
+}
+
+/** A share as a percentage in the reader's locale: 0.58 → "58%". */
+export function percent(share: number): string {
+  return new Intl.NumberFormat(undefined, { style: "percent", maximumFractionDigits: 0 }).format(
+    share,
+  );
+}

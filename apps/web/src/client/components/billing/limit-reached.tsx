@@ -1,6 +1,7 @@
 import type { BillingOverview } from "@holler/core";
 import { useQuery } from "@tanstack/react-query";
-import { Button, buttonClasses } from "@/components/ui/button";
+import type { ComponentProps } from "react";
+import { Button } from "@/components/ui/button";
 import { Plate } from "@/components/ui/plate";
 import { cn } from "@/lib/cn";
 import {
@@ -11,10 +12,9 @@ import {
   useBillingRedirect,
 } from "./billing-queries";
 
-interface Props {
+interface Props extends ComponentProps<typeof Plate> {
   /** The `402 limit_reached` message from the server, shown until the plan has loaded. */
-  fallbackMessage?: string;
-  className?: string | undefined;
+  fallbackMessage?: string | undefined;
 }
 
 /**
@@ -22,39 +22,45 @@ interface Props {
  * `402 limit_reached`. Owners can upgrade from here; senders learn which owner to ask. The draft is
  * untouched either way. Send keeps the screen's plum button, so this one is secondary.
  */
-export function LimitReached({ fallbackMessage, className }: Props) {
+function LimitReached({ fallbackMessage, className, ...props }: Props) {
   const billing = useQuery(billingQuery);
   const overview = billing.data;
 
   if (!overview) {
     return (
-      <Plate role="alert" className={cn("px-5 py-4 text-ink-2", className)}>
+      <Plate
+        role="alert"
+        data-slot="limit-reached"
+        className={cn("px-5 py-4 text-ink-2", className)}
+        {...props}
+      >
         {fallbackMessage ??
           "This workspace sent this month's hollers on Free. Your draft is saved."}
       </Plate>
     );
   }
   if (overview.plan === "team") return null;
-  return <LimitReachedMessage overview={overview} className={className} />;
+  return <LimitReachedMessage overview={overview} className={className} {...props} />;
 }
 
-interface MessageProps {
+interface MessageProps extends ComponentProps<typeof Plate> {
   overview: BillingOverview;
-  className?: string | undefined;
 }
 
 /** The message itself, for a plan already loaded. The design page shows it with sample plans. */
-export function LimitReachedMessage({ overview, className }: MessageProps) {
+function LimitReachedMessage({ overview, className, ...props }: MessageProps) {
   return (
     <Plate
       role="alert"
+      data-slot="limit-reached"
       className={cn(
         "flex flex-col items-start gap-4 px-5 py-4 sm:flex-row sm:items-center sm:justify-between",
         className,
       )}
+      {...props}
     >
       <div className="flex max-w-[56ch] flex-col gap-1">
-        <h2 className="text-md text-ink">{limitTitle(overview)}</h2>
+        <h2 className="font-normal text-ink">{limitTitle(overview)}</h2>
         <p className="text-ink-2">{limitBody(overview)}</p>
       </div>
       {overview.canManage ? <UpgradeButton /> : <SeePlans />}
@@ -81,9 +87,7 @@ function UpgradeButton() {
 function SeePlans() {
   return (
     // A plain link: Settings is its own area's route, and #billing scrolls to this section there.
-    <a href="/settings#billing" className={buttonClasses("secondary")}>
-      See plans
-    </a>
+    <Button render={<a href="/settings#billing" />}>See plans</Button>
   );
 }
 
@@ -108,3 +112,5 @@ function limitBody(overview: BillingOverview): string {
   }
   return `Ask a workspace owner to upgrade to Team, or send it on ${day}. Your draft is saved.`;
 }
+
+export { LimitReached, LimitReachedMessage };
