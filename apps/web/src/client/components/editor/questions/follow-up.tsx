@@ -74,6 +74,7 @@ function ShowAfter({ number, onlyAfter, labels, invalid, describedBy, onChange }
           <button
             type="button"
             aria-label={`Show the note after: ${afterWords(onlyAfter, labels)}`}
+            // oxlint-disable-next-line jsx-a11y/role-supports-aria-props -- Biome let this pass; ARIA has no aria-invalid on a button, so move the error to the field
             aria-invalid={invalid || undefined}
             aria-describedby={describedBy}
             className={quietPicker}
@@ -94,7 +95,7 @@ function ShowAfter({ number, onlyAfter, labels, invalid, describedBy, onChange }
         {labels.map((label, at) => (
           <DropdownMenuCheckboxItem
             // Labels can repeat while they are being written; the position cannot.
-            // biome-ignore lint/suspicious/noArrayIndexKey: an answer is its position here
+            // oxlint-disable-next-line react/no-array-index-key -- an answer is its position here
             key={at}
             checked={chosen.has(at)}
             onCheckedChange={(on) => toggle(at, on)}

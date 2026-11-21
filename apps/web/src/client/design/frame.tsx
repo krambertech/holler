@@ -169,7 +169,7 @@ export function DoDont({ dos, donts }: { dos: ReactNode[]; donts: ReactNode[] })
           </span>
           <ul className="mt-3 grid gap-2 text-ink-2">
             {list.items.map((item, i) => (
-              // biome-ignore lint/suspicious/noArrayIndexKey: static prose, never reordered.
+              // oxlint-disable-next-line react/no-array-index-key -- static prose, never reordered
               <li key={i}>{item}</li>
             ))}
           </ul>

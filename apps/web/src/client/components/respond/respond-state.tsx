@@ -7,10 +7,6 @@ interface Props extends Omit<ComponentProps<"div">, "title"> {
   description?: ReactNode | undefined;
 }
 
-/**
- * The web form when there is nothing to answer: the thank-you after sending, a Holler that
- * closed, a link that does not work. One plate: what happened, and what to do now.
- */
 function RespondState({ title, description, className, children, ...props }: Props) {
   return (
     <Plate

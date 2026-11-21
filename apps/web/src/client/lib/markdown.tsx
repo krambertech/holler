@@ -1,11 +1,5 @@
 import { Fragment, type ReactNode } from "react";
 
-/**
- * The little Markdown a Holler's description uses, the same set Slack's mrkdwn gets: paragraphs,
- * lists, bold, italics and links. Built as React elements, never as HTML, so nothing a sender
- * writes can run on the page. Links open in a new tab and only http and https are links.
- */
-
 const inline =
   /(\*\*[^*]+\*\*|__[^_]+__|\*[^*\s][^*]*\*|_[^_\s][^_]*_|\[[^\]]+\]\(https?:\/\/[^)\s]+\))/g;
 
@@ -49,8 +43,12 @@ export function markdown(source: string): ReactNode {
       return (
         <ul key={key} className="list-disc ps-5">
           {lines.map((line, i) => (
-            // biome-ignore lint/suspicious/noArrayIndexKey: lines of a static description never move
-            <li key={i}>{spans(line.replace(bullet, ""))}</li>
+            <li
+              // oxlint-disable-next-line react/no-array-index-key -- the lines of a description never move
+              key={i}
+            >
+              {spans(line.replace(bullet, ""))}
+            </li>
           ))}
         </ul>
       );
@@ -58,8 +56,10 @@ export function markdown(source: string): ReactNode {
     return (
       <p key={key}>
         {lines.map((line, i) => (
-          // biome-ignore lint/suspicious/noArrayIndexKey: lines of a static description never move
-          <Fragment key={i}>
+          <Fragment
+            // oxlint-disable-next-line react/no-array-index-key -- the lines of a description never move
+            key={i}
+          >
             {i > 0 && <br />}
             {spans(line.replace(/^#{1,6}\s+/, ""))}
           </Fragment>

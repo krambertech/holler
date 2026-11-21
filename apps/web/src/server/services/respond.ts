@@ -8,23 +8,12 @@ import { searchDirectory } from "./directory";
 import { checkRespondLink } from "./respond-links";
 import { recordResponse } from "./responses";
 
-/**
- * The web form at /respond/$id, for a Holler Slack cannot show. The recipient has no account: the
- * signed link in their DM says who they are, and it is checked before anything is read, so a
- * guessed Holler id shows nothing. Answers go through recordResponse like every other door, and
- * the DM and the announcement are put right through the queue. docs/slack.md, Answering.
- */
-
 const badLink = () =>
   new ServiceError(
     "forbidden",
     "This link does not open this Holler. Open it again from your message in Slack.",
   );
 
-/**
- * The service context for the person a signed link names. Refuses a link that is not theirs or
- * not this Holler's before it touches the database.
- */
 export async function recipientFromLink(
   base: { db: Db; now: () => Date },
   env: Pick<Bindings, "BETTER_AUTH_SECRET" | "PRODUCT_URL">,
@@ -50,7 +39,6 @@ function recipientOf(ctx: ServiceContext): string {
   return ctx.actor.recipientSlackUserId;
 }
 
-/** What the form shows this person now: the questions, or that they answered, or that it closed. */
 export async function respondFormFor(ctx: ServiceContext, hollerId: string): Promise<RespondForm> {
   const slackUserId = recipientOf(ctx);
   const loaded = await loadSlackHoller(ctx.db, hollerId);
@@ -78,7 +66,6 @@ export async function respondFormFor(ctx: ServiceContext, hollerId: string): Pro
   if (recipient.answeredAt) return { state: "answered", holler };
   if (row.status !== "live") return { state: "closed", holler };
 
-  // The Other option keeps its stored position, which is how a follow-up names it.
   const others =
     h.questions.length === 0
       ? []
@@ -129,11 +116,6 @@ export async function respondFormFor(ctx: ServiceContext, hollerId: string): Pro
   return { state: "open", holler, questions };
 }
 
-/**
- * Records the form's answers. Closing or answering in Slack while the page was open is a state
- * the page shows, not an error. An answer that does not fit its question is thrown with the
- * question's id as its field, so the form puts the message beside it.
- */
 export async function answerOnWeb(
   ctx: ServiceContext,
   env: Bindings,
@@ -144,20 +126,14 @@ export async function answerOnWeb(
   try {
     await recordResponse(ctx, { hollerId, slackUserId, via: "web", response });
   } catch (error) {
-    if (error instanceof ServiceError && (error.code === "closed" || error.code === "conflict")) {
-      return respondFormFor(ctx, hollerId);
-    }
-    throw error;
+    if (!(error instanceof ServiceError)) throw error;
+    if (error.code === "closed") return respondFormFor(ctx, hollerId);
+    if (error.code !== "conflict") throw error;
   }
-  // The thank-you in their DM and the announcement's count, both retried by the queue.
   await queueAfterResponse(env, hollerId, slackUserId);
   return respondFormFor(ctx, hollerId);
 }
 
-/**
- * People a person question can pick, for someone still answering a Holler that asks one. Nobody
- * else gets the directory through a link.
- */
 export async function respondPeople(
   ctx: ServiceContext,
   hollerId: string,

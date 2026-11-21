@@ -5,10 +5,6 @@ import { z } from "zod";
 import type { AppEnv } from "../app";
 import { answerOnWeb, recipientFromLink, respondFormFor, respondPeople } from "../services/respond";
 
-/**
- * The web form's API. No sign-in: every call carries the signed link from the person's DM, and
- * the service checks it before anything else. Answers are never cached by a browser or a proxy.
- */
 export const respondRoutes = new Hono<AppEnv>()
   .use("*", async (c, next) => {
     await next();

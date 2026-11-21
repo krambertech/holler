@@ -124,6 +124,7 @@ function Consent() {
                 </li>
                 {asksWrite && (
                   <li>
+                    {/* oxlint-disable-next-line jsx-a11y/label-has-associated-control -- the text is two spans deep, past where the rule looks */}
                     <label className="flex cursor-pointer gap-3">
                       <input
                         type="checkbox"

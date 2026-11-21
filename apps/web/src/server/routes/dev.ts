@@ -19,11 +19,6 @@ import { requireMember } from "./context";
  * - `GET /state` is the stored state a recipe compares with the screen.
  * - `POST /tick` runs the cron's pass at `at`, so a close time can pass without waiting.
  * - `POST /answer` answers as a recipient, the way their Slack button would, and updates their DM.
- * - `GET /respond-link?holler=…&as=U…` is that recipient's signed web form link, the one their DM
- *   carries, as `{ url }` relative to this server.
- * - `POST /web-survey` makes a live survey answered on the web form, every question type in it,
- *   sent to the lead and Marta without counting against the monthly limit. `{ id, url }`, the
- *   lead's link. `{ "anonymous": true }` makes it anonymous.
  */
 export const devRoutes = new Hono<AppEnv>()
   .get("/sign-in", async (c) => {

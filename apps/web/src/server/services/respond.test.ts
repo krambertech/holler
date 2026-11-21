@@ -25,10 +25,6 @@ beforeEach(() => emptyDatabase(raw));
 
 const NOW = new Date("2026-11-20T10:00:00Z");
 
-/**
- * A survey only the web form can show: a follow-up only after some answers. It holds one question
- * of every type and every extra, so the form is proved against all of them.
- */
 const webOnly = {
   mode: "survey",
   title: "Offsite",
@@ -40,7 +36,6 @@ const webOnly = {
       prompt: "Where?",
       options: [{ label: "Lisbon" }, { label: "Tallinn" }, { label: "Riga" }],
       allowOther: true,
-      // Tallinn and Other ask why; Lisbon and Riga do not.
       followUp: { prompt: "Why there?", onlyAfter: [1, 3] },
     },
     {
@@ -77,7 +72,6 @@ async function live(draft: Partial<HollerDraftInput> = {}) {
   const holler = await createDraft(fixture.ctx, { ...webOnly, ...draft });
   await sendHoller(fixture.ctx, harness.env, holler.id);
   await harness.drain(NOW);
-  /** The link in this person's DM, read back the way the page reads it. */
   const linkOf = async (slackUserId: string) => {
     const url = new URL(await respondUrl(harness.env, holler.id, slackUserId));
     return { u: url.searchParams.get("u") ?? "", s: url.searchParams.get("s") ?? "" };
@@ -87,7 +81,6 @@ async function live(draft: Partial<HollerDraftInput> = {}) {
   return { ...fixture, ...harness, slack, holler, linkOf, as };
 }
 
-/** What a person would answer to each question, by type. A type with no entry fails the test. */
 function fill(question: RespondQuestion): ResponseInput["answers"][number] {
   const plain = question.options.filter((o) => !o.isOther);
   switch (question.type) {
@@ -118,7 +111,6 @@ describe("the signed link", () => {
     await expect(recipientFromLink(base, env, holler.id, mine)).resolves.toMatchObject({
       actor: { via: "web", recipientSlackUserId: "UA" },
     });
-    // Someone else's id with my signature, my link on another Holler, a forged signature.
     await expect(
       recipientFromLink(base, env, holler.id, { ...mine, u: "UB" }),
     ).rejects.toMatchObject({ code: "forbidden" });
@@ -160,8 +152,6 @@ describe("the form", () => {
   });
 
   it("shows a follow-up for exactly the answers the server takes a note for", async () => {
-    // The page decides what to show with noteAsked; recordResponse decides what to keep. For every
-    // option of a conditional question, the two must agree, or a typed note is lost or refused.
     for (const optionIndex of [0, 1, 2, 3]) {
       await emptyDatabase(raw);
       const { env, holler, as } = await live();
@@ -249,6 +239,24 @@ describe("the form", () => {
       .from(schema.responses)
       .where(eq(schema.responses.hollerId, holler.id));
     expect(responses).toHaveLength(1);
+  });
+
+  it("puts the DM right when the answers were kept but the queue refused, once they send again", async () => {
+    const { env, holler, as, drain, slack, refuse } = await live();
+    const ctx = await as("UA");
+    const form = await respondFormFor(ctx, holler.id);
+    if (form.state !== "open") throw new Error("expected an open form");
+    const answers = { answers: form.questions.map(fill) };
+    refuse.add("answered");
+    await expect(answerOnWeb(ctx, env, holler.id, answers)).rejects.toThrow(/refusing answered/);
+    refuse.delete("answered");
+    await expect(answerOnWeb(ctx, env, holler.id, answers)).resolves.toMatchObject({
+      state: "answered",
+    });
+    const invite = slack.posted.find((message) => message.text.includes("Offsite"));
+    await drain(NOW);
+    const edit = slack.updated.find((message) => message.ts === invite?.ts);
+    expect(edit?.text).toBe("Thanks. Your answer to Offsite is in.");
   });
 
   it("shows the closed state, and keeps nothing sent after the close", async () => {

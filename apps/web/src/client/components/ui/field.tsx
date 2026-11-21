@@ -197,7 +197,6 @@ function Field({
   return (
     <DescriberContext.Provider value={describer}>
       <FieldContext.Provider value={context}>
-        {/* biome-ignore lint/a11y/useSemanticElements: one control and its text, which a fieldset is not */}
         <div
           role="group"
           data-slot="field"
@@ -239,9 +238,10 @@ function FieldLabel({ className, id, htmlFor, aside, ...props }: FieldLabelProps
   const generatedId = React.useId();
   const ownId = id ?? generatedId;
   const claimLabelId = field?.claimLabelId;
-  React.useLayoutEffect(() => claimLabelId?.(ownId), [claimLabelId, ownId]);
+  React.useLayoutEffect(() => {
+    return claimLabelId?.(ownId);
+  }, [claimLabelId, ownId]);
   const label = (
-    // biome-ignore lint/a11y/noLabelWithoutControl: the Field supplies htmlFor.
     <label
       id={ownId}
       data-slot="field-label"

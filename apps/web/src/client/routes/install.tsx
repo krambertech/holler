@@ -160,7 +160,6 @@ function SignInAfterInstall() {
     }
   }
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: starts Sign in with Slack once, when the page opens.
   useEffect(() => {
     if (started.current) return;
     started.current = true;

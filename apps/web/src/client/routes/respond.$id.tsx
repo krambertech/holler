@@ -22,11 +22,6 @@ import { count, questionsLabel } from "@/lib/format";
 import { markdown } from "@/lib/markdown";
 import { type Drafts, draftOf, problemsOf, toResponse } from "@/lib/respond";
 
-/**
- * The web form: where someone answers a Holler that Slack cannot show, such as one with a
- * follow-up only after some answers. There is no sign-in. The signed link from their DM, `u` and
- * `s`, says who they are, and the server checks it on every call. docs/slack.md, Answering.
- */
 export const Route = createFileRoute("/respond/$id")({
   validateSearch: z.object({
     u: z.string().catch(""),
@@ -43,7 +38,6 @@ function RespondPage() {
   const form = useQuery({
     queryKey: formKey(id, u),
     queryFn: () => api<RespondForm>(`/respond/${id}?${new URLSearchParams({ u, s })}`),
-    // A refused link stays refused; only a failed connection is worth another try.
     retry: (failures, error) => !(error instanceof ApiError && error.status < 500) && failures < 2,
     refetchOnWindowFocus: false,
   });
@@ -101,7 +95,6 @@ function Body({ form, id, link }: BodyProps) {
 type HollerInfo = RespondForm["holler"];
 
 function Answered({ holler }: { holler: HollerInfo }) {
-  // The thank-you replaces a long form, so start at its top.
   useEffect(() => {
     window.scrollTo({ top: 0 });
   }, []);
@@ -135,7 +128,6 @@ function Closed({ holler }: { holler: HollerInfo }) {
   );
 }
 
-/** "Friday at 18:00" within the coming week, "28 November at 18:00" past it, in their own zone. */
 function closesWhen(iso: string, past = false): string {
   const at = new Date(iso);
   const time = new Intl.DateTimeFormat(undefined, {
@@ -150,7 +142,6 @@ function closesWhen(iso: string, past = false): string {
   return past && near ? `on ${day} at ${time}` : `${day} at ${time}`;
 }
 
-/** Answers in progress survive a reload or a closed tab, on this device only, until they are sent. */
 function useDrafts(key: string) {
   const [drafts, setDrafts] = useState<Drafts>(() => {
     try {
@@ -205,7 +196,6 @@ function OpenForm({ form, id, link }: OpenFormProps) {
     },
   });
 
-  // Once someone has tried to send, each problem clears as they fix it, and none appears early.
   useEffect(() => {
     if (tried) setProblems(problemsOf(questions, drafts));
   }, [tried, questions, drafts]);
@@ -318,7 +308,6 @@ function OpenForm({ form, id, link }: OpenFormProps) {
   );
 }
 
-/** "1 question needs another look." Both sentences written out. */
 function problemsLine(n: number, questions: readonly RespondQuestion[]): string {
   if (questions.length === 1 || n === 1) return "One answer needs another look.";
   return `${count(n)} answers need another look.`;

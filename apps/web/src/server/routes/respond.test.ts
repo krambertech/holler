@@ -4,11 +4,6 @@ import { app } from "../app";
 import type { Bindings } from "../env";
 import { testEnv } from "./v1/test-env";
 
-/**
- * The web form's API through the whole Worker: no session, only the signed link from the DM.
- * The service rules are in services/respond.test.ts; this proves the door.
- */
-
 let env: Bindings;
 let dispose: () => Promise<void>;
 beforeAll(async () => ({ env, dispose } = await testEnv()));
@@ -36,7 +31,6 @@ async function signIn(): Promise<string> {
     .join("; ");
 }
 
-/** A live survey answered on the web, sent to the lead, and the lead's link from their DM. */
 async function webHoller() {
   const cookie = await signIn();
   const created = await request(

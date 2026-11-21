@@ -5,12 +5,6 @@ import { schema } from "../db";
 import type { ServiceContext } from "./context";
 import { createDraft } from "./hollers";
 
-/**
- * Dev routes only: a live survey answered on the web form, with one question of every type, made
- * for the lead and Marta without a send. It never counts against the monthly limit, so browser
- * tests and the verify skill can make as many as they need. A real send is proved in
- * services/respond.test.ts and routes/respond.test.ts.
- */
 export const webSurvey = {
   mode: "survey",
   title: "Offsite planning",
@@ -23,7 +17,6 @@ export const webSurvey = {
       prompt: "Where would you rather go?",
       options: [{ label: "Lisbon" }, { label: "Tallinn" }, { label: "Riga" }],
       allowOther: true,
-      // Tallinn and Other ask why. Only the web form can show a note after some answers.
       followUp: { prompt: "What makes it the right place?", onlyAfter: [1, 3] },
     },
     {

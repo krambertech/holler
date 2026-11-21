@@ -74,14 +74,7 @@ mountOpenApi(app);
 /** Resolves the caller for every product API route. Routes that need one use `requireMember`. */
 app.use("/api/*", async (c, next) => {
   // The public API resolves keys as well as sessions, in routes/v1.
-  const own = [
-    "/api/auth/",
-    "/api/health",
-    "/api/v1/",
-    "/api/openapi.json",
-    // The web form: recipients have no session; the signed link says who they are.
-    "/api/respond/",
-  ];
+  const own = ["/api/auth/", "/api/health", "/api/v1/", "/api/openapi.json", "/api/respond/"];
   if (!own.some((prefix) => c.req.path.startsWith(prefix))) {
     c.set("principal", await principalFor(c.get("auth"), c.get("db"), c.req.raw));
   }

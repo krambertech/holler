@@ -1,25 +1,15 @@
 import { isChoice, type QuestionType } from "./modes";
 
-/**
- * Whether one answer fits its question, as a pure function, so the web form can show every
- * problem at once before it sends and recordResponse refuses the same things with the same words.
- * The server alone checks what needs the database: that a person picked is in the workspace.
- */
-
-/** What checking an answer needs to know about its question. */
 export interface CheckedQuestion {
   type: QuestionType;
   required: boolean;
   maxChoices: number | null;
   numberMin: number | null;
   numberMax: number | null;
-  /** Every option, the Other option included, with the position a follow-up names it by. */
   options: readonly { id: string; position: number; isOther: boolean }[];
-  /** `onlyAfter` lists the option positions that show the note; null shows it after any answer. */
   followUp: { onlyAfter: readonly number[] | null } | null;
 }
 
-/** One answer, as `answerInputSchema` reads it. Missing fields are empty. */
 export interface CheckedAnswer {
   optionIds?: readonly string[] | undefined;
   text?: string | null | undefined;
@@ -31,10 +21,6 @@ export interface CheckedAnswer {
 
 const count = new Intl.NumberFormat("en");
 
-/**
- * True when picking `picked` asks for the question's follow-up note. A follow-up asks only once
- * something is picked; one with `onlyAfter` asks only after one of those options.
- */
 export function noteAsked(question: CheckedQuestion, picked: readonly string[]): boolean {
   if (!question.followUp || picked.length === 0) return false;
   const shows = question.followUp.onlyAfter;
@@ -42,7 +28,6 @@ export function noteAsked(question: CheckedQuestion, picked: readonly string[]):
   return question.options.some((o) => picked.includes(o.id) && shows.includes(o.position));
 }
 
-/** The Other option of a choice question, if it has one. */
 export function otherOption(question: CheckedQuestion) {
   return question.options.find((o) => o.isOther);
 }
@@ -55,7 +40,6 @@ export function rangeMessage(min: number | null, max: number | null): string {
   return `Enter a whole number of ${count.format(max ?? 0)} or less.`;
 }
 
-/** What is wrong with `answer`, written for the person answering, or null when it fits. */
 export function answerProblem(
   question: CheckedQuestion,
   answer: CheckedAnswer | undefined,

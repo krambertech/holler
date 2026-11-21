@@ -67,7 +67,8 @@ function TooltipTrigger(props: TriggerProps) {
 }
 
 interface ContentProps
-  extends Omit<TooltipPrimitive.Popup.Props, "className">,
+  extends
+    Omit<TooltipPrimitive.Popup.Props, "className">,
     Pick<TooltipPrimitive.Positioner.Props, "align" | "alignOffset" | "side" | "sideOffset"> {
   className?: string | undefined;
 }

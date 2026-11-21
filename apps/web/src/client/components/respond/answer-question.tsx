@@ -26,23 +26,13 @@ import { count } from "@/lib/format";
 import { atPickLimit, type DraftAnswer, noteShown, otherShown, toggleOption } from "@/lib/respond";
 import { useReduceMotion } from "@/lib/use-reduce-motion";
 
-/**
- * One question on the web form, drawn for its type: radio rows, a row of numbers for a scale, two
- * tiles for yes or no, checkboxes, a search over a long list or the workspace's people, a box for
- * a number or for words. The Other write-in and the follow-up note open under the answer that asks
- * for them. The rules for what shows and what is sent live in lib/respond.ts.
- */
-
-/** Up to this many options show as a list; past it, a search. Slack's own cut-off is 10. */
 const inlineOptions = 12;
 
 interface Props extends Omit<ComponentProps<"fieldset">, "onChange"> {
   question: RespondQuestion;
   value: DraftAnswer;
   onValueChange: (next: DraftAnswer) => void;
-  /** The server's or the form's message for this question, shown under it. */
   error?: string | undefined;
-  /** People in the workspace matching `query`, for a person question. */
   searchPeople: (query: string) => Promise<RespondPerson[]>;
 }
 
@@ -64,7 +54,6 @@ function AnswerQuestion({
       className={cn("gap-3", className)}
       {...props}
     >
-      {/* A legend sits outside the set's flex gap, so its own margin spaces it. */}
       <FieldLegend
         id={legendId}
         className={cn(
@@ -105,7 +94,6 @@ function AnswerQuestion({
   );
 }
 
-/** "Pick up to 3", "A whole number from 1 to 7": how to answer, when the type does not show it. */
 function hintFor(question: RespondQuestion): string | null {
   const limit = question.maxChoices;
   if (question.type === "multi") {
@@ -180,7 +168,6 @@ function Control(props: ControlProps) {
 const numbered = (question: RespondQuestion) =>
   question.options.every((o) => /^\d+$/.test(o.label));
 
-/** The Other write-in, right under the Other option, focused as Other is picked. */
 function OtherText({ question, value, onValueChange, invalid }: ControlProps) {
   const ref = useRef<HTMLInputElement>(null);
   const shown = otherShown(question, value);
@@ -238,7 +225,6 @@ function OptionChecks(props: ControlProps) {
   const full = atPickLimit(question, value);
   return (
     <div className="flex flex-col gap-1">
-      {/* biome-ignore lint/a11y/useSemanticElements: the fieldset around this already is one; this names the checkboxes' group */}
       <div role="group" aria-labelledby={legendId} className="flex flex-col">
         {question.options.map((option, index) => {
           const on = value.optionIds.includes(option.id);
@@ -247,7 +233,6 @@ function OptionChecks(props: ControlProps) {
               key={option.id}
               orientation="horizontal"
               className="min-h-11 py-1"
-              // At the limit, the rest wait until one is unticked; the hint above says why.
               disabled={full && !on}
             >
               <Checkbox
@@ -270,7 +255,6 @@ function OptionChecks(props: ControlProps) {
   );
 }
 
-/** A scale's words at each end go on its first and last option, as in Slack: "1, Chaos". */
 function labelOf(question: RespondQuestion, index: number): string {
   const option = question.options[index];
   if (!option) return "";
@@ -289,7 +273,6 @@ const tileClassName = cn(
   "aria-invalid:edge-danger",
 );
 
-/** A numbered scale as one row of numbers, the words for each end under them. */
 function NumberScale({ question, value, onValueChange, legendId, invalid }: ControlProps) {
   const picked = value.optionIds[0] ?? null;
   return (
@@ -323,7 +306,6 @@ function NumberScale({ question, value, onValueChange, legendId, invalid }: Cont
   );
 }
 
-/** Yes or no: two tiles side by side. */
 function Tiles({ question, value, onValueChange, legendId, invalid }: ControlProps) {
   const picked = value.optionIds[0] ?? null;
   return (
@@ -353,7 +335,6 @@ interface Item {
   avatarUrl?: string | null | undefined;
 }
 
-/** A long list of options, searched. Multiple choice keeps its pick limit. */
 function OptionSearch(props: ControlProps) {
   const { question, value, onValueChange, legendId, invalid } = props;
   const items: Item[] = question.options.map((o, index) => ({
@@ -399,7 +380,6 @@ function OptionSearch(props: ControlProps) {
           isItemEqualToValue={(a, b) => a.value === b.value}
           onValueChange={(next) => {
             const ids = next.map((item) => item.value);
-            // The pick limit holds here too: a tick past it is not taken.
             if (question.maxChoices !== null && ids.length > question.maxChoices) return;
             onValueChange({ ...value, optionIds: ids });
           }}
@@ -413,7 +393,6 @@ function OptionSearch(props: ControlProps) {
   );
 }
 
-/** The chosen names, "Mira and Tom", or the placeholder while nothing is chosen. */
 const namesOf = (items: readonly Item[], placeholder: string): ReactNode =>
   items.length === 0 ? (
     <span data-placeholder="" className="text-muted">
@@ -423,7 +402,6 @@ const namesOf = (items: readonly Item[], placeholder: string): ReactNode =>
     new Intl.ListFormat(undefined).format(items.map((i) => i.label))
   );
 
-/** Someone in the workspace, searched in Holler's copy of the Slack directory. */
 function PeoplePicker({
   question,
   value,
@@ -434,7 +412,6 @@ function PeoplePicker({
 }: ControlProps) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
-  // Searches only while the list is open, so no search can land after the answers are sent.
   const found = usePeopleSearch(searchPeople, query.trim(), open);
   const toItem = (p: RespondPerson): Item => ({
     value: p.slackUserId,
@@ -442,7 +419,6 @@ function PeoplePicker({
     avatarUrl: p.avatarUrl,
   });
   const chosen = value.people.map(toItem);
-  // Who is chosen stays in the list while a search runs, so they can be unticked from it.
   const items = [
     ...chosen,
     ...(found.people ?? []).map(toItem).filter((i) => !chosen.some((c) => c.value === i.value)),
@@ -510,10 +486,6 @@ function PeoplePicker({
   );
 }
 
-/**
- * The people matching what is typed, a moment after typing stops, while `enabled`. A late answer
- * to an older search never replaces a newer one. Null until the first search answers.
- */
 function usePeopleSearch(
   search: (query: string) => Promise<RespondPerson[]>,
   query: string,
@@ -543,7 +515,6 @@ function usePeopleSearch(
   return { people };
 }
 
-/** Opens a part of the question in place: the Other write-in or the follow-up note. */
 function Reveal({ shown, children }: { shown: boolean; children: ReactNode }) {
   const reduce = useReduceMotion();
   return (
@@ -554,7 +525,6 @@ function Reveal({ shown, children }: { shown: boolean; children: ReactNode }) {
           animate={reduce ? { opacity: 1 } : { opacity: 1, height: "auto" }}
           exit={reduce ? { opacity: 0 } : { opacity: 0, height: 0 }}
           transition={{ duration: 0.2, ease: EASE_OUT }}
-          // Room for a focus ring, which the height animation would otherwise clip.
           className="-m-1 overflow-hidden p-1"
         >
           {children}

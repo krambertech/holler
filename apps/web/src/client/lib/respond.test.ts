@@ -22,7 +22,6 @@ const where: RespondQuestion = {
     { id: "oth", position: 2, label: "Other", isOther: true },
   ],
   maxChoices: null,
-  // Tallinn and Other ask why.
   followUp: { prompt: "Why there?", onlyAfter: [1, 2] },
   lowLabel: null,
   highLabel: null,
@@ -69,7 +68,6 @@ describe("the follow-up and Other", () => {
   });
 
   it("never sends a note or a write-in once its answer is unpicked", () => {
-    // Picked Other, wrote in it and a note, then changed their mind to Lisbon.
     const changed = { ...emptyAnswer(), optionIds: ["lis"], otherText: "Riga", note: "The sea" };
     expect(toResponse([where], { q1: changed }).answers).toEqual([
       { questionId: "q1", optionIds: ["lis"], otherText: null, note: null },

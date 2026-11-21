@@ -15,7 +15,6 @@ import { type ServiceContext, ServiceError } from "./context";
 const { hollers, questions, options, recipients, responses, answers, answerNotes, slackPeople } =
   schema;
 
-/** A stored question and its option rows, in the shape the shared answer checks read. */
 export function checkedQuestion(
   question: typeof questions.$inferSelect,
   own: readonly (typeof options.$inferSelect)[],
@@ -89,7 +88,6 @@ export async function recordResponse(
     const answer = parsed.answers.find((a) => a.questionId === question.id);
     const own = opts.filter((o) => o.questionId === question.id);
     const checked = checkedQuestion(question, own);
-    // The same rules, in the same words, as the web form checks before it sends.
     const problem = answerProblem(checked, answer);
     if (problem) throw new ServiceError("invalid", problem, question.id);
     const note = answer?.note?.trim() || null;

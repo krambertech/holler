@@ -106,7 +106,7 @@ function ScaleOptions({ question, number, custom, onEdit, problems = {} }: Props
       >
         {q.options.map((option, at) => (
           <li
-            // biome-ignore lint/suspicious/noArrayIndexKey: steps are fixed by the type and can repeat a word
+            // oxlint-disable-next-line react/no-array-index-key -- steps are fixed by the type and can repeat a word
             key={at}
             className={cn(
               previewChipClassName,
