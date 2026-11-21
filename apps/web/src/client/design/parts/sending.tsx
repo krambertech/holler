@@ -353,10 +353,14 @@ function SettingsDemo({
   start,
   audience = four,
   openRow,
+  timeZone,
+  channelsKnown = true,
 }: {
   start: Partial<SendFields>;
   audience?: Audience;
   openRow?: SendSettingsRow;
+  timeZone?: string;
+  channelsKnown?: boolean;
 }) {
   return (
     <SendSettings
@@ -366,7 +370,8 @@ function SettingsDemo({
       reach={audienceReach(audience, sizeOf, WORKSPACE)}
       zones={zonesOf(audience.people)}
       tagSuggestions={["weekly", "design", "retro", "offsite", "hiring"]}
-      knownChannels={groups.filter((g) => g.kind === "channel")}
+      knownChannels={channelsKnown ? groups.filter((g) => g.kind === "channel") : []}
+      timeZone={timeZone}
       search={search}
     />
   );
@@ -568,6 +573,28 @@ export const sending: Group = {
             {
               label: "Anonymous, under five people",
               render: () => <SettingsDemo start={{ anonymous: true }} audience={three} />,
+            },
+            {
+              label: "The sender in New York",
+              note: "The boxes and the summary both read New York's clock, whatever this browser's is.",
+              render: () => (
+                <SettingsDemo
+                  start={{ sendAt: mondayNine }}
+                  openRow="send"
+                  timeZone="America/New_York"
+                />
+              ),
+            },
+            {
+              label: "Announced in a channel not named yet",
+              note: "The draft has a channel the page has no name for: it still says so, and it can be cleared.",
+              render: () => (
+                <SettingsDemo
+                  start={{ announceChannelId: "C0LDS" }}
+                  openRow="announce"
+                  channelsKnown={false}
+                />
+              ),
             },
             {
               label: "Announced, tagged, no reminders",
