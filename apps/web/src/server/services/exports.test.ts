@@ -15,7 +15,6 @@ afterAll(() => dispose());
 
 const people = ["UA", "UB", "UC", "UD", "UE", "UF"];
 
-/** Every question type, with Other and a follow-up note, written by `write` so a test can poison every string. */
 function everyType(write: (s: string) => string, anonymous = false): HollerDraftInput {
   return {
     mode: "survey",
@@ -49,7 +48,6 @@ function everyType(write: (s: string) => string, anonymous = false): HollerDraft
 
 async function answered(input: HollerDraftInput, write: (s: string) => string = (s) => s) {
   const fixture = await workspaceFixture(db);
-  // Names Holler shows come from the directory, so poison those too.
   for (const id of people) {
     await db
       .update(schema.slackPeople)
@@ -90,7 +88,6 @@ async function answered(input: HollerDraftInput, write: (s: string) => string = 
   return { ...fixture, holler };
 }
 
-/** Splits a CSV the way a spreadsheet would, quotes and all. */
 function parseCsv(csv: string): string[][] {
   const rows: string[][] = [];
   let row: string[] = [];
@@ -180,15 +177,12 @@ describe("exportCsv", () => {
   });
 
   it("defuses every formula someone could type, in every cell a person wrote", async () => {
-    // Every character a spreadsheet starts a formula with, in every string a person can write:
-    // the title, prompts, options, text, notes, Other and the names in the directory.
     for (const start of ["=", "+", "-", "@", "\t", "\r", "＝", "＋", "－", "＠"]) {
       const write = (s: string) => `${start}HYPERLINK("https://evil.test","${s}")`;
       const { ctx, holler } = await answered(everyType(write), write);
       const rows = parseCsv(await exportCsv(ctx, holler.id));
       for (const [r, row] of rows.entries()) {
         for (const [c, cell] of row.entries()) {
-          // The one number column holds whole numbers Holler checked, which stay numbers.
           if (/^-?\d+$/.test(cell)) continue;
           expect(cell, `row ${r}, column ${c}, start ${JSON.stringify(start)}`).not.toMatch(
             /^[=+\-@\t\r＝＋－＠]/,
@@ -224,12 +218,10 @@ describe("exportMarkdown", () => {
     const { ctx, holler } = await answered(everyType(write), write);
     const md = await exportMarkdown(ctx, holler.id);
     const lines = md.split("\n");
-    // A table row has exactly its own column pipes, never one from text.
     for (const line of lines.filter((l) => l.startsWith("|"))) {
       const pipes = line.replace(/\\\|/g, "").match(/\|/g)?.length ?? 0;
       expect([4, 5], line).toContain(pipes);
     }
-    // Only Holler's own headings, list items and tables start a line.
     for (const line of lines) {
       expect(line, line).toMatch(
         /^(# |## |- |\| |[0-9]+ (of|people|person)|1 person|Average|Other:|Notes:|$)/,

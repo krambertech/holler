@@ -121,8 +121,6 @@ export function summarize(input: {
   names?: ReadonlyMap<string, string> | undefined;
 }): Results {
   const { anonymous, responseCount, questions, answers, notes = [], names } = input;
-  // On an anonymous Holler the order answers arrived in could be matched to when someone was
-  // reminded or thanked, so written answers come back sorted by what they say instead.
   const inArrivalOrderUnlessAnonymous = <T extends { text: string }>(list: T[]): T[] =>
     anonymous ? [...list].sort((x, y) => (x.text < y.text ? -1 : x.text > y.text ? 1 : 0)) : list;
   if (anonymous && responseCount < anonymousThreshold) {

@@ -171,7 +171,6 @@ describe("anonymousTime", () => {
   });
 
   it("gives the same anonymous results whatever order the answers arrived in", () => {
-    // Every question type, with written answers, notes, Other and numbers, in many orders.
     const choice: ResultsQuestion = {
       id: "c",
       prompt: "Pick",
@@ -210,7 +209,6 @@ describe("anonymousTime", () => {
       .flat()
       .map((n) => ({ ...n, slackUserId: null }));
     const run = (seed: number) => {
-      // A fixed shuffle per seed, so a failure names the order that broke it.
       let state = seed;
       const random = () => {
         state = (state * 1103515245 + 12345) % 2 ** 31;
