@@ -48,8 +48,6 @@ export async function hollerPeople(ctx: ServiceContext, hollerId: string): Promi
     unreachable: row.failure != null,
   }));
   if (!holler.anonymous) recipients.sort((a, b) => Number(b.answered) - Number(a.answered));
-  // Who Holler can still remind: waiting, reached, and not refused by Slack. The same rule
-  // remindWaiting keeps.
   const remindable = rows.filter(
     (row) => row.answeredAt == null && row.failure == null && row.dmTs != null,
   );

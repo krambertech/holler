@@ -1,9 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { expectAccessible, signInAs } from "./a11y";
 
-// Read-only on purpose: parallel workers share the seeded workspace, so nothing here sends or
-// closes. The verify recipe `holler-page` drives Send reminder and Close now on a fresh seed.
-
 test("a lead sees who is waiting, when Holler reminds them, and the results", async ({ page }) => {
   await signInAs(page, "lead");
   await page
@@ -13,7 +10,6 @@ test("a lead sees who is waiting, when Holler reminds them, and the results", as
   await expect(page.getByRole("heading", { level: 1, name: "How was your week?" })).toBeVisible();
   const people = page.getByRole("region", { name: /^\d+ of \d+ answered$/ });
   await expect(people).toBeVisible();
-  // Waiting people come first: chasing is the job.
   await expect(people.getByRole("listitem").first()).toContainText("Waiting");
   await expect(people.getByRole("button", { name: "Send reminder" })).toBeVisible();
   await expect(page.getByRole("heading", { level: 2, name: "Results" })).toBeVisible();

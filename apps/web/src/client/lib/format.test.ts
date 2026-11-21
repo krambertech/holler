@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import { momentLabel } from "./format";
 
 describe("momentLabel", () => {
-  // Local times, so the day boundaries match the label's.
   const now = new Date(2026, 10, 20, 10, 0);
   const at = (days: number, hour: number, minute = 0) =>
     new Date(2026, 10, 20 + days, hour, minute).toISOString();

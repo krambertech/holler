@@ -23,9 +23,7 @@ import { count } from "@/lib/format";
 interface Props extends ComponentProps<"div"> {
   hollerId: string;
   status: "draft" | "scheduled" | "live" | "closed";
-  /** Only the creator closes a Holler or copies it; anyone who can see it can export. */
   isCreator: boolean;
-  /** False while an anonymous Holler's results are still closed, so there is nothing to export. */
   canExport: boolean;
   waitingCount: number;
   onCopyAsMarkdown: () => void;
@@ -35,11 +33,6 @@ interface Props extends ComponentProps<"div"> {
   closing?: boolean | undefined;
 }
 
-/**
- * Getting results out and ending a Holler: Export for everyone who can see it, and for its
- * creator a menu with Copy into a new draft and Close now. Close asks once, because it cannot be
- * undone and stops everyone's reminders.
- */
 function HollerActions({
   hollerId,
   status,

@@ -111,9 +111,7 @@ export const recipientOutSchema = z.object({
   avatarUrl: z.string().nullable(),
   /** Null on an anonymous Holler: its sender sees how many answered, never who. */
   answered: z.boolean().nullable(),
-  /** False while their DM waits for its send time, such as a send in their own time zone. */
   invited: z.boolean(),
-  /** Slack refused their DM for good, such as a deactivated account. They get no reminders. */
   unreachable: z.boolean(),
 });
 export type RecipientOut = z.infer<typeof recipientOutSchema>;
@@ -123,12 +121,7 @@ export const recipientsOutSchema = z.object({
   answeredCount: z.number().int(),
   waitingCount: z.number().int(),
   recipients: z.array(recipientOutSchema),
-  /** When Holler next reminds someone still waiting, on its own rhythm. Null when nobody is due one. */
   nextReminderAt: timestamp.nullable(),
-  /**
-   * When the creator may send a reminder to everyone waiting. Null while a Holler is not live or
-   * nobody is waiting; a time at or before now means at once.
-   */
   reminderAvailableAt: timestamp.nullable(),
 });
 export type RecipientsOut = z.infer<typeof recipientsOutSchema>;

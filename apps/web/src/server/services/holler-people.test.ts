@@ -69,7 +69,6 @@ describe("hollerPeople", () => {
         );
     await set("UA", { dmTs: "1.1", nextReminderAt: at(30) });
     await set("UB", { dmTs: "1.2", nextReminderAt: at(20), failure: "user_not_found" });
-    // UC answered, so their stale reminder time does not count.
     await set("UC", { dmTs: "1.3", nextReminderAt: at(2) });
     const people = await hollerPeople(ctx, hollerId);
     expect(people.nextReminderAt).toBe(at(30).toISOString());
@@ -91,7 +90,6 @@ describe("hollerPeople", () => {
 
   it("offers no reminder once nobody can be reminded or the Holler closed", async () => {
     const { ctx, hollerId } = await answeredBy(false, "UC");
-    // Nobody has a DM yet, so nobody can be reminded.
     expect((await hollerPeople(ctx, hollerId)).reminderAvailableAt).toBeNull();
     await db
       .update(schema.recipients)

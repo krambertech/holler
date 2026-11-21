@@ -6,7 +6,6 @@ import { Plate } from "@/components/ui/plate";
 import { cn } from "@/lib/cn";
 import { count, percent } from "@/lib/format";
 
-/** Who a Slack id is, from the Holler's people, so a named Holler can show who picked what. */
 export interface PersonLookup {
   name: string;
   avatarUrl: string | null;
@@ -14,13 +13,10 @@ export interface PersonLookup {
 
 interface Props extends ComponentProps<"section"> {
   question: Result;
-  /** The question's place, from 1. */
   number: number;
-  /** Empty on an anonymous Holler, whose results carry no ids anyway. */
   people: ReadonlyMap<string, PersonLookup>;
 }
 
-/** A scale reads deep to pale across the chart ramp; a plain question marks its leader in chart-2. */
 const ramp = ["bg-chart-5", "bg-chart-4", "bg-chart-3", "bg-chart-2", "bg-chart-1"];
 
 function rampFor(index: number, total: number): string {
@@ -29,11 +25,6 @@ function rampFor(index: number, total: number): string {
   return ramp[step] ?? "bg-chart-2";
 }
 
-/**
- * One question's results. Choices are bars with their count and share in words, a scale adds its
- * average, numbers show their spread, people show who was picked, and written answers are quoted.
- * On a named Holler each choice shows who picked it.
- */
 function QuestionResult({ question, number, people, className, ...props }: Props) {
   const headingId = `question-${question.id}`;
   return (
@@ -228,7 +219,7 @@ function Written({
           const by = answer.slackUserId ? people.get(answer.slackUserId) : undefined;
           return (
             <li
-              // biome-ignore lint/suspicious/noArrayIndexKey: written answers have no id of their own and never reorder.
+              // oxlint-disable-next-line react/no-array-index-key -- written answers have no id of their own and never reorder
               key={index}
               className="grid gap-1 border-divider border-t px-5 py-3 first:border-t-0"
             >

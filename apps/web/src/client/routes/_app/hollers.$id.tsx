@@ -17,10 +17,6 @@ import { api } from "@/lib/api";
 import { closesLabel, count, dayAndTime, momentLabel } from "@/lib/format";
 import { hollerPeopleQuery, resultsQuery } from "@/lib/queries";
 
-/**
- * A Holler's page: who answered, when Holler reminds the rest, the results, and getting them out.
- * Everything a sender does here is two minutes at most: read, nudge, export, close.
- */
 export const Route = createFileRoute("/_app/hollers/$id")({
   component: HollerPage,
 });
@@ -40,7 +36,6 @@ function HollerPage() {
     queryKey: ["hollers", id],
     queryFn: () => api<HollerOut>(`/hollers/${id}`),
   });
-  // A scheduled Holler has no recipients or answers yet; its page says when it sends.
   const sent = holler.data?.status === "live" || holler.data?.status === "closed";
   const results = useQuery({ ...resultsQuery(id), enabled: sent });
   const people = useQuery({ ...hollerPeopleQuery(id), enabled: sent });
@@ -205,7 +200,6 @@ function HollerPage() {
   );
 }
 
-/** The page's shape while it loads: the title, its chips, the people and two question plates. */
 function HollerSkeleton() {
   return (
     <section aria-busy aria-label="Loading this Holler" className="flex flex-col gap-6">

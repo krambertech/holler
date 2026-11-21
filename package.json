@@ -12,16 +12,17 @@
     "dev": "pnpm --parallel --stream --filter @holler/site --filter @holler/web dev",
     "build": "pnpm -r build",
     "typecheck": "pnpm -r typecheck",
-    "test": "pnpm -r test && node --test scripts/*.test.mjs",
+    "test": "pnpm -r test && node --test scripts/*.test.mjs oxlint-plugin-holler/rules/*.test.mjs",
     "test:e2e": "playwright test",
     "test:e2e:chromium": "playwright test --project=chromium",
-    "check": "biome check . && pnpm check:design && pnpm check:design-coverage && pnpm check:styling",
+    "check": "oxfmt --check . && oxlint . --report-unused-disable-directives-severity error && pnpm check:design && pnpm check:design-coverage && pnpm check:styling && pnpm check:comments",
     "check:design": "node scripts/check-design.mjs",
     "check:styling": "node scripts/check-styling.mjs",
+    "check:comments": "node scripts/check-comments.mjs",
     "check:migrations": "pnpm --filter @holler/web db:check && node scripts/check-migrations.mjs",
     "check:boundaries": "node scripts/check-boundaries.mjs",
     "verify": "pnpm check && pnpm check:migrations && pnpm typecheck && pnpm test && pnpm build && pnpm check:boundaries",
-    "fix": "biome check --write .",
+    "fix": "oxfmt . && oxlint --fix .",
     "db:generate": "pnpm --filter @holler/web db:generate",
     "db:migrate": "pnpm --filter @holler/web db:migrate",
     "check:design-coverage": "node scripts/check-design-coverage.mjs",
@@ -30,8 +31,10 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.11.0",
-    "@biomejs/biome": "^2.5.15",
+    "@oxlint/plugins": "1.92.0",
     "@playwright/test": "1.64.0",
+    "oxfmt": "0.77.0",
+    "oxlint": "1.92.0",
     "typescript": "^6.0.3"
   }
 }

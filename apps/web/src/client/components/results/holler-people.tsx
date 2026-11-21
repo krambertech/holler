@@ -8,27 +8,18 @@ import { ProgressBar } from "@/components/ui/progress";
 import { cn } from "@/lib/cn";
 import { count, momentLabel } from "@/lib/format";
 
-/** How many people show before Show everyone. A team of up to this many sees the whole list at once. */
 const FOLDED = 8;
 
 interface Props extends ComponentProps<"section"> {
   people: RecipientsOut;
   anonymous: boolean;
-  /** Live and taking answers, so reminders are still to come. */
   live: boolean;
-  /** Only the creator sends a reminder. */
   canRemind: boolean;
-  /** The plum button belongs here only while the Holler is live and the creator can remind. */
   onRemind?: (() => void) | undefined;
   reminding?: boolean | undefined;
   now?: Date | undefined;
 }
 
-/**
- * Who a Holler went to and who answered, with when Holler reminds the rest. Chasing is Holler's
- * job, so the strip at the bottom always says what happens next. On an anonymous Holler it shows
- * how many answered and lists everyone without a status, so no one can be picked out.
- */
 function HollerPeople({
   people,
   anonymous,
@@ -42,7 +33,6 @@ function HollerPeople({
 }: Props) {
   const [open, setOpen] = useState(false);
   const { recipientCount, answeredCount, waitingCount, recipients } = people;
-  // Chasing is the job, so the people still to answer come first; the API keeps answered first.
   const ordered = anonymous ? recipients : [...recipients].sort((a, b) => rank(a) - rank(b));
   const shown = open ? ordered : ordered.slice(0, FOLDED);
   const share = recipientCount === 0 ? 0 : answeredCount / recipientCount;
@@ -121,7 +111,6 @@ function HollerPeople({
   );
 }
 
-/** Waiting, then not reachable, then not sent yet, then answered. Stable within each. */
 function rank(person: RecipientOut): number {
   if (person.unreachable) return 1;
   if (!person.invited) return 2;
@@ -139,7 +128,6 @@ function PersonStatus({ person }: { person: RecipientOut }) {
   );
 }
 
-/** One sentence on what happens next for the people still waiting. Each case is written out. */
 function ReminderLine({ people, now }: { people: RecipientsOut; now: Date }) {
   const waiting =
     people.waitingCount === 1
