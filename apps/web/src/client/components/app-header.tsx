@@ -22,7 +22,7 @@ export function AppHeader({
           className="-me-2 flex items-center gap-2 rounded-control px-2 py-1 text-base text-muted transition-colors hoverable:hover:bg-hover hoverable:hover:text-ink"
         >
           <Avatar name={me.name} seed={me.slackUserId} src={me.avatarUrl} />
-          <span className="hidden sm:inline">{me.name}</span>
+          <span className="max-sm:sr-only">{me.name}</span>
           <span className="sr-only">, Settings</span>
         </Link>
       )}

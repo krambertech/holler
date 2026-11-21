@@ -126,6 +126,16 @@ export const responseInputSchema = z.object({
 });
 export type ResponseInput = z.input<typeof responseInputSchema>;
 
+/** Local development only: answers as a recipient, the way their Slack button would. */
+export const devAnswerInputSchema = z.object({
+  hollerId: z.string(),
+  slackUserId: z.string(),
+  response: responseInputSchema,
+});
+
+/** Local development only: runs the cron's pass as if it fired at `at`, or now. */
+export const devTickInputSchema = z.object({ at: z.iso.datetime().optional() });
+
 /** Every error the API returns has this shape. `field` names the input at fault, when there is one. */
 export const apiErrorSchema = z.object({
   error: z.object({
