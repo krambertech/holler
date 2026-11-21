@@ -127,7 +127,7 @@ The public API is REST under `/api/v1`, described from the Zod schemas with `hon
 
 ### Exports: built on request
 
-A Holler's results are small enough to build in the request: CSV for spreadsheets, Markdown for docs, and a share link to a report page. CSV cells that start with `=`, `+`, `-`, `@`, tab or carriage return get a leading `'` so a spreadsheet never runs them. If exports grow past a few megabytes, they move to a Workflow and R2 as in Lymi.
+A Holler's results are small enough to build in the request: CSV for spreadsheets, Markdown for docs, and a share link to a report page. CSV cells that start with `=`, `+`, `-`, `@`, tab or carriage return get a leading `'` so a spreadsheet never runs them, as OWASP advises; Excel, Google Sheets and LibreOffice all show it as plain text. A number cell is left alone, because it holds a whole number Holler checked when it was answered, such as -3. The CSV starts with a UTF-8 byte order mark so Excel opens it as UTF-8 and names like Дієслова survive. On an anonymous Holler the CSV has no person and no time column, and its rows are sorted by what they say, so their order cannot be matched to when anyone answered. The Markdown names no one, on any Holler. `exportCsv`, `exportMarkdown`, `csvCell`, `csvFor` and `markdownFor` in `apps/web/src/server/services/exports.ts` build them. If exports grow past a few megabytes, they move to a Workflow and R2 as in Lymi.
 
 ### Repo: pnpm workspace
 
