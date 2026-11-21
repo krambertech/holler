@@ -2,6 +2,7 @@ import type { MemberRole, SettingsWorkspace } from "@holler/core";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
+import { ApiAccessSections } from "@/components/api-keys/api-access";
 import { PlanSection } from "@/components/billing/plan-section";
 import { MemberRow } from "@/components/settings/member-row";
 import { WorkspaceIcon } from "@/components/settings/workspace-icon";
@@ -30,6 +31,7 @@ function Settings() {
       <WorkspaceSection isOwner={isOwner} />
       <MembersSection isOwner={isOwner} />
       <PlanSection />
+      <ApiAccessSections />
     </>
   );
 }
