@@ -15,7 +15,8 @@ import { exportCsv, exportMarkdown } from "../../services/exports";
 import { hollerPeople } from "../../services/holler-people";
 import { createDraft, getHoller, listHollers, updateDraft } from "../../services/hollers";
 import { resultsFor } from "../../services/responses";
-import { ctxOf, describe, input } from "./http";
+import { requireMember } from "../context";
+import { describe, input } from "./http";
 import { hollerOut } from "./present";
 
 const tags = ["Hollers"];
@@ -45,7 +46,7 @@ export const v1Hollers = new Hono<AppEnv>()
       errors: [400],
     }),
     input("query", listHollersQuerySchema),
-    async (c) => c.json({ hollers: await listHollers(ctxOf(c), c.req.valid("query")) }),
+    async (c) => c.json({ hollers: await listHollers(requireMember(c), c.req.valid("query")) }),
   )
   .post(
     "/",
@@ -61,7 +62,9 @@ export const v1Hollers = new Hono<AppEnv>()
     input("json", hollerDraftSchema),
     async (c) => {
       const key = c.req.valid("header")["idempotency-key"];
-      const holler = await createDraft(ctxOf(c), c.req.valid("json"), { idempotencyKey: key });
+      const holler = await createDraft(requireMember(c), c.req.valid("json"), {
+        idempotencyKey: key,
+      });
       const replayed = "replayed" in holler;
       if (replayed) c.header("idempotent-replayed", "true");
       return c.json(hollerOut(holler), replayed ? 200 : 201);
@@ -76,7 +79,7 @@ export const v1Hollers = new Hono<AppEnv>()
       errors: [404],
     }),
     input("param", idParam),
-    async (c) => c.json(hollerOut(await getHoller(ctxOf(c), c.req.valid("param").id))),
+    async (c) => c.json(hollerOut(await getHoller(requireMember(c), c.req.valid("param").id))),
   )
   .put(
     "/:id",
@@ -91,7 +94,11 @@ export const v1Hollers = new Hono<AppEnv>()
     input("param", idParam),
     input("json", hollerDraftSchema),
     async (c) =>
-      c.json(hollerOut(await updateDraft(ctxOf(c), c.req.valid("param").id, c.req.valid("json")))),
+      c.json(
+        hollerOut(
+          await updateDraft(requireMember(c), c.req.valid("param").id, c.req.valid("json")),
+        ),
+      ),
   )
   .post(
     "/:id/send",
@@ -104,7 +111,8 @@ export const v1Hollers = new Hono<AppEnv>()
       errors: [400, 402, 404, 409, 503],
     }),
     input("param", idParam),
-    async (c) => c.json(hollerOut(await sendHoller(ctxOf(c), c.env, c.req.valid("param").id))),
+    async (c) =>
+      c.json(hollerOut(await sendHoller(requireMember(c), c.env, c.req.valid("param").id))),
   )
   .post(
     "/:id/close",
@@ -116,7 +124,8 @@ export const v1Hollers = new Hono<AppEnv>()
       errors: [404, 409, 503],
     }),
     input("param", idParam),
-    async (c) => c.json(hollerOut(await closeHoller(ctxOf(c), c.env, c.req.valid("param").id))),
+    async (c) =>
+      c.json(hollerOut(await closeHoller(requireMember(c), c.env, c.req.valid("param").id))),
   )
   .post(
     "/:id/remind",
@@ -128,7 +137,8 @@ export const v1Hollers = new Hono<AppEnv>()
       errors: [404, 409, 410, 503],
     }),
     input("param", idParam),
-    async (c) => c.json(hollerOut(await remindWaiting(ctxOf(c), c.env, c.req.valid("param").id))),
+    async (c) =>
+      c.json(hollerOut(await remindWaiting(requireMember(c), c.env, c.req.valid("param").id))),
   )
   .get(
     "/:id/people",
@@ -141,7 +151,7 @@ export const v1Hollers = new Hono<AppEnv>()
       errors: [404],
     }),
     input("param", idParam),
-    async (c) => c.json(await hollerPeople(ctxOf(c), c.req.valid("param").id)),
+    async (c) => c.json(await hollerPeople(requireMember(c), c.req.valid("param").id)),
   )
   .get(
     "/:id/results",
@@ -155,7 +165,7 @@ export const v1Hollers = new Hono<AppEnv>()
     }),
     input("param", idParam),
     async (c) => {
-      const ctx = ctxOf(c);
+      const ctx = requireMember(c);
       const { id } = c.req.valid("param");
       // getHoller throws not_found unless the caller may see it.
       await getHoller(ctx, id);
@@ -175,7 +185,7 @@ export const v1Hollers = new Hono<AppEnv>()
     input("param", idParam),
     input("query", z.object({ format: exportFormatSchema.default("csv") })),
     async (c) => {
-      const ctx = ctxOf(c);
+      const ctx = requireMember(c);
       const { id } = c.req.valid("param");
       const { format } = c.req.valid("query");
       const body = format === "csv" ? await exportCsv(ctx, id) : await exportMarkdown(ctx, id);

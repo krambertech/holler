@@ -1,6 +1,7 @@
 import type { BillingOverview, BillingRedirect } from "@holler/core";
 import { queryOptions, useMutation } from "@tanstack/react-query";
 import { api } from "@/lib/api";
+import { longDate, monthName } from "@/lib/format";
 
 export const billingQuery = queryOptions({
   queryKey: ["billing"],
@@ -22,28 +23,19 @@ export function useBillingRedirect(to: "checkout" | "portal") {
   });
 }
 
-const utcDay = new Intl.DateTimeFormat(undefined, {
-  day: "numeric",
-  month: "long",
-  timeZone: "UTC",
-});
-
 /** "1 December": the monthly count restarts at midnight UTC, so the date is read in UTC. */
 export function resetDay(overview: BillingOverview): string {
-  return utcDay.format(new Date(overview.resetsAt));
+  return longDate(overview.resetsAt, "UTC");
 }
 
 /** "November": the month whose hollers are counted, the one before the reset. */
 export function countedMonth(overview: BillingOverview): string {
-  const lastDay = new Date(new Date(overview.resetsAt).getTime() - 1);
-  return new Intl.DateTimeFormat(undefined, { month: "long", timeZone: "UTC" }).format(lastDay);
+  return monthName(new Date(new Date(overview.resetsAt).getTime() - 1), "UTC");
 }
 
 /** "20 December": when a cancelled Team plan ends, in the reader's own time zone. */
 export function endDay(iso: string): string {
-  return new Intl.DateTimeFormat(undefined, { day: "numeric", month: "long" }).format(
-    new Date(iso),
-  );
+  return longDate(iso);
 }
 
 /** "Maya Chen or Tom Ruiz", or null when the reader is the only owner. */

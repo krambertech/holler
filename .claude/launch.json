@@ -3,22 +3,31 @@
   "configurations": [
     {
       "name": "holler",
-      "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["--filter", "@holler/web", "dev", "--port", "5280"],
+      "runtimeExecutable": "bash",
+      "runtimeArgs": [
+        "-c",
+        "[ -s \"$HOME/.nvm/nvm.sh\" ] && . \"$HOME/.nvm/nvm.sh\" --no-use && nvm use --silent; exec pnpm --filter @holler/web dev --port 5280"
+      ],
       "port": 5280,
       "autoPort": true
     },
     {
       "name": "holler-site",
-      "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["--filter", "@holler/site", "dev", "--port", "5281"],
+      "runtimeExecutable": "bash",
+      "runtimeArgs": [
+        "-c",
+        "[ -s \"$HOME/.nvm/nvm.sh\" ] && . \"$HOME/.nvm/nvm.sh\" --no-use && nvm use --silent; exec pnpm --filter @holler/site dev --port 5281"
+      ],
       "port": 5281,
       "autoPort": true
     },
     {
       "name": "holler-design",
-      "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["--filter", "@holler/web", "design:dev", "--port", "5282"],
+      "runtimeExecutable": "bash",
+      "runtimeArgs": [
+        "-c",
+        "[ -s \"$HOME/.nvm/nvm.sh\" ] && . \"$HOME/.nvm/nvm.sh\" --no-use && nvm use --silent; exec pnpm --filter @holler/web design:dev --port 5282"
+      ],
       "port": 5282,
       "autoPort": true
     }

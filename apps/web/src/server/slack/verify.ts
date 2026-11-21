@@ -1,3 +1,5 @@
+import { hmacSha256, timingSafeEqual } from "../hmac";
+
 /**
  * Checks Slack's request signature before anything reads the body as data.
  * https://api.slack.com/authentication/verifying-requests-from-slack
@@ -31,20 +33,6 @@ export async function verifySlackRequest(
 }
 
 export async function sign(secret: string, payload: string): Promise<string> {
-  const key = await crypto.subtle.importKey(
-    "raw",
-    new TextEncoder().encode(secret),
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["sign"],
-  );
-  const mac = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(payload));
-  return `v0=${[...new Uint8Array(mac)].map((b) => b.toString(16).padStart(2, "0")).join("")}`;
-}
-
-function timingSafeEqual(a: string, b: string): boolean {
-  if (a.length !== b.length) return false;
-  let diff = 0;
-  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
-  return diff === 0;
+  const mac = await hmacSha256(secret, payload);
+  return `v0=${[...mac].map((b) => b.toString(16).padStart(2, "0")).join("")}`;
 }

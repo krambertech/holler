@@ -1,4 +1,4 @@
-import { type BillingOverview, nextMonthStart, plans } from "@holler/core";
+import { type BillingOverview, nextMonthStart } from "@holler/core";
 import { and, eq, gt } from "@holler/core/db";
 import { createPolarCore, type models, type webhooks } from "@polar-sh/sdk/2026-10";
 import { createCheckouts } from "@polar-sh/sdk/2026-10/services/checkouts";
@@ -9,7 +9,7 @@ import { schema } from "../db";
 import type { Bindings } from "../env";
 import { auditStatement } from "./audit";
 import { memberOf, type ServiceContext, ServiceError } from "./context";
-import { monthlyUsage } from "./usage";
+import { usageSummary } from "./usage";
 
 /**
  * The workspace's plan, and the only writer of `workspaces.plan`, `polar_*` and `plan_ends_at`.
@@ -106,15 +106,14 @@ export async function billingOverview(ctx: ServiceContext): Promise<BillingOverv
       )
       .where(and(eq(members.workspaceId, ctx.workspaceId), eq(members.role, "owner")))
       .orderBy(members.createdAt),
-    monthlyUsage(ctx),
+    usageSummary(ctx),
   ]);
   if (!workspace) throw new ServiceError("not_found", "This workspace no longer exists.");
-  const limit = plans[usage.plan].monthlyHollers;
   return {
     plan: usage.plan,
     planEndsAt: workspace.planEndsAt?.toISOString() ?? null,
     sentThisMonth: usage.sentThisMonth,
-    monthlyLimit: Number.isFinite(limit) ? limit : null,
+    monthlyLimit: usage.monthlyLimit,
     resetsAt: nextMonthStart(ctx.now()).toISOString(),
     canManage: me?.role === "owner",
     hasBillingAccount: workspace.polarCustomerId != null,

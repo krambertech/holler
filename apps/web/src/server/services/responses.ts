@@ -17,8 +17,10 @@ export type ResponseVia = "slack_button" | "slack_modal" | "web" | "api";
 /**
  * Records one recipient's response. The one path every door uses: a Slack button, a Slack modal,
  * the web form and the API. It checks the Holler is live, the person is a recipient who has not
- * answered, and every answer fits its question, then writes the response and marks the
- * recipient answered in one batch.
+ * answered, and every answer fits its question. Then it claims the recipient row, so two submits
+ * cannot both land, and writes the response and its answers in one batch. If that batch fails it
+ * gives the claim back. The two steps are separate statements, so a Worker that dies between them
+ * leaves the person marked answered with no response.
  *
  * Anonymous: the response row gets no person and an hour-rounded time; only the recipient row
  * says they answered. Results stay gated in core/results.ts.
