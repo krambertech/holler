@@ -4,5 +4,6 @@ export * from "./billing";
 export * from "./directory";
 export * from "./hollers";
 export * from "./notes";
+export * from "./response-owners";
 export * from "./responses";
 export * from "./workspaces";
