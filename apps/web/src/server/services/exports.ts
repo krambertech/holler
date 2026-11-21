@@ -6,14 +6,6 @@ import { getHoller } from "./hollers";
 
 const { questions, options, responses, answers, answerNotes, recipients, slackPeople } = schema;
 
-/**
- * A Holler's results as a file, for every door: the web app, the API and MCP. CSV is every
- * response, one row each, for spreadsheets. Markdown is the results summary, for docs; it names
- * nobody, so it can be pasted anywhere. Both keep the anonymity gate: under five answers an
- * anonymous Holler exports nothing, and its CSV never says who answered or in which order.
- */
-
-/** Everything an export reads, loaded once. Exported for the pure builders' tests. */
 export interface ExportData {
   title: string;
   anonymous: boolean;
@@ -28,7 +20,6 @@ export interface ExportData {
   responses: {
     id: string;
     submittedAt: Date;
-    /** Null on an anonymous Holler. */
     slackUserId: string | null;
   }[];
   answers: {
@@ -38,7 +29,6 @@ export interface ExportData {
     text: string | null;
   }[];
   notes: { responseId: string; questionId: string; kind: "note" | "other"; text: string }[];
-  /** Names Holler shows for people, by Slack user id: who answered, and who a person question picked. */
   names: ReadonlyMap<string, string>;
   results: Results;
 }
@@ -52,7 +42,6 @@ export async function exportMarkdown(ctx: ServiceContext, id: string): Promise<s
 }
 
 async function exportData(ctx: ServiceContext, hollerId: string): Promise<ExportData> {
-  // getHoller throws not_found unless the member may see it.
   const holler = await getHoller(ctx, hollerId);
   const responseRows = await ctx.db
     .select({
@@ -158,7 +147,6 @@ async function namesOf(
 ): Promise<Map<string, string>> {
   const ids = [...new Set(slackUserIds)];
   const names = new Map<string, string>();
-  // D1 binds at most 100 values in one statement; the workspace id takes one.
   for (let at = 0; at < ids.length; at += 90) {
     const rows = await ctx.db
       .select({
@@ -178,18 +166,9 @@ async function namesOf(
   return names;
 }
 
-// CSV
-
-/**
- * A cell that starts with one of these is read as a formula by Excel, Google Sheets and
- * LibreOffice, so text someone typed could run in the sender's spreadsheet. OWASP's advice: put
- * a single quote in front, which every one of them shows as plain text.
- */
 const formulaStart = /^[=+\-@\t\r＝＋－＠]/;
 
-/** Exported for tests. Quotes a cell when it needs it and defuses a formula. */
 export function csvCell(value: string, kind: "text" | "number" = "text"): string {
-  // A number cell holds a whole number Holler checked when it was answered, such as -3; leave it a number.
   const safe = kind === "number" && /^-?\d+$/.test(value) ? value : defuse(value);
   return /[",\r\n]/.test(safe) ? `"${safe.replaceAll('"', '""')}"` : safe;
 }
@@ -198,11 +177,6 @@ function defuse(value: string): string {
   return formulaStart.test(value) ? `'${value}` : value;
 }
 
-/**
- * Exported for tests. One row per response. A named Holler leads with who answered and when; an
- * anonymous one has neither the person nor the time, and its rows are sorted by what they say,
- * so their order cannot be matched to when anyone answered.
- */
 export function csvFor(data: ExportData): string {
   const header: string[] = data.anonymous ? [] : ["Submitted at", "Person", "Slack user id"];
   const columns: { questionId: string; kind: "answer" | "other" | "note" }[] = [];
@@ -263,13 +237,9 @@ export function csvFor(data: ExportData): string {
     return cells.join(",");
   });
   if (data.anonymous) rows.sort();
-  // A byte order mark, so Excel opens the file as UTF-8 and names like Дієслова survive.
   return `﻿${[header.map((h) => csvCell(h)).join(","), ...rows].join("\r\n")}\r\n`;
 }
 
-// Markdown
-
-/** Exported for tests. Inline Markdown that cannot start a block or break a table. */
 export function mdInline(value: string): string {
   return value
     .replace(/\s+/g, " ")
@@ -282,10 +252,6 @@ export function mdInline(value: string): string {
 const whole = new Intl.NumberFormat("en");
 const share = new Intl.NumberFormat("en", { style: "percent", maximumFractionDigits: 0 });
 
-/**
- * Exported for tests. The results as a doc: the answered count, then per question a table of
- * options or the numbers, and the written answers as a list. It names no one, on any Holler.
- */
 export function markdownFor(data: ExportData): string {
   const lines: string[] = [`# ${mdInline(data.title) || "Untitled"}`, ""];
   lines.push(
