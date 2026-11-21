@@ -206,6 +206,8 @@ Decided on 2026-11-21.
 - Enterprise Grid installs are refused for now.
 - When Slack reports an uninstall, sending pauses and every page says so. Owners see
   **Reinstall**. Drafts and results stay.
+- Holler deletes an uninstalled workspace's data 90 days after Slack reports the uninstall, unless someone adds Holler again first, and never while the workspace still pays for Team. Every page says the date. Decided on 2026-11-21.
+- An owner can delete the workspace's data at any time from the last section of Settings, after typing the workspace's name. Holler then leaves Slack. A workspace that still pays for Team cancels first. Decided on 2026-11-21.
 - The audience picker offers people, user groups, public channels, and private channels
   Holler's bot was added to.
 - Settings is one scrolling page. Billing and API keys are sections on it.

@@ -1,19 +1,24 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { Trash2 } from "lucide-react";
 import { useState } from "react";
 import { z } from "zod";
 import { Logo } from "@/components/logo";
+import { Notice } from "@/components/notice";
 import { Button } from "@/components/ui/button";
 import { Plate } from "@/components/ui/plate";
 import { authClient } from "@/lib/auth-client";
 
 export const Route = createFileRoute("/sign-in")({
-  validateSearch: z.object({ next: z.string().optional().catch(undefined) }),
+  validateSearch: z.object({
+    next: z.string().optional().catch(undefined),
+    deleted: z.string().max(200).optional().catch(undefined),
+  }),
   component: SignIn,
 });
 
 /** Members sign in with Slack and nothing else. People answering never need to. */
 function SignIn() {
-  const { next } = Route.useSearch();
+  const { next, deleted } = Route.useSearch();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // Only a path on this origin, so a crafted link cannot send someone elsewhere after sign-in.
@@ -35,6 +40,13 @@ function SignIn() {
     <main className="mx-auto grid min-h-dvh w-full max-w-[440px] place-items-center px-4">
       <Plate className="flex w-full flex-col gap-6 px-7 py-8">
         <Logo />
+        {deleted && (
+          <Notice
+            icon={<Trash2 />}
+            title={`${deleted}’s data is deleted`}
+            description="Holler kept nothing from it and has left Slack."
+          />
+        )}
         <div>
           <h1 className="text-4xl tracking-title">Sign in to Holler</h1>
           <p className="mt-1.5 text-ink-2">

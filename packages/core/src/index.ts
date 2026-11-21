@@ -1,4 +1,5 @@
 export * from "./api";
+export * from "./deletion";
 export * from "./ids";
 export * from "./modes";
 export * from "./own-answers";

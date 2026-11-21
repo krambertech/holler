@@ -1,4 +1,5 @@
 import type { SettingsMember } from "@holler/core";
+import { DeleteWorkspace } from "@/components/settings/delete-workspace";
 import { MemberRow } from "@/components/settings/member-row";
 import { WorkspaceIcon } from "@/components/settings/workspace-icon";
 import { Plate } from "@/components/ui/plate";
@@ -13,6 +14,53 @@ export const settings: Group = {
   title: "Settings",
   lede: "The parts of the Settings page: the Slack workspace Holler lives in, and the people in it with their roles.",
   entries: [
+    {
+      slug: "delete-workspace",
+      name: "DeleteWorkspace",
+      source: "components/settings/delete-workspace.tsx",
+      note: "Owners only, last on the page. The dialog asks for the workspace's name before the plum Delete data wakes up, and a refused delete says why under the field. While Team renews, the button rests and the line says to cancel first.",
+      Demo: () => (
+        <Variants
+          stack
+          items={[
+            {
+              label: "Installed",
+              render: () => (
+                <DeleteWorkspace
+                  className="w-full"
+                  workspace={{ name: "Northwind", deletesAt: null, teamRenews: false }}
+                  onDelete={async () => {}}
+                />
+              ),
+            },
+            {
+              label: "Removed from Slack",
+              render: () => (
+                <DeleteWorkspace
+                  className="w-full"
+                  workspace={{
+                    name: "Northwind",
+                    deletesAt: "2027-02-19T09:00:00Z",
+                    teamRenews: false,
+                  }}
+                  onDelete={async () => {}}
+                />
+              ),
+            },
+            {
+              label: "Paying for Team",
+              render: () => (
+                <DeleteWorkspace
+                  className="w-full"
+                  workspace={{ name: "Northwind", deletesAt: null, teamRenews: true }}
+                  onDelete={async () => {}}
+                />
+              ),
+            },
+          ]}
+        />
+      ),
+    },
     {
       slug: "workspace-icon",
       name: "WorkspaceIcon",

@@ -1,4 +1,4 @@
-import { newId } from "@holler/core";
+import { deletionDueAt, newId } from "@holler/core";
 import { and, asc, desc, eq, sql } from "@holler/core/db";
 import { type Db, schema } from "../db";
 import { auditStatement } from "./audit";
@@ -38,6 +38,9 @@ export async function describeMe(ctx: ServiceContext) {
       iconUrl: row.workspace.iconUrl,
       slackDomain: row.workspace.slackDomain,
       installed: row.workspace.uninstalledAt == null,
+      deletesAt: row.workspace.uninstalledAt
+        ? deletionDueAt(row.workspace.uninstalledAt).toISOString()
+        : null,
     },
   };
 }

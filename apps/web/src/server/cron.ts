@@ -10,6 +10,7 @@ import { runDirectorySyncs } from "./services/directory-sync";
 import { closeDueHollers } from "./services/lifecycle";
 import { queueDueReminders } from "./services/reminders";
 import { pruneSlackDeliveries } from "./services/slack-deliveries";
+import { deleteUninstalledWorkspaces } from "./services/workspace-deletion";
 
 /**
  * One pass of the every-minute cron. Every step that sends claims its rows with a guarded update
@@ -44,6 +45,7 @@ export async function runCronPass(env: Bindings, db: Db, at: Date): Promise<Cron
     announced: () => queueMissingAnnouncements(env, db, at),
     synced: () => runDirectorySyncs(env, db, at),
     pruned: () => pruneSlackDeliveries(db, at),
+    deleted: () => deleteUninstalledWorkspaces(db, at),
   });
   return { sent: pass.sent, closed: pass.closed, invited: pass.invited, reminded: pass.reminded };
 }
