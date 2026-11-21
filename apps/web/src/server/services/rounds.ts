@@ -1,12 +1,12 @@
 import { newId, nextRoundAt } from "@holler/core";
-import { and, type BatchItem, eq, inArray } from "@holler/core/db";
+import { and, type BatchItem, eq, inArray, not, sql } from "@holler/core/db";
 import { runBatch } from "../batch";
 import { schema } from "../db";
 import { auditStatement } from "./audit";
 import { memberOf, type ServiceContext, ServiceError } from "./context";
 import { getHoller } from "./hollers";
 
-const { hollers, questions, options } = schema;
+const { hollers, questions, options, activity } = schema;
 
 type HollerRow = typeof hollers.$inferSelect;
 
@@ -56,15 +56,20 @@ export function roundOf(source: HollerRow, fresh: Pick<HollerRow, RoundKey>): Ho
   return { ...copied, ...fresh };
 }
 
-export async function nextRoundStatements(
+export interface NextRound {
+  sendAt: Date;
+  statements: BatchItem<"sqlite">[];
+}
+
+export async function nextRound(
   ctx: ServiceContext,
   hollerId: string,
   timeZone: string | null,
-): Promise<BatchItem<"sqlite">[]> {
+): Promise<NextRound | null> {
   const source = await ctx.db.query.hollers.findFirst({
     where: and(eq(hollers.id, hollerId), eq(hollers.workspaceId, ctx.workspaceId)),
   });
-  if (!source?.repeatRule) return [];
+  if (!source?.repeatRule) return null;
   const now = ctx.now();
   const seriesId = source.repeatOfId ?? source.id;
   const first =
@@ -122,7 +127,25 @@ export async function nextRoundStatements(
       data: { sendAt: sendAt.toISOString(), repeatOf: seriesId },
     }),
   );
-  return statements;
+  statements.push(...unlessStillRepeating(ctx, id, seriesId));
+  return { sendAt, statements };
+}
+
+function unlessStillRepeating(
+  ctx: ServiceContext,
+  roundId: string,
+  seriesId: string,
+): BatchItem<"sqlite">[] {
+  const stillRepeating = sql`exists (select 1 from hollers s where s.id = ${seriesId} and s.repeat_rule is not null)`;
+  const roundGone = sql`not exists (select 1 from hollers r where r.id = ${roundId})`;
+  return [
+    ctx.db.delete(hollers).where(and(eq(hollers.id, roundId), not(stillRepeating))),
+    ctx.db
+      .delete(activity)
+      .where(
+        and(eq(activity.subjectId, roundId), eq(activity.action, "holler.scheduled"), roundGone),
+      ),
+  ];
 }
 
 export async function stopRepeating(ctx: ServiceContext, hollerId: string) {
@@ -145,9 +168,9 @@ export async function stopRepeating(ctx: ServiceContext, hollerId: string) {
     .where(and(inSeries(hollers.repeatOfId), eq(hollers.status, "scheduled")));
   const now = ctx.now();
   await runBatch(ctx.db, [
-    ...upcoming.map(({ id }) =>
-      ctx.db.delete(hollers).where(and(eq(hollers.id, id), eq(hollers.status, "scheduled"))),
-    ),
+    ctx.db
+      .delete(hollers)
+      .where(and(inSeries(hollers.repeatOfId), eq(hollers.status, "scheduled"))),
     ctx.db.update(hollers).set({ repeatRule: null, updatedAt: now }).where(inSeries(hollers.id)),
     ctx.db
       .update(hollers)

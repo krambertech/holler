@@ -84,6 +84,8 @@ Project skills live in `.agents/skills/`; `.claude/skills` links to it so every 
 | Every round of a repeating pulse lands on the first round's day and time, in every zone, for a year | `packages/core/src/repeats.test.ts` sweep |
 | A round that goes out schedules exactly one next round, never in the past | `services/rounds.test.ts` |
 | Every Holler column is either copied to the next round or set for each round | `roundColumns` in `services/rounds.ts` (typecheck); `services/rounds.test.ts` |
+| Every round of a repeating pulse closes before anyone gets the next, across clock changes and late sends | `goLive` caps `closesAt` at the next round's first invite; `services/rounds.test.ts` |
+| Once Stop repeating returns, no further round goes out, whichever write lands first | `unlessStillRepeating` in `services/rounds.ts`; `services/rounds.test.ts`, both race cases |
 
 ## Generated files
 

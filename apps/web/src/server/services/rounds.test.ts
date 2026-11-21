@@ -1,6 +1,7 @@
-import type { HollerDraftInput } from "@holler/core";
-import { eq } from "@holler/core/db";
+import { earliestInstantOf, type HollerDraftInput } from "@holler/core";
+import { and, eq } from "@holler/core/db";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { runBatch } from "../batch";
 import { type Db, schema } from "../db";
 import { testDb } from "../test-db";
 import { deliveryEnv, emptyDatabase } from "../test-delivery";
@@ -8,7 +9,7 @@ import { sendDueHollers, sendHoller } from "./delivery";
 import { workspaceFixture } from "./fixtures";
 import { createDraft } from "./hollers";
 import { recordResponse } from "./responses";
-import { roundColumns, stopRepeating } from "./rounds";
+import { nextRound, roundColumns, stopRepeating } from "./rounds";
 import { devSlack } from "./slack-connection";
 
 let db: Db;
@@ -160,5 +161,136 @@ describe("repeating pulses", () => {
     expect(await db.query.responses.findMany()).toHaveLength(1);
     const activity = await db.query.activity.findMany();
     expect(activity.map((a) => a.action)).toContain("holler.repeat_stopped");
+  });
+  it("closes every round before anyone gets the next, across clock changes and late sends", async () => {
+    const cases = [
+      {
+        zone: "America/New_York",
+        first: "2026-03-04T14:00:00Z",
+        every: "week",
+        perZone: false,
+        lateHours: 0,
+      },
+      {
+        zone: "America/New_York",
+        first: "2026-03-04T14:00:00Z",
+        every: "week",
+        perZone: true,
+        lateHours: 0,
+      },
+      {
+        zone: "Pacific/Auckland",
+        first: "2026-09-23T21:00:00Z",
+        every: "week",
+        perZone: true,
+        lateHours: 0,
+      },
+      {
+        zone: "Europe/London",
+        first: "2026-10-21T07:00:00Z",
+        every: "week",
+        perZone: false,
+        lateHours: 150,
+      },
+      {
+        zone: "Australia/Sydney",
+        first: "2026-04-01T22:00:00Z",
+        every: "fortnight",
+        perZone: true,
+        lateHours: 0,
+      },
+      {
+        zone: null,
+        first: "2026-03-25T08:30:00Z",
+        every: "fortnight",
+        perZone: false,
+        lateHours: 300,
+      },
+    ] as const;
+    const overlaps: string[] = [];
+    for (const { zone, first: firstIso, every, perZone, lateHours } of cases) {
+      const firstAt = new Date(firstIso);
+      await emptyDatabase(raw);
+      const fixture = await workspaceFixture(db, new Date(firstAt.getTime() - 3 * DAY));
+      await devSlack(db, fixture.workspaceId);
+      const recipientZones = {
+        ULEAD: zone,
+        UA: "Pacific/Kiritimati",
+        UB: "Pacific/Pago_Pago",
+        UC: zone,
+      };
+      for (const [slackUserId, timeZone] of Object.entries(recipientZones)) {
+        await db
+          .update(schema.slackPeople)
+          .set({ timeZone })
+          .where(
+            and(
+              eq(schema.slackPeople.workspaceId, fixture.workspaceId),
+              eq(schema.slackPeople.slackUserId, slackUserId),
+            ),
+          );
+      }
+      const { env } = deliveryEnv(db, raw);
+      const first = await createDraft(fixture.ctx, {
+        ...pulse,
+        sendAt: firstAt,
+        repeat: every,
+        closeAfterHours: every === "week" ? 7 * 24 : 14 * 24,
+        sendInRecipientTimeZone: perZone,
+      });
+      await sendHoller(fixture.ctx, env, first.id);
+      const liveAt = (at: Date) => (perZone ? earliestInstantOf(at, zone) : at);
+      await sendDueHollers(env, db, new Date(liveAt(firstAt).getTime() + lateHours * 3_600_000));
+      const second = (await rounds(first.id))[1];
+      if (!second?.sendAt) throw new Error("expected a second round");
+      await sendDueHollers(env, db, liveAt(second.sendAt));
+      const [sentFirst] = await rounds(first.id);
+      const invites = await db.query.recipients.findMany({
+        where: eq(schema.recipients.hollerId, second.id),
+      });
+      const nextInvite = Math.min(...invites.map((r) => r.sendAt?.getTime() ?? Infinity));
+      const label = `${zone} ${firstAt.toISOString()} ${every} perZone=${perZone} late=${lateHours}h`;
+      if (invites.length === 0) overlaps.push(`${label}: the second round never went out`);
+      else if ((sentFirst?.closesAt?.getTime() ?? Infinity) > nextInvite) {
+        overlaps.push(
+          `${label}: closes ${sentFirst?.closesAt?.toISOString()}, next invite ${new Date(nextInvite).toISOString()}`,
+        );
+      }
+    }
+    expect(overlaps).toEqual([]);
+  });
+
+  it("schedules no round once Stop repeating wins the race against the send", async () => {
+    const { ctx, first } = await series();
+    const statements = (await nextRound({ ...ctx, now: () => FIRST }, first.id, null))?.statements;
+    if (!statements) throw new Error("expected a next round");
+    await stopRepeating(ctx, first.id);
+    await runBatch(db, statements);
+    expect((await rounds(first.id)).map((h) => [h.status, h.repeatRule])).toEqual([
+      ["scheduled", null],
+    ]);
+    const scheduled = await db.query.activity.findMany({
+      where: eq(schema.activity.action, "holler.scheduled"),
+    });
+    expect(scheduled.filter((a) => a.subjectId !== first.id)).toEqual([]);
+  });
+
+  it("removes a round scheduled while Stop repeating was on its way", async () => {
+    const { ctx, first } = await series();
+    const statements = (await nextRound({ ...ctx, now: () => FIRST }, first.id, null))?.statements;
+    if (!statements) throw new Error("expected a next round");
+    const racing = new Proxy(db, {
+      get(target, key, receiver) {
+        if (key !== "batch") return Reflect.get(target, key, receiver);
+        return async (...args: Parameters<Db["batch"]>) => {
+          await runBatch(target, statements);
+          return target.batch(...args);
+        };
+      },
+    });
+    await stopRepeating({ ...ctx, db: racing }, first.id);
+    expect((await rounds(first.id)).map((h) => [h.status, h.repeatRule])).toEqual([
+      ["scheduled", null],
+    ]);
   });
 });
