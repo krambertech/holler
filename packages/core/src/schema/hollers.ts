@@ -34,7 +34,7 @@ export const hollers = sqliteTable(
     searchTitle: text("search_title").notNull().default(""),
     /** Markdown. Rendered as mrkdwn in Slack and as HTML on the web. */
     description: text("description").notNull().default(""),
-    /** The form a form chase points at. Null for pulse and survey. */
+    /** The form a chase points at. Null for pulse and survey. */
     externalUrl: text("external_url"),
     anonymous: integer("anonymous", { mode: "boolean" }).notNull().default(false),
     visibility: text("visibility", { enum: ["private", "workspace"] })
@@ -104,12 +104,29 @@ export const questions = sqliteTable(
       .notNull()
       .references(() => hollers.id, { onDelete: "cascade" }),
     position: integer("position").notNull(),
-    type: text("type", { enum: ["single", "multi", "text"] }).notNull(),
+    type: text("type", { enum: ["single", "multi", "text", "number", "person"] }).notNull(),
     style: text("style", { enum: ["plain", "scale", "binary"] })
       .notNull()
       .default("plain"),
     prompt: text("prompt").notNull(),
+    /** One line of help under the prompt. */
+    description: text("description").notNull().default(""),
     required: integer("required", { mode: "boolean" }).notNull().default(true),
+    /** Multiple choice and person: the most someone may pick. Null is no limit. */
+    maxChoices: integer("max_choices"),
+    /** A choice question's follow-up note. Null asks for none. */
+    followUpPrompt: text("follow_up_prompt"),
+    /**
+     * Positions of the options that show the follow-up, as a JSON array; null shows it after any
+     * answer. Positions, not ids, because a question is written before its new options have ids.
+     */
+    followUpWhen: text("follow_up_when", { mode: "json" }).$type<number[]>(),
+    /** Words at the low and high end of a numbered scale. */
+    lowLabel: text("low_label"),
+    highLabel: text("high_label"),
+    /** A number question's smallest and largest whole number. */
+    numberMin: integer("number_min"),
+    numberMax: integer("number_max"),
   },
   (t) => [index("questions_holler").on(t.hollerId, t.position)],
 );
@@ -125,6 +142,8 @@ export const options = sqliteTable(
     label: text("label").notNull(),
     /** The number a scale option counts as, for averages. Null on plain options. */
     score: integer("score"),
+    /** The "Other" option, which takes a written answer. Always last. */
+    isOther: integer("is_other", { mode: "boolean" }).notNull().default(false),
   },
   (t) => [
     index("options_question").on(t.questionId, t.position),

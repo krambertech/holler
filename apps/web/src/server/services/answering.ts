@@ -16,7 +16,7 @@ import { type ResponseVia, recordResponse } from "./responses";
  */
 
 export type SlackAnswerOutcome =
-  | { status: "answered" }
+  | { status: "answered"; responseId: string }
   | { status: "closed" }
   | { status: "already" }
   | { status: "invalid"; message: string; questionId: string };
@@ -48,8 +48,8 @@ export async function answerFromSlack(
 ): Promise<SlackAnswerOutcome> {
   const slackUserId = slackUserOf(ctx);
   try {
-    await recordResponse(ctx, { hollerId, slackUserId, via, response });
-    return { status: "answered" };
+    const { responseId } = await recordResponse(ctx, { hollerId, slackUserId, via, response });
+    return { status: "answered", responseId };
   } catch (error) {
     if (!(error instanceof ServiceError)) throw error;
     if (error.code === "closed") return { status: "closed" };
@@ -71,10 +71,11 @@ export async function queueOutcome(
 ): Promise<void> {
   const slackUserId = slackUserOf(ctx);
   const also = tapped ?? undefined;
+  const responseId = outcome.status === "answered" ? outcome.responseId : undefined;
   const sends: SlackSend[] =
     outcome.status === "closed"
       ? [{ kind: "closed", hollerId, slackUserId, also }]
-      : [{ kind: "answered", hollerId, slackUserId, also }];
+      : [{ kind: "answered", hollerId, slackUserId, also, responseId }];
   if (outcome.status === "answered") sends.push({ kind: "announce", hollerId });
   await enqueue(env, sends);
 }
@@ -131,4 +132,52 @@ export async function snoozeFromSlack(
     return;
   }
   if (tapped) await enqueue(env, [{ kind: "snoozed", hollerId, slackUserId, reminder: tapped }]);
+}
+
+/**
+ * The follow-up note typed into the DM after a tap. The response id comes from the person's own
+ * message, so a note on an anonymous Holler finds its response without Holler having stored who
+ * gave it. A note is optional and written once: an empty box saves nothing, and a second note is
+ * ignored. Then the DM is put right, without the box.
+ */
+export async function addNoteFromSlack(
+  env: Bindings,
+  ctx: ServiceContext,
+  input: { responseId: string; questionId: string; note: string },
+  tapped: DmRef | null,
+): Promise<void> {
+  const slackUserId = slackUserOf(ctx);
+  const note = input.note.trim();
+  const response = await ctx.db.query.responses.findFirst({
+    where: eq(schema.responses.id, input.responseId),
+  });
+  if (!response) throw new ServiceError("not_found", "That answer does not exist.");
+  const holler = await ctx.db.query.hollers.findFirst({
+    where: and(
+      eq(schema.hollers.id, response.hollerId),
+      eq(schema.hollers.workspaceId, ctx.workspaceId),
+    ),
+  });
+  if (!holler) throw new ServiceError("not_found", "That Holler does not exist.");
+  // A named response belongs to one person; an anonymous one is found only by its id.
+  if (response.slackUserId !== null && response.slackUserId !== slackUserId) {
+    throw new ServiceError("forbidden", "That answer is someone else's.");
+  }
+  if (holler.status !== "live") {
+    await queueOutcome(env, ctx, holler.id, { status: "closed" }, tapped);
+    return;
+  }
+  const question = await ctx.db.query.questions.findFirst({
+    where: and(eq(schema.questions.id, input.questionId), eq(schema.questions.hollerId, holler.id)),
+  });
+  if (!question?.followUpPrompt) {
+    throw new ServiceError("invalid", "This question does not ask for a note.");
+  }
+  if (note) {
+    await ctx.db
+      .insert(schema.answerNotes)
+      .values({ responseId: response.id, questionId: question.id, kind: "note", text: note })
+      .onConflictDoNothing();
+  }
+  await queueOutcome(env, ctx, holler.id, { status: "already" }, tapped);
 }

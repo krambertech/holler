@@ -1,4 +1,4 @@
-import type { Mode } from "@holler/core";
+import { type AnswerSurface, answerSurface, type HollerOut, type Mode } from "@holler/core";
 
 /**
  * What every Slack message about a Holler needs to know, loaded once by the delivery service.
@@ -7,6 +7,7 @@ import type { Mode } from "@holler/core";
 export interface SlackHoller {
   id: string;
   mode: Mode;
+  /** The title a row displays: a pulse with none shows its first question. */
   title: string;
   /** Markdown, as the editor stores it. */
   description: string;
@@ -18,49 +19,33 @@ export interface SlackHoller {
   questions: SlackQuestion[];
 }
 
-export interface SlackQuestion {
-  id: string;
-  type: "single" | "multi" | "text";
-  prompt: string;
-  required: boolean;
-  options: { id: string; label: string }[];
-}
+/** A question as the editor sends it, plus the id of its Other option, which `options` leaves out. */
+export type SlackQuestion = HollerOut["questions"][number] & { otherOptionId: string | null };
 
-/** The ids Holler gives its buttons and modals, so /slack/interactions knows what was tapped. */
+/** The ids Holler gives its buttons, inputs and modals, so /slack/interactions knows what was used. */
 export const actionIds = {
   /** A one-tap answer. Suffixed with the option's position, because action ids must differ. */
   option: "holler_option",
   open: "holler_open",
   done: "holler_done",
   snooze: "holler_snooze",
+  /** The free-text pulse's box in the DM. */
+  text: "holler_text",
+  /** The follow-up note box in the DM, after a tap. */
+  note: "holler_note",
   /** Link buttons. Slack still reports the tap; Holler ignores it. */
   formLink: "holler_form",
+  respondLink: "holler_respond",
   resultsLink: "holler_results",
 } as const;
 
 export const answerViewId = "holler_answer";
 
-/** How a recipient answers this Holler. docs/slack.md, Answering. */
-export type AnswerKind = "one_tap" | "modal" | "chase";
-
-/** Slack allows at most 10 radio buttons or checkboxes, and 100 options in a select. */
-export const choiceLimit = 10;
-export const oneTapLimit = 5;
-
-export function answerKind(holler: Pick<SlackHoller, "mode" | "questions">): AnswerKind {
-  if (holler.mode === "chase") return "chase";
-  const [only, ...rest] = holler.questions;
-  if (
-    holler.mode === "pulse" &&
-    only &&
-    rest.length === 0 &&
-    only.type === "single" &&
-    only.options.length <= oneTapLimit
-  ) {
-    return "one_tap";
-  }
-  // A survey has at most 30 questions and a question at most 100 options, so it always fits a modal.
-  return "modal";
+/** Where this Holler is answered. `answerSurface` in core decides; docs/slack.md, Answering. */
+export function surfaceOf(
+  holler: Pick<SlackHoller, "mode" | "description" | "questions">,
+): AnswerSurface {
+  return answerSurface(holler);
 }
 
 /** Escapes the three characters Slack's mrkdwn treats as markup. */

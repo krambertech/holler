@@ -44,7 +44,8 @@ describe("summarize", () => {
     expect(results.state).toBe("open");
     if (results.state !== "open") return;
     const [q] = results.questions;
-    if (!q || q.type === "text") throw new Error("expected a choice question");
+    if (!q || (q.type !== "single" && q.type !== "multi"))
+      throw new Error("expected a choice question");
     expect(q.answeredCount).toBe(3);
     expect(q.options.map((o) => o.count)).toEqual([1, 0, 2]);
     expect(q.options[2]?.share).toBeCloseTo(2 / 3);
@@ -94,5 +95,72 @@ describe("anonymousTime", () => {
     expect(anonymousTime(new Date("2026-11-20T10:47:13Z")).toISOString()).toBe(
       "2026-11-20T10:00:00.000Z",
     );
+  });
+
+  it("sums up number answers", () => {
+    const results = summarize({
+      anonymous: false,
+      responseCount: 4,
+      questions: [{ id: "n", prompt: "Days off", type: "number", style: "plain", options: [] }],
+      answers: ["3", "10", "1", "4"].map((text, i) => ({
+        responseId: String(i),
+        questionId: "n",
+        optionId: null,
+        text,
+        slackUserId: `U${i}`,
+      })),
+    });
+    if (results.state !== "open") throw new Error("expected open results");
+    const [q] = results.questions;
+    if (q?.type !== "number") throw new Error("expected a number question");
+    expect([q.average, q.median, q.min, q.max]).toEqual([4.5, 3.5, 1, 10]);
+  });
+
+  it("counts people picked, most picked first, and hides pickers when anonymous", () => {
+    const pick = (responseId: string, text: string) => ({
+      responseId,
+      questionId: "p",
+      optionId: null,
+      text,
+      slackUserId: null,
+    });
+    const results = summarize({
+      anonymous: true,
+      responseCount: 5,
+      questions: [{ id: "p", prompt: "Who helped?", type: "person", style: "plain", options: [] }],
+      answers: [
+        pick("1", "UA"),
+        pick("2", "UB"),
+        pick("3", "UB"),
+        pick("4", "UB"),
+        pick("5", "UA"),
+      ],
+      names: new Map([["UB", "Bea"]]),
+    });
+    if (results.state !== "open") throw new Error("expected open results");
+    const [q] = results.questions;
+    if (q?.type !== "person") throw new Error("expected a person question");
+    expect(q.people.map((p) => [p.name, p.count, p.pickedBy])).toEqual([
+      ["Bea", 3, []],
+      ["UA", 2, []],
+    ]);
+  });
+
+  it("lists follow-up notes and Other write-ins beside a choice question", () => {
+    const results = summarize({
+      anonymous: false,
+      responseCount: 1,
+      questions: [mood],
+      answers: [answer("1", "q1", "o1")],
+      notes: [
+        { responseId: "1", questionId: "q1", kind: "note", text: "Long week", slackUserId: "U1" },
+        { responseId: "1", questionId: "q1", kind: "other", text: " ", slackUserId: "U1" },
+      ],
+    });
+    if (results.state !== "open") throw new Error("expected open results");
+    const [q] = results.questions;
+    if (q?.type !== "single") throw new Error("expected a choice question");
+    expect(q.notes).toEqual([{ text: "Long week", slackUserId: "U1" }]);
+    expect(q.otherTexts).toEqual([]);
   });
 });

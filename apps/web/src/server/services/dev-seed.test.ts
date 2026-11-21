@@ -6,7 +6,7 @@ import { testDb } from "../test-db";
 import { emptyDatabase } from "../test-delivery";
 import { seedLeadHollers } from "./dev-seed";
 import { workspaceFixture } from "./fixtures";
-import { sendProblems } from "./hollers";
+import { getHoller } from "./hollers";
 import { monthlyUsage } from "./usage";
 
 let db: Db;
@@ -43,10 +43,8 @@ describe("the dev seed", () => {
         where: eq(schema.hollers.workspaceId, workspaceId),
       });
       for (const holler of hollers.filter((h) => h.status === "scheduled")) {
-        const questions = await db.query.questions.findMany({
-          where: eq(schema.questions.hollerId, holler.id),
-        });
-        expect(sendProblems({ ...holler, questions }), holler.title).toEqual([]);
+        // getHoller lists every reason an unsent Holler cannot go out, at the seed's own time.
+        expect((await getHoller(ctx, holler.id)).problems, holler.title).toEqual([]);
       }
       for (const holler of hollers.filter((h) => h.status === "closed")) {
         expect(holler.closeQueuedAt, holler.title).toEqual(holler.closedAt);

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { answerKind, mrkdwn, type SlackHoller, when } from "./format";
+import { mrkdwn, type SlackHoller, type SlackQuestion, surfaceOf, when } from "./format";
 import { blockKitProblems, viewProblems } from "./limits";
 import {
   announcementMessage,
@@ -15,6 +15,39 @@ import { answerModal, readAnswers } from "./modal";
 const now = new Date("2026-11-23T09:00:00Z");
 const closesAt = new Date("2026-11-27T16:00:00Z");
 const reader = { timeZone: "Europe/Tallinn", now };
+const webReader = { ...reader, respondUrl: "https://app.holler.team/respond/hol_web?u=UA&s=sig" };
+
+/** A question as the editor saves it, with every extra off unless a test sets it. */
+function question(
+  fields: Partial<SlackQuestion> & Pick<SlackQuestion, "id" | "type">,
+): SlackQuestion {
+  return {
+    position: 0,
+    style: "plain",
+    prompt: "How was your week?",
+    description: "",
+    required: true,
+    options: [],
+    allowOther: false,
+    otherOptionId: null,
+    maxChoices: null,
+    followUp: null,
+    lowLabel: null,
+    highLabel: null,
+    numberMin: null,
+    numberMax: null,
+    ...fields,
+  };
+}
+
+const options = (labels: string[], prefix = "o") =>
+  labels.map((label, position) => ({
+    id: `${prefix}_${position}`,
+    position,
+    label,
+    score: null,
+    isOther: false,
+  }));
 
 const pulse: SlackHoller = {
   id: "hol_1",
@@ -25,19 +58,14 @@ const pulse: SlackHoller = {
   externalUrl: null,
   closesAt,
   senderName: "Mira",
-  questions: [
-    {
-      id: "q_1",
-      type: "single",
-      prompt: "How was your week?",
-      required: true,
-      options: [
-        { id: "o_1", label: "Good" },
-        { id: "o_2", label: "Fine" },
-        { id: "o_3", label: "Rough" },
-      ],
-    },
-  ],
+  questions: [question({ id: "q_1", type: "single", options: options(["Good", "Fine", "Rough"]) })],
+};
+
+const textPulse: SlackHoller = {
+  ...pulse,
+  id: "hol_text",
+  title: "What should we stop doing?",
+  questions: [question({ id: "q_t", type: "text", prompt: "What should we stop doing?" })],
 };
 
 const survey: SlackHoller = {
@@ -48,15 +76,60 @@ const survey: SlackHoller = {
   description: "Two things to **decide**. See [the plan](https://example.com/plan).",
   anonymous: true,
   questions: [
-    { ...(pulse.questions[0] as SlackHoller["questions"][number]), prompt: "Where?" },
-    {
+    question({
+      id: "q_1",
+      type: "single",
+      prompt: "Where?",
+      options: options(["Lisbon", "Tallinn"]),
+      allowOther: true,
+      otherOptionId: "o_other",
+      followUp: { prompt: "Why there?", onlyAfter: null },
+    }),
+    question({
       id: "q_2",
       type: "multi",
       prompt: "Which days?",
       required: false,
-      options: Array.from({ length: 12 }, (_, i) => ({ id: `d_${i}`, label: `Day ${i + 1}` })),
-    },
-    { id: "q_3", type: "text", prompt: "Anything else?", required: false, options: [] },
+      maxChoices: 3,
+      options: options(
+        Array.from({ length: 12 }, (_, i) => `Day ${i + 1}`),
+        "d",
+      ),
+    }),
+    question({
+      id: "q_3",
+      type: "single",
+      style: "scale",
+      prompt: "How calm is your week?",
+      options: options(["1", "2", "3", "4", "5"], "s"),
+      lowLabel: "Chaos",
+      highLabel: "Calm",
+    }),
+    question({ id: "q_4", type: "number", prompt: "How many nights?", numberMin: 1, numberMax: 7 }),
+    question({ id: "q_5", type: "person", prompt: "Who should plan it?", maxChoices: 2 }),
+    question({
+      id: "q_6",
+      type: "text",
+      prompt: "Anything else?",
+      required: false,
+      description: "Diets, dates",
+    }),
+  ],
+};
+
+const webOnly: SlackHoller = {
+  ...survey,
+  id: "hol_web",
+  questions: [
+    question({
+      id: "q_w",
+      type: "single",
+      prompt: "Which team?",
+      options: options(
+        Array.from({ length: 101 }, (_, i) => `Team ${i + 1}`),
+        "w",
+      ),
+    }),
   ],
 };
 
@@ -69,27 +142,55 @@ const chase: SlackHoller = {
   questions: [],
 };
 
-describe("answerKind", () => {
-  it("answers a small single-choice pulse in one tap", () => {
-    expect(answerKind(pulse)).toBe("one_tap");
+const valid = (message: { blocks?: unknown[]; text: string }) =>
+  blockKitProblems("message", message.blocks ?? [], message.text);
+
+describe("where a Holler is answered", () => {
+  it("follows answerSurface: buttons, a DM text box, the modal, the web, the chase", () => {
+    expect([pulse, textPulse, survey, webOnly, chase].map((h) => surfaceOf(h).where)).toEqual([
+      "dm",
+      "dm",
+      "slack",
+      "web",
+      "chase",
+    ]);
   });
-  it("opens a modal for a survey", () => {
-    expect(answerKind(survey)).toBe("modal");
-  });
-  it("links out for a form chase", () => {
-    expect(answerKind(chase)).toBe("chase");
-  });
-  it("opens a modal for a pulse with more than five options", () => {
+
+  it("puts up to 25 buttons in the DM", () => {
     const wide = {
       ...pulse,
       questions: [
-        {
-          ...(pulse.questions[0] as SlackHoller["questions"][number]),
-          options: Array.from({ length: 6 }, (_, i) => ({ id: `o${i}`, label: `${i}` })),
-        },
+        question({
+          id: "q_1",
+          type: "single",
+          options: options(Array.from({ length: 25 }, String)),
+        }),
       ],
     };
-    expect(answerKind(wide)).toBe("modal");
+    const blocks = JSON.stringify(inviteMessage(wide, reader).blocks);
+    expect(blocks.match(/holler_option_/g)).toHaveLength(25);
+    expect(valid(inviteMessage(wide, reader))).toEqual([]);
+  });
+
+  it("asks a free-text pulse in a box in the DM that sends on Enter", () => {
+    const message = inviteMessage(textPulse, reader);
+    expect(message.blocks?.at(-1)).toMatchObject({
+      type: "input",
+      block_id: "text:hol_text:q_t",
+      dispatch_action: true,
+      element: {
+        action_id: "holler_text",
+        dispatch_action_config: { trigger_actions_on: ["on_enter_pressed"] },
+      },
+    });
+    expect(valid(message)).toEqual([]);
+  });
+
+  it("links a web-only Holler to the person's own signed form", () => {
+    expect(JSON.stringify(inviteMessage(webOnly, webReader).blocks)).toContain(
+      webReader.respondUrl,
+    );
+    expect(() => inviteMessage(webOnly, reader)).toThrow("no link");
   });
 });
 
@@ -114,7 +215,7 @@ describe("messages", () => {
   it("invites to a survey with Answer", () => {
     expect(inviteMessage(survey, reader)).toMatchSnapshot();
   });
-  it("invites to a form chase", () => {
+  it("invites to a chase", () => {
     expect(inviteMessage(chase, reader)).toMatchSnapshot();
   });
   it("reminds in three tones, with Remind me later before the last", () => {
@@ -135,10 +236,29 @@ describe("messages", () => {
       reminderMessage(survey, "gentle", reader, new Date("2026-11-23T13:00:00Z")),
     ).toMatchSnapshot();
   });
-  it("thanks with what they picked, or only that they answered anonymously", () => {
-    const given = [{ prompt: "Where?", values: ["Good"] }];
-    expect(answeredMessage(pulse, given)).toMatchSnapshot();
-    expect(JSON.stringify(answeredMessage(survey, given))).not.toContain("Good");
+  it("thanks with what they picked and wrote, or only that they answered anonymously", () => {
+    const given = [
+      { prompt: "Where?", values: ["Other: Riga"], people: [], note: "Cheap flights" },
+      { prompt: "Who should plan it?", values: [], people: ["UA", "UB"], note: null },
+    ];
+    const named = answeredMessage({ ...survey, anonymous: false }, given);
+    expect(named).toMatchSnapshot();
+    expect(JSON.stringify(named)).toContain("<@UA>, <@UB>");
+    expect(JSON.stringify(answeredMessage(survey, given))).not.toContain("Riga");
+  });
+  it("asks for the follow-up note under the thank-you", () => {
+    const message = answeredMessage(pulse, [], {
+      responseId: "res_1",
+      questionId: "q_1",
+      prompt: "What made it so?",
+    });
+    expect(message.blocks?.at(-1)).toMatchObject({
+      type: "input",
+      block_id: "note:res_1:q_1",
+      dispatch_action: true,
+      element: { action_id: "holler_note" },
+    });
+    expect(valid(message)).toEqual([]);
   });
   it("marks a closed Holler", () => {
     expect(closedMessage(pulse, closesAt, reader)).toMatchSnapshot();
@@ -160,29 +280,59 @@ describe("messages", () => {
 });
 
 describe("answer modal", () => {
-  it("uses radio buttons, a select above ten options, and a text box", () => {
-    expect(
-      answerModal(survey, { hollerId: survey.id, channel: "DA", ts: "1.1" }),
-    ).toMatchSnapshot();
+  const modal = answerModal(survey, { hollerId: survey.id, channel: "DA", ts: "1.1" });
+  const block = (id: string) =>
+    (modal.blocks as { block_id?: string }[]).find((b) => b.block_id === id);
+
+  it("builds each question type's element from docs/slack.md", () => {
+    expect(modal).toMatchSnapshot();
+    expect(block("q:q_1")).toMatchObject({ element: { type: "radio_buttons" } });
+    expect(JSON.stringify(block("q:q_1"))).toContain('"value":"o_other"');
+    expect(block("other:q_1")).toMatchObject({
+      optional: true,
+      label: { text: "If Other, what?" },
+    });
+    expect(block("note:q_1")).toMatchObject({ optional: true, label: { text: "Why there?" } });
+    expect(block("q:q_2")).toMatchObject({
+      label: { text: "Which days? Pick up to 3." },
+      element: { type: "multi_static_select", max_selected_items: 3 },
+    });
+    expect(JSON.stringify(block("q:q_3"))).toContain("1, Chaos");
+    expect(JSON.stringify(block("q:q_3"))).toContain("5, Calm");
+    expect(block("q:q_4")).toMatchObject({
+      element: { type: "number_input", is_decimal_allowed: false, min_value: "1", max_value: "7" },
+    });
+    expect(block("q:q_5")).toMatchObject({
+      element: { type: "multi_users_select", max_selected_items: 2 },
+    });
+    expect(block("q:q_6")).toMatchObject({ optional: true, hint: { text: "Diets, dates" } });
+    expect(viewProblems(modal)).toEqual([]);
   });
+
   it("reads its state back as a response", () => {
     expect(
       readAnswers({
-        "q:q_1": { value: { type: "radio_buttons", selected_option: { value: "o_2" } } },
+        "q:q_1": { value: { type: "radio_buttons", selected_option: { value: "o_other" } } },
+        "other:q_1": { value: { type: "plain_text_input", value: " Riga " } },
+        "note:q_1": { value: { type: "plain_text_input", value: "Cheap flights" } },
         "q:q_2": {
           value: {
             type: "multi_static_select",
             selected_options: [{ value: "d_0" }, { value: "d_3" }],
           },
         },
-        "q:q_3": { value: { type: "plain_text_input", value: "Snacks" } },
+        "q:q_4": { value: { type: "number_input", value: "3" } },
+        "q:q_5": { value: { type: "multi_users_select", selected_users: ["UA", "UB"] } },
+        "q:q_6": { value: { type: "plain_text_input", value: "" } },
         other: { value: { type: "plain_text_input", value: "ignored" } },
       }),
     ).toEqual({
       answers: [
-        { questionId: "q_1", optionIds: ["o_2"] },
+        { questionId: "q_1", optionIds: ["o_other"], otherText: "Riga", note: "Cheap flights" },
         { questionId: "q_2", optionIds: ["d_0", "d_3"] },
-        { questionId: "q_3", text: "Snacks" },
+        { questionId: "q_4", number: 3 },
+        { questionId: "q_5", slackUserIds: ["UA", "UB"] },
+        { questionId: "q_6", text: null },
       ],
     });
   });
@@ -191,8 +341,12 @@ describe("answer modal", () => {
 describe("every message fits Slack's limits", () => {
   // The largest Holler the draft schema allows, in the characters that grow most when escaped.
   const long = (length: number) => "&".repeat(length);
-  const option = (q: number, i: number) => ({ id: `opt_${q}_${i}_padding`, label: long(150) });
-  const biggest = (mode: SlackHoller["mode"], questionCount: number): SlackHoller => ({
+  const types = ["single", "multi", "text", "number", "person"] as const;
+  const biggest = (
+    mode: SlackHoller["mode"],
+    questionCount: number,
+    optionCount = 99,
+  ): SlackHoller => ({
     id: "hol_0123456789abcdef",
     mode,
     title: long(150),
@@ -201,54 +355,98 @@ describe("every message fits Slack's limits", () => {
     externalUrl: `https://forms.example.com/${"x".repeat(1900)}`,
     closesAt,
     senderName: long(80),
-    questions: Array.from({ length: questionCount }, (_, q) => ({
-      id: `que_${q}_0123456789`,
-      type: q % 3 === 0 ? "single" : q % 3 === 1 ? "multi" : "text",
-      prompt: long(300),
-      required: q % 2 === 0,
-      options: q % 3 === 2 ? [] : Array.from({ length: 100 }, (_, i) => option(q, i)),
-    })),
+    questions: Array.from({ length: questionCount }, (_, q) => {
+      const type = types[q % types.length] ?? "text";
+      const choice = type === "single" || type === "multi";
+      return question({
+        id: `que_${q}_0123456789`,
+        type,
+        prompt: long(300),
+        description: long(500),
+        required: q % 2 === 0,
+        options: choice
+          ? Array.from({ length: optionCount }, (_, i) => ({
+              id: `opt_${q}_${i}_padding`,
+              position: i,
+              label: long(150),
+              score: null,
+              isOther: false,
+            }))
+          : [],
+        allowOther: choice,
+        otherOptionId: choice ? `opt_${q}_other` : null,
+        maxChoices: type === "multi" || type === "person" ? 5 : null,
+        followUp: choice ? { prompt: long(300), onlyAfter: null } : null,
+        lowLabel: long(40),
+        highLabel: long(40),
+        numberMin: type === "number" ? -1000 : null,
+        numberMax: type === "number" ? 1000 : null,
+      });
+    }),
   });
   const onePulse: SlackHoller = {
-    ...biggest("pulse", 1),
+    ...biggest("pulse", 1, 25),
     questions: [
       {
-        ...(biggest("pulse", 1).questions[0] as SlackHoller["questions"][number]),
-        options: Array.from({ length: 5 }, (_, i) => option(0, i)),
+        ...(biggest("pulse", 1, 25).questions[0] as SlackQuestion),
+        allowOther: false,
+        otherOptionId: null,
       },
     ],
   };
-  const hollers = [onePulse, biggest("pulse", 2), biggest("survey", 30), biggest("chase", 0)];
-  const answers = Array.from({ length: 30 }, () => ({ prompt: long(300), values: [long(4000)] }));
+  const hollers = [
+    onePulse,
+    {
+      ...textPulse,
+      title: long(150),
+      description: long(4000),
+      questions: [question({ id: "q", type: "text", prompt: long(300) })],
+    },
+    biggest("pulse", 2),
+    // 30 questions with Other and notes on the choices is over 100 blocks, so it goes to the web.
+    biggest("survey", 30),
+    biggest("survey", 20),
+    biggest("chase", 0),
+  ];
+  const answers = Array.from({ length: 30 }, () => ({
+    prompt: long(300),
+    values: [long(4000)],
+    people: ["U0123456789"],
+    note: long(4000),
+  }));
 
   for (const holler of hollers) {
-    it(`${holler.mode} with ${holler.questions.length} questions`, () => {
+    const where = surfaceOf(holler).where;
+    it(`${holler.mode} with ${holler.questions.length} questions, answered in ${where}`, () => {
+      const read = {
+        ...reader,
+        respondUrl: `https://app.holler.team/respond/${holler.id}?u=U0123456789&s=${"x".repeat(43)}`,
+      };
       const messages = [
-        inviteMessage(holler, reader),
+        inviteMessage(holler, read),
         ...(["gentle", "nudge", "last"] as const).map((tone) =>
-          reminderMessage(holler, tone, reader),
+          reminderMessage(holler, tone, read),
         ),
-        reminderMessage(holler, "gentle", reader, closesAt),
-        answeredMessage(holler, answers),
+        reminderMessage(holler, "gentle", read, closesAt),
+        answeredMessage(holler, answers, {
+          responseId: "res_0123456789",
+          questionId: "que_0_0123456789",
+          prompt: long(300),
+        }),
         answeredMessage({ ...holler, anonymous: true }, answers),
         closedMessage(holler, closesAt, reader),
         announcementMessage(holler, { answered: 1999, recipients: 2000 }, true),
         closeNoticeMessage(holler, { answered: 1, recipients: 1 }, "https://app.holler.team/x"),
         sendFailedMessage(holler, long(300), "https://app.holler.team/x"),
       ];
-      for (const message of messages) {
-        expect(blockKitProblems("message", message.blocks ?? [], message.text)).toEqual([]);
-      }
-      if (holler.mode !== "chase") {
-        expect(
-          viewProblems(
-            answerModal(holler, {
-              hollerId: holler.id,
-              channel: "D0123456789",
-              ts: "1700000000.000100",
-            }),
-          ),
-        ).toEqual([]);
+      for (const message of messages) expect(valid(message)).toEqual([]);
+      if (where === "slack" || where === "dm") {
+        const view = answerModal(holler, {
+          hollerId: holler.id,
+          channel: "D0123456789",
+          ts: "1700000000.000100",
+        });
+        expect(viewProblems(view)).toEqual([]);
       }
     });
   }
@@ -297,7 +495,7 @@ describe("blockKitProblems", () => {
       "block 1 (actions) element 1 repeats action_id a",
       "block 2 (actions) repeats block_id same",
       "block 2 (actions) has no elements",
-      "block 3 (input) is an input, which only a view can hold",
+      "block 3 (input) is an input in a message without dispatch_action",
       "block 3 (input) has no element",
       "block 4 (header) is a block type Holler does not build",
     ]);

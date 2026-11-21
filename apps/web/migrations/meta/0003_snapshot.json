@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "75b6e78b-8c6f-4d07-a74b-00396f98cbc1",
+  "id": "6d069359-f9e0-4cdc-b5a9-68d6d73d7b63",
   "prevId": "ffd87d1d-ae47-4411-afbc-87803cecbc69",
   "tables": {
     "activity": {
@@ -2231,6 +2231,14 @@
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
+        },
+        "is_other": {
+          "name": "is_other",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
         }
       },
       "indexes": {
@@ -2316,6 +2324,14 @@
           "notNull": true,
           "autoincrement": false
         },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "''"
+        },
         "required": {
           "name": "required",
           "type": "integer",
@@ -2323,6 +2339,55 @@
           "notNull": true,
           "autoincrement": false,
           "default": true
+        },
+        "max_choices": {
+          "name": "max_choices",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "follow_up_prompt": {
+          "name": "follow_up_prompt",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "follow_up_when": {
+          "name": "follow_up_when",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "low_label": {
+          "name": "low_label",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "high_label": {
+          "name": "high_label",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "number_min": {
+          "name": "number_min",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "number_max": {
+          "name": "number_max",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
         }
       },
       "indexes": {
@@ -2435,13 +2500,6 @@
           "notNull": false,
           "autoincrement": false
         },
-        "next_reminder_at": {
-          "name": "next_reminder_at",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
         "failure": {
           "name": "failure",
           "type": "text",
@@ -2464,13 +2522,6 @@
           "columns": [
             "holler_id",
             "answered_at"
-          ],
-          "isUnique": false
-        },
-        "recipients_next_reminder": {
-          "name": "recipients_next_reminder",
-          "columns": [
-            "next_reminder_at"
           ],
           "isUnique": false
         }
@@ -2591,6 +2642,88 @@
             "member_id"
           ],
           "name": "viewers_holler_id_member_id_pk"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "answer_notes": {
+      "name": "answer_notes",
+      "columns": {
+        "response_id": {
+          "name": "response_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "question_id": {
+          "name": "question_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "kind": {
+          "name": "kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "text": {
+          "name": "text",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "answer_notes_question": {
+          "name": "answer_notes_question",
+          "columns": [
+            "question_id"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "answer_notes_response_id_responses_id_fk": {
+          "name": "answer_notes_response_id_responses_id_fk",
+          "tableFrom": "answer_notes",
+          "tableTo": "responses",
+          "columnsFrom": [
+            "response_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "answer_notes_question_id_questions_id_fk": {
+          "name": "answer_notes_question_id_questions_id_fk",
+          "tableFrom": "answer_notes",
+          "tableTo": "questions",
+          "columnsFrom": [
+            "question_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "answer_notes_response_id_question_id_kind_pk": {
+          "columns": [
+            "response_id",
+            "question_id",
+            "kind"
+          ],
+          "name": "answer_notes_response_id_question_id_kind_pk"
         }
       },
       "uniqueConstraints": {},

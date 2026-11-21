@@ -1,0 +1,783 @@
+<title>Holler editor</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geologica:wght@300;330;400;500;600&display=swap">
+<style>
+/* Layout: Holler's one column (max 880), warm canvas, white plates. Two stages, Write and Send, with a bar pinned to the bottom. Tokens copied from packages/design/tokens.css. */
+:root {
+  --canvas: oklch(0.974 0.003 67.8); --plate: oklch(1 0 0); --well: oklch(0.956 0.006 84.6); --track: oklch(0.941 0.007 80.7);
+  --hover: oklch(0.426 0.134 337.6 / 0.06); --edge: oklch(0.2 0.029 60.5 / 0.1); --edge-2: oklch(0.2 0.029 60.5 / 0.14); --edge-3: oklch(0.2 0.029 60.5 / 0.26);
+  --divider: oklch(0.2 0.029 60.5 / 0.08);
+  --float: 0 0 0 1px oklch(0.2 0.029 60.5 / 0.12), 0 12px 32px -12px oklch(0.2 0.029 60.5 / 0.28);
+  --ink: oklch(0.2 0.016 53.5); --ink-2: oklch(0.379 0.016 55.9); --muted: oklch(0.495 0.019 52.3); --faint: oklch(0.604 0.017 54.8);
+  --primary: oklch(0.426 0.134 337.6); --primary-hover: oklch(0.38 0.125 337.6); --on-primary: oklch(1 0 0);
+  --tint: oklch(0.929 0.028 334.9); --tint-ink: oklch(0.347 0.113 337.5); --focus: oklch(0.426 0.134 337.6);
+  --live-dot: oklch(0.628 0.196 349.5);
+  --waiting: oklch(0.944 0.049 86.4); --waiting-ink: oklch(0.434 0.09 79.3);
+  --danger: oklch(0.932 0.028 25.9); --danger-ink: oklch(0.424 0.149 28.5);
+  --slack-bg: oklch(1 0 0); --slack-ink: oklch(0.22 0.01 300); --slack-muted: oklch(0.5 0.01 300); --slack-edge: oklch(0.88 0.005 300); --slack-green: oklch(0.52 0.12 160);
+  --weight-body: 300;
+  --font: "Geologica", ui-sans-serif, system-ui, sans-serif;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  color-scheme: dark; --weight-body: 330;
+  --canvas: oklch(0.187 0.013 338.6); --plate: oklch(0.232 0.019 334.1); --well: oklch(0.287 0.025 337.8); --track: oklch(0.3 0.025 337.8);
+  --hover: oklch(0.793 0.122 343 / 0.08); --edge: oklch(1 0 0 / 0.08); --edge-2: oklch(1 0 0 / 0.16); --edge-3: oklch(1 0 0 / 0.28); --divider: oklch(1 0 0 / 0.07);
+  --float: 0 0 0 1px oklch(1 0 0 / 0.12), 0 18px 40px -16px oklch(0 0 0 / 0.6);
+  --ink: oklch(0.954 0.007 340.4); --ink-2: oklch(0.86 0.012 338); --muted: oklch(0.762 0.017 335.2); --faint: oklch(0.55 0.017 335);
+  --primary: oklch(0.793 0.122 343); --primary-hover: oklch(0.83 0.11 343); --on-primary: oklch(0.266 0.081 337.9);
+  --tint: oklch(0.33 0.07 338); --tint-ink: oklch(0.89 0.06 343); --focus: oklch(0.793 0.122 343); --live-dot: oklch(0.793 0.122 343);
+  --waiting: oklch(0.32 0.045 80); --waiting-ink: oklch(0.89 0.09 85);
+  --danger: oklch(0.31 0.06 28); --danger-ink: oklch(0.87 0.07 28);
+  --slack-bg: oklch(0.2 0.005 300); --slack-ink: oklch(0.92 0.005 300); --slack-muted: oklch(0.7 0.005 300); --slack-edge: oklch(0.35 0.005 300); --slack-green: oklch(0.7 0.12 160);
+} }
+:root[data-theme="dark"] {
+  color-scheme: dark; --weight-body: 330;
+  --canvas: oklch(0.187 0.013 338.6); --plate: oklch(0.232 0.019 334.1); --well: oklch(0.287 0.025 337.8); --track: oklch(0.3 0.025 337.8);
+  --hover: oklch(0.793 0.122 343 / 0.08); --edge: oklch(1 0 0 / 0.08); --edge-2: oklch(1 0 0 / 0.16); --edge-3: oklch(1 0 0 / 0.28); --divider: oklch(1 0 0 / 0.07);
+  --float: 0 0 0 1px oklch(1 0 0 / 0.12), 0 18px 40px -16px oklch(0 0 0 / 0.6);
+  --ink: oklch(0.954 0.007 340.4); --ink-2: oklch(0.86 0.012 338); --muted: oklch(0.762 0.017 335.2); --faint: oklch(0.55 0.017 335);
+  --primary: oklch(0.793 0.122 343); --primary-hover: oklch(0.83 0.11 343); --on-primary: oklch(0.266 0.081 337.9);
+  --tint: oklch(0.33 0.07 338); --tint-ink: oklch(0.89 0.06 343); --focus: oklch(0.793 0.122 343); --live-dot: oklch(0.793 0.122 343);
+  --waiting: oklch(0.32 0.045 80); --waiting-ink: oklch(0.89 0.09 85);
+  --danger: oklch(0.31 0.06 28); --danger-ink: oklch(0.87 0.07 28);
+  --slack-bg: oklch(0.2 0.005 300); --slack-ink: oklch(0.92 0.005 300); --slack-muted: oklch(0.7 0.005 300); --slack-edge: oklch(0.35 0.005 300); --slack-green: oklch(0.7 0.12 160);
+}
+*, *::before, *::after { box-sizing: border-box; }
+body { background: var(--canvas); color: var(--ink); font-family: var(--font); font-weight: var(--weight-body); font-size: 15px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+button, input, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+svg.i { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.tabular { font-variant-numeric: tabular-nums; }
+
+/* The mockup's own frame switcher, not part of the product. */
+.switcher { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: var(--canvas); border-bottom: 1px solid var(--divider); }
+.switcher-in { max-width: 880px; margin: 0 auto; padding-block: 10px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.switcher-in > span { font-size: 12px; color: var(--muted); margin-inline-end: 6px; }
+.switcher button { border: 1px solid var(--edge-2); background: var(--plate); border-radius: 999px; padding: 4px 12px; font-size: 13px; font-weight: 400; }
+.switcher button[aria-pressed="true"] { background: var(--tint); color: var(--tint-ink); border-color: transparent; }
+
+.page { max-width: 880px; margin: 0 auto; padding-block: 24px 150px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.col { max-width: 720px; margin: 0 auto; display: flex; flex-direction: column; gap: 28px; }
+.header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 22px; }
+.logo { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 19px; letter-spacing: -0.02em; }
+.mark { width: 26px; height: 26px; border-radius: 7px; background: oklch(0.426 0.134 337.6); display: grid; place-items: center; color: white; font-weight: 600; font-size: 16px; }
+.me { display: flex; align-items: center; gap: 8px; color: var(--muted); }
+.avatar { width: 26px; height: 26px; border-radius: 999px; display: grid; place-items: center; font-size: 11px; font-weight: 400; background: oklch(0.932 0.027 148.8); color: oklch(0.401 0.083 157.9); }
+.back { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: 13.5px; text-decoration: none; }
+h1 { font-size: 24px; font-weight: 400; letter-spacing: -0.025em; margin: 0; text-wrap: balance; }
+h2 { font-size: 17px; font-weight: 400; letter-spacing: -0.01em; margin: 0; }
+.section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 10px; padding-inline: 4px; flex-wrap: wrap; }
+.section-head .note { font-size: 13.5px; color: var(--muted); }
+
+.plate { background: var(--plate); border-radius: 16px; box-shadow: 0 0 0 1px var(--edge); }
+.row { border-top: 1px solid var(--divider); }
+.row:first-child { border-top: 0; }
+.chip { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 2px 10px; font-size: 13px; background: var(--well); color: var(--ink-2); font-weight: 400; border: 0; }
+.chip.btn-chip:hover { background: var(--hover); color: var(--ink); }
+.btn { display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: var(--plate); box-shadow: 0 0 0 1px var(--edge-2); font-weight: 500; font-size: 15px; white-space: nowrap; }
+.btn.primary { background: var(--primary); color: var(--on-primary); box-shadow: none; }
+.btn.ghost { box-shadow: none; background: transparent; color: var(--ink-2); }
+.link { background: none; border: 0; padding: 0; color: var(--tint-ink); font-weight: 400; font-size: 13.5px; }
+
+/* The stage header: where you are, both stages always reachable. */
+.stagebar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.stages { display: inline-flex; align-items: center; gap: 4px; }
+.stage { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px 6px 6px; border-radius: 999px; border: 0; background: none; color: var(--muted); font-weight: 400; font-size: 14px; }
+.stage .n { width: 24px; height: 24px; border-radius: 999px; display: grid; place-items: center; background: var(--well); font-size: 12px; color: var(--ink-2); }
+.stage.on { color: var(--ink); background: var(--plate); box-shadow: 0 0 0 1px var(--edge); }
+.stage.on .n { background: var(--primary); color: var(--on-primary); }
+.stage.done .n { background: var(--tint); color: var(--tint-ink); }
+.stage-sep { width: 20px; height: 1px; background: var(--edge-3); }
+.saved { font-size: 13px; color: var(--muted); display: inline-flex; gap: 6px; align-items: center; }
+
+/* Mode */
+.modes { display: inline-flex; padding: 3px; border-radius: 12px; background: var(--track); gap: 2px; }
+.modes button { display: inline-flex; align-items: center; gap: 7px; padding: 6px 14px 6px 10px; border-radius: 9px; border: 0; background: none; color: var(--ink-2); font-weight: 400; font-size: 14px; }
+.modes button svg { width: 15px; height: 15px; color: var(--muted); }
+.modes button.on { background: var(--plate); color: var(--ink); box-shadow: 0 0 0 1px var(--edge); }
+.modes button.on svg { color: var(--tint-ink); }
+.mode-desc { font-size: 13.5px; color: var(--muted); margin-top: 8px; padding-inline: 2px; }
+.empty-q { border: 1px dashed var(--edge-3); border-radius: 16px; padding: 18px 20px; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 14px 12px; align-items: start; }
+.empty-types, .empty-or { grid-column: 2; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.empty-types .chip { padding: 5px 12px; font-size: 13.5px; }
+.empty-or { gap: 12px; color: var(--muted); font-size: 13.5px; }
+@media (max-width: 640px) { .empty-types, .empty-or { grid-column: 1 / -1; } }
+/* Start screen: one click on a card opens Write in that mode. */
+.picks { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; align-items: start; }
+.pick-col { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.pick { display: flex; flex-direction: column; padding: 0; border: 0; border-radius: 16px; background: var(--plate); box-shadow: 0 0 0 1px var(--edge); overflow: hidden; text-align: start; color: var(--ink); transition: box-shadow 150ms var(--ease-out); }
+.pick:hover { box-shadow: 0 0 0 1.5px var(--primary); }
+.pick .art { height: 128px; background: var(--well); padding: 18px; display: flex; align-items: center; justify-content: center; transition: background-color 150ms var(--ease-out); border-radius: 0; }
+.pick:hover .art { background: var(--tint); }
+.msg { width: 100%; max-width: 190px; background: var(--plate); border-radius: 10px; box-shadow: 0 0 0 1px var(--edge); padding: 10px; display: flex; flex-direction: column; gap: 7px; }
+.msg-top { display: flex; align-items: center; gap: 6px; }
+.bot-dot { width: 14px; height: 14px; border-radius: 4px; background: oklch(0.426 0.134 337.6); flex: none; }
+.msg .ln { height: 5px; border-radius: 99px; background: var(--edge-3); display: block; }
+.msg .ln.dark { background: var(--ink-2); opacity: 0.55; height: 6px; }
+.msg .pills { display: flex; gap: 4px; }
+.msg .pill { height: 15px; flex: 1; border-radius: 4px; background: var(--plate); box-shadow: 0 0 0 1px var(--edge-2); }
+.msg .pill.hit { background: var(--primary); box-shadow: none; }
+.msg .cb { display: flex; gap: 6px; align-items: center; }
+.msg .cb i { width: 9px; height: 9px; border-radius: 3px; box-shadow: inset 0 0 0 1.5px var(--faint); display: block; flex: none; }
+.msg .cb i.on { background: var(--primary); box-shadow: none; }
+.msg .cb .ln { flex: 1; }
+.msg .box { height: 14px; border-radius: 4px; box-shadow: 0 0 0 1px var(--edge-2); }
+.msg .link-ln { height: 5px; width: 75%; border-radius: 99px; background: var(--primary); opacity: 0.6; }
+.msg .done { align-self: flex-start; font-size: 10px; font-weight: 500; padding: 2px 8px; border-radius: 4px; box-shadow: 0 0 0 1px var(--edge-2); color: var(--ink-2); }
+.pick-body { padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 4px; }
+.pick-name { display: flex; align-items: center; gap: 8px; font-size: 17px; font-weight: 400; letter-spacing: -0.01em; }
+.pick-name .g, .modeline .g, .menu-item .g { width: 26px; height: 26px; border-radius: 7px; background: var(--tint); color: var(--tint-ink); display: grid; place-items: center; flex: none; }
+.pick-name .g svg, .modeline .g svg, .menu-item .g svg { width: 14px; height: 14px; }
+.pick-name .go { margin-inline-start: auto; color: var(--muted); transition: transform 150ms var(--ease-out), color 150ms var(--ease-out); }
+.pick:hover .pick-name .go { color: var(--tint-ink); transform: translateX(2px); }
+.pick-blurb { font-size: 13.5px; color: var(--muted); line-height: 1.45; }
+.pick-tpls { display: flex; flex-direction: column; gap: 2px; padding-inline: 6px; }
+.pick-tpls > span { font-size: 12px; color: var(--muted); margin-bottom: 2px; padding-inline: 6px; }
+.pick-tpls button { text-align: start; border: 0; background: none; padding: 5px 6px; border-radius: 8px; font-size: 14px; font-weight: var(--weight-body); color: var(--ink-2); }
+.pick-tpls button:hover { background: var(--hover); color: var(--ink); }
+@media (prefers-reduced-motion: reduce) { .pick, .pick .art, .pick-name .go { transition: none; } .pick:hover .pick-name .go { transform: none; } }
+@media (max-width: 720px) {
+  .picks { grid-template-columns: minmax(0, 1fr); }
+  .pick { flex-direction: row; align-items: stretch; }
+  .pick .art { width: 112px; height: auto; padding: 10px; flex: none; }
+  .msg { padding: 7px; gap: 5px; }
+}
+
+/* Write: the mode, small, with Change. */
+.modeline-wrap { position: relative; }
+.modeline { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 14px; }
+.modeline b { font-weight: 400; }
+.modeline .muted { color: var(--muted); }
+.modemenu { position: absolute; top: 36px; inset-inline-start: 0; z-index: 5; background: var(--plate); border-radius: 14px; box-shadow: var(--float); padding: 6px; width: min(360px, 100%); display: flex; flex-direction: column; }
+.modemenu .menu-item { align-items: flex-start; gap: 10px; padding: 8px 10px; }
+.menu-item .g.sm { background: var(--well); color: var(--muted); }
+.menu-item .g.sm.on { background: var(--tint); color: var(--tint-ink); }
+.mm-n { display: block; font-weight: 400; }
+.mm-d { display: block; font-size: 13px; color: var(--muted); }
+.menu-item .tick { margin-inline-start: auto; color: var(--tint-ink); align-self: center; }
+
+/* Mode: three options in one plate, each saying what it is. */
+.modecards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); background: var(--plate); border-radius: 16px; box-shadow: 0 0 0 1px var(--edge); overflow: hidden; }
+.mc { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 10px; padding: 12px 14px; border: 0; border-inline-start: 1px solid var(--divider); background: none; text-align: start; color: var(--ink); align-items: center; }
+.mc:first-child { border-inline-start: 0; }
+.mc:hover { background: var(--hover); }
+.mc { grid-template-rows: auto auto; }
+.mc .g { grid-row: 1 / span 2; width: 32px; height: 32px; border-radius: 9px; background: var(--well); color: var(--muted); display: grid; place-items: center; align-self: start; }
+.mc .g svg { width: 16px; height: 16px; }
+.mc.on { background: var(--hover); }
+.mc.on .g { background: var(--tint); color: var(--tint-ink); }
+.mc .n { display: flex; align-items: center; gap: 6px; font-weight: 400; color: var(--ink-2); }
+.mc.on .n { color: var(--ink); }
+.mc .d { grid-column: 2; font-size: 13px; color: var(--muted); line-height: 1.35; }
+@media (max-width: 640px) {
+  .modecards { grid-template-columns: minmax(0, 1fr); }
+  .mc { border-inline-start: 0; border-top: 1px solid var(--divider); }
+  .mc:first-child { border-top: 0; }
+}
+.mode-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+
+/* Mode tiles: each shows what the recipient gets, drawn small. */
+.tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.tile { display: flex; flex-direction: column; gap: 10px; padding: 12px; border-radius: 16px; border: 0; background: var(--plate); box-shadow: 0 0 0 1px var(--edge); text-align: start; color: var(--ink); }
+.tile:hover { box-shadow: 0 0 0 1px var(--edge-3); }
+.tile.on { box-shadow: 0 0 0 2px var(--primary); }
+.tile .art { height: 92px; border-radius: 10px; background: var(--well); padding: 12px; display: flex; flex-direction: column; gap: 6px; justify-content: center; overflow: hidden; }
+.tile.on .art { background: var(--tint); }
+.tile .name { display: flex; align-items: center; gap: 7px; font-weight: 400; }
+.tile .name svg { width: 15px; height: 15px; color: var(--tint-ink); }
+.tile .blurb { font-size: 13px; color: var(--muted); line-height: 1.4; margin-top: -6px; }
+.art .ln { height: 6px; border-radius: 99px; background: var(--edge-3); }
+.art .pills { display: flex; gap: 4px; }
+.art .pill { height: 16px; flex: 1; border-radius: 5px; background: var(--plate); box-shadow: 0 0 0 1px var(--edge-2); }
+.art .pill.hit { background: var(--primary); box-shadow: none; }
+.art .box { height: 14px; border-radius: 4px; background: var(--plate); box-shadow: 0 0 0 1px var(--edge-2); }
+.art .cb { display: flex; gap: 5px; align-items: center; }
+.art .cb i { width: 9px; height: 9px; border-radius: 3px; box-shadow: inset 0 0 0 1.5px var(--faint); display: block; flex: none; }
+.art .cb .ln { flex: 1; }
+.art .link-ln { height: 6px; width: 70%; border-radius: 99px; background: var(--primary); opacity: 0.55; }
+.art .done { align-self: flex-start; font-size: 10px; font-weight: 500; padding: 2px 8px; border-radius: 5px; background: var(--plate); box-shadow: 0 0 0 1px var(--edge-2); color: var(--ink-2); }
+
+/* Templates */
+.tpl-strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+.tpl { display: flex; flex-direction: column; gap: 6px; padding: 14px; border-radius: 16px; border: 0; background: var(--plate); box-shadow: 0 0 0 1px var(--edge); text-align: start; color: var(--ink); }
+.tpl:hover { box-shadow: 0 0 0 1px var(--edge-3); }
+.tpl .top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.tpl .name { font-weight: 400; }
+.tpl .q1 { font-size: 13.5px; color: var(--ink-2); line-height: 1.4; }
+.tpl .meta { font-size: 12px; color: var(--muted); margin-top: auto; padding-top: 4px; }
+.mini-chip { display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; font-weight: 400; padding: 1px 8px; border-radius: 99px; background: var(--tint); color: var(--tint-ink); white-space: nowrap; }
+.mini-chip svg { width: 11px; height: 11px; }
+
+/* The templates sheet */
+.sheet { background: var(--plate); border-radius: 16px; box-shadow: var(--float); overflow: hidden; display: grid; grid-template-columns: 200px minmax(0, 1fr); min-height: 520px; }
+.sheet-nav { border-inline-end: 1px solid var(--divider); padding: 10px; display: flex; flex-direction: column; gap: 2px; background: var(--canvas); }
+.sheet-nav button { text-align: start; border: 0; background: none; padding: 7px 10px; border-radius: 10px; font-size: 14px; font-weight: var(--weight-body); color: var(--ink-2); display: flex; justify-content: space-between; }
+.sheet-nav button span { color: var(--muted); font-size: 12px; }
+.sheet-nav button.on { background: var(--plate); color: var(--ink); box-shadow: 0 0 0 1px var(--edge); font-weight: 400; }
+.sheet-main { display: flex; flex-direction: column; min-width: 0; }
+.sheet-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 18px; border-bottom: 1px solid var(--divider); }
+.sheet-list { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); flex: 1; }
+.sheet-items { border-inline-end: 1px solid var(--divider); }
+.sheet-item { display: flex; flex-direction: column; gap: 3px; padding: 12px 18px; border: 0; border-bottom: 1px solid var(--divider); background: none; text-align: start; width: 100%; }
+.sheet-item:hover { background: var(--hover); }
+.sheet-item.on { background: var(--hover); }
+.sheet-item .name { display: flex; align-items: center; gap: 8px; font-weight: 400; }
+.sheet-item .what { font-size: 13px; color: var(--muted); }
+.sheet-preview { padding: 18px; display: flex; flex-direction: column; gap: 12px; background: var(--canvas); }
+.pq { background: var(--plate); border-radius: 12px; box-shadow: 0 0 0 1px var(--edge); padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
+.pq .t { font-size: 12px; color: var(--muted); display: flex; gap: 6px; align-items: center; }
+.pq .p { font-weight: 400; }
+.pq .scale span { min-width: 26px; height: 26px; font-size: 12px; }
+@media (max-width: 760px) {
+  .tiles { grid-template-columns: minmax(0, 1fr); }
+  .tile { flex-direction: row; align-items: center; }
+  .tile .art { width: 96px; height: 64px; flex: none; padding: 8px; gap: 4px; }
+  .sheet { grid-template-columns: minmax(0, 1fr); }
+  .sheet-nav { flex-direction: row; overflow-x: auto; border-inline-end: 0; border-bottom: 1px solid var(--divider); }
+  .sheet-nav button { white-space: nowrap; gap: 6px; }
+  .sheet-list { grid-template-columns: minmax(0, 1fr); }
+  .sheet-preview { display: none; }
+}
+
+.title-input { font-size: 24px; font-weight: 400; letter-spacing: -0.025em; border: 0; background: none; padding: 0; width: 100%; outline: none; }
+.title-input::placeholder, .intro::placeholder { color: var(--muted); opacity: 0.75; }
+.intro { border: 0; background: none; padding: 0; width: 100%; resize: none; color: var(--ink-2); outline: none; min-height: 24px; }
+.title-note { font-size: 12.5px; color: var(--muted); }
+
+/* Question cards. The grip sits beside the number, in the margin on a wide screen. */
+.qs { display: flex; flex-direction: column; gap: 10px; }
+.q { padding: 18px 20px 16px; display: flex; flex-direction: column; gap: 12px; position: relative; }
+.q-head { display: flex; align-items: center; gap: 10px; }
+.grip { position: absolute; inset-inline-start: -30px; top: 20px; width: 24px; height: 28px; display: grid; place-items: center; color: var(--faint); border: 0; background: none; border-radius: 6px; cursor: grab; }
+.grip:hover { color: var(--ink); background: var(--hover); }
+.q-num { width: 28px; height: 28px; border-radius: 8px; background: var(--well); display: grid; place-items: center; font-size: 13px; font-weight: 400; color: var(--ink-2); flex: none; }
+.type { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 10px; border-radius: 10px; box-shadow: 0 0 0 1px var(--edge-2); background: var(--plate); border: 0; font-size: 13.5px; font-weight: 400; }
+.q-tools { margin-inline-start: auto; display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 13.5px; }
+.icon-btn { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 8px; border: 0; background: none; color: var(--muted); }
+.icon-btn:hover, .icon-btn.open { background: var(--hover); color: var(--ink); }
+.prompt { font-size: 17px; font-weight: 400; letter-spacing: -0.01em; border: 0; background: none; padding: 0; outline: none; width: 100%; }
+.prompt::placeholder { color: var(--muted); opacity: 0.75; }
+.desc { font-size: 14px; color: var(--muted); border: 0; background: none; padding: 0; width: 100%; outline: none; margin-top: -6px; }
+.opts { display: flex; flex-direction: column; gap: 6px; }
+.opt { display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 0 6px 0 12px; border-radius: 10px; box-shadow: 0 0 0 1px var(--edge-2); }
+.opt .mk { width: 14px; height: 14px; border-radius: 999px; box-shadow: inset 0 0 0 1.5px var(--faint); flex: none; }
+.opt .mk.sq { border-radius: 4px; }
+.opt .lbl { flex: 1; min-width: 0; }
+.opt .lbl.ph { color: var(--muted); opacity: 0.75; }
+.opt.other { background: var(--well); box-shadow: none; }
+.opt.other .lbl span { color: var(--muted); font-size: 13.5px; }
+.opt.add { background: none; border: 1px dashed var(--edge-3); box-shadow: none; color: var(--muted); }
+.extras { display: flex; flex-wrap: wrap; gap: 4px 16px; align-items: center; border-top: 1px solid var(--divider); padding-top: 12px; margin-top: 2px; }
+.extra { display: inline-flex; align-items: center; gap: 6px; background: none; border: 0; color: var(--muted); font-size: 13.5px; padding: 4px 0; font-weight: var(--weight-body); }
+.extras .push { margin-inline-start: auto; display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 13.5px; }
+.switch { width: 34px; height: 20px; border-radius: 999px; background: var(--track); position: relative; flex: none; box-shadow: inset 0 0 0 1px var(--edge-2); }
+.switch::after { content: ""; position: absolute; top: 3px; inset-inline-start: 3px; width: 14px; height: 14px; border-radius: 999px; background: var(--plate); box-shadow: 0 1px 2px oklch(0 0 0 / 0.2); }
+.switch.on { background: var(--primary); box-shadow: none; }
+.switch.on::after { inset-inline-start: 17px; }
+.followup { background: var(--well); border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; }
+.followup .fh { display: flex; align-items: center; gap: 8px; font-size: 13.5px; color: var(--ink-2); flex-wrap: wrap; }
+.followup .fh .when { margin-inline-start: auto; color: var(--muted); }
+.followup .fp { background: var(--plate); border-radius: 8px; padding: 8px 10px; box-shadow: 0 0 0 1px var(--edge-2); }
+.scale { display: flex; gap: 4px; flex-wrap: wrap; }
+.scale span { min-width: 34px; height: 34px; border-radius: 8px; box-shadow: 0 0 0 1px var(--edge-2); display: grid; place-items: center; font-size: 13.5px; font-weight: 400; color: var(--ink-2); }
+.scale-ends { display: flex; justify-content: space-between; gap: 12px; }
+.scale-cfg { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 13.5px; color: var(--muted); }
+.field { height: 32px; padding: 0 10px; border-radius: 10px; box-shadow: 0 0 0 1px var(--edge-2); display: inline-flex; align-items: center; gap: 6px; color: var(--ink); background: var(--plate); font-size: 13.5px; }
+.dates { display: flex; flex-wrap: wrap; gap: 6px; }
+.date { display: inline-flex; flex-direction: column; padding: 6px 12px; border-radius: 10px; box-shadow: 0 0 0 1px var(--edge-2); line-height: 1.3; }
+.date b { font-weight: 400; }
+.date small { color: var(--muted); font-size: 12px; }
+.date.add { box-shadow: none; border: 1px dashed var(--edge-3); color: var(--muted); flex-direction: row; gap: 6px; align-items: center; }
+
+/* The question menu, shown open on question 2. */
+.qmenu { position: absolute; inset-inline-end: 16px; top: 56px; z-index: 5; background: var(--plate); border-radius: 14px; box-shadow: var(--float); padding: 6px; min-width: 220px; display: flex; flex-direction: column; }
+.menu-item { display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: 10px; background: none; border: 0; text-align: start; font-size: 14px; font-weight: var(--weight-body); }
+.menu-item:hover, .menu-item.hl { background: var(--hover); }
+.menu-item small { margin-inline-start: auto; color: var(--muted); font-size: 12px; }
+.menu-item .new { margin-inline-start: auto; font-size: 11px; background: var(--tint); color: var(--tint-ink); border-radius: 999px; padding: 0 6px; }
+.menu-sep { height: 1px; background: var(--divider); margin: 4px -6px; }
+.menu-item.danger { color: var(--danger-ink); }
+
+.addq-btn { width: 100%; height: 52px; border-radius: 16px; border: 1px dashed var(--edge-3); background: none; color: var(--ink-2); font-weight: 400; display: flex; align-items: center; justify-content: center; gap: 8px; }
+.typemenu { background: var(--plate); border-radius: 16px; box-shadow: var(--float); padding: 6px; display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 2px 8px; }
+.typemenu h3 { font-size: 12px; font-weight: 400; color: var(--muted); margin: 8px 10px 4px; }
+.typemenu > div { display: flex; flex-direction: column; }
+
+.examples { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 13.5px; color: var(--muted); padding-inline: 4px; }
+
+/* Send stage */
+.who { padding: 14px 16px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.person { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 6px 0 3px; border-radius: 999px; background: var(--well); font-size: 13.5px; font-weight: 400; }
+.person .avatar { width: 24px; height: 24px; font-size: 10px; }
+.person .x { color: var(--muted); display: grid; place-items: center; }
+.person .x svg { width: 14px; height: 14px; }
+.who-input { flex: 1; min-width: 160px; color: var(--muted); padding: 4px 6px; }
+.set { display: grid; grid-template-columns: 96px minmax(0,1fr) auto; gap: 2px 16px; align-items: center; padding: 14px 18px; }
+.set .k { color: var(--muted); font-size: 13.5px; }
+.set .v { display: flex; flex-wrap: wrap; gap: 2px 8px; align-items: baseline; min-width: 0; }
+.set .v b { font-weight: 400; }
+.set .v span { color: var(--muted); font-size: 13.5px; }
+.problem { display: flex; align-items: center; gap: 10px; padding: 12px 16px; background: var(--danger); color: var(--danger-ink); border-radius: 16px; font-size: 14px; font-weight: 400; }
+.problem .link { margin-inline-start: auto; color: var(--danger-ink); text-decoration: underline; text-underline-offset: 3px; }
+
+/* The bar pinned to the bottom */
+.sendbar { position: fixed; inset: auto 0 0 0; z-index: 15; padding-bottom: env(safe-area-inset-bottom, 0px); background: linear-gradient(to top, var(--canvas) 60%, transparent); pointer-events: none; }
+.sendbar-in { pointer-events: auto; max-width: 752px; margin: 0 auto 14px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.bar { background: var(--plate); border-radius: 16px; box-shadow: var(--float); padding: 10px 10px 10px 18px; display: flex; align-items: center; gap: 12px; }
+.bar .what { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.35; }
+.bar .what b { font-weight: 400; }
+.bar .what span { font-size: 13px; color: var(--muted); }
+.bar .acts { display: flex; gap: 8px; }
+.answer-where { display: inline-flex; align-items: center; gap: 6px; }
+.dot { width: 7px; height: 7px; border-radius: 999px; background: var(--live-dot); display: inline-block; flex: none; }
+
+/* Slack */
+.slack { background: var(--slack-bg); color: var(--slack-ink); border-radius: 12px; box-shadow: 0 0 0 1px var(--slack-edge); padding: 16px; font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; font-size: 14px; font-weight: 400; line-height: 1.45; }
+.slack .from { display: flex; gap: 10px; }
+.slack .bot { width: 36px; height: 36px; border-radius: 8px; background: oklch(0.426 0.134 337.6); color: white; display: grid; place-items: center; font-weight: 700; flex: none; font-family: var(--font); }
+.slack .nm { font-weight: 800; }
+.slack .app { font-size: 10px; background: oklch(0.9 0.005 300 / 0.5); padding: 0 4px; border-radius: 3px; margin-inline-start: 4px; color: var(--slack-muted); font-weight: 700; }
+.slack .tm { color: var(--slack-muted); font-size: 12px; margin-inline-start: 6px; }
+.slack .body { display: flex; flex-direction: column; gap: 8px; min-width: 0; flex: 1; }
+.slack .ttl { font-weight: 800; }
+.slack .btns { display: flex; flex-wrap: wrap; gap: 6px; }
+.slack .sb { border: 1px solid var(--slack-edge); border-radius: 6px; padding: 4px 12px; font-weight: 700; font-size: 13px; }
+.slack .sb.picked { background: var(--slack-green); color: white; border-color: transparent; }
+.slack .ctx { font-size: 12px; color: var(--slack-muted); }
+.slack .in { border: 1px solid var(--slack-edge); border-radius: 6px; padding: 8px 10px; color: var(--slack-muted); }
+.slack .lbl { font-weight: 700; font-size: 13px; }
+.preview { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.preview-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+
+.callout { font-size: 13.5px; color: var(--ink-2); padding: 0 4px; display: flex; flex-direction: column; gap: 6px; }
+.callout b { font-weight: 400; color: var(--ink); }
+.callout ul { margin: 0; padding-inline-start: 18px; display: flex; flex-direction: column; gap: 4px; }
+
+@media (max-width: 860px) { .grip { inset-inline-start: auto; position: static; width: 20px; margin-inline-end: -4px; } }
+@media (max-width: 640px) {
+  .set { grid-template-columns: minmax(0,1fr) auto; }
+  .set .k { grid-column: 1 / -1; }
+  .bar .acts .btn.ghost { display: none; }
+  .q { padding: 16px; }
+  .title-input, h1 { font-size: 21px; }
+  .modes button { padding-inline: 10px; }
+  .q-tools .req { display: none; }
+}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></symbol>
+  <symbol id="i-next" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+  <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></symbol>
+  <symbol id="i-grip" viewBox="0 0 24 24"><circle cx="9" cy="6" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="18" r="1"/><circle cx="15" cy="6" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="18" r="1"/></symbol>
+  <symbol id="i-pulse" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></symbol>
+  <symbol id="i-survey" viewBox="0 0 24 24"><path d="m3 17 2 2 4-4M3 7l2 2 4-4M13 6h8M13 12h8M13 18h8"/></symbol>
+  <symbol id="i-chase" viewBox="0 0 24 24"><circle cx="13" cy="4" r="1"/><path d="M4 17l5 1l.75 -1.5"/><path d="M15 21l0 -4l-4 -3l1 -6"/><path d="M7 12l0 -3l5 -1l3 3l3 1"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+  <symbol id="i-note" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></symbol>
+  <symbol id="i-desc" viewBox="0 0 24 24"><path d="M4 7h16M4 12h10M4 17h7"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></symbol>
+  <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></symbol>
+  <symbol id="i-text" viewBox="0 0 24 24"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></symbol>
+  <symbol id="i-scale" viewBox="0 0 24 24"><path d="M3 12h18M7 8v8M12 8v8M17 8v8"/></symbol>
+  <symbol id="i-yes" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></symbol>
+  <symbol id="i-single" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i-multi" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="m8 12 3 3 5-5"/></symbol>
+  <symbol id="i-num" viewBox="0 0 24 24"><path d="M4 9h16M4 15h16M10 3 8 21M16 3l-2 18"/></symbol>
+  <symbol id="i-other" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></symbol>
+</svg>
+
+<nav class="switcher" aria-label="Mockup screens">
+  <div class="switcher-in">
+    <span>Mockup</span>
+    <button type="button" data-go="start" aria-pressed="true">1. New holler</button>
+    <button type="button" data-go="new" aria-pressed="false">2. Write: empty</button>
+    <button type="button" data-go="survey" aria-pressed="false">3. Write: a survey</button>
+    <button type="button" data-go="send" aria-pressed="false">4. Send</button>
+    <button type="button" data-go="templates" aria-pressed="false">5. All templates</button>
+  </div>
+</nav>
+
+<!-- 1. New holler: one click picks the mode and opens Write -->
+<main class="page frame" id="start">
+  <div class="header"><div class="logo"><span class="mark">h</span>holler</div><div class="me"><span class="avatar">M</span>Mira</div></div>
+  <div class="col" style="max-width:800px">
+    <div>
+      <a class="back" href="#"><svg class="i"><use href="#i-back"/></svg>Your hollers</a>
+      <h1 style="margin-top:12px">What are you sending?</h1>
+    </div>
+
+    <div class="picks">
+      <div class="pick-col">
+        <button class="pick" type="button" data-go="new">
+          <span class="art" aria-hidden="true"><span class="msg">
+            <span class="msg-top"><span class="bot-dot"></span><span class="ln" style="width:45%"></span></span>
+            <span class="ln dark" style="width:70%"></span>
+            <span class="pills"><span class="pill"></span><span class="pill hit"></span><span class="pill"></span></span>
+          </span></span>
+          <span class="pick-body">
+            <span class="pick-name"><span class="g"><svg class="i"><use href="#i-pulse"/></svg></span>Pulse<svg class="i go"><use href="#i-next"/></svg></span>
+            <span class="pick-blurb">One or two quick questions. People answer with a tap, right in the DM.</span>
+          </span>
+        </button>
+      </div>
+
+      <div class="pick-col">
+        <button class="pick" type="button" data-go="new">
+          <span class="art" aria-hidden="true"><span class="msg">
+            <span class="msg-top"><span class="bot-dot"></span><span class="ln" style="width:55%"></span></span>
+            <span class="cb"><i></i><span class="ln"></span></span>
+            <span class="cb"><i class="on"></i><span class="ln" style="max-width:75%"></span></span>
+            <span class="box"></span>
+          </span></span>
+          <span class="pick-body">
+            <span class="pick-name"><span class="g"><svg class="i"><use href="#i-survey"/></svg></span>Survey<svg class="i go"><use href="#i-next"/></svg></span>
+            <span class="pick-blurb">Several questions, for a retro, a plan or a decision. Answered in a Slack form.</span>
+          </span>
+        </button>
+      </div>
+
+      <div class="pick-col">
+        <button class="pick" type="button" data-go="new">
+          <span class="art" aria-hidden="true"><span class="msg">
+            <span class="msg-top"><span class="bot-dot"></span><span class="ln" style="width:40%"></span></span>
+            <span class="link-ln"></span>
+            <span class="done">I submitted it</span>
+          </span></span>
+          <span class="pick-body">
+            <span class="pick-name"><span class="g"><svg class="i"><use href="#i-chase"/></svg></span>Chase<svg class="i go"><use href="#i-next"/></svg></span>
+            <span class="pick-blurb">A form that lives somewhere else. Holler reminds people until they say they submitted it.</span>
+          </span>
+        </button>
+      </div>
+    </div>
+
+    <section>
+      <div class="section-head"><h2>Or start from a template</h2><button class="link" type="button" data-go="templates">See all 14</button></div>
+      <div class="tpl-strip">
+        <button class="tpl" type="button" data-go="templates"><span class="top"><span class="name">Weekly pulse</span><span class="mini-chip"><svg class="i"><use href="#i-pulse"/></svg>Pulse</span></span><span class="q1">How was your week? Great, fine or rough, with a note.</span></button>
+        <button class="tpl" type="button" data-go="templates"><span class="top"><span class="name">Retro</span><span class="mini-chip"><svg class="i"><use href="#i-survey"/></svg>Survey</span></span><span class="q1">What went well, what didn&apos;t, what should we change?</span></button>
+        <button class="tpl" type="button" data-go="templates"><span class="top"><span class="name">eNPS</span><span class="mini-chip"><svg class="i"><use href="#i-pulse"/></svg>Pulse</span></span><span class="q1">How likely are you to recommend working here? 0 to 10.</span></button>
+      </div>
+    </section>
+
+    <div class="callout">
+      <b>How this screen behaves</b>
+      <ul>
+        <li>One click on a card opens Write in that mode. There is no Next button and nothing to keep selected.</li>
+        <li>Templates sit in their own row under the modes. Picking one opens Write with its questions and mode set. "See all" opens the full sheet.</li>
+        <li>Opening a draft skips this screen. In Write the mode shows small, with Change (screen 2).</li>
+      </ul>
+    </div>
+  </div>
+</main>
+
+<!-- 2. Write, empty -->
+<main class="page frame" id="new" hidden>
+  <div class="header"><div class="logo"><span class="mark">h</span>holler</div><div class="me"><span class="avatar">M</span>Mira</div></div>
+  <div class="col">
+    <div class="stagebar">
+      <nav class="stages" aria-label="Steps">
+        <button class="stage on" type="button" aria-current="step"><span class="n">1</span>Write</button>
+        <span class="stage-sep"></span>
+        <button class="stage" type="button"><span class="n">2</span>Send</button>
+      </nav>
+      <a class="back" href="#">Close</a>
+    </div>
+
+    <div class="modeline-wrap">
+      <div class="modeline">
+        <span class="g"><svg class="i"><use href="#i-survey"/></svg></span>
+        <span><b>Survey</b> <span class="muted">· several questions, answered in a Slack form</span></span>
+        <button class="link" type="button" aria-expanded="true">Change</button>
+      </div>
+      <div class="modemenu" role="menu" aria-label="Mode">
+        <button class="menu-item" type="button" role="menuitemradio" aria-checked="false"><span class="g sm"><svg class="i"><use href="#i-pulse"/></svg></span><span><span class="mm-n">Pulse</span><span class="mm-d">One or two quick questions, answered in the DM</span></span></button>
+        <button class="menu-item hl" type="button" role="menuitemradio" aria-checked="true"><span class="g sm on"><svg class="i"><use href="#i-survey"/></svg></span><span><span class="mm-n">Survey</span><span class="mm-d">Several questions, answered in a Slack form</span></span><svg class="i tick"><use href="#i-check"/></svg></button>
+        <button class="menu-item" type="button" role="menuitemradio" aria-checked="false"><span class="g sm"><svg class="i"><use href="#i-chase"/></svg></span><span><span class="mm-n">Chase</span><span class="mm-d">A form elsewhere, chased until it is done</span></span></button>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <input class="title-input" placeholder="Give it a title" aria-label="Title">
+      <textarea class="intro" rows="1" placeholder="Add a line of context (optional)" aria-label="Intro"></textarea>
+    </div>
+
+    <section>
+      <div class="section-head"><h2>Questions</h2></div>
+      <div class="empty-q">
+        <span class="q-num tabular" style="background:var(--tint);color:var(--tint-ink)">1</span>
+        <div style="display:flex;flex-direction:column;gap:4px;min-width:0">
+          <b style="font-weight:400">Your first question</b>
+          <span style="font-size:13.5px;color:var(--muted)">Pick what kind of answer you want, or start from a template that fills in the questions for you.</span>
+        </div>
+        <div class="empty-types">
+          <button class="chip btn-chip" type="button"><svg class="i" style="width:13px;height:13px"><use href="#i-single"/></svg>Single choice</button>
+          <button class="chip btn-chip" type="button"><svg class="i" style="width:13px;height:13px"><use href="#i-multi"/></svg>Multiple choice</button>
+          <button class="chip btn-chip" type="button"><svg class="i" style="width:13px;height:13px"><use href="#i-scale"/></svg>Rating</button>
+          <button class="chip btn-chip" type="button"><svg class="i" style="width:13px;height:13px"><use href="#i-text"/></svg>Free text</button>
+          <button class="chip btn-chip" type="button"><svg class="i" style="width:13px;height:13px"><use href="#i-plus"/></svg>More types</button>
+        </div>
+        <div class="empty-or"><span>or</span><button class="btn" type="button" data-go="templates" style="height:36px;font-size:14px"><svg class="i"><use href="#i-copy"/></svg>Start from a template</button></div>
+      </div>
+    </section>
+
+    <div class="callout">
+      <b>How this screen behaves</b>
+      <ul>
+        <li>The mode shows small at the top. Change opens a short menu with a tick on the current one (shown open here). Switching keeps your questions.</li>
+        <li>Writing your own is the default. The empty first question still offers a template, for someone who picked a mode first and then wants help.</li>
+        <li>Copying lives on the Holler itself: <b>Copy into a new draft</b> on its page and in its row's menu on Home.</li>
+        <li>A survey has a title. A pulse needs none: its first question is the title unless you add one in Send.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="sendbar"><div class="sendbar-in"><div class="bar">
+    <div class="what"><b>Survey</b><span>No questions yet</span></div>
+    <div class="acts"><button class="btn primary" type="button" data-go="send">Next: who and when<svg class="i"><use href="#i-next"/></svg></button></div>
+  </div></div></div>
+</main>
+
+<!-- 2. Write: a survey -->
+<main class="page frame" id="survey" hidden>
+  <div class="header"><div class="logo"><span class="mark">h</span>holler</div><div class="me"><span class="avatar">M</span>Mira</div></div>
+  <div class="col">
+    <div class="stagebar">
+      <nav class="stages" aria-label="Steps">
+        <button class="stage on" type="button" aria-current="step"><span class="n">1</span>Write</button>
+        <span class="stage-sep"></span>
+        <button class="stage" type="button" data-go="send"><span class="n">2</span>Send</button>
+      </nav>
+      <span class="saved"><svg class="i" style="width:14px;height:14px"><use href="#i-check"/></svg>Draft saved</span>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div class="modeline">
+        <span class="g"><svg class="i"><use href="#i-survey"/></svg></span>
+        <span><b>Survey</b> <span class="muted">· several questions, answered in a Slack form</span></span>
+        <button class="link" type="button">Change</button>
+      </div>
+      <input class="title-input" value="Q1 planning: help us pick" aria-label="Title" style="margin-top:8px">
+      <textarea class="intro" rows="2" aria-label="Intro">Four quick ones before Friday's planning. Takes about two minutes.</textarea>
+    </div>
+
+    <section class="qs">
+      <div class="plate"><div class="q">
+        <button class="grip" type="button" aria-label="Reorder question 1"><svg class="i"><use href="#i-grip"/></svg></button>
+        <div class="q-head"><span class="q-num tabular">1</span><button class="type" type="button"><svg class="i"><use href="#i-scale"/></svg>Scale<svg class="i" style="width:14px;height:14px;color:var(--muted)"><use href="#i-down"/></svg></button><div class="q-tools"><span class="req">Required</span><span class="switch on req" role="img" aria-label="Required"></span><button class="icon-btn" type="button" aria-label="More for question 1"><svg class="i"><use href="#i-more"/></svg></button></div></div>
+        <input class="prompt" value="How confident are you in the Q1 plan?" aria-label="Question 1">
+        <div class="scale-cfg">From <span class="field">0 <svg class="i" style="width:13px;height:13px"><use href="#i-down"/></svg></span> to <span class="field">10 <svg class="i" style="width:13px;height:13px"><use href="#i-down"/></svg></span></div>
+        <div class="scale tabular"><span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span>10</span></div>
+        <div class="scale-ends"><span class="field" style="color:var(--ink-2)">Not at all</span><span class="field" style="color:var(--ink-2)">Completely</span></div>
+        <div class="extras"><button class="extra" type="button"><svg class="i"><use href="#i-note"/></svg>Add a follow-up note</button></div>
+      </div></div>
+
+      <div class="plate"><div class="q">
+        <button class="grip" type="button" aria-label="Reorder question 2"><svg class="i"><use href="#i-grip"/></svg></button>
+        <div class="q-head"><span class="q-num tabular">2</span><button class="type" type="button"><svg class="i"><use href="#i-multi"/></svg>Multiple choice<svg class="i" style="width:14px;height:14px;color:var(--muted)"><use href="#i-down"/></svg></button><div class="q-tools"><span class="req">Required</span><span class="switch on req" role="img" aria-label="Required"></span><button class="icon-btn open" type="button" aria-label="More for question 2" aria-expanded="true"><svg class="i"><use href="#i-more"/></svg></button></div></div>
+        <div class="qmenu" role="menu" aria-label="Question 2">
+          <button class="menu-item hl" type="button" role="menuitem"><svg class="i"><use href="#i-desc"/></svg>Add description</button>
+          <button class="menu-item" type="button" role="menuitem"><svg class="i"><use href="#i-other"/></svg>Add "Other"</button>
+          <button class="menu-item" type="button" role="menuitem"><svg class="i"><use href="#i-copy"/></svg>Duplicate</button>
+          <div class="menu-sep"></div>
+          <button class="menu-item danger" type="button" role="menuitem"><svg class="i"><use href="#i-trash"/></svg>Delete question</button>
+        </div>
+        <input class="prompt" value="Which bets should we make first?" aria-label="Question 2">
+        <input class="desc" value="Think about what unblocks the most people." aria-label="Description for question 2">
+        <div class="opts">
+          <div class="opt"><span class="mk sq"></span><span class="lbl">Faster onboarding</span></div>
+          <div class="opt"><span class="mk sq"></span><span class="lbl">Billing clean-up</span></div>
+          <div class="opt"><span class="mk sq"></span><span class="lbl">Mobile app</span></div>
+          <div class="opt other"><span class="mk sq"></span><span class="lbl">Other <span>· people write in their own</span></span></div>
+          <div class="opt add"><svg class="i" style="width:14px;height:14px"><use href="#i-plus"/></svg><span class="lbl">Add option</span></div>
+        </div>
+        <div class="followup">
+          <div class="fh"><svg class="i"><use href="#i-note"/></svg>Follow-up note<span class="when">Only after "Mobile app" <svg class="i" style="width:13px;height:13px;vertical-align:-2px"><use href="#i-down"/></svg></span></div>
+          <div class="fp">Which platform first, and why?</div>
+          <div style="font-size:13px;color:var(--waiting-ink)">Showing it only after some answers needs the web page. "After any answer" keeps this in Slack.</div>
+        </div>
+        <div class="extras"><span class="extra" style="color:var(--ink-2)">Pick <span class="field">up to 2 <svg class="i" style="width:13px;height:13px"><use href="#i-down"/></svg></span></span></div>
+      </div></div>
+
+        <input class="prompt" value="Which planning slots work for you?" aria-label="Question 3">
+        <div class="dates">
+          <span class="date"><b>Tue 2 Dec</b><small>10:00</small></span>
+          <span class="date"><b>Wed 3 Dec</b><small>14:00</small></span>
+          <span class="date"><b>Thu 4 Dec</b><small>All day</small></span>
+          <span class="date add"><svg class="i" style="width:14px;height:14px"><use href="#i-plus"/></svg>Add dates</span>
+        </div>
+        <div class="extras"><span class="extra">People tick every one that works</span></div>
+      </div></div>
+
+      <div class="plate"><div class="q">
+        <button class="grip" type="button" aria-label="Reorder question 3"><svg class="i"><use href="#i-grip"/></svg></button>
+        <div class="q-head"><span class="q-num tabular">3</span><button class="type" type="button"><svg class="i"><use href="#i-user"/></svg>Person<svg class="i" style="width:14px;height:14px;color:var(--muted)"><use href="#i-down"/></svg></button><div class="q-tools"><span class="req">Required</span><span class="switch req" role="img" aria-label="Not required"></span><button class="icon-btn" type="button" aria-label="More for question 3"><svg class="i"><use href="#i-more"/></svg></button></div></div>
+        <input class="prompt" value="Who should lead the onboarding work?" aria-label="Question 3">
+        <div class="field" style="height:40px;color:var(--muted)"><svg class="i"><use href="#i-user"/></svg>People pick from your workspace</div>
+        <div class="extras"><span class="extra" style="color:var(--ink-2)">Pick <span class="field">1 person <svg class="i" style="width:13px;height:13px"><use href="#i-down"/></svg></span></span></div>
+      </div></div>
+
+      <div class="plate"><div class="q">
+        <button class="grip" type="button" aria-label="Reorder question 4"><svg class="i"><use href="#i-grip"/></svg></button>
+        <div class="q-head"><span class="q-num tabular">4</span><button class="type" type="button"><svg class="i"><use href="#i-num"/></svg>Number<svg class="i" style="width:14px;height:14px;color:var(--muted)"><use href="#i-down"/></svg></button><div class="q-tools"><span class="req">Required</span><span class="switch on req" role="img" aria-label="Required"></span><button class="icon-btn" type="button" aria-label="More for question 4"><svg class="i"><use href="#i-more"/></svg></button></div></div>
+        <input class="prompt" value="How many days off do you plan in Q1?" aria-label="Question 4">
+        <div class="scale-cfg">A whole number between <span class="field tabular">0</span> and <span class="field tabular">30</span></div>
+      </div></div>
+
+      <button class="addq-btn" type="button" style="border-style:solid"><svg class="i"><use href="#i-plus"/></svg>Add question</button>
+      <div class="typemenu" role="menu" aria-label="Question types">
+        <div><h3>Choice</h3>
+          <button class="menu-item hl" type="button" role="menuitem"><svg class="i"><use href="#i-single"/></svg>Single choice</button>
+          <button class="menu-item" type="button" role="menuitem"><svg class="i"><use href="#i-multi"/></svg>Multiple choice</button>
+          <button class="menu-item" type="button" role="menuitem"><svg class="i"><use href="#i-yes"/></svg>Yes or no</button>
+          <button class="menu-item" type="button" role="menuitem"><svg class="i"><use href="#i-user"/></svg>Person<span class="new">New</span></button>
+        </div>
+        <div><h3>Scale</h3>
+          <button class="menu-item" type="button" role="menuitem"><svg class="i"><use href="#i-scale"/></svg>Rating<small>1–5</small></button>
+          <button class="menu-item" type="button" role="menuitem"><svg class="i"><use href="#i-scale"/></svg>Agreement<small>Disagree–agree</small></button>
+          <button class="menu-item" type="button" role="menuitem"><svg class="i"><use href="#i-scale"/></svg>Frequency<small>Never–always</small></button>
+          <button class="menu-item" type="button" role="menuitem"><svg class="i"><use href="#i-scale"/></svg>Custom scale<span class="new">New</span></button>
+        </div>
+        <div><h3>Write in</h3>
+          <button class="menu-item" type="button" role="menuitem"><svg class="i"><use href="#i-text"/></svg>Free text</button>
+          <button class="menu-item" type="button" role="menuitem"><svg class="i"><use href="#i-num"/></svg>Number<span class="new">New</span></button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="sendbar"><div class="sendbar-in"><div class="bar">
+    <div class="what"><b class="answer-where" style="color:var(--waiting-ink)">Opens a web page</b><span>Because of question 2's follow-up · Survey · 4 questions</span></div>
+    <div class="acts"><button class="btn primary" type="button" data-go="send">Next: who and when<svg class="i"><use href="#i-next"/></svg></button></div>
+  </div></div></div>
+</main>
+
+<!-- 3. Send -->
+<main class="page frame" id="send" hidden>
+  <div class="header"><div class="logo"><span class="mark">h</span>holler</div><div class="me"><span class="avatar">M</span>Mira</div></div>
+  <div class="col">
+    <div class="stagebar">
+      <nav class="stages" aria-label="Steps">
+        <button class="stage done" type="button" data-go="new"><span class="n"><svg class="i" style="width:13px;height:13px"><use href="#i-check"/></svg></span>Write</button>
+        <span class="stage-sep"></span>
+        <button class="stage on" type="button" aria-current="step"><span class="n">2</span>Send</button>
+      </nav>
+      <span class="saved"><svg class="i" style="width:14px;height:14px"><use href="#i-check"/></svg>Draft saved</span>
+    </div>
+
+    <div>
+      <h1>How was your week?</h1>
+      <button class="link" type="button" style="margin-top:4px">Use a different title</button>
+    </div>
+
+    <section>
+      <div class="section-head"><h2>Who</h2><span class="note tabular">14 people</span></div>
+      <div class="plate">
+        <div class="who">
+          <span class="person"><span class="avatar" style="background:var(--tint);color:var(--tint-ink)">@</span>design-team <span class="tabular" style="color:var(--muted)">11</span><span class="x"><svg class="i"><use href="#i-x"/></svg></span></span>
+          <span class="person"><span class="avatar" style="background:oklch(0.916 0.034 262);color:oklch(0.365 0.115 263)">JB</span>Jonas Berg<span class="x"><svg class="i"><use href="#i-x"/></svg></span></span>
+          <span class="person"><span class="avatar" style="background:oklch(0.927 0.035 52);color:oklch(0.414 0.109 42.7)">AT</span>Ana Torres<span class="x"><svg class="i"><use href="#i-x"/></svg></span></span>
+          <span class="person"><span class="avatar" style="background:oklch(0.921 0.039 303.4);color:oklch(0.372 0.168 292.1)">KL</span>Kai Liu<span class="x"><svg class="i"><use href="#i-x"/></svg></span></span>
+          <span class="who-input">Add people, groups or channels</span>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head"><h2>When and how</h2></div>
+      <div class="plate">
+        <div class="set row"><span class="k">Sends</span><span class="v"><b>Now</b><span>when you press Send</span></span><button class="link" type="button">Send later</button></div>
+        <div class="set row"><span class="k">Closes</span><span class="v"><b class="tabular">Mon 24 Nov, 17:00</b><span>3 days after it sends</span></span><button class="link" type="button">Change</button></div>
+        <div class="set row"><span class="k">Answers</span><span class="v"><b>Named</b><span>you see who said what</span></span><span class="switch" role="img" aria-label="Anonymous off"></span></div>
+        <div class="set row"><span class="k">Announce</span><span class="v"><b>Nowhere</b><span>or post a live count in a channel</span></span><button class="link" type="button">Pick a channel</button></div>
+        <div class="set row"><span class="k">Tags</span><span class="v"><span class="chip">weekly</span><span class="chip">design</span></span><button class="link" type="button">Edit</button></div>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head"><h2>What Jonas sees</h2><span class="note answer-where"><span class="dot"></span>Answered right in the DM</span></div>
+      <div class="plate preview">
+        <div class="preview-tabs"><button class="chip" type="button" style="background:var(--tint);color:var(--tint-ink)">The DM</button><button class="chip btn-chip" type="button">After a tap</button><button class="chip btn-chip" type="button">A reminder</button></div>
+        <div class="slack"><div class="from"><span class="bot">h</span><div class="body">
+          <div><span class="nm">Holler</span><span class="app">APP</span><span class="tm">09:00</span></div>
+          <div><b>Mira</b> sent you a Holler.</div>
+          <div class="ttl">How was your week?</div>
+          <div class="btns"><span class="sb">Great</span><span class="sb">Fine</span><span class="sb">Rough</span></div>
+          <div class="ctx">Pulse · Closes Mon 24 Nov at 17:00</div>
+        </div></div></div>
+        <div class="slack"><div class="from"><span class="bot">h</span><div class="body">
+          <div><span class="nm">Holler</span><span class="app">APP</span><span class="tm">09:01</span></div>
+          <div class="ttl">How was your week?</div>
+          <div class="btns"><span class="sb picked">Great</span><span class="sb">Fine</span><span class="sb">Rough</span></div>
+          <div class="lbl">Thanks. Anything to add?</div>
+          <div class="in">Optional. Press Enter to send</div>
+        </div></div></div>
+      </div>
+    </section>
+  </div>
+
+  <div class="sendbar"><div class="sendbar-in"><div class="bar">
+    <div class="what"><b class="tabular">14 people, now</b><span class="tabular">Closes Mon 24 Nov at 17:00</span></div>
+    <div class="acts"><button class="btn ghost" type="button" data-go="new"><svg class="i"><use href="#i-back"/></svg>Write</button><button class="btn primary" type="button">Send to 14 people</button></div>
+  </div></div></div>
+</main>
+
+<!-- 4. All templates, opened from Write -->
+<main class="page frame" id="templates" hidden>
+  <div class="header"><div class="logo"><span class="mark">h</span>holler</div><div class="me"><span class="avatar">M</span>Mira</div></div>
+  <div class="sheet" role="dialog" aria-label="Templates">
+    <nav class="sheet-nav" aria-label="Template groups">
+      <button class="on" type="button">Check-ins <span>4</span></button>
+      <button type="button">Team health <span>3</span></button>
+      <button type="button">Planning <span>3</span></button>
+      <button type="button">Recognition <span>2</span></button>
+      <button type="button">Forms to chase <span>2</span></button>
+    </nav>
+    <div class="sheet-main">
+      <div class="sheet-head"><h2>Check-ins</h2><button class="icon-btn" type="button" data-go="survey" aria-label="Close templates"><svg class="i"><use href="#i-x"/></svg></button></div>
+      <div class="sheet-list">
+        <div class="sheet-items">
+          <button class="sheet-item on" type="button"><span class="name">Weekly pulse <span class="mini-chip"><svg class="i"><use href="#i-pulse"/></svg>Pulse</span></span><span class="what">How was your week? With an optional note.</span></button>
+          <button class="sheet-item" type="button"><span class="name">Monday focus <span class="mini-chip"><svg class="i"><use href="#i-pulse"/></svg>Pulse</span></span><span class="what">What is your one focus this week?</span></button>
+          <button class="sheet-item" type="button"><span class="name">Workload check <span class="mini-chip"><svg class="i"><use href="#i-pulse"/></svg>Pulse</span></span><span class="what">How is your workload, from too light to too heavy?</span></button>
+          <button class="sheet-item" type="button"><span class="name">Friday wins <span class="mini-chip"><svg class="i"><use href="#i-survey"/></svg>Survey</span></span><span class="what">A win, a blocker, and one thing you learned.</span></button>
+        </div>
+        <div class="sheet-preview">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><span style="font-size:13.5px;color:var(--muted)" class="answer-where"><span class="dot"></span>Answered right in the DM</span><button class="btn primary sm" type="button" data-go="new" style="height:34px;font-size:13.5px">Use this template</button></div>
+          <div class="pq"><span class="t"><svg class="i" style="width:13px;height:13px"><use href="#i-single"/></svg>Single choice</span><span class="p">How was your week?</span><div class="opts"><div class="opt" style="min-height:34px"><span class="mk"></span><span class="lbl">Great</span></div><div class="opt" style="min-height:34px"><span class="mk"></span><span class="lbl">Fine</span></div><div class="opt" style="min-height:34px"><span class="mk"></span><span class="lbl">Rough</span></div></div><span class="t"><svg class="i" style="width:13px;height:13px"><use href="#i-note"/></svg>Follow-up note: Anything to add?</span></div>
+          <span style="font-size:13px;color:var(--muted)">Closes 3 days after it sends. Named answers. Change anything after you pick it.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+(function () {
+  var frames = ["start", "new", "survey", "send", "templates"];
+  function show(id) {
+    if (frames.indexOf(id) < 0) id = "new";
+    frames.forEach(function (f) { document.getElementById(f).hidden = f !== id; });
+    document.querySelectorAll(".switcher button").forEach(function (b) { b.setAttribute("aria-pressed", String(b.dataset.go === id)); });
+    window.scrollTo(0, 0);
+  }
+  document.addEventListener("click", function (e) {
+    var t = e.target.closest("[data-go]");
+    if (!t) return;
+    e.preventDefault();
+    location.hash = t.dataset.go;
+  });
+  window.addEventListener("hashchange", function () { show(location.hash.slice(1)); });
+  show(location.hash.slice(1));
+})();
+</script>

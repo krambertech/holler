@@ -1,6 +1,6 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`answer modal > uses radio buttons, a select above ten options, and a text box 1`] = `
+exports[`answer modal > builds each question type's element from docs/slack.md 1`] = `
 {
   "blocks": [
     {
@@ -34,7 +34,15 @@ exports[`answer modal > uses radio buttons, a select above ten options, and a te
           {
             "text": {
               "emoji": false,
-              "text": "Good",
+              "text": "Lisbon",
+              "type": "plain_text",
+            },
+            "value": "o_0",
+          },
+          {
+            "text": {
+              "emoji": false,
+              "text": "Tallinn",
               "type": "plain_text",
             },
             "value": "o_1",
@@ -42,18 +50,10 @@ exports[`answer modal > uses radio buttons, a select above ten options, and a te
           {
             "text": {
               "emoji": false,
-              "text": "Fine",
+              "text": "Other",
               "type": "plain_text",
             },
-            "value": "o_2",
-          },
-          {
-            "text": {
-              "emoji": false,
-              "text": "Rough",
-              "type": "plain_text",
-            },
-            "value": "o_3",
+            "value": "o_other",
           },
         ],
         "type": "radio_buttons",
@@ -67,9 +67,41 @@ exports[`answer modal > uses radio buttons, a select above ten options, and a te
       "type": "input",
     },
     {
+      "block_id": "other:q_1",
+      "element": {
+        "action_id": "value",
+        "max_length": 1000,
+        "type": "plain_text_input",
+      },
+      "label": {
+        "emoji": false,
+        "text": "If Other, what?",
+        "type": "plain_text",
+      },
+      "optional": true,
+      "type": "input",
+    },
+    {
+      "block_id": "note:q_1",
+      "element": {
+        "action_id": "value",
+        "max_length": 3000,
+        "multiline": true,
+        "type": "plain_text_input",
+      },
+      "label": {
+        "emoji": false,
+        "text": "Why there?",
+        "type": "plain_text",
+      },
+      "optional": true,
+      "type": "input",
+    },
+    {
       "block_id": "q:q_2",
       "element": {
         "action_id": "value",
+        "max_selected_items": 3,
         "options": [
           {
             "text": {
@@ -177,7 +209,7 @@ exports[`answer modal > uses radio buttons, a select above ten options, and a te
       },
       "label": {
         "emoji": false,
-        "text": "Which days?",
+        "text": "Which days? Pick up to 3.",
         "type": "plain_text",
       },
       "optional": true,
@@ -187,9 +219,107 @@ exports[`answer modal > uses radio buttons, a select above ten options, and a te
       "block_id": "q:q_3",
       "element": {
         "action_id": "value",
+        "options": [
+          {
+            "text": {
+              "emoji": false,
+              "text": "1, Chaos",
+              "type": "plain_text",
+            },
+            "value": "s_0",
+          },
+          {
+            "text": {
+              "emoji": false,
+              "text": "2",
+              "type": "plain_text",
+            },
+            "value": "s_1",
+          },
+          {
+            "text": {
+              "emoji": false,
+              "text": "3",
+              "type": "plain_text",
+            },
+            "value": "s_2",
+          },
+          {
+            "text": {
+              "emoji": false,
+              "text": "4",
+              "type": "plain_text",
+            },
+            "value": "s_3",
+          },
+          {
+            "text": {
+              "emoji": false,
+              "text": "5, Calm",
+              "type": "plain_text",
+            },
+            "value": "s_4",
+          },
+        ],
+        "type": "radio_buttons",
+      },
+      "label": {
+        "emoji": false,
+        "text": "How calm is your week?",
+        "type": "plain_text",
+      },
+      "optional": false,
+      "type": "input",
+    },
+    {
+      "block_id": "q:q_4",
+      "element": {
+        "action_id": "value",
+        "is_decimal_allowed": false,
+        "max_value": "7",
+        "min_value": "1",
+        "type": "number_input",
+      },
+      "label": {
+        "emoji": false,
+        "text": "How many nights?",
+        "type": "plain_text",
+      },
+      "optional": false,
+      "type": "input",
+    },
+    {
+      "block_id": "q:q_5",
+      "element": {
+        "action_id": "value",
+        "max_selected_items": 2,
+        "placeholder": {
+          "emoji": false,
+          "text": "Choose people",
+          "type": "plain_text",
+        },
+        "type": "multi_users_select",
+      },
+      "label": {
+        "emoji": false,
+        "text": "Who should plan it? Pick up to 2.",
+        "type": "plain_text",
+      },
+      "optional": false,
+      "type": "input",
+    },
+    {
+      "block_id": "q:q_6",
+      "element": {
+        "action_id": "value",
         "max_length": 3000,
         "multiline": true,
         "type": "plain_text_input",
+      },
+      "hint": {
+        "emoji": false,
+        "text": "Diets, dates",
+        "type": "plain_text",
       },
       "label": {
         "emoji": false,
@@ -245,7 +375,7 @@ exports[`messages > announces in a channel without naming who answered 1`] = `
 }
 `;
 
-exports[`messages > invites to a form chase 1`] = `
+exports[`messages > invites to a chase 1`] = `
 {
   "blocks": [
     {
@@ -340,7 +470,7 @@ exports[`messages > invites to a one-tap pulse 1`] = `
             "type": "plain_text",
           },
           "type": "button",
-          "value": "hol_1|q_1|o_1",
+          "value": "hol_1|q_1|o_0",
         },
         {
           "action_id": "holler_option_1",
@@ -350,7 +480,7 @@ exports[`messages > invites to a one-tap pulse 1`] = `
             "type": "plain_text",
           },
           "type": "button",
-          "value": "hol_1|q_1|o_2",
+          "value": "hol_1|q_1|o_1",
         },
         {
           "action_id": "holler_option_2",
@@ -360,7 +490,7 @@ exports[`messages > invites to a one-tap pulse 1`] = `
             "type": "plain_text",
           },
           "type": "button",
-          "value": "hol_1|q_1|o_3",
+          "value": "hol_1|q_1|o_2",
         },
       ],
       "type": "actions",
@@ -397,7 +527,7 @@ exports[`messages > invites to a survey with Answer 1`] = `
     {
       "elements": [
         {
-          "text": "Survey · 3 questions · Closes Friday at 18:00 · Anonymous",
+          "text": "Survey · 6 questions · Closes Friday at 18:00 · Anonymous",
           "type": "mrkdwn",
         },
       ],
@@ -521,12 +651,12 @@ exports[`messages > tells the creator it closed, or that it did not send 1`] = `
 }
 `;
 
-exports[`messages > thanks with what they picked, or only that they answered anonymously 1`] = `
+exports[`messages > thanks with what they picked and wrote, or only that they answered anonymously 1`] = `
 {
   "blocks": [
     {
       "text": {
-        "text": "Thanks. Your answer to _How was your week?_ is in.",
+        "text": "Thanks. Your answer to _Offsite_ is in.",
         "type": "mrkdwn",
       },
       "type": "section",
@@ -535,13 +665,24 @@ exports[`messages > thanks with what they picked, or only that they answered ano
       "elements": [
         {
           "text": "*Where?*
-Good",
+Other: Riga
+_Cheap flights_",
+          "type": "mrkdwn",
+        },
+      ],
+      "type": "context",
+    },
+    {
+      "elements": [
+        {
+          "text": "*Who should plan it?*
+<@UA>, <@UB>",
           "type": "mrkdwn",
         },
       ],
       "type": "context",
     },
   ],
-  "text": "Thanks. Your answer to How was your week? is in.",
+  "text": "Thanks. Your answer to Offsite is in.",
 }
 `;

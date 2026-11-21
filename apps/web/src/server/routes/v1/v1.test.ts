@@ -216,6 +216,36 @@ describe("the anonymous gate", () => {
     };
     expect(open.state).toBe("open");
     expect(open.questions[0]?.options[0]?.slackUserIds).toEqual([]);
+
+    const people = (await (await call(`/api/v1/hollers/${holler.id}/people`, key)).json()) as {
+      answeredCount: number;
+      recipients: { answered: boolean | null }[];
+    };
+    expect(people.answeredCount).toBe(5);
+    expect(people.recipients.map((r) => r.answered)).toEqual([null, null, null, null, null]);
+  });
+});
+
+describe("copy and delete", () => {
+  it("copies a Holler into a new draft and deletes a draft", async () => {
+    const { key, ctx } = await keyFor("write");
+    const holler = await createDraft(ctx, pulse);
+    const copied = await call(`/api/v1/hollers/${holler.id}/copy`, key, { method: "POST" });
+    expect(copied.status).toBe(201);
+    const copy = (await copied.json()) as { id: string; status: string; title: string };
+    expect(copy).toMatchObject({ status: "draft", title: pulse.title });
+
+    const deleted = await call(`/api/v1/hollers/${copy.id}`, key, { method: "DELETE" });
+    expect(await deleted.json()).toEqual({ ok: true });
+    expect((await call(`/api/v1/hollers/${copy.id}`, key)).status).toBe(404);
+  });
+
+  it("previews a send without sending", async () => {
+    const { key, ctx } = await keyFor("read");
+    const holler = await createDraft(ctx, pulse);
+    const response = await call(`/api/v1/hollers/${holler.id}/preview`, key);
+    expect(await response.json()).toMatchObject({ reach: 1, people: ["Person UA"], problems: [] });
+    expect(delivery.sendHoller).not.toHaveBeenCalled();
   });
 });
 

@@ -34,6 +34,9 @@ All paths are under `https://app.holler.team/api/v1`.
 | POST   | `/hollers`               | Creates a draft. Takes `Idempotency-Key`                     |
 | GET    | `/hollers/{id}`          | One Holler with its questions                                |
 | PUT    | `/hollers/{id}`          | Replaces a draft or scheduled Holler's fields and questions  |
+| DELETE | `/hollers/{id}`          | Deletes a draft you made                                     |
+| POST   | `/hollers/{id}/copy`     | Makes a new draft with the same questions, audience and settings |
+| GET    | `/hollers/{id}/preview`  | Who a send would reach, when it closes, and what stops it. Sends nothing |
 | POST   | `/hollers/{id}/send`     | Sends it now, or schedules it when it has `sendAt`           |
 | POST   | `/hollers/{id}/close`    | Stops taking answers now                                     |
 | POST   | `/hollers/{id}/remind`   | Reminds everyone who has not answered                        |
@@ -66,8 +69,10 @@ curl https://app.holler.team/api/v1/hollers \
   }'
 ```
 
-- `mode` is `pulse` (one or two questions), `survey` (up to 30) or `chase` (a link in `externalUrl`, no questions). It never changes.
-- Each question has a `type` (`single`, `multi`, `text`) and a `style` (`plain`, `scale`, `binary`). A choice question has 2 to 100 options; scale options carry a `score`.
+- `mode` is `pulse` (one or two questions), `survey` (up to 30) or `chase` (a link in `externalUrl`, no questions). It may change until the Holler is sent; saving it as a chase removes its questions.
+- Each question has a `type` (`single`, `multi`, `text`, `number`, `person`) and a `style` (`plain`, `scale`, `binary`). A choice question has 2 to 100 options; scale options carry a `score`, and a scale may have words at each end in `lowLabel` and `highLabel`. A number question takes a whole number between `numberMin` and `numberMax`; a person question takes people from the workspace.
+- Extras: `description` (one line under the question), `allowOther` on a plain choice question (Holler adds the Other option last; do not send it as an option), `maxChoices` on multiple choice and person, and `followUp` (`{ "prompt": "Anything to add?", "onlyAfter": null }`) on a choice question. `onlyAfter` lists the option positions that show it, with Other at the last position; a Holler with one is answered on the web form.
+- Every Holler comes back with `displayTitle` (a pulse with no title shows its first question), `answeredIn` (`dm`, `slack`, `web` or `chase`) and `problems`: each reason it cannot be sent yet, with a `field` such as `questions.0.options.2`.
 - `audience` takes Slack user ids in `people` and user group or channel ids in `groups`. Find them with `GET /directory?q=`.
 - To keep a question or option when you update, send its `id` back. Leave one out to remove it.
 
@@ -109,7 +114,7 @@ An anonymous Holler's results stay `gated` until five people answer, in the API,
 { "state": "gated", "responseCount": 3, "needed": 2 }
 ```
 
-Holler knows who answered an anonymous Holler, so `/people` lists them, but never which response is whose.
+Holler knows who answered an anonymous Holler, so it stops reminding them, but you see only how many: `/people` gives the counts, every recipient's `answered` is `null`, and the list is in name order. `/hollers` lists no avatars for an anonymous Holler.
 
 ## Connect an assistant over MCP
 
@@ -130,6 +135,8 @@ The MCP server uses OAuth 2.1. Clients identify themselves with a Client ID Meta
 | `find_people`    | Searches people, user groups and channels for an audience            |
 | `create_holler`  | Saves a new draft                                                    |
 | `update_holler`  | Changes a draft or scheduled Holler                                  |
+| `copy_holler`    | Starts a new draft from a Holler                                     |
+| `delete_draft`   | Deletes a draft that was never sent                                  |
 | `send_holler`    | Sends, in two steps                                                  |
 | `close_holler`   | Stops taking answers now                                             |
 | `send_reminder`  | Reminds everyone who has not answered                                |

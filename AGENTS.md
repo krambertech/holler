@@ -62,6 +62,7 @@ Project skills live in `.agents/skills/`; `.claude/skills` links to it so every 
 | Every exported component has an entry on the design site | `pnpm check:design-coverage` |
 | Files under `apps/web/src/client` are kebab-case                            | Biome `useFilenamingConvention`                      |
 | Every journey page passes axe at WCAG 2.2 AA                                | `e2e/`                                               |
+| Concurrent first dev sign-ins all succeed and seed once                    | `apps/web/src/server/routes/dev-concurrency.test.ts` |
 | Pull request titles follow `type(scope): summary` within 72 characters      | `scripts/check-pr-title.mjs` in CI                   |
 | Server inserts one row per statement, inside D1's 100-value limit | `biome-plugins/no-multi-row-insert.grit` |
 | Every Slack message and view fits Block Kit's limits | `FakeSlack` refuses what Slack would; `slack/blocks/messages.test.ts` sends the largest Holler |
@@ -71,6 +72,7 @@ Project skills live in `.agents/skills/`; `.claude/skills` links to it so every 
 | Reminders land in working hours, clear of the close, in every zone | `packages/core/src/reminders.test.ts` sweep |
 | The dev seed leaves room to send on every day of a month | `services/dev-seed.test.ts` |
 | Server tests pass in any order | `sequence.shuffle` with a fixed seed in `apps/web/vitest.config.ts` |
+| Every modal element reads back into an answer `recordResponse` takes | `services/answering.test.ts` fills each element by type |
 
 ## Generated files
 

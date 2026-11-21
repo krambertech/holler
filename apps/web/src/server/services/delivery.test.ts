@@ -117,7 +117,8 @@ function setPerson(
 describe("sendHoller", () => {
   it("refuses a draft with every problem at once, each naming its field", async () => {
     const { ctx, env } = await setup();
-    const draft = await createDraft(ctx, { mode: "pulse" });
+    // A survey, because a pulse with no title shows its first question instead.
+    const draft = await createDraft(ctx, { mode: "survey" });
     await expect(sendHoller(ctx, env, draft.id)).rejects.toMatchObject({
       code: "invalid",
       field: "title",

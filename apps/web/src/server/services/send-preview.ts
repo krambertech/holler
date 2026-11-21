@@ -1,8 +1,9 @@
+import type { SendPreview } from "@holler/core";
 import { and, eq, inArray, sql } from "@holler/core/db";
 import { schema } from "../db";
 import { hmacSha256, timingSafeEqual } from "../hmac";
 import { type ServiceContext, ServiceError } from "./context";
-import { getHoller, sendProblems } from "./hollers";
+import { getHoller } from "./hollers";
 
 /**
  * What a send would do, shown before it happens. MCP sends in two steps: the first call
@@ -17,25 +18,7 @@ import { getHoller, sendProblems } from "./hollers";
 export const PREVIEW_NAME_LIMIT = 10;
 const TOKEN_LIFETIME_MS = 10 * 60_000;
 
-export interface SendPreview {
-  hollerId: string;
-  title: string;
-  /** About how many people it reaches. Overlapping groups are counted once each. */
-  reach: number;
-  /** Up to ten of the people chosen by name. */
-  people: string[];
-  /** How many more people were chosen by name than `people` shows. */
-  morePeople: number;
-  groups: { name: string; kind: "usergroup" | "channel"; memberCount: number | null }[];
-  everyone: boolean;
-  anonymous: boolean;
-  /** Null when it sends as soon as it is confirmed. */
-  sendAt: string | null;
-  closesAt: string;
-  /** Why it cannot be sent yet. A preview with problems has no confirm token. */
-  problems: { message: string; field: string | null }[];
-}
-
+/** The shape is `sendPreviewOutSchema` in core, so the web app, the API and MCP read the same. */
 export async function previewSend(ctx: ServiceContext, id: string): Promise<SendPreview> {
   const holler = await getHoller(ctx, id);
   if (!holler.isCreator) {
@@ -89,9 +72,11 @@ export async function previewSend(ctx: ServiceContext, id: string): Promise<Send
     reach = Number(row?.n ?? 0);
   }
   const start = holler.sendAt ?? ctx.now();
+  const closesAt =
+    holler.closesAt ?? new Date(start.getTime() + holler.closeAfterHours * 3_600_000);
   return {
     hollerId: holler.id,
-    title: holler.title,
+    title: holler.displayTitle,
     reach,
     people: audience.people
       .slice(0, PREVIEW_NAME_LIMIT)
@@ -101,8 +86,8 @@ export async function previewSend(ctx: ServiceContext, id: string): Promise<Send
     everyone: audience.everyone,
     anonymous: holler.anonymous,
     sendAt: holler.sendAt?.toISOString() ?? null,
-    closesAt: new Date(start.getTime() + holler.closeAfterHours * 3_600_000).toISOString(),
-    problems: sendProblems(holler).map((p) => ({ message: p.message, field: p.field ?? null })),
+    closesAt: closesAt.toISOString(),
+    problems: holler.problems,
   };
 }
 

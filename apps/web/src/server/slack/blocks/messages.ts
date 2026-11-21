@@ -2,7 +2,6 @@ import type { ReminderTone } from "@holler/core";
 import type { PostMessage } from "../client";
 import {
   actionIds,
-  answerKind,
   context,
   contextLine,
   escapeMrkdwn,
@@ -11,6 +10,7 @@ import {
   type SlackHoller,
   section,
   sections,
+  surfaceOf,
   timeOfDay,
   when,
 } from "./format";
@@ -22,10 +22,12 @@ import {
  */
 type Message = Omit<PostMessage, "channel">;
 
-interface Reader {
+export interface Reader {
   /** The reader's IANA zone, for "Closes Friday at 18:00". */
   timeZone: string | null;
   now: Date;
+  /** Their signed link to the web form. Set when the Holler is answered on the web. */
+  respondUrl?: string | null | undefined;
 }
 
 const title = (holler: SlackHoller) => `*${escapeMrkdwn(holler.title)}*`;
@@ -38,12 +40,47 @@ function heading(holler: SlackHoller, reader: Reader) {
   return blocks;
 }
 
-/** The answer controls under an invite: option buttons, Answer, or the form's two buttons. */
-function controls(holler: SlackHoller, label: string): unknown[] {
-  const kind = answerKind(holler);
-  if (kind === "one_tap") {
-    const question = holler.questions[0];
-    if (!question) return [];
+/**
+ * A text box in the DM that sends on Enter, for a free-text pulse and for the note after a tap.
+ * Slack takes an input block in a message only with `dispatch_action`.
+ */
+export function dmTextBox(blockId: string, actionId: string, label: string, hint: string) {
+  return {
+    type: "input",
+    block_id: blockId,
+    dispatch_action: true,
+    label: plain(label, 2000),
+    hint: plain(hint, 2000),
+    element: {
+      type: "plain_text_input",
+      action_id: actionId,
+      multiline: false,
+      max_length: 3000,
+      dispatch_action_config: { trigger_actions_on: ["on_enter_pressed"] },
+    },
+  };
+}
+
+const button = (fields: Record<string, unknown>) => ({
+  type: "actions",
+  elements: [{ type: "button", ...fields }],
+});
+
+/** The answer controls for each answer surface: buttons, a text box, Answer, or the form's two. */
+function controls(holler: SlackHoller, label: string, reader: Reader): unknown[] {
+  const surface = surfaceOf(holler);
+  const question = holler.questions[0];
+  if (surface.where === "dm" && question?.type === "text") {
+    return [
+      dmTextBox(
+        `text:${holler.id}:${question.id}`,
+        actionIds.text,
+        question.prompt,
+        "Press Enter to send.",
+      ),
+    ];
+  }
+  if (surface.where === "dm" && question) {
     // A pulse's one question is often its title; say it once.
     const repeats = question.prompt.trim() === holler.title.trim();
     return [
@@ -60,7 +97,7 @@ function controls(holler: SlackHoller, label: string): unknown[] {
       },
     ];
   }
-  if (kind === "chase") {
+  if (surface.where === "chase") {
     return [
       {
         type: "actions",
@@ -83,19 +120,30 @@ function controls(holler: SlackHoller, label: string): unknown[] {
       },
     ];
   }
-  return [
-    {
-      type: "actions",
-      block_id: `answer:${holler.id}`,
-      elements: [
-        {
-          type: "button",
-          action_id: actionIds.open,
+  if (surface.where === "web") {
+    if (!reader.respondUrl)
+      throw new Error(`Holler ${holler.id} is answered on the web, with no link`);
+    return [
+      {
+        ...button({
+          action_id: actionIds.respondLink,
           text: plain(label),
           style: "primary",
-          value: holler.id,
-        },
-      ],
+          url: reader.respondUrl,
+        }),
+        block_id: `answer:${holler.id}`,
+      },
+    ];
+  }
+  return [
+    {
+      ...button({
+        action_id: actionIds.open,
+        text: plain(label),
+        style: "primary",
+        value: holler.id,
+      }),
+      block_id: `answer:${holler.id}`,
     },
   ];
 }
@@ -107,7 +155,7 @@ export function inviteMessage(holler: SlackHoller, reader: Reader): Message {
     blocks: [
       section(`_${escapeMrkdwn(holler.senderName)}_ sent you a Holler.`),
       ...heading(holler, reader),
-      ...controls(holler, "Answer"),
+      ...controls(holler, "Answer", reader),
     ],
   };
 }
@@ -149,7 +197,7 @@ export function reminderMessage(
   snoozedUntil: Date | null = null,
 ): Message {
   const words = reminderText(holler, tone, reader);
-  const blocks: unknown[] = [section(words.mrkdwn), ...controls(holler, "Answer now")];
+  const blocks: unknown[] = [section(words.mrkdwn), ...controls(holler, "Answer now", reader)];
   if (snoozedUntil) {
     blocks.push(context(`I'll remind you again at ${timeOfDay(snoozedUntil, reader.timeZone)}.`));
   } else if (tone !== "last") {
@@ -172,12 +220,29 @@ export function reminderMessage(
 /** What a recipient answered, question by question, for the thank-you. */
 export interface AnswerSummary {
   prompt: string;
-  /** The picked labels, or the text they wrote. Empty when they skipped an optional question. */
+  /** The picked labels, or what they wrote. Empty when they skipped an optional question. */
   values: string[];
+  /** The Slack ids of the people a person question named, shown as mentions. */
+  people: string[];
+  note: string | null;
 }
 
-/** Replaces the invite or reminder once they answer, so the DM never shows a stale question. */
-export function answeredMessage(holler: SlackHoller, answers: AnswerSummary[]): Message {
+/** The follow-up note a tap asks for, in the DM, until they write one. */
+export interface NoteBox {
+  responseId: string;
+  questionId: string;
+  prompt: string;
+}
+
+/**
+ * Replaces the invite or reminder once they answer, so the DM never shows a stale question.
+ * After a tap on a question with a follow-up, it asks for the optional note.
+ */
+export function answeredMessage(
+  holler: SlackHoller,
+  answers: AnswerSummary[],
+  noteBox: NoteBox | null = null,
+): Message {
   if (holler.mode === "chase") {
     return {
       text: `Thanks. You marked ${holler.title} as submitted.`,
@@ -189,13 +254,26 @@ export function answeredMessage(holler: SlackHoller, answers: AnswerSummary[]): 
     blocks.push(context("Answered anonymously"));
   } else {
     for (const answer of answers) {
-      if (answer.values.length === 0) continue;
-      blocks.push(
-        context(
-          `*${escapeMrkdwn(answer.prompt)}*\n${answer.values.map((v) => escapeMrkdwn(v)).join(", ")}`,
-        ),
-      );
+      const given = [
+        ...answer.values.map((value) => escapeMrkdwn(value)),
+        ...answer.people.map((id) => `<@${id}>`),
+      ];
+      if (given.length === 0) continue;
+      const note = answer.note ? `\n_${escapeMrkdwn(answer.note)}_` : "";
+      blocks.push(context(`*${escapeMrkdwn(answer.prompt)}*\n${given.join(", ")}${note}`));
     }
+  }
+  if (noteBox) {
+    blocks.push(
+      dmTextBox(
+        // The response id rides in the person's own message, so a note on an anonymous Holler
+        // finds its response without Holler storing who wrote it.
+        `note:${noteBox.responseId}:${noteBox.questionId}`,
+        actionIds.note,
+        noteBox.prompt,
+        "Optional. Press Enter to send.",
+      ),
+    );
   }
   return { text: `Thanks. Your answer to ${holler.title} is in.`, blocks };
 }

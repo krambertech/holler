@@ -43,6 +43,7 @@ interface Element {
   options?: { text?: TextObject; value?: string }[];
   placeholder?: TextObject;
   max_length?: number;
+  max_selected_items?: number;
 }
 
 interface Block {
@@ -52,7 +53,27 @@ interface Block {
   elements?: (Element & TextObject)[];
   element?: Element;
   label?: TextObject;
+  hint?: TextObject;
+  dispatch_action?: boolean;
 }
+
+/** The input elements Holler builds, and which of them hold options. */
+const inputElements = new Set([
+  "plain_text_input",
+  "number_input",
+  "users_select",
+  "multi_users_select",
+  "radio_buttons",
+  "checkboxes",
+  "static_select",
+  "multi_static_select",
+]);
+const optionElements = new Set([
+  "radio_buttons",
+  "checkboxes",
+  "static_select",
+  "multi_static_select",
+]);
 
 /** Every way `blocks` breaks Slack's limits, empty when Slack would accept them. */
 export function blockKitProblems(surface: Surface, blocks: unknown[], text?: string): string[] {
@@ -127,14 +148,27 @@ export function blockKitProblems(surface: Surface, blocks: unknown[], text?: str
         }
         break;
       case "input": {
-        if (surface === "message") problems.push(`${at} is an input, which only a view can hold`);
+        // A message holds an input only when it sends on its own, with dispatch_action.
+        if (surface === "message" && !block.dispatch_action) {
+          problems.push(`${at} is an input in a message without dispatch_action`);
+        }
         plainText(`${at} label`, block.label, limits.inputLabel);
+        if (block.hint) plainText(`${at} hint`, block.hint, limits.inputLabel);
         if (!block.element) {
           problems.push(`${at} has no element`);
           break;
         }
         const element = block.element;
         action(element, `${at} element`);
+        if (!inputElements.has(element.type ?? "")) {
+          problems.push(`${at} element ${element.type} is not an input element`);
+        }
+        if (optionElements.has(element.type ?? "") && !element.options) {
+          problems.push(`${at} has no options`);
+        }
+        if (element.max_selected_items !== undefined && element.max_selected_items < 1) {
+          problems.push(`${at} max_selected_items must be at least 1`);
+        }
         if (element.placeholder) {
           plainText(`${at} placeholder`, element.placeholder, limits.placeholder);
         }

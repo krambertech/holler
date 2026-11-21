@@ -104,7 +104,7 @@ The site is a static build from the product's own components, deployed as its ow
 
 **Slack.** These are rendered previews generated from the same Block Kit builders the app sends, with the JSON and a Block Kit Builder link beside each.
 
-- The invite, in four shapes: one tap, modal, web link and form chase
+- The invite, in four shapes: one tap, modal, web link and chase
 - The three reminder tones, the thank-you and the closed reply
 - The channel announcement with its live count, and the sender notices
 - The answer modal

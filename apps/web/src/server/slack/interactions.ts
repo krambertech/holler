@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import type { AppEnv } from "../app";
 import {
+  addNoteFromSlack,
   answerFromSlack,
   answerViewFor,
   queueOutcome,
@@ -26,7 +27,7 @@ interface InteractionPayload {
   container?: { channel_id?: string; message_ts?: string };
   channel?: { id: string };
   message?: { ts: string };
-  actions?: { action_id: string; value?: string }[];
+  actions?: { action_id: string; block_id?: string; value?: string }[];
   view?: {
     callback_id?: string;
     private_metadata?: string;
@@ -90,6 +91,24 @@ export const slackInteractionRoutes = new Hono<AppEnv>().post("/", async (c) => 
     // A one-tap question has one required answer, so a button can never be invalid.
     if (outcome.status === "invalid") throw new Error(outcome.message);
     await queueOutcome(c.env, ctx, hollerId, outcome, tapped);
+    return c.body(null, 200);
+  }
+  if (action.action_id === actionIds.text) {
+    // The free-text pulse's box: block `text:<holler>:<question>`. Enter on an empty box does nothing.
+    const [, hollerId, questionId] = action.block_id?.split(":") ?? [];
+    if (!hollerId || !questionId || !action.value.trim()) return c.body(null, 200);
+    const outcome = await answerFromSlack(ctx, hollerId, "slack_button", {
+      answers: [{ questionId, text: action.value }],
+    });
+    if (outcome.status === "invalid") throw new Error(outcome.message);
+    await queueOutcome(c.env, ctx, hollerId, outcome, tapped);
+    return c.body(null, 200);
+  }
+  if (action.action_id === actionIds.note) {
+    // The note box after a tap: block `note:<response>:<question>`.
+    const [, responseId, questionId] = action.block_id?.split(":") ?? [];
+    if (!responseId || !questionId) return c.body(null, 200);
+    await addNoteFromSlack(c.env, ctx, { responseId, questionId, note: action.value }, tapped);
     return c.body(null, 200);
   }
   if (action.action_id === actionIds.done) {

@@ -17,6 +17,7 @@ export const optionOutSchema = z.object({
   position: z.number().int(),
   label: z.string(),
   score: z.number().int().nullable(),
+  isOther: z.boolean().describe("The Other option, which takes a written answer."),
 });
 
 export const questionOutSchema = z.object({
@@ -25,9 +26,22 @@ export const questionOutSchema = z.object({
   type: z.enum(questionTypes),
   style: z.enum(questionStyles),
   prompt: z.string(),
+  description: z.string(),
   required: z.boolean(),
   options: z.array(optionOutSchema),
+  allowOther: z.boolean(),
+  maxChoices: z.number().int().nullable(),
+  followUp: z
+    .object({ prompt: z.string(), onlyAfter: z.array(z.number().int()).nullable() })
+    .nullable(),
+  lowLabel: z.string().nullable(),
+  highLabel: z.string().nullable(),
+  numberMin: z.number().int().nullable(),
+  numberMax: z.number().int().nullable(),
 });
+
+/** A reason a Holler cannot be sent yet. `field` is a path such as `questions.0.options.2`. */
+export const sendProblemSchema = z.object({ message: z.string(), field: z.string().nullable() });
 
 /** One Holler with its questions. Send an `id` back on a question or option to keep it on update. */
 export const hollerOutSchema = z.object({
@@ -35,6 +49,9 @@ export const hollerOutSchema = z.object({
   mode: z.enum(modes),
   status: hollerStatusSchema,
   title: z.string(),
+  displayTitle: z
+    .string()
+    .describe("What lists show: the title, or a pulse's first question when it has none."),
   description: z.string(),
   externalUrl: z.string().nullable(),
   anonymous: z.boolean(),
@@ -45,6 +62,8 @@ export const hollerOutSchema = z.object({
   sendAt: timestamp.nullable(),
   sendInRecipientTimeZone: z.boolean(),
   closeAfterHours: z.number().int(),
+  /** Where it is answered: right in the DM, in a Slack form, on a web page, or a chase. */
+  answeredIn: z.enum(["dm", "slack", "web", "chase"]),
   remindersEnabled: z.boolean(),
   sentAt: timestamp.nullable(),
   closesAt: timestamp.nullable(),
@@ -54,9 +73,34 @@ export const hollerOutSchema = z.object({
   updatedAt: timestamp,
   /** True when the caller made it, so they may edit, send, close and remind. */
   isCreator: z.boolean(),
+  problems: z
+    .array(sendProblemSchema)
+    .describe("Every reason it cannot be sent yet. Empty when it is ready, and once it is sent."),
   questions: z.array(questionOutSchema),
 });
 export type HollerOut = z.infer<typeof hollerOutSchema>;
+
+/** What a send would do, before it happens: who it reaches, when it closes, what is missing. */
+export const sendPreviewOutSchema = z.object({
+  hollerId: z.string(),
+  title: z.string(),
+  reach: z.number().int().describe("About how many people it reaches."),
+  people: z.array(z.string()).describe("Up to ten of the people chosen by name."),
+  morePeople: z.number().int(),
+  groups: z.array(
+    z.object({
+      name: z.string(),
+      kind: z.enum(["usergroup", "channel"]),
+      memberCount: z.number().int().nullable(),
+    }),
+  ),
+  everyone: z.boolean(),
+  anonymous: z.boolean(),
+  sendAt: timestamp.nullable(),
+  closesAt: timestamp,
+  problems: z.array(sendProblemSchema),
+});
+export type SendPreview = z.infer<typeof sendPreviewOutSchema>;
 
 export const hollerListOutSchema = z.object({ hollers: z.array(hollerSummarySchema) });
 
@@ -65,7 +109,8 @@ export const recipientOutSchema = z.object({
   slackUserId: z.string(),
   name: z.string(),
   avatarUrl: z.string().nullable(),
-  answered: z.boolean(),
+  /** Null on an anonymous Holler: its sender sees how many answered, never who. */
+  answered: z.boolean().nullable(),
 });
 
 export const recipientsOutSchema = z.object({
@@ -75,9 +120,12 @@ export const recipientsOutSchema = z.object({
   recipients: z.array(recipientOutSchema),
 });
 
+const writtenSchema = z.object({ text: z.string(), slackUserId: z.string().nullable() });
+
 const optionResultSchema = z.object({
   id: z.string(),
   label: z.string(),
+  isOther: z.boolean(),
   count: z.number().int(),
   share: z.number().describe("Share of the people who answered this question, 0 to 1."),
   slackUserIds: z.array(z.string()).describe("Who picked it. Empty on an anonymous Holler."),
@@ -92,6 +140,8 @@ const questionResultSchema = z.discriminatedUnion("type", [
     answeredCount: z.number().int(),
     options: z.array(optionResultSchema),
     average: z.number().nullable().describe("Mean score on a scale question, to one decimal."),
+    notes: z.array(writtenSchema).describe("Follow-up notes."),
+    otherTexts: z.array(writtenSchema).describe("What people wrote beside Other."),
   }),
   z.object({
     id: z.string(),
@@ -99,7 +149,35 @@ const questionResultSchema = z.discriminatedUnion("type", [
     type: z.literal("text"),
     style: z.enum(questionStyles),
     answeredCount: z.number().int(),
-    texts: z.array(z.object({ text: z.string(), slackUserId: z.string().nullable() })),
+    texts: z.array(writtenSchema),
+  }),
+  z.object({
+    id: z.string(),
+    prompt: z.string(),
+    type: z.literal("number"),
+    style: z.enum(questionStyles),
+    answeredCount: z.number().int(),
+    average: z.number().nullable(),
+    median: z.number().nullable(),
+    min: z.number().nullable(),
+    max: z.number().nullable(),
+    values: z.array(z.object({ value: z.number(), slackUserId: z.string().nullable() })),
+  }),
+  z.object({
+    id: z.string(),
+    prompt: z.string(),
+    type: z.literal("person"),
+    style: z.enum(questionStyles),
+    answeredCount: z.number().int(),
+    people: z.array(
+      z.object({
+        slackUserId: z.string(),
+        name: z.string(),
+        count: z.number().int(),
+        share: z.number(),
+        pickedBy: z.array(z.string()).describe("Who picked them. Empty on an anonymous Holler."),
+      }),
+    ),
   }),
 ]);
 

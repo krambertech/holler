@@ -1,5 +1,6 @@
 import {
   earliestInstantOf,
+  hollerTitle,
   nextReminder,
   type ReminderTone,
   reminderTiers,
@@ -9,8 +10,9 @@ import { and, eq, gte, inArray, isNotNull, isNull, lte, or, type SQL, sql } from
 import { runBatch } from "../batch";
 import { type Db, schema } from "../db";
 import type { Bindings } from "../env";
-import { type SlackHoller, timeOfDay } from "../slack/blocks/format";
+import { type SlackHoller, surfaceOf, timeOfDay } from "../slack/blocks/format";
 import {
+  type AnswerSummary,
   announcementMessage,
   answeredMessage,
   closedMessage,
@@ -22,7 +24,8 @@ import {
 import { type PostMessage, SlackApiError, type SlackClient } from "../slack/client";
 import { auditStatement } from "./audit";
 import { type ServiceContext, ServiceError } from "./context";
-import { getHoller, sendProblems } from "./hollers";
+import { getHoller, presentQuestion, sendProblems } from "./hollers";
+import { respondUrl } from "./respond-links";
 import { slackFor } from "./slack-connection";
 import { assertCanSend } from "./usage";
 
@@ -39,7 +42,14 @@ const { hollers, recipients, slackPeople, members, workspaces, questions, option
 export type SlackSend =
   | { kind: "invite"; hollerId: string; slackUserId: string }
   | { kind: "reminder"; hollerId: string; slackUserId: string; tone: ReminderTone }
-  | { kind: "answered"; hollerId: string; slackUserId: string; also?: DmRef | undefined }
+  | {
+      kind: "answered";
+      hollerId: string;
+      slackUserId: string;
+      also?: DmRef | undefined;
+      /** Set right after an answer in the DM, so its follow-up note box finds the response. */
+      responseId?: string | undefined;
+    }
   | { kind: "closed"; hollerId: string; slackUserId: string; also?: DmRef | undefined }
   | { kind: "snoozed"; hollerId: string; slackUserId: string; reminder: DmRef }
   | { kind: "announce"; hollerId: string }
@@ -136,14 +146,13 @@ async function assertInstalled(db: Db, workspaceId: string) {
 }
 
 /** Every send problem in one error, so the editor can show each beside its field. */
-function assertSendable(holler: Parameters<typeof sendProblems>[0]) {
-  const problems = sendProblems(holler);
+function assertSendable(problems: { message: string; field?: string | null | undefined }[]) {
   const [first] = problems;
   if (!first) return;
   throw new ServiceError(
     "invalid",
     first.message,
-    first.field,
+    first.field ?? undefined,
     problems.map((p) => ({ message: p.message, field: p.field ?? null })),
   );
 }
@@ -193,7 +202,7 @@ export async function sendHoller(
   if (holler.status === "live" || holler.status === "closed") {
     throw new ServiceError("conflict", "This Holler was already sent.");
   }
-  assertSendable(holler);
+  assertSendable(holler.problems);
   await assertCanSend(ctx);
   await assertInstalled(ctx.db, ctx.workspaceId);
 
@@ -579,11 +588,9 @@ export async function sendDueHollers(env: Bindings, db: Db, now: Date): Promise<
       now: () => now,
     };
     try {
-      const questionIds = await db
-        .select({ id: questions.id })
-        .from(questions)
-        .where(eq(questions.hollerId, holler.id));
-      assertSendable({ ...holler, questions: questionIds });
+      const loaded = await loadSlackHoller(db, holler.id);
+      if (!loaded) continue;
+      assertSendable(sendProblems({ ...holler, questions: loaded.holler.questions }, now));
       await assertCanSend(ctx);
       await assertInstalled(db, holler.workspaceId);
       await goLive(ctx, env, holler, creator.timeZone);
@@ -680,23 +687,24 @@ export async function loadSlackHoller(db: Db, hollerId: string) {
             ),
           )
           .orderBy(options.position);
+  const presented = qs.map((q) => {
+    const own = opts.filter((o) => o.questionId === q.id);
+    return {
+      ...presentQuestion({ ...q, options: own }),
+      otherOptionId: own.find((o) => o.isOther)?.id ?? null,
+    };
+  });
   const holler: SlackHoller = {
     id: row.id,
     mode: row.mode,
-    title: row.title,
+    title: hollerTitle({ mode: row.mode, title: row.title, questions: presented }),
     description: row.description,
     anonymous: row.anonymous,
     externalUrl: row.externalUrl,
     closesAt: row.closesAt,
     // The Slack name people know them by; the sign-in name if the directory has not synced them.
     senderName: person?.displayName || person?.name || user.name,
-    questions: qs.map((q) => ({
-      id: q.id,
-      type: q.type,
-      prompt: q.prompt,
-      required: q.required,
-      options: opts.filter((o) => o.questionId === q.id).map((o) => ({ id: o.id, label: o.label })),
-    })),
+    questions: presented,
   };
   return { row, holler, creatorSlackUserId: creator.slackUserId };
 }
@@ -717,12 +725,12 @@ export async function deliver(env: Bindings, db: Db, send: SlackSend, now: Date)
   switch (send.kind) {
     case "invite":
     case "reminder":
-      return postToRecipient(db, slack, loaded, send, now);
+      return postToRecipient(env, db, slack, loaded, send, now);
     case "answered":
     case "closed":
       return updateRecipient(db, slack, loaded, send, now);
     case "snoozed":
-      return showSnoozed(db, slack, loaded, send, now);
+      return showSnoozed(env, db, slack, loaded, send, now);
     case "announce": {
       if (!row.announceChannelId) return;
       const message = announcementMessage(
@@ -773,7 +781,21 @@ async function recipientFor(db: Db, row: Loaded["row"], slackUserId: string) {
 }
 
 /** An invite or a reminder: a new DM, so it notifies, which becomes the DM to update later. */
+/** How this person reads the Holler: their zone, and their own link when it is answered on the web. */
+async function readerFor(
+  env: Bindings,
+  holler: SlackHoller,
+  slackUserId: string,
+  timeZone: string | null,
+  now: Date,
+) {
+  const respond =
+    surfaceOf(holler).where === "web" ? await respondUrl(env, holler.id, slackUserId) : null;
+  return { timeZone, now, respondUrl: respond };
+}
+
 async function postToRecipient(
+  env: Bindings,
   db: Db,
   slack: SlackClient,
   { row, holler }: Loaded,
@@ -785,7 +807,7 @@ async function postToRecipient(
   if (row.status !== "live") return;
   // A retried invite that already went out has its DM stored.
   if (send.kind === "invite" && recipient.dmTs) return;
-  const reader = { timeZone, now };
+  const reader = await readerFor(env, holler, send.slackUserId, timeZone, now);
   const message =
     send.kind === "invite"
       ? inviteMessage(holler, reader)
@@ -830,7 +852,11 @@ async function updateRecipient(
   if (answered !== (send.kind === "answered")) return;
   const message =
     send.kind === "answered"
-      ? answeredMessage(holler, await answerSummary(db, row, holler, send.slackUserId))
+      ? answeredMessage(
+          holler,
+          await answerSummary(db, row, holler, send.slackUserId),
+          await noteBoxFor(db, holler, send.responseId),
+        )
       : closedMessage(holler, row.closedAt ?? now, { timeZone, now });
   const targets = new Map<string, DmRef>();
   if (recipient.dmChannelId && recipient.dmTs) {
@@ -842,6 +868,7 @@ async function updateRecipient(
 
 /** Rewrites the reminder they snoozed to say when the next one comes. */
 async function showSnoozed(
+  env: Bindings,
   db: Db,
   slack: SlackClient,
   { row, holler }: Loaded,
@@ -855,7 +882,7 @@ async function showSnoozed(
     ...reminderMessage(
       holler,
       toneFor(recipient.remindersSent),
-      { timeZone, now },
+      await readerFor(env, holler, send.slackUserId, timeZone, now),
       recipient.snoozedUntil,
     ),
   });
@@ -875,13 +902,16 @@ async function postDm(slack: SlackClient, db: Db, where: SQL, message: PostMessa
   }
 }
 
-/** What a named recipient answered, as labels, for their thank-you. Nothing on an anonymous one. */
+/**
+ * What a named recipient answered, for their thank-you: the labels they picked, what they wrote,
+ * the people they named, their Other text and their note. Nothing on an anonymous one.
+ */
 async function answerSummary(
   db: Db,
   row: { id: string; anonymous: boolean },
   holler: SlackHoller,
   slackUserId: string,
-) {
+): Promise<AnswerSummary[]> {
   if (row.anonymous) return [];
   const response = await db.query.responses.findFirst({
     where: and(
@@ -890,20 +920,60 @@ async function answerSummary(
     ),
   });
   if (!response) return [];
-  const given = await db
-    .select()
-    .from(schema.answers)
-    .where(eq(schema.answers.responseId, response.id));
-  return holler.questions.map((question) => ({
-    prompt: question.prompt,
-    values: given
-      .filter((answer) => answer.questionId === question.id)
-      .map(
-        (answer) =>
-          answer.text ?? question.options.find((option) => option.id === answer.optionId)?.label,
-      )
-      .filter((value) => value !== undefined),
-  }));
+  const [given, notes] = await Promise.all([
+    db.select().from(schema.answers).where(eq(schema.answers.responseId, response.id)),
+    db.select().from(schema.answerNotes).where(eq(schema.answerNotes.responseId, response.id)),
+  ]);
+  return holler.questions.map((question) => {
+    const mine = given.filter((answer) => answer.questionId === question.id);
+    const noteOf = (kind: "note" | "other") =>
+      notes.find((note) => note.questionId === question.id && note.kind === kind)?.text;
+    const other = noteOf("other");
+    const values = mine.flatMap((answer) => {
+      if (question.type === "person") return [];
+      if (answer.text !== null) return [answer.text];
+      if (answer.optionId === question.otherOptionId)
+        return other ? [`Other: ${other}`] : ["Other"];
+      const label = question.options.find((option) => option.id === answer.optionId)?.label;
+      return label ? [label] : [];
+    });
+    return {
+      prompt: question.prompt,
+      values,
+      people: question.type === "person" ? mine.flatMap((answer) => answer.text ?? []) : [],
+      note: noteOf("note") ?? null,
+    };
+  });
+}
+
+/**
+ * The follow-up note box after a tap in the DM: shown while the picked answer asks for a note and
+ * none is written yet. Needs the response id, which only the answer that just happened carries.
+ */
+async function noteBoxFor(db: Db, holler: SlackHoller, responseId: string | undefined) {
+  const question = holler.questions[0];
+  if (!responseId || surfaceOf(holler).where !== "dm" || !question?.followUp) return null;
+  const [picked, written] = await Promise.all([
+    db
+      .select()
+      .from(schema.answers)
+      .where(
+        and(eq(schema.answers.responseId, responseId), eq(schema.answers.questionId, question.id)),
+      ),
+    db
+      .select()
+      .from(schema.answerNotes)
+      .where(
+        and(eq(schema.answerNotes.responseId, responseId), eq(schema.answerNotes.kind, "note")),
+      ),
+  ]);
+  if (written.length > 0) return null;
+  const { onlyAfter } = question.followUp;
+  const asks = picked.some((answer) => {
+    const option = question.options.find((o) => o.id === answer.optionId);
+    return option && (onlyAfter === null || onlyAfter.includes(option.position));
+  });
+  return asks ? { responseId, questionId: question.id, prompt: question.followUp.prompt } : null;
 }
 
 async function countsFor(db: Db, hollerId: string) {

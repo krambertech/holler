@@ -275,4 +275,92 @@ describe("/slack/interactions", () => {
     expect(slack.updated.map((m) => [m.channel, m.ts])).toEqual([["DA", reminder.message_ts]]);
     expect(JSON.stringify(slack.updated[0]?.blocks)).toContain("I'll remind you again at 15:00.");
   });
+
+  it("takes a free-text pulse's answer from the box in the DM", async () => {
+    const { post, holler, team, slack, dmOf } = await live({
+      title: "",
+      questions: [{ type: "text", prompt: "What should we stop doing?" }],
+    });
+    const question = holler.questions[0];
+    const invite = slack.posted.find((m) => m.channel === "UA");
+    expect(JSON.stringify(invite?.blocks)).toContain(`text:${holler.id}:${question?.id}`);
+    const enter = (value: string) =>
+      post({
+        type: "block_actions",
+        team,
+        user: { id: "UA" },
+        container: dmOf("UA"),
+        actions: [
+          { action_id: actionIds.text, block_id: `text:${holler.id}:${question?.id}`, value },
+        ],
+      });
+    await enter("   ");
+    expect(await responsesOf(holler.id)).toHaveLength(0);
+    await enter("Long meetings");
+    expect(await responsesOf(holler.id)).toHaveLength(1);
+    expect(JSON.stringify(slack.updated.at(-1)?.blocks)).toContain("Long meetings");
+  });
+
+  for (const anonymous of [false, true]) {
+    it(`asks for the note after a tap, and keeps it${anonymous ? " on an anonymous Holler" : ""}`, async () => {
+      const { tap, pick, post, holler, team, slack, dmOf } = await live({
+        anonymous,
+        questions: [
+          {
+            type: "single",
+            prompt: "Where?",
+            options: [{ label: "Lisbon" }, { label: "Tallinn" }],
+            followUp: { prompt: "Why there?", onlyAfter: null },
+          },
+        ],
+      });
+      await tap("UA", `${actionIds.option}_0`, pick(0));
+      const thanks = slack.updated.at(-1);
+      const box = ((thanks?.blocks ?? []) as { block_id?: string }[]).find((b) =>
+        b.block_id?.startsWith("note:"),
+      );
+      expect(box).toBeDefined();
+      await post({
+        type: "block_actions",
+        team,
+        user: { id: "UA" },
+        container: dmOf("UA"),
+        actions: [{ action_id: actionIds.note, block_id: box?.block_id, value: "Cheap flights" }],
+      });
+      const [response] = await responsesOf(holler.id);
+      expect(response?.slackUserId).toBe(anonymous ? null : "UA");
+      const notes = await db.query.answerNotes.findMany({
+        where: (row, { eq }) => eq(row.responseId, response?.id ?? ""),
+      });
+      expect(notes.map((n) => [n.kind, n.text])).toEqual([["note", "Cheap flights"]]);
+      // The DM drops the box once the note is in.
+      expect(JSON.stringify(slack.updated.at(-1)?.blocks)).not.toContain("note:");
+    });
+  }
+
+  it("refuses a note on someone else's named answer", async () => {
+    const { tap, pick, post, team, slack } = await live({
+      questions: [
+        {
+          type: "single",
+          prompt: "Where?",
+          options: [{ label: "Lisbon" }, { label: "Tallinn" }],
+          followUp: { prompt: "Why there?", onlyAfter: null },
+        },
+      ],
+    });
+    await tap("UA", `${actionIds.option}_0`, pick(0));
+    const box = ((slack.updated.at(-1)?.blocks ?? []) as { block_id?: string }[]).find((b) =>
+      b.block_id?.startsWith("note:"),
+    );
+    const response = await post({
+      type: "block_actions",
+      team,
+      user: { id: "UB" },
+      container: { channel_id: "DB", message_ts: "1.1" },
+      actions: [{ action_id: actionIds.note, block_id: box?.block_id, value: "Not mine" }],
+    });
+    expect(response.status).toBe(403);
+    expect(await db.query.answerNotes.findMany()).toEqual([]);
+  });
 });
