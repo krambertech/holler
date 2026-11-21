@@ -16,6 +16,7 @@ import {
   sendProblems,
   updateDraft,
 } from "./hollers";
+import { previewSend } from "./send-preview";
 
 let db: Db;
 let dispose: () => Promise<void>;
@@ -325,6 +326,35 @@ describe("home", () => {
     await makeLive(db, holler.id, ["UA", "UB"], now);
     const [row] = await listHollers(ctx, { scope: "mine" });
     expect(row).toMatchObject({ recipientCount: 2, people: [] });
+  });
+  it("lists more Hollers than D1 binds in one statement", async () => {
+    const { ctx } = await workspaceFixture(db);
+    const many = 101;
+    for (let i = 0; i < many; i++) await createDraft(ctx, { ...pulse, title: `Round ${i}` });
+    const all = await listHollers(ctx, { scope: "mine" });
+    expect(all).toHaveLength(many);
+  });
+
+  it("previews a send to the most groups an audience holds", async () => {
+    const { ctx, workspaceId } = await workspaceFixture(db);
+    const groups = Array.from({ length: 100 }, (_, i) => `S${i}`);
+    for (const slackId of groups) {
+      await db.insert(schema.slackGroups).values({
+        workspaceId,
+        slackId,
+        kind: "usergroup",
+        name: slackId,
+        searchName: slackId.toLocaleLowerCase(),
+        memberCount: 2,
+      });
+    }
+    const draft = await createDraft(ctx, {
+      ...pulse,
+      audience: { people: [], groups, everyone: false },
+    });
+    const preview = await previewSend(ctx, draft.id);
+    expect(preview.groups).toHaveLength(100);
+    expect(preview.reach).toBe(200);
   });
 });
 

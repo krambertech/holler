@@ -440,7 +440,7 @@ export async function closeHoller(
       data: { reason: "creator" },
     });
     try {
-      await queueCloseWork(ctx.db, env, now, [id]);
+      await queueCloseWork(ctx.db, env, now, id);
     } catch (error) {
       // It is closed; the cron's close pass queues what this could not within a minute.
       console.error("close work not queued; the cron will retry", id, error);
@@ -462,7 +462,7 @@ export async function queueCloseWork(
   db: Db,
   env: Bindings,
   now: Date,
-  hollerIds?: string[],
+  hollerId?: string | undefined,
 ): Promise<string[]> {
   const candidates = await db
     .select({ id: hollers.id })
@@ -471,8 +471,8 @@ export async function queueCloseWork(
       and(
         eq(hollers.status, "closed"),
         isNull(hollers.closeQueuedAt),
-        hollerIds
-          ? inArray(hollers.id, hollerIds)
+        hollerId
+          ? eq(hollers.id, hollerId)
           : gte(hollers.closedAt, new Date(now.getTime() - closeCatchUpHours * HOUR)),
       ),
     );
@@ -773,6 +773,7 @@ export async function loadSlackHoller(db: Db, hollerId: string) {
           .where(
             inArray(
               options.questionId,
+              // oxlint-disable-next-line holler/bounded-in-array -- a Holler has at most 30 questions
               qs.map((q) => q.id),
             ),
           )
