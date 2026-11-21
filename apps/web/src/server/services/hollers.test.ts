@@ -338,6 +338,8 @@ describe("sendProblems", () => {
     audience: { people: ["UA"], groups: [], everyone: false },
     sendAt: null,
     closesAt: null,
+    closeAfterHours: 72,
+    repeatRule: null,
     questions: [],
   };
   const question = (over: Partial<ProblemQuestion> = {}): ProblemQuestion => ({
@@ -377,6 +379,20 @@ describe("sendProblems", () => {
       question({ style: "scale", options: [{ label: "1" }, { label: "2" }], lowLabel, highLabel });
     expect(fields({ questions: [scale("", "")] })).toEqual([]);
     expect(fields({ questions: [scale("Calm", "")] })).toEqual(["questions.0.highLabel"]);
+  });
+
+  it("lets only a pulse with a send time repeat, closing each round before the next", () => {
+    const sendAt = new Date(now.getTime() + 86_400_000);
+    const pulse = { mode: "pulse" as const, sendAt, repeatRule: "week" as const };
+    expect(fields(pulse)).toEqual([]);
+    expect(fields({ ...pulse, mode: "survey" })).toEqual(["repeat"]);
+    expect(fields({ ...pulse, sendAt: null })).toEqual(["sendAt"]);
+    expect(fields({ ...pulse, closesAt: new Date(sendAt.getTime() + 3_600_000) })).toEqual([
+      "closesAt",
+    ]);
+    expect(fields({ ...pulse, closeAfterHours: 7 * 24 })).toEqual([]);
+    expect(fields({ ...pulse, closeAfterHours: 7 * 24 + 1 })).toEqual(["closeAfterHours"]);
+    expect(fields({ ...pulse, repeatRule: "fortnight", closeAfterHours: 14 * 24 })).toEqual([]);
   });
 
   it("caps a pulse at two questions", () => {

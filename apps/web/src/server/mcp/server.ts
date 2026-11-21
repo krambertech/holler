@@ -30,6 +30,7 @@ import {
   updateDraft,
 } from "../services/hollers";
 import { resultsFor } from "../services/responses";
+import { stopRepeating } from "../services/rounds";
 import { checkSendConfirmToken, previewSend, sendConfirmToken } from "../services/send-preview";
 
 /** What one MCP request runs as. Built from the verified access token, never from the body. */
@@ -238,6 +239,19 @@ export function buildMcpServer(mcp: McpPrincipal): McpServer {
     },
     ({ hollerId }) =>
       write(async () => result(hollerOut(await closeHoller(ctx, mcp.env, hollerId)))),
+  );
+
+  server.registerTool(
+    "stop_repeating",
+    {
+      title: "Stop a pulse repeating",
+      description:
+        "Stop a repeating pulse after the rounds already sent, and delete its next round, which has not gone out. Needs write access.",
+      inputSchema: z.object({ hollerId: z.string().min(1) }),
+      outputSchema: hollerOutSchema,
+      ...writeTool({ idempotent: true, overwrites: true }),
+    },
+    ({ hollerId }) => write(async () => result(hollerOut(await stopRepeating(ctx, hollerId)))),
   );
 
   server.registerTool(
