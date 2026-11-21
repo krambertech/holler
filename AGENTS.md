@@ -70,6 +70,7 @@ Project skills live in `.agents/skills/`; `.claude/skills` links to it so every 
 | Every e2e sign-in lands where the test goes next, so no redirect races its navigation | `holler/sign-in-lands` in `oxlint-plugin-holler`; `signInAs` in `e2e/a11y.ts` |
 | The product navigates only to routes that exist | `holler/typed-navigation` in `oxlint-plugin-holler` refuses `href` in `navigate` and `redirect`, so the router's types check every `to` |
 | Send reminder wakes up when the wait between reminders ends, without a reload | `useWakeAt` in `lib/use-wake-at.ts`; `e2e/holler-page.spec.ts` runs the clock past the wait |
+| e2e tests never leave rows that another test finds by name | Each spec mocks a write whose result other specs could see; `e2e/holler-page.spec.ts` mocks the copy |
 | Pull request titles follow `type(scope): summary` within 72 characters      | `scripts/check-pr-title.mjs` in CI                   |
 | Server inserts one row per statement, inside D1's 100-value limit | `holler/no-multi-row-insert` in `oxlint-plugin-holler` |
 | Every Slack message and view fits Block Kit's limits | `FakeSlack` refuses what Slack would; `slack/blocks/messages.test.ts` sends the largest Holler |

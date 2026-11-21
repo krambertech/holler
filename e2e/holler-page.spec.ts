@@ -50,20 +50,16 @@ test("Export downloads every response as CSV", async ({ page }) => {
 
 test("Copy into a new draft opens the draft it made", async ({ page }) => {
   await signInAs(page, "lead");
-  await page
-    .getByRole("region", { name: /^Live \d+$/ })
-    .getByRole("link", { name: "Offsite: which dates work?" })
-    .click();
-  const original = page.url();
+  const live = page.getByRole("region", { name: /^Live \d+$/ });
+  const href = await live.getByRole("link", { name: "How was your week?" }).getAttribute("href");
+  const madeId = href?.split("/").at(-1) ?? "";
+  await page.route("**/api/hollers/*/copy", (route) => route.fulfill({ json: { id: madeId } }));
+  await live.getByRole("link", { name: "Offsite: which dates work?" }).click();
   await page.getByRole("button", { name: "More for this Holler" }).click();
   await page.getByRole("menuitem", { name: "Copy into a new draft" }).click();
-  await expect(page).not.toHaveURL(original);
-  await expect(page).toHaveURL(/\/hollers\/hol_/);
+  await expect(page).toHaveURL(new RegExp(`/hollers/${madeId}$`));
   await expect(page.getByText("Copied into a new draft.")).toBeVisible();
-  await expect(
-    page.getByRole("heading", { level: 1, name: "Offsite: which dates work?" }),
-  ).toBeVisible();
-  await expect(page.getByText("Draft", { exact: true }).first()).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "How was your week?" })).toBeVisible();
 });
 
 test("Send reminder wakes up when the wait between reminders ends", async ({ page }) => {
