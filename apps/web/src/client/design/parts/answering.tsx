@@ -1,11 +1,37 @@
-import type { RespondPerson, RespondQuestion } from "@holler/core";
+import type { RespondGiven, RespondPerson, RespondQuestion } from "@holler/core";
+import { Check, Link2Off, Lock } from "lucide-react";
 import { useState } from "react";
 import { AnswerQuestion } from "@/components/respond/answer-question";
 import { RespondState } from "@/components/respond/respond-state";
+import { YourAnswers } from "@/components/respond/your-answers";
 import { Plate } from "@/components/ui/plate";
 import { type DraftAnswer, emptyAnswer } from "@/lib/respond";
 import { Variants } from "../frame";
 import type { Group } from "./types";
+
+const about = {
+  title: "Offsite planning",
+  senderName: "Mira Novak",
+  senderSlackUserId: "U0LEAD",
+  senderAvatarUrl: null,
+};
+
+const given: RespondGiven[] = [
+  {
+    questionId: "q1",
+    prompt: "Where would you rather go?",
+    picks: ["Tallinn"],
+    note: "The sauna, and it is close for most of us.",
+  },
+  {
+    questionId: "q2",
+    prompt: "Which weeks work for you?",
+    picks: ["8 March", "22 March"],
+    note: null,
+  },
+  { questionId: "q3", prompt: "How many nights can you stay?", picks: ["3"], note: null },
+  { questionId: "q4", prompt: "Anything else we should know?", picks: [], note: null },
+];
 
 const base: Omit<RespondQuestion, "id" | "type" | "prompt" | "options"> = {
   style: "plain",
@@ -181,19 +207,29 @@ export const answering: Group = {
       slug: "respond-state",
       name: "RespondState",
       source: "components/respond/respond-state.tsx",
-      note: "When there is nothing to answer: after sending, after the close, or with a link that does not work.",
+      note: "When there is nothing to answer: after sending, after the close, or with a link that does not work. A glyph in the state's colour, one sentence of what happened, and the Holler it is about.",
       Demo: () => (
         <Variants
           stack
           items={[
             {
-              label: "Thank-you",
+              label: "Thank-you, with your answers",
               render: () => (
                 <RespondState
                   className="w-full max-w-xl"
+                  tone="answered"
+                  icon={<Check strokeWidth={2} />}
                   title="Thank you, your answers are in"
-                  description="Mira sees them with everyone else's. You can close this page."
-                />
+                  holler={about}
+                  description={
+                    <>
+                      <p>Mira sees them with everyone else's.</p>
+                      <p>You can close this page.</p>
+                    </>
+                  }
+                >
+                  <YourAnswers given={given} />
+                </RespondState>
               ),
             },
             {
@@ -201,13 +237,38 @@ export const answering: Group = {
               render: () => (
                 <RespondState
                   className="w-full max-w-xl"
+                  tone="closed"
+                  icon={<Lock strokeWidth={2} />}
                   title="This Holler is closed"
-                  description="Offsite planning closed on Friday at 18:00, so it takes no more answers."
+                  holler={about}
+                  description="It closed on Friday at 18:00, so it takes no more answers."
+                />
+              ),
+            },
+            {
+              label: "A link that does not work",
+              render: () => (
+                <RespondState
+                  className="w-full max-w-xl"
+                  icon={<Link2Off strokeWidth={2} />}
+                  title="This link does not work"
+                  description="It may have been changed on the way. Open the Holler again from your message in Slack."
                 />
               ),
             },
           ]}
         />
+      ),
+    },
+    {
+      slug: "your-answers",
+      name: "YourAnswers",
+      source: "components/respond/your-answers.tsx",
+      note: "What someone sent, read back on the thank-you page. Never shown for an anonymous Holler, whose answers keep no name.",
+      Demo: () => (
+        <Plate className="w-full max-w-xl">
+          <YourAnswers given={given} />
+        </Plate>
       ),
     },
   ],

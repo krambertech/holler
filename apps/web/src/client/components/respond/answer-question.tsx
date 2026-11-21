@@ -3,6 +3,7 @@ import { RadioGroup as RadioGroupPrimitive } from "@base-ui/react/radio-group";
 import type { RespondPerson, RespondQuestion } from "@holler/core";
 import { otherOption } from "@holler/core";
 import { EASE_OUT } from "@holler/design";
+import { CornerDownRight } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { type ComponentProps, type ReactNode, useEffect, useId, useRef, useState } from "react";
 import { Avatar } from "@/components/ui/avatar";
@@ -79,13 +80,21 @@ function AnswerQuestion({
         searchPeople={searchPeople}
       />
       <Reveal shown={noteShown(question, value)}>
-        <Field>
-          <FieldLabel aside="Optional">{question.followUp?.prompt}</FieldLabel>
+        <Field data-slot="follow-up" className="gap-2.5 rounded-control bg-well p-4">
+          <FieldLabel aside="Optional" className="flex items-center gap-2 text-ink">
+            <CornerDownRight
+              aria-hidden
+              size={16}
+              strokeWidth={2}
+              className="shrink-0 text-muted"
+            />
+            {question.followUp?.prompt}
+          </FieldLabel>
           <Textarea
             value={value.note}
             maxLength={4000}
             onChange={(e) => onValueChange({ ...value, note: e.target.value })}
-            className="min-h-20"
+            className="min-h-20 bg-plate"
           />
         </Field>
       </Reveal>
@@ -123,8 +132,8 @@ interface ControlProps {
 }
 
 function Control(props: ControlProps) {
-  const { question, value, onValueChange, legendId, invalid } = props;
-  const a11y = { "aria-labelledby": legendId, "aria-invalid": invalid || undefined };
+  const { question, value, onValueChange, legendId } = props;
+  const a11y = { "aria-labelledby": legendId };
   switch (question.type) {
     case "text":
       return (
@@ -143,7 +152,6 @@ function Control(props: ControlProps) {
           autoComplete="off"
           value={value.number}
           onChange={(e) => onValueChange({ ...value, number: e.target.value })}
-          className="w-40"
         />
       );
     case "person":
@@ -186,20 +194,18 @@ function OtherText({ question, value, onValueChange, invalid }: ControlProps) {
         value={value.otherText}
         maxLength={1000}
         onChange={(e) => onValueChange({ ...value, otherText: e.target.value })}
-        className="mt-1"
       />
     </Reveal>
   );
 }
 
 function OptionRadios(props: ControlProps) {
-  const { question, value, onValueChange, legendId, invalid } = props;
+  const { question, value, onValueChange, legendId } = props;
   const picked = value.optionIds[0] ?? null;
   return (
-    <div className="flex flex-col gap-1">
+    <div className="flex flex-col">
       <RadioGroup<string | null>
         aria-labelledby={legendId}
-        aria-invalid={invalid || undefined}
         value={picked}
         onValueChange={(next) => onValueChange({ ...value, optionIds: next ? [next] : [] })}
         className="gap-0"
@@ -224,7 +230,7 @@ function OptionChecks(props: ControlProps) {
   const { question, value, onValueChange, legendId } = props;
   const full = atPickLimit(question, value);
   return (
-    <div className="flex flex-col gap-1">
+    <div className="flex flex-col">
       <div role="group" aria-labelledby={legendId} className="flex flex-col">
         {question.options.map((option, index) => {
           const on = value.optionIds.includes(option.id);
@@ -270,10 +276,9 @@ const tileClassName = cn(
   "hoverable:hover:not-data-checked:edge-2 active:scale-[0.97] motion-reduce:active:scale-100",
   "data-checked:bg-primary data-checked:text-on-primary data-checked:shadow-none",
   "focus-visible:outline-2 focus-visible:outline-focus focus-visible:outline-offset-2",
-  "aria-invalid:edge-danger",
 );
 
-function NumberScale({ question, value, onValueChange, legendId, invalid }: ControlProps) {
+function NumberScale({ question, value, onValueChange, legendId }: ControlProps) {
   const picked = value.optionIds[0] ?? null;
   return (
     <div className="flex flex-col gap-2">
@@ -289,7 +294,6 @@ function NumberScale({ question, value, onValueChange, legendId, invalid }: Cont
             key={option.id}
             value={option.id}
             aria-label={labelOf(question, index)}
-            aria-invalid={invalid || undefined}
             className={tileClassName}
           >
             {option.label}
@@ -306,7 +310,7 @@ function NumberScale({ question, value, onValueChange, legendId, invalid }: Cont
   );
 }
 
-function Tiles({ question, value, onValueChange, legendId, invalid }: ControlProps) {
+function Tiles({ question, value, onValueChange, legendId }: ControlProps) {
   const picked = value.optionIds[0] ?? null;
   return (
     <RadioGroupPrimitive<string | null>
@@ -316,12 +320,7 @@ function Tiles({ question, value, onValueChange, legendId, invalid }: ControlPro
       className="grid grid-cols-2 gap-2 sm:max-w-sm"
     >
       {question.options.map((option) => (
-        <RadioPrimitive.Root
-          key={option.id}
-          value={option.id}
-          aria-invalid={invalid || undefined}
-          className={tileClassName}
-        >
+        <RadioPrimitive.Root key={option.id} value={option.id} className={tileClassName}>
           {option.label}
         </RadioPrimitive.Root>
       ))}
@@ -336,14 +335,14 @@ interface Item {
 }
 
 function OptionSearch(props: ControlProps) {
-  const { question, value, onValueChange, legendId, invalid } = props;
+  const { question, value, onValueChange, legendId } = props;
   const items: Item[] = question.options.map((o, index) => ({
     value: o.id,
     label: labelOf(question, index),
   }));
   const chosen = items.filter((item) => value.optionIds.includes(item.value));
   const trigger = (
-    <ComboboxTrigger aria-labelledby={legendId} aria-invalid={invalid || undefined}>
+    <ComboboxTrigger aria-labelledby={legendId}>
       <ComboboxValue>{() => namesOf(chosen, "Choose")}</ComboboxValue>
     </ComboboxTrigger>
   );
@@ -402,14 +401,7 @@ const namesOf = (items: readonly Item[], placeholder: string): ReactNode =>
     new Intl.ListFormat(undefined).format(items.map((i) => i.label))
   );
 
-function PeoplePicker({
-  question,
-  value,
-  onValueChange,
-  legendId,
-  invalid,
-  searchPeople,
-}: ControlProps) {
+function PeoplePicker({ question, value, onValueChange, legendId, searchPeople }: ControlProps) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const found = usePeopleSearch(searchPeople, query.trim(), open);
@@ -431,7 +423,7 @@ function PeoplePicker({
     }));
   const one = question.maxChoices === 1;
   const trigger = (
-    <ComboboxTrigger aria-labelledby={legendId} aria-invalid={invalid || undefined}>
+    <ComboboxTrigger aria-labelledby={legendId}>
       <ComboboxValue>
         {() => namesOf(chosen, one ? "Choose someone" : "Choose people")}
       </ComboboxValue>

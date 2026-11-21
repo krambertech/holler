@@ -1,22 +1,25 @@
 import {
   modeLabels,
   type RespondForm,
+  type RespondGiven,
   type RespondPerson,
   type RespondQuestion,
 } from "@holler/core";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { ExternalLink } from "lucide-react";
+import { Check, ExternalLink, Link2Off, Lock, Trash2 } from "lucide-react";
 import { type FormEvent, useEffect, useRef, useState } from "react";
 import { z } from "zod";
 import { ErrorState } from "@/components/error-state";
 import { Logo } from "@/components/logo";
 import { AnswerQuestion } from "@/components/respond/answer-question";
 import { RespondState } from "@/components/respond/respond-state";
+import { YourAnswers } from "@/components/respond/your-answers";
 import { Skeleton } from "@/components/skeleton";
+import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Chip } from "@/components/ui/chip";
-import { Plate } from "@/components/ui/plate";
+import { Plate, PlateRow } from "@/components/ui/plate";
 import { ApiError, api } from "@/lib/api";
 import { count, questionsLabel } from "@/lib/format";
 import { markdown } from "@/lib/markdown";
@@ -65,6 +68,7 @@ function Body({ form, id, link }: BodyProps) {
     if (error instanceof ApiError && (error.status === 403 || error.status === 400)) {
       return (
         <RespondState
+          icon={<Link2Off strokeWidth={2} />}
           title="This link does not work"
           description="It may have been changed on the way. Open the Holler again from your message in Slack."
         />
@@ -73,6 +77,7 @@ function Body({ form, id, link }: BodyProps) {
     if (error instanceof ApiError && error.status === 404) {
       return (
         <RespondState
+          icon={<Trash2 strokeWidth={2} />}
           title="This Holler is gone"
           description="Whoever sent it deleted it, so there is nothing to answer."
         />
@@ -87,42 +92,50 @@ function Body({ form, id, link }: BodyProps) {
     );
   }
   const data = form.data;
-  if (data.state === "answered") return <Answered holler={data.holler} />;
+  if (data.state === "answered") return <Answered holler={data.holler} given={data.given} />;
   if (data.state === "closed") return <Closed holler={data.holler} />;
   return <OpenForm form={data} id={id} link={link} />;
 }
 
 type HollerInfo = RespondForm["holler"];
 
-function Answered({ holler }: { holler: HollerInfo }) {
+function Answered({ holler, given }: { holler: HollerInfo; given: RespondGiven[] | null }) {
   useEffect(() => {
     window.scrollTo({ top: 0 });
   }, []);
   return (
     <RespondState
+      tone="answered"
+      icon={<Check strokeWidth={2} />}
       title="Thank you, your answers are in"
+      holler={holler}
       description={
         <>
           <p>
             {holler.anonymous
-              ? `Your name is not kept with your answers. ${holler.senderName} sees how many people answered, never who said what.`
+              ? `Your name is not kept with your answers, so ${holler.senderName} sees how many people answered, never who said what.`
               : `${holler.senderName} sees them with everyone else's.`}
           </p>
-          <p className="mt-1">You can close this page.</p>
+          <p>You can close this page.</p>
         </>
       }
-    />
+    >
+      {given && given.length > 0 && <YourAnswers given={given} />}
+    </RespondState>
   );
 }
 
 function Closed({ holler }: { holler: HollerInfo }) {
   return (
     <RespondState
+      tone="closed"
+      icon={<Lock strokeWidth={2} />}
       title="This Holler is closed"
+      holler={holler}
       description={
         holler.closesAt
-          ? `${holler.title} closed ${closesWhen(holler.closesAt, true)}, so it takes no more answers.`
-          : `${holler.title} takes no more answers.`
+          ? `It closed ${closesWhen(holler.closesAt, true)}, so it takes no more answers.`
+          : "It takes no more answers."
       }
     />
   );
@@ -232,46 +245,53 @@ function OpenForm({ form, id, link }: OpenFormProps) {
       : null;
 
   return (
-    <>
-      <Plate className="flex flex-col gap-3 px-6 py-6 sm:px-8 sm:py-7">
-        <p className="text-muted text-sm">{holler.senderName} sent you a Holler</p>
-        <h1 className="text-balance text-4xl tracking-title">{holler.title}</h1>
-        {holler.description.trim() && (
-          <div className="flex flex-col gap-3 text-pretty text-ink-2">
-            {markdown(holler.description)}
-          </div>
-        )}
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-muted text-sm">
-          <span>{modeLabels[holler.mode]}</span>
-          {questions.length > 0 && (
-            <>
-              <span aria-hidden="true">·</span>
-              <span>{questionsLabel(questions.length)}</span>
-            </>
-          )}
-          {holler.closesAt && (
-            <>
-              <span aria-hidden="true">·</span>
-              <span>Closes {closesWhen(holler.closesAt)}</span>
-            </>
-          )}
-          {holler.anonymous && (
-            <Chip variant="tint" className="ms-1">
-              Anonymous
-            </Chip>
-          )}
-        </div>
-        {holler.anonymous && (
-          <p className="text-muted text-sm">
-            Your name is not kept with your answers. {holler.senderName} sees how many people
-            answered, never who said what.
+    <form noValidate onSubmit={submit} className="flex flex-col gap-5">
+      <Plate>
+        <PlateRow className="flex flex-col gap-3 px-6 py-6 sm:px-8 sm:py-7">
+          <p className="flex items-center gap-2 text-muted text-sm">
+            <Avatar
+              size="md"
+              name={holler.senderName}
+              seed={holler.senderSlackUserId}
+              src={holler.senderAvatarUrl}
+            />
+            {holler.senderName} sent you a Holler
           </p>
-        )}
-      </Plate>
-
-      <form noValidate onSubmit={submit} className="flex flex-col gap-3">
+          <h1 className="text-balance text-4xl tracking-title">{holler.title}</h1>
+          {holler.description.trim() && (
+            <div className="flex flex-col gap-3 text-pretty text-ink-2">
+              {markdown(holler.description)}
+            </div>
+          )}
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-muted text-sm">
+            <span>{modeLabels[holler.mode]}</span>
+            {questions.length > 0 && (
+              <>
+                <span aria-hidden="true">·</span>
+                <span>{questionsLabel(questions.length)}</span>
+              </>
+            )}
+            {holler.closesAt && (
+              <>
+                <span aria-hidden="true">·</span>
+                <span>Closes {closesWhen(holler.closesAt)}</span>
+              </>
+            )}
+            {holler.anonymous && (
+              <Chip variant="tint" className="ms-1">
+                Anonymous
+              </Chip>
+            )}
+          </div>
+          {holler.anonymous && (
+            <p className="text-muted text-sm">
+              Your name is not kept with your answers. {holler.senderName} sees how many people
+              answered, never who said what.
+            </p>
+          )}
+        </PlateRow>
         {holler.mode === "chase" && holler.externalUrl && (
-          <Plate className="flex flex-col items-start gap-3 px-6 py-6 sm:px-8">
+          <PlateRow className="flex flex-col items-start gap-3 px-6 py-6 sm:px-8">
             <p className="text-ink-2">
               The form lives somewhere else. Fill it in there, then come back and say you did.
             </p>
@@ -279,10 +299,10 @@ function OpenForm({ form, id, link }: OpenFormProps) {
               Open the form
               <ExternalLink aria-hidden size={16} strokeWidth={2} />
             </Button>
-          </Plate>
+          </PlateRow>
         )}
         {questions.map((question) => (
-          <Plate key={question.id} className="px-6 py-6 sm:px-8">
+          <PlateRow key={question.id} className="px-6 py-6 sm:px-8 sm:py-7">
             <AnswerQuestion
               ref={(el) => {
                 if (el) refs.current.set(question.id, el);
@@ -296,15 +316,15 @@ function OpenForm({ form, id, link }: OpenFormProps) {
               error={problems[question.id]}
               searchPeople={searchPeople}
             />
-          </Plate>
+          </PlateRow>
         ))}
-        <SendBar
-          pending={send.isPending}
-          chase={holler.mode === "chase"}
-          message={failed ?? (waiting > 0 ? problemsLine(waiting, questions) : null)}
-        />
-      </form>
-    </>
+      </Plate>
+      <SendBar
+        pending={send.isPending}
+        chase={holler.mode === "chase"}
+        message={failed ?? (waiting > 0 ? problemsLine(waiting, questions) : null)}
+      />
+    </form>
   );
 }
 
@@ -323,13 +343,13 @@ function SendBar({
   message: string | null;
 }) {
   return (
-    <div className="mt-2 flex flex-col-reverse items-stretch gap-3 px-1 sm:flex-row sm:items-center sm:justify-end">
+    <div className="flex flex-col-reverse items-stretch gap-3 px-1 sm:flex-row sm:items-center sm:justify-end">
       {message && (
         <p role="alert" className="text-danger-ink text-sm sm:me-auto">
           {message}
         </p>
       )}
-      <Button type="submit" variant="primary" pending={pending} className="sm:min-w-40">
+      <Button type="submit" variant="primary" size="lg" pending={pending} className="sm:min-w-48">
         {chase ? "I submitted it" : "Send answers"}
       </Button>
     </div>
@@ -338,19 +358,19 @@ function SendBar({
 
 function FormSkeleton() {
   return (
-    <>
-      <Plate className="flex flex-col gap-3 px-6 py-7 sm:px-8">
+    <Plate>
+      <PlateRow className="flex flex-col gap-3 px-6 py-7 sm:px-8">
         <Skeleton className="h-4 w-40" />
         <Skeleton className="h-8 w-3/4" />
         <Skeleton className="h-4 w-56" />
-      </Plate>
+      </PlateRow>
       {[0, 1].map((n) => (
-        <Plate key={n} className="flex flex-col gap-3 px-6 py-6 sm:px-8">
+        <PlateRow key={n} className="flex flex-col gap-3 px-6 py-6 sm:px-8">
           <Skeleton className="h-5 w-1/2" />
           <Skeleton className="h-10 w-full" />
           <Skeleton className="h-10 w-full" />
-        </Plate>
+        </PlateRow>
       ))}
-    </>
+    </Plate>
   );
 }

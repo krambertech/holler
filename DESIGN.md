@@ -123,7 +123,7 @@ Numbers in tables and counts use `tabular`.
 
 | Component                         | File                          | Notes                                                                                        |
 | --------------------------------- | ----------------------------- | -------------------------------------------------------------------------------------------- |
-| `Button` | `components/ui/button.tsx` | `primary`, `secondary`, `ghost`; sizes `sm`, `md`, `icon-sm`, `icon`; `render` for links; `pending` blocks every further press |
+| `Button` | `components/ui/button.tsx` | `primary`, `secondary`, `ghost`; sizes `sm`, `md`, `lg`, `icon-sm`, `icon`; `render` for links; `pending` blocks every further press |
 | `Plate`, `PlateRow`, `PlateStrip` | `components/ui/plate.tsx`     | The surface system                                                                           |
 | `Chip`, `StatusChip`, `StatusDot` | `components/ui/chip.tsx`      | Pills; a status always has its word                                                          |
 | `Avatar`, `AvatarStack`           | `components/ui/avatar.tsx`    | Waiting people are greyed in a stack; the stack carries one `aria-label`                     |

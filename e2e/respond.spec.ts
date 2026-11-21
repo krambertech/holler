@@ -44,6 +44,7 @@ test("a recipient answers every question type, with a follow-up after some answe
   await expect(
     question(page, "Will you fly?").getByText("This question needs an answer."),
   ).toBeVisible();
+  await expect(page.locator("fieldset [aria-invalid=true]")).toHaveCount(0);
   await expectAccessible(page);
 
   const where = question(page, "Where would you rather go?");
@@ -82,6 +83,11 @@ test("a recipient answers every question type, with a follow-up after some answe
   await page.getByRole("button", { name: "Send answers" }).click();
   await expect(page.getByRole("heading", { name: "Thank you, your answers are in" })).toBeVisible();
   await expect(page.getByText("Mira sees them with everyone else's.")).toBeVisible();
+  const yours = page.locator("[data-slot=your-answers]");
+  await expect(yours.getByRole("heading", { name: "Your answers" })).toBeVisible();
+  await expect(yours.getByText("Helsinki", { exact: true })).toBeVisible();
+  await expect(yours.getByText("Close to everyone")).toBeVisible();
+  await expect(yours.getByText("Marta Kowalska")).toBeVisible();
   await expectAccessible(page);
 
   await page.reload();

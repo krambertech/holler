@@ -329,10 +329,20 @@ const respondHollerSchema = z.object({
   title: z.string(),
   description: z.string(),
   senderName: z.string(),
+  senderSlackUserId: z.string(),
+  senderAvatarUrl: z.string().nullable(),
   anonymous: z.boolean(),
   closesAt: timestamp.nullable(),
   externalUrl: z.string().nullable(),
 });
+
+const respondGivenSchema = z.object({
+  questionId: z.string(),
+  prompt: z.string(),
+  picks: z.array(z.string()),
+  note: z.string().nullable(),
+});
+export type RespondGiven = z.infer<typeof respondGivenSchema>;
 
 export const respondFormOutSchema = z.discriminatedUnion("state", [
   z.object({
@@ -340,7 +350,11 @@ export const respondFormOutSchema = z.discriminatedUnion("state", [
     holler: respondHollerSchema,
     questions: z.array(respondQuestionSchema),
   }),
-  z.object({ state: z.literal("answered"), holler: respondHollerSchema }),
+  z.object({
+    state: z.literal("answered"),
+    holler: respondHollerSchema,
+    given: z.array(respondGivenSchema).nullable(),
+  }),
   z.object({ state: z.literal("closed"), holler: respondHollerSchema }),
 ]);
 export type RespondForm = z.infer<typeof respondFormOutSchema>;
