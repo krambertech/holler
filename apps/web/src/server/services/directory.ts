@@ -1,5 +1,5 @@
 import { foldText, matchTier, parseSearch, rankMatches, type SearchQuery } from "@holler/core";
-import { and, asc, eq, inArray, isNull, or, type SQL, sql } from "@holler/core/db";
+import { and, asc, eq, inArray, isNull, type SQL, sql } from "@holler/core/db";
 import { schema } from "../db";
 import type { ServiceContext } from "./context";
 
@@ -61,7 +61,7 @@ function groupSends(ctx: ServiceContext, sender: string | null): SQL<number> {
   return sql<number>`(select count(*) from ${schema.hollers} h, json_each(h.audience, '$.groups') g where h.workspace_id = ${ctx.workspaceId} and h.creator_id = ${sender} and h.status != 'draft' and g.value = "slack_groups"."slack_id")`;
 }
 
-async function findPeople(ctx: ServiceContext, query: SearchQuery, where?: SQL) {
+function findPeople(ctx: ServiceContext, query: SearchQuery, limit = CANDIDATES) {
   const sender = senderOf(ctx);
   return ctx.db
     .select({ ...personColumns, sends: personSends(ctx, sender).as("sends") })
@@ -71,14 +71,14 @@ async function findPeople(ctx: ServiceContext, query: SearchQuery, where?: SQL) 
         eq(schema.slackPeople.workspaceId, ctx.workspaceId),
         eq(schema.slackPeople.isBot, false),
         eq(schema.slackPeople.isDeleted, false),
-        where ?? contains(schema.slackPeople.searchName, query.tokens),
+        contains(schema.slackPeople.searchName, query.tokens),
       ),
     )
     .orderBy(...ordering(schema.slackPeople.searchName, query.tokens))
-    .limit(CANDIDATES);
+    .limit(limit);
 }
 
-async function findGroups(ctx: ServiceContext, query: SearchQuery, where?: SQL) {
+function findGroups(ctx: ServiceContext, query: SearchQuery, limit = CANDIDATES) {
   const sender = senderOf(ctx);
   return ctx.db
     .select({ ...groupColumns, sends: groupSends(ctx, sender).as("sends") })
@@ -88,11 +88,11 @@ async function findGroups(ctx: ServiceContext, query: SearchQuery, where?: SQL) 
         eq(schema.slackGroups.workspaceId, ctx.workspaceId),
         query.scope === "channels" ? eq(schema.slackGroups.kind, "channel") : undefined,
         query.scope === "handles" ? eq(schema.slackGroups.kind, "usergroup") : undefined,
-        where ?? contains(schema.slackGroups.searchName, query.tokens),
+        contains(schema.slackGroups.searchName, query.tokens),
       ),
     )
     .orderBy(...ordering(schema.slackGroups.searchName, query.tokens))
-    .limit(CANDIDATES);
+    .limit(limit);
 }
 
 type FoundPerson = Awaited<ReturnType<typeof findPeople>>[number];
@@ -147,86 +147,81 @@ function namesWholeWords(names: readonly (string | null | undefined)[], tokens: 
 }
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-/** Terms per round trip, inside D1's 100 bound values: a phrase and an email or two each. */
+/** Terms per round trip: each name is two statements in one D1 batch. */
 const CHUNK = 25;
+/** Rows each term reads: enough to tell one match from several. */
+const PER_TERM = 20;
 
 /**
- * Pasted names, handles and emails, each matched to the one person or group it names. A term
- * matches when exactly one result is the best match for it; anything else comes back missed,
- * as matching nobody or several.
+ * Pasted names, handles and emails, each matched to the one person or group it names. Every term
+ * runs its own search, in any word order, so no term's matches crowd out another's. A term
+ * matches when exactly one result is its best whole-word match; anything else comes back
+ * missed, as matching nobody or several.
  */
 export async function resolveDirectory(ctx: ServiceContext, terms: readonly string[]) {
   const wanted = [...new Map(terms.map((term) => [foldText(term), term.trim()])).values()]
     .filter(Boolean)
     .slice(0, 100);
-  const people = new Map<string, FoundPerson & { email: string | null }>();
+  const people = new Map<string, FoundPerson>();
   const groups = new Map<string, FoundGroup>();
   const missed: { term: string; reason: "none" | "several" }[] = [];
 
   for (let i = 0; i < wanted.length; i += CHUNK) {
     const chunk = wanted.slice(i, i + CHUNK);
     const emails = chunk.filter((term) => EMAIL.test(term));
-    const names = chunk.filter((term) => !EMAIL.test(term)).map(parseSearch);
-    const phrases = names.map((q) => q.tokens.join(" ")).filter(Boolean);
-    const anyName = (column: SearchColumn) =>
-      phrases.length ? or(...phrases.map((p) => sql`instr(${column}, ${p}) > 0`)) : undefined;
-    const byEmail = emails.length
-      ? inArray(schema.slackPeople.email, [
-          ...new Set(emails.flatMap((e) => [e, e.toLocaleLowerCase()])),
-        ])
-      : undefined;
-    const any: SearchQuery = { tokens: [], scope: "all" };
-    const [foundPeople, foundGroups] = await Promise.all([
-      byEmail || phrases.length
-        ? ctx.db
-            .select({
-              ...personColumns,
-              email: schema.slackPeople.email,
-              sends: personSends(ctx, senderOf(ctx)),
-            })
-            .from(schema.slackPeople)
-            .where(
-              and(
-                eq(schema.slackPeople.workspaceId, ctx.workspaceId),
-                eq(schema.slackPeople.isBot, false),
-                eq(schema.slackPeople.isDeleted, false),
-                or(byEmail, anyName(schema.slackPeople.searchName)),
-              ),
-            )
-            .limit(500)
-        : [],
-      phrases.length ? findGroups(ctx, any, anyName(schema.slackGroups.searchName)) : [],
-    ]);
+    const names = chunk
+      .filter((term) => !EMAIL.test(term))
+      .map((term) => ({ term, query: parseSearch(term) }))
+      .filter(({ query }) => query.tokens.length > 0);
 
-    for (const term of chunk) {
-      if (EMAIL.test(term)) {
-        const folded = term.toLocaleLowerCase();
-        const hits = foundPeople.filter((p) => p.email?.toLocaleLowerCase() === folded);
-        const [hit] = hits;
-        if (hits.length === 1 && hit) people.set(hit.slackUserId, hit);
-        else missed.push({ term, reason: hits.length ? "several" : "none" });
-        continue;
+    const byEmail = emails.length
+      ? await ctx.db
+          .select({ ...personColumns, email: schema.slackPeople.email })
+          .from(schema.slackPeople)
+          .where(
+            and(
+              eq(schema.slackPeople.workspaceId, ctx.workspaceId),
+              eq(schema.slackPeople.isBot, false),
+              eq(schema.slackPeople.isDeleted, false),
+              inArray(schema.slackPeople.email, [
+                ...new Set(emails.flatMap((e) => [e, e.toLocaleLowerCase()])),
+              ]),
+            ),
+          )
+      : [];
+    for (const term of emails) {
+      const folded = term.toLocaleLowerCase();
+      const hits = byEmail.filter((p) => p.email?.toLocaleLowerCase() === folded);
+      const [hit] = hits;
+      if (hits.length === 1 && hit) {
+        const { email: _, ...person } = hit;
+        people.set(person.slackUserId, { ...person, sends: 0 });
+      } else {
+        missed.push({ term, reason: hits.length ? "several" : "none" });
       }
-      const query = parseSearch(term);
+    }
+
+    const found = await searchEach(
+      ctx,
+      names.map(({ query }) => query),
+    );
+    names.forEach(({ term, query }, index) => {
+      const { people: foundPeople, groups: foundGroups } = found[index] ?? {
+        people: [],
+        groups: [],
+      };
       const candidates = [
         ...(query.scope === "channels" ? [] : foundPeople).map((p) => ({
           kind: "person" as const,
           about: personNames(p),
           person: p,
         })),
-        ...foundGroups
-          .filter((g) =>
-            query.scope === "channels"
-              ? g.kind === "channel"
-              : query.scope === "handles"
-                ? g.kind === "usergroup"
-                : true,
-          )
-          .map((g) => ({ kind: "group" as const, about: groupNames(g), group: g })),
+        ...foundGroups.map((g) => ({ kind: "group" as const, about: groupNames(g), group: g })),
       ];
-      const ranked = rankMatches(candidates, query.tokens, (c) => c.about);
       // A paste names people in full: whole words only, so "ma" does not quietly add Marta.
-      const whole = ranked.filter((c) => namesWholeWords(c.about.names, query.tokens));
+      const whole = rankMatches(candidates, query.tokens, (c) => c.about).filter((c) =>
+        namesWholeWords(c.about.names, query.tokens),
+      );
       const [best, next] = whole;
       const tierOf = (c: (typeof whole)[number]) => matchTier(c.about.names, query.tokens);
       if (!best) {
@@ -238,13 +233,24 @@ export async function resolveDirectory(ctx: ServiceContext, terms: readonly stri
       } else {
         groups.set(best.group.slackId, best.group);
       }
-    }
+    });
   }
-  return {
-    people: [...people.values()].map(({ email: _, ...person }) => person),
-    groups: [...groups.values()],
-    missed,
-  };
+  return { people: [...people.values()], groups: [...groups.values()], missed };
+}
+
+/** Each query's own people and groups, in one D1 batch. */
+async function searchEach(ctx: ServiceContext, queries: readonly SearchQuery[]) {
+  const statements = queries.flatMap((query) => [
+    findPeople(ctx, query, PER_TERM),
+    findGroups(ctx, query, PER_TERM),
+  ]);
+  const [first, ...rest] = statements;
+  if (!first) return [];
+  const results = (await ctx.db.batch([first, ...rest])) as unknown[];
+  return queries.map((_, index) => ({
+    people: (results[index * 2] ?? []) as FoundPerson[],
+    groups: (results[index * 2 + 1] ?? []) as FoundGroup[],
+  }));
 }
 
 /**

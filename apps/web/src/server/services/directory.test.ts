@@ -188,6 +188,40 @@ describe("resolveDirectory", () => {
     expect(found.people[0]).not.toHaveProperty("email");
   });
 
+  it("matches the words of a name in any order", async () => {
+    const { ctx } = await workspace();
+    // Tomás has no handle, so his folded name holds the words only in their own order.
+    const found = await resolveDirectory(ctx, ["Ruiz Tomás"]);
+    expect(found.people.map((p) => p.slackUserId)).toEqual(["U5"]);
+  });
+
+  it("resolves each term on its own, however many rows another term matches", async () => {
+    const { ctx, workspaceId } = await workspace();
+    await runBatch(db, [
+      ...Array.from({ length: 70 }, (_, i) =>
+        db.insert(schema.slackGroups).values({
+          workspaceId,
+          slackId: `SD${i}`,
+          kind: "usergroup",
+          name: `Design ${String(i).padStart(2, "0")}`,
+          handle: `design-${i}`,
+          searchName: foldForSearch(`Design ${String(i).padStart(2, "0")}`, `design-${i}`),
+        }),
+      ),
+      db.insert(schema.slackGroups).values({
+        workspaceId,
+        slackId: "SZ",
+        kind: "usergroup",
+        name: "Zulu",
+        handle: "zulu",
+        searchName: foldForSearch("Zulu", "zulu"),
+      }),
+    ]);
+    const found = await resolveDirectory(ctx, ["@design", "@zulu"]);
+    expect(found.groups.map((g) => g.slackId)).toEqual(["SZ"]);
+    expect(found.missed).toEqual([{ term: "@design", reason: "several" }]);
+  });
+
   it("takes whole words only, a last name included", async () => {
     const { ctx } = await workspace();
     const found = await resolveDirectory(ctx, ["lon", "Ma", "Kask", "torres ana"]);
