@@ -4,7 +4,7 @@ Holler asks a team something in Slack, reminds the people who have not answered,
 
 ## The repo
 
-[`README.md`](README.md) has the layout and the commands. [`docs/stack.md`](docs/stack.md) has every technical decision with the alternative that lost; read it before proposing a different shape. [`PRODUCT.md`](PRODUCT.md) is who Holler is for. [`DESIGN.md`](DESIGN.md) holds the rules every screen follows. [`docs/data-model.md`](docs/data-model.md) explains the schema and its rules. [`docs/slack.md`](docs/slack.md) is the design of every Slack surface. [`DECISIONS.md`](DECISIONS.md) records the brand decisions and what is still open. [`docs/work-areas.md`](docs/work-areas.md) says which area owns which files while several sessions build in parallel.
+[`README.md`](README.md) has the layout and the commands. [`docs/stack.md`](docs/stack.md) has every technical decision with the alternative that lost; read it before proposing a different shape. [`PRODUCT.md`](PRODUCT.md) is who Holler is for. [`DESIGN.md`](DESIGN.md) holds the rules every screen follows. [`docs/data-model.md`](docs/data-model.md) explains the schema and its rules. [`docs/slack.md`](docs/slack.md) is the design of every Slack surface. [`DECISIONS.md`](DECISIONS.md) records the brand decisions and what is still open. [`docs/operations.md`](docs/operations.md) is where Holler runs, how it deploys and how previews work. [`docs/work-areas.md`](docs/work-areas.md) says which area owns which files while several sessions build in parallel.
 
 Two deployables: `apps/site` is the Astro public site at `holler.team`; `apps/web` is the Vite React product and Hono Worker at `app.holler.team`, which also serves the API, the Slack endpoints and the MCP server. `packages/core` is what the product's client and server both import: the Drizzle schema, Zod types for every payload, plan limits, the results maths and the reminder rhythm. `packages/design` holds the tokens, the logo geometry and the contrast pairs.
 
@@ -70,7 +70,7 @@ Edit the source and rerun the generator; never edit these by hand. `apps/web/mig
 
 ## Leave alone
 
-Production belongs to Kateryna. Deploys (`pnpm deploy`, `wrangler deploy`), `db:migrate:prod`, remote D1 commands, Wrangler secrets, pushing to `main` and merging pull requests are hers to run; `.claude/settings.json` denies them. Ask, and hand over the exact command. `apps/*/.dev.vars` holds real secrets and stays git-ignored.
+Merging to `main` deploys to production; [`docs/operations.md`](docs/operations.md) has how. Deploying by hand (`pnpm deploy`, `wrangler deploy`), remote D1 commands, Wrangler secrets, pushing to `main` and merging pull requests are Kateryna's; `.claude/settings.json` denies them. Ask, and hand over the exact command. `apps/*/.dev.vars` holds real secrets and stays git-ignored.
 
 ## Licence
 

@@ -1,4 +1,5 @@
 ---
+import { PRODUCT_URL } from "../urls";
 import Mark from "../components/Mark.astro";
 import "../styles.css";
 
@@ -7,7 +8,7 @@ interface Props {
   description: string;
 }
 const { title, description } = Astro.props;
-const app = "https://app.holler.team";
+const app = PRODUCT_URL;
 ---
 
 <!doctype html>

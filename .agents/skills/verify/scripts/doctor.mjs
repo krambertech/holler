@@ -11,8 +11,10 @@ const HELP = `Usage: node .agents/skills/verify/scripts/doctor.mjs [options]
 
   --url <origin>       Instance to check (default: http://localhost:5280)
   --sha <commit>       Commit it should serve (default: HEAD of this worktree)
+  --version <id>       Worker version a preview should serve, from its CI job summary
   --persona <name>     Persona /api/dev/state should report (default: lead)
   --session <file>     Playwright storage state holding the instance's cookies
+  --key <key>          A preview's DEV_ROUTES_KEY (default: $HOLLER_DEV_KEY)
 `;
 
 function git(args, cwd) {
@@ -48,13 +50,21 @@ function listenerDirectory(port) {
   return null;
 }
 
-function checkCommit(url, health, sha) {
+function checkCommit(url, health, sha, version) {
+  if (version) {
+    // A preview alias reports no tag at runtime; its version id names the build of one commit.
+    return health.version === version
+      ? { ok: true, detail: `serves version ${version.slice(0, 8)}` }
+      : { ok: false, detail: `serves version ${health.version}, expected ${version}` };
+  }
   if (health.tag) {
     return health.tag === sha
       ? { ok: true, detail: `serves ${sha.slice(0, 8)}` }
       : { ok: false, detail: `serves ${health.tag.slice(0, 8)}, expected ${sha.slice(0, 8)}` };
   }
-  if (!isLoopback(url)) return { ok: false, detail: "a remote Worker with no commit tag" };
+  if (!isLoopback(url)) {
+    return { ok: false, detail: "no commit tag; pass --version from the preview job summary" };
+  }
   // A local server has no tag; it serves whatever worktree it was started in.
   const port = new URL(url).port || "80";
   const dir = listenerDirectory(port);
@@ -77,16 +87,17 @@ function cookieFor(url, sessionFile) {
     .join("; ");
 }
 
-async function checkPersona(url, persona, cookie) {
+async function checkPersona(url, persona, cookie, key) {
   if (!cookie) return { ok: true, skipped: true, detail: "not checked without --session" };
   const response = await fetch(`${url}/api/dev/state`, {
-    headers: { cookie, accept: "application/json" },
+    headers: { cookie, accept: "application/json", ...(key ? { "x-holler-dev-key": key } : {}) },
     signal: AbortSignal.timeout(15_000),
   });
   if (response.status === 404) {
     return {
       ok: false,
-      detail: "/api/dev/state is off: set DEV_ROUTES=true in apps/web/.dev.vars",
+      detail:
+        "/api/dev/state is off: set DEV_ROUTES=true in apps/web/.dev.vars, or pass a preview's --key",
     };
   }
   if (!response.ok) return { ok: false, detail: `/api/dev/state answered HTTP ${response.status}` };
@@ -101,7 +112,7 @@ async function checkPersona(url, persona, cookie) {
 }
 
 /** Every check, in order; the instance is worth driving only when all pass. */
-export async function doctor({ url, sha, persona, cookie }) {
+export async function doctor({ url, sha, version, persona, cookie, key }) {
   const checks = [];
   let health;
   try {
@@ -111,8 +122,8 @@ export async function doctor({ url, sha, persona, cookie }) {
   const healthy = health?.ok === true && health.worker === "holler";
   checks.push({ name: "health", ok: healthy, detail: healthy ? url : `${url} is not Holler` });
   if (!healthy) return checks;
-  checks.push({ name: "commit", ...checkCommit(url, health, sha) });
-  checks.push({ name: "persona", ...(await checkPersona(url, persona, cookie)) });
+  checks.push({ name: "commit", ...checkCommit(url, health, sha, version) });
+  checks.push({ name: "persona", ...(await checkPersona(url, persona, cookie, key)) });
   return checks;
 }
 
@@ -129,8 +140,10 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     options: {
       url: { type: "string", default: "http://localhost:5280" },
       sha: { type: "string" },
+      version: { type: "string" },
       persona: { type: "string", default: "lead" },
       session: { type: "string" },
+      key: { type: "string" },
       help: { type: "boolean", short: "h" },
     },
   });
@@ -141,8 +154,10 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     const checks = await doctor({
       url,
       sha: values.sha ?? git(["rev-parse", "HEAD"]),
+      version: values.version,
       persona: values.persona,
       cookie: cookieFor(url, values.session),
+      key: values.key ?? process.env.HOLLER_DEV_KEY,
     });
     if (!report(checks)) process.exitCode = 1;
   }

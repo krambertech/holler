@@ -7,7 +7,7 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { jwt } from "better-auth/plugins/jwt";
 import type { Db } from "./db";
 import { schema } from "./db";
-import { type Bindings, devRoutesEnabled } from "./env";
+import { type Bindings, devRoutesEnabled, trustedOrigins } from "./env";
 import { fetchClientMetadataResource } from "./mcp/cimd-fetch";
 import { API_KEY_PERMISSION, MCP_MEMBER_CLAIM } from "./principal";
 import { applyPolarEvent, polarClient, polarConfigured } from "./services/billing";
@@ -28,6 +28,7 @@ export function createAuth(env: Bindings, db: Db) {
   return betterAuth({
     appName: "Holler",
     baseURL: env.PRODUCT_URL,
+    trustedOrigins: trustedOrigins(env),
     secret: env.BETTER_AUTH_SECRET,
     database: drizzleAdapter(db, { provider: "sqlite", schema }),
     secondaryStorage: {

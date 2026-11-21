@@ -1,6 +1,7 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "holler",
+  "account_id": "ce6da857aeb521aa2730848a194b8866",
   "main": "src/server/index.ts",
   "compatibility_date": "2026-11-01",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
@@ -21,10 +22,10 @@
     // Auth, the API, Slack and MCP route before any SPA fallback is served.
     "run_worker_first": true
   },
-  // Production values. Local dev overrides them from .dev.vars.
+  // Production values on workers.dev until holler.team is set up. Local dev overrides them from .dev.vars.
   "vars": {
-    "PUBLIC_SITE_URL": "https://holler.team",
-    "PRODUCT_URL": "https://app.holler.team",
+    "PUBLIC_SITE_URL": "https://holler-site.k-porshnieva.workers.dev",
+    "PRODUCT_URL": "https://holler.k-porshnieva.workers.dev",
     // `true` only locally and in tests: /api/dev/* and the dev personas.
     "DEV_ROUTES": "false"
   },
@@ -32,18 +33,48 @@
     {
       "binding": "DB",
       "database_name": "holler",
-      // Replaced by the real id once the database exists: `wrangler d1 create holler`.
-      "database_id": "00000000-0000-0000-0000-000000000000",
+      "database_id": "d203bd76-a782-4e15-af65-35da2ce39837",
       "migrations_dir": "migrations"
     }
   ],
   "kv_namespaces": [
     // Better Auth's secondary storage and rate limits.
-    { "binding": "SESSIONS", "id": "00000000000000000000000000000000" }
+    { "binding": "SESSIONS", "id": "a510c00d308b4dd48d7aea7f6ee037af" }
   ],
   "queues": {
     // One message per Slack send: invites, reminders, thank-yous, close notices. docs/stack.md, Sending.
     // The consumer is added with src/server/slack/queue.ts, which owns sending.
     "producers": [{ "binding": "SLACK_SENDS", "queue": "holler-slack-sends" }]
+  },
+  // `CLOUDFLARE_ENV=preview pnpm build` targets this. A separate Worker and database with the dev
+  // personas on, for pull request previews. Bindings are not inherited, so each is restated.
+  // DEV_ROUTES_KEY, a Worker secret, keeps /api/dev/* closed to anyone without it. docs/operations.md.
+  "env": {
+    "preview": {
+      "name": "holler-preview",
+      "workers_dev": true,
+      "preview_urls": true,
+      // No cron: previews close hollers through /api/dev/tick.
+      "triggers": { "crons": [] },
+      "version_metadata": { "binding": "CF_VERSION_METADATA" },
+      "vars": {
+        "PUBLIC_SITE_URL": "https://holler-site.k-porshnieva.workers.dev",
+        "PRODUCT_URL": "https://holler-preview.k-porshnieva.workers.dev",
+        "TRUSTED_ORIGINS": "https://*-holler-preview.k-porshnieva.workers.dev",
+        "DEV_ROUTES": "true"
+      },
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "holler-preview",
+          "database_id": "5ab12220-c2fc-47be-8827-794ce8fe972e",
+          "migrations_dir": "migrations"
+        }
+      ],
+      "kv_namespaces": [{ "binding": "SESSIONS", "id": "b324f9e8fc594b12a2dc747e78987ae6" }],
+      "queues": {
+        "producers": [{ "binding": "SLACK_SENDS", "queue": "holler-preview-slack-sends" }]
+      }
+    }
   }
 }
