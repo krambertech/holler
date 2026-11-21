@@ -15,6 +15,7 @@ import { menus } from "./parts/menus";
 import { navigation } from "./parts/navigation";
 import { overlays } from "./parts/overlays";
 import { people } from "./parts/people";
+import { questions } from "./parts/questions";
 import { settings } from "./parts/settings";
 import { states } from "./parts/states";
 import { surfaces } from "./parts/surfaces";
@@ -64,6 +65,7 @@ export const GROUPS: Group[] = [
   actions,
   forms,
   choosing,
+  questions,
   menus,
   overlays,
   states,

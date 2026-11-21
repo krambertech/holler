@@ -386,13 +386,27 @@ interface ItemProps extends Omit<React.HTMLAttributes<HTMLElement>, "id" | "chil
   children: React.ReactNode;
   /** A line under the name, for options that each need a sentence; the row grows to hold it. */
   description?: React.ReactNode | undefined;
+  /**
+   * Where the chosen row's tick goes. "start" keeps a slot on every row so choosing moves
+   * nothing; "end" puts it after the name, for rows that lead with their own icon.
+   */
+  indicator?: "start" | "end" | undefined;
 }
 
 /** The check leads, in a slot every row keeps, so choosing one moves nothing. */
 function SelectItem(props: ItemProps) {
   const { shape } = useSelect("SelectItem");
   if (shape === "touch") return <DrawerListItem {...props} />;
-  const { ref, value, disabled, className, children, description, ...rest } = props;
+  const {
+    ref,
+    value,
+    disabled,
+    className,
+    children,
+    description,
+    indicator = "start",
+    ...rest
+  } = props;
   return (
     <SelectPrimitive.Item
       data-slot="select-item"
@@ -407,17 +421,26 @@ function SelectItem(props: ItemProps) {
         className,
       )}
     >
-      <span className="flex size-4 shrink-0 items-center justify-center" aria-hidden="true">
-        <SelectPrimitive.ItemIndicator>
-          <Check className="size-4" />
-        </SelectPrimitive.ItemIndicator>
-      </span>
+      {indicator === "start" && (
+        <span className="flex size-4 shrink-0 items-center justify-center" aria-hidden="true">
+          <SelectPrimitive.ItemIndicator>
+            <Check className="size-4" />
+          </SelectPrimitive.ItemIndicator>
+        </span>
+      )}
       {description === undefined ? (
         <SelectPrimitive.ItemText className="flex-1 truncate">{children}</SelectPrimitive.ItemText>
       ) : (
         <span className="flex-1">
           <SelectPrimitive.ItemText className="block">{children}</SelectPrimitive.ItemText>
           <span className={descriptionClassName}>{description}</span>
+        </span>
+      )}
+      {indicator === "end" && (
+        <span className="flex size-4 shrink-0 items-center justify-center" aria-hidden="true">
+          <SelectPrimitive.ItemIndicator>
+            <Check className="size-4" />
+          </SelectPrimitive.ItemIndicator>
         </span>
       )}
     </SelectPrimitive.Item>
@@ -431,6 +454,7 @@ function DrawerListItem({
   className,
   children,
   description,
+  indicator = "start",
   ...props
 }: ItemProps) {
   const { value: current, setValue, setOpen } = useSelect("SelectItem");
@@ -465,15 +489,22 @@ function DrawerListItem({
       ),
       children: (
         <>
-          <span className="flex size-4 shrink-0 items-center justify-center" aria-hidden="true">
-            {selected && <Check className="size-4" />}
-          </span>
+          {indicator === "start" && (
+            <span className="flex size-4 shrink-0 items-center justify-center" aria-hidden="true">
+              {selected && <Check className="size-4" />}
+            </span>
+          )}
           {description === undefined ? (
             <span className="flex-1 truncate">{children}</span>
           ) : (
             <span className="flex-1">
               <span className="block">{children}</span>
               <span className={descriptionClassName}>{description}</span>
+            </span>
+          )}
+          {indicator === "end" && (
+            <span className="flex size-4 shrink-0 items-center justify-center" aria-hidden="true">
+              {selected && <Check className="size-4" />}
             </span>
           )}
         </>

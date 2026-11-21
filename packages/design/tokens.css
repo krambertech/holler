@@ -23,8 +23,8 @@
   --well: oklch(0.956 0.006 84.6);
   /* Progress tracks and the segmented control's own track. */
   --track: oklch(0.941 0.007 80.7);
-  /* A faint plum, so a hovered row or item never turns the same grey as the canvas. */
-  --hover: oklch(0.426 0.134 337.6 / 0.06);
+  /* A neutral veil of ink, a step darker than the canvas, so a hovered row never matches it and never reads as plum. */
+  --hover: oklch(0.2 0.01 53.5 / 0.055);
   --edge: oklch(0.2 0.029 60.5 / 0.1);
   /* A control's edge: one step firmer than a plate's, so a white button reads on a white plate. */
   --edge-2: oklch(0.2 0.029 60.5 / 0.14);
@@ -113,7 +113,7 @@
   --plate: oklch(0.232 0.019 334.1);
   --well: oklch(0.287 0.025 337.8);
   --track: oklch(0.3 0.025 337.8);
-  --hover: oklch(0.793 0.122 343 / 0.08);
+  --hover: oklch(1 0 0 / 0.07);
   --edge: oklch(1 0 0 / 0.08);
   --edge-2: oklch(1 0 0 / 0.16);
   --edge-3: oklch(1 0 0 / 0.28);
@@ -184,7 +184,7 @@
     --plate: oklch(0.232 0.019 334.1);
     --well: oklch(0.287 0.025 337.8);
     --track: oklch(0.3 0.025 337.8);
-    --hover: oklch(0.793 0.122 343 / 0.08);
+    --hover: oklch(1 0 0 / 0.07);
     --edge: oklch(1 0 0 / 0.08);
     --edge-2: oklch(1 0 0 / 0.16);
     --edge-3: oklch(1 0 0 / 0.28);
