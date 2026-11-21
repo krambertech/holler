@@ -130,6 +130,74 @@ export const questionTemplates: QuestionTemplate[] = [
     options: scale(["Never", "Rarely", "Sometimes", "Often", "Always"]),
   },
   {
+    id: "satisfaction",
+    label: "Satisfaction",
+    hint: "Dissatisfied–satisfied",
+    group: "scale",
+    type: "single",
+    style: "scale",
+    options: scale(["Very dissatisfied", "Dissatisfied", "Neutral", "Satisfied", "Very satisfied"]),
+  },
+  {
+    id: "importance",
+    label: "Importance",
+    hint: "Not important–extremely important",
+    group: "scale",
+    type: "single",
+    style: "scale",
+    options: scale([
+      "Not important",
+      "Slightly important",
+      "Moderately important",
+      "Very important",
+      "Extremely important",
+    ]),
+  },
+  {
+    id: "confidence",
+    label: "Confidence",
+    hint: "Not confident–extremely confident",
+    group: "scale",
+    type: "single",
+    style: "scale",
+    options: scale([
+      "Not confident",
+      "Slightly confident",
+      "Somewhat confident",
+      "Very confident",
+      "Extremely confident",
+    ]),
+  },
+  {
+    id: "ease",
+    label: "Ease",
+    hint: "Very difficult–very easy",
+    group: "scale",
+    type: "single",
+    style: "scale",
+    options: scale(["Very difficult", "Difficult", "Neutral", "Easy", "Very easy"]),
+  },
+  {
+    id: "quality",
+    label: "Quality",
+    hint: "Poor–excellent",
+    group: "scale",
+    type: "single",
+    style: "scale",
+    options: scale(["Poor", "Fair", "Good", "Very good", "Excellent"]),
+  },
+  {
+    id: "recommend",
+    label: "Recommend",
+    hint: "0–10, as in eNPS",
+    group: "scale",
+    type: "single",
+    style: "scale",
+    options: numberedScale(0, 10),
+    lowLabel: "Not at all likely",
+    highLabel: "Extremely likely",
+  },
+  {
     id: "scale",
     label: "Custom scale",
     group: "scale",
@@ -149,23 +217,23 @@ export function templateFor(question: {
   style: QuestionStyle;
   options: readonly { label: string }[];
   lowLabel?: string | null | undefined;
+  highLabel?: string | null | undefined;
 }): QuestionTemplate {
   const byId = (id: string) => questionTemplates.find((t) => t.id === id) as QuestionTemplate;
   if (question.type !== "single") return byId(question.type);
   if (question.style === "binary") return byId("binary");
   if (question.style !== "scale") return byId("single");
+  // A ready scale is its steps and its end words exactly; anything else is a custom scale.
   const labels = question.options.map((o) => o.label).join("|");
-  for (const id of ["agreement", "frequency"]) {
-    if (
-      labels ===
-      byId(id)
-        .options.map((o) => o.label)
-        .join("|")
-    )
-      return byId(id);
-  }
-  if (labels === "1|2|3|4|5" && question.lowLabel == null) return byId("rating");
-  return byId("scale");
+  const ready = questionTemplates.find(
+    (t) =>
+      t.group === "scale" &&
+      t.id !== "scale" &&
+      t.options.map((o) => o.label).join("|") === labels &&
+      (t.lowLabel ?? null) === (question.lowLabel ?? null) &&
+      (t.highLabel ?? null) === (question.highLabel ?? null),
+  );
+  return ready ?? byId("scale");
 }
 
 /**

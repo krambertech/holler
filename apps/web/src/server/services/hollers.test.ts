@@ -372,6 +372,13 @@ describe("sendProblems", () => {
     expect(fields({ mode: "pulse", title: "" })).toEqual([]);
   });
 
+  it("lets a custom scale go without words at both ends, but not at one", () => {
+    const scale = (lowLabel: string, highLabel: string) =>
+      question({ style: "scale", options: [{ label: "1" }, { label: "2" }], lowLabel, highLabel });
+    expect(fields({ questions: [scale("", "")] })).toEqual([]);
+    expect(fields({ questions: [scale("Calm", "")] })).toEqual(["questions.0.highLabel"]);
+  });
+
   it("caps a pulse at two questions", () => {
     expect(fields({ mode: "pulse", questions: [question(), question(), question()] })).toEqual([
       "questions",
