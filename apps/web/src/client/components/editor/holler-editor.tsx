@@ -38,7 +38,7 @@ import { filled } from "./questions/model";
 import { QuestionList } from "./questions/question-list";
 import { AudiencePicker, type AudienceSummary } from "./send/audience-picker";
 import type { DirectoryGroup, DirectoryPerson, DirectorySearch } from "./send/directory";
-import { SendBar } from "./send/send-bar";
+import { SendBar, SendButton } from "./send/send-bar";
 import {
   composeBarSummary,
   dayTime,
@@ -88,7 +88,7 @@ interface Props {
   now?: Date | undefined;
 }
 
-const noReach: Reach = { count: 0, exact: true, everyone: false };
+const noReach: Reach = { count: 0, exact: true, everyone: false, unknown: false };
 
 function SaveStatus({ state }: { state: SaveState }) {
   if (state === "idle") return null;
@@ -362,10 +362,10 @@ function HollerEditor({
     stage === "compose"
       ? {
           title: composeBar.title,
-          detail:
+          description:
             draft.mode === "chase"
               ? null
-              : (composeBar.detail ??
+              : (composeBar.description ??
                 (composeProblem && composeShown.length > 1
                   ? `${composeShown.length - 1} more to fix`
                   : null)),
@@ -376,7 +376,7 @@ function HollerEditor({
         }
       : {
           title: sendProblem ?? sendBar.title,
-          detail: sendProblem ? null : sendBar.detail,
+          description: sendProblem ? null : sendBar.description,
           tone: sendProblem ? ("danger" as const) : undefined,
           action: scheduled ? "Update schedule" : sendActionLabel(summary.reach, !!draft.sendAt),
           onAction: () => {
@@ -545,7 +545,7 @@ function HollerEditor({
           )}
           <AudiencePicker
             value={draft.audience}
-            onChange={(audience) => update({ audience })}
+            onValueChange={(audience) => update({ audience })}
             problem={problemFor(sendShown, "audience")}
             known={known}
             workspaceSize={workspaceSize}
@@ -554,7 +554,7 @@ function HollerEditor({
           />
           <SendSettings
             value={draft}
-            onChange={(patch) => update(patch)}
+            onValueChange={(fields) => update(fields)}
             problems={{
               sendAt: problemFor(sendShown, "sendAt"),
               closesAt: problemFor(sendShown, "closesAt"),
@@ -572,14 +572,22 @@ function HollerEditor({
       )}
 
       <SendBar
-        title={bar.title}
-        detail={bar.detail}
+        description={bar.description}
         tone={bar.tone}
-        action={bar.action}
-        onAction={bar.onAction}
-        pending={sending}
-        send={bar.send}
-      />
+        action={
+          stage === "send" && !scheduled ? (
+            <SendButton send={bar.send} onSend={bar.onAction} pending={sending}>
+              {bar.action}
+            </SendButton>
+          ) : (
+            <Button variant="primary" onClick={bar.onAction}>
+              {bar.action}
+            </Button>
+          )
+        }
+      >
+        {bar.title}
+      </SendBar>
 
       <TemplatesDialog open={templatesOpen} onOpenChange={setTemplatesOpen} onUse={pickTemplate} />
 

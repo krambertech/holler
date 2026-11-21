@@ -4,6 +4,7 @@ import {
   type HollerDraft,
   quietBeforeCloseHours,
   reminderTiers,
+  sameWallClockIn,
   workdayEndHour,
   workdayStartHour,
 } from "@holler/core";
@@ -32,7 +33,7 @@ export type SendFields = Pick<
 /** A line in a settings row: the fact, the words after it, and whether something is wrong. */
 export interface RowSummary {
   value: string;
-  detail: string;
+  description: string;
   tone?: "warning" | "danger" | undefined;
 }
 
@@ -128,7 +129,8 @@ export interface Landing {
 /**
  * When a scheduled Holler reaches each time zone. In your time everyone gets it at once; in each
  * person's time `sendAt` is read as a wall-clock time on the sender's clock, and each zone gets it
- * at that time on theirs. A person with no time zone counts as the sender's. Earliest first.
+ * at that time on theirs. A person with no time zone in Slack counts as UTC, as delivery does.
+ * Earliest first.
  */
 export function landingTimes({
   sendAt,
@@ -145,14 +147,14 @@ export function landingTimes({
 }): Landing[] {
   const merged = new Map<string, number>();
   for (const { zone, people } of zones) {
-    const key = isTimeZone(zone) ? zone : senderZone;
+    const key = isTimeZone(zone) ? zone : "UTC";
     merged.set(key, (merged.get(key) ?? 0) + people);
   }
-  const wall = wallClock(sendAt, senderZone);
   return (
     [...merged.entries()]
       .map(([zone, people]) => {
-        const at = inRecipientTimeZone ? atWallClock(wall, zone) : sendAt;
+        // The same conversion delivery makes, so the preview and the send agree.
+        const at = inRecipientTimeZone ? sameWallClockIn(sendAt, senderZone, zone) : sendAt;
         const hour = wallClock(at, zone).hour;
         return {
           zone,
@@ -277,24 +279,28 @@ export function sendSummary(
   const { sendAt } = fields;
   if (!sendAt) {
     return problem
-      ? { value: "Now", detail: problem, tone: "danger" }
-      : { value: "Now", detail: "when you press Send" };
+      ? { value: "Now", description: problem, tone: "danger" }
+      : { value: "Now", description: "when you press Send" };
   }
   const value = dayTime(sendAt, { locale, timeZone: senderZone });
-  if (problem) return { value, detail: problem, tone: "danger" };
+  if (problem) return { value, description: problem, tone: "danger" };
   if (!fields.sendInRecipientTimeZone) {
     if (sendAt.getTime() <= now.getTime()) {
-      return { value, detail: "That time has passed. Pick a later one.", tone: "danger" };
+      return { value, description: "That time has passed. Pick a later one.", tone: "danger" };
     }
-    return { value, detail: "your time" };
+    return { value, description: "your time" };
   }
   const window = sendWindow({ sendAt, inRecipientTimeZone: true, senderZone, zones, now });
   const all = landingTimes({ sendAt, inRecipientTimeZone: true, senderZone, zones, now });
   if (all.length > 0 && all.every((l) => l.passed)) {
-    return { value, detail: "That time has passed everywhere. Pick a later one.", tone: "danger" };
+    return {
+      value,
+      description: "That time has passed everywhere. Pick a later one.",
+      tone: "danger",
+    };
   }
   if (window.first.getTime() === window.last.getTime()) {
-    return { value, detail: "each person's own time" };
+    return { value, description: "each person's own time" };
   }
   const first = clockTime(window.first, { locale, timeZone: senderZone });
   const last = clockTime(window.last, { locale, timeZone: senderZone });
@@ -303,7 +309,7 @@ export function sendSummary(
     weekday(window.last, { locale, timeZone: senderZone })
       ? last
       : `${weekday(window.last, { locale, timeZone: senderZone })} ${last}`;
-  return { value, detail: `each person's own time, from ${first} to ${lastDay} yours` };
+  return { value, description: `each person's own time, from ${first} to ${lastDay} yours` };
 }
 
 export function closeSummary(
@@ -320,34 +326,34 @@ export function closeSummary(
   });
   const closes = closeTime(fields, window);
   const value = dayTime(closes, { locale, timeZone: senderZone });
-  if (problem) return { value, detail: problem, tone: "danger" };
+  if (problem) return { value, description: problem, tone: "danger" };
   if (fields.closesAt) {
     if (closes.getTime() <= now.getTime()) {
-      return { value, detail: "That time has passed. Pick a later one.", tone: "danger" };
+      return { value, description: "That time has passed. Pick a later one.", tone: "danger" };
     }
     if (closes.getTime() <= window.last.getTime()) {
-      const detail =
+      const description =
         window.first.getTime() === window.last.getTime()
           ? "That is before it sends. Pick a later time."
           : "That is before it reaches everyone. Pick a later time.";
-      return { value, detail, tone: "danger" };
+      return { value, description, tone: "danger" };
     }
     if (closes.getTime() - window.last.getTime() < HOUR) {
-      return { value, detail: "That leaves less than an hour to answer.", tone: "warning" };
+      return { value, description: "That leaves less than an hour to answer.", tone: "warning" };
     }
-    return { value, detail: "on the date you picked" };
+    return { value, description: "on the date you picked" };
   }
   const after = durationLabel(fields.closeAfterHours);
   if (window.first.getTime() !== window.last.getTime()) {
-    return { value, detail: `${after} after the last person gets it` };
+    return { value, description: `${after} after the last person gets it` };
   }
-  return { value, detail: `${after} after it sends` };
+  return { value, description: `${after} after it sends` };
 }
 
 export function answersSummary(anonymous: boolean): RowSummary {
   return anonymous
-    ? { value: "Anonymous", detail: "you see how many answered, never who" }
-    : { value: "Named", detail: "you see who said what" };
+    ? { value: "Anonymous", description: "you see how many answered, never who" }
+    : { value: "Named", description: "you see who said what" };
 }
 
 /**
@@ -355,7 +361,13 @@ export function answersSummary(anonymous: boolean): RowSummary {
  * results open. Nothing when nobody is chosen yet: the audience says so itself.
  */
 export function anonymousWarning(anonymous: boolean, reach: Reach): string | null {
-  if (!anonymous || reach.everyone || reach.count === 0 || reach.count >= anonymousThreshold) {
+  if (
+    !anonymous ||
+    reach.everyone ||
+    reach.unknown ||
+    reach.count === 0 ||
+    reach.count >= anonymousThreshold
+  ) {
     return null;
   }
   if (reach.count === 1) {
@@ -375,16 +387,19 @@ export function remindersBeforeClose(openHours: number): number {
 }
 
 export function remindersSummary(enabled: boolean, openHours: number): RowSummary {
-  if (!enabled) return { value: "Off", detail: "nobody gets a reminder" };
+  if (!enabled) return { value: "Off", description: "nobody gets a reminder" };
   switch (remindersBeforeClose(openHours)) {
     case 0:
-      return { value: "On", detail: "it closes before the first one is due" };
+      return { value: "On", description: "it closes before the first one is due" };
     case 1:
-      return { value: "On", detail: "a day in, to anyone still waiting" };
+      return { value: "On", description: "a day in, to anyone still waiting" };
     case 2:
-      return { value: "On", detail: "a day in and three days in, to anyone still waiting" };
+      return { value: "On", description: "a day in and three days in, to anyone still waiting" };
     default:
-      return { value: "On", detail: "a day, three days and five days in, to anyone still waiting" };
+      return {
+        value: "On",
+        description: "a day, three days and five days in, to anyone still waiting",
+      };
   }
 }
 
@@ -411,6 +426,8 @@ export interface Reach {
   /** False when groups may overlap or a size is unknown, so the count is a ceiling. */
   exact: boolean;
   everyone: boolean;
+  /** True when a chosen group's size is not known, so the count says nothing about the reach. */
+  unknown: boolean;
 }
 
 export function audienceReach(
@@ -419,19 +436,27 @@ export function audienceReach(
   workspaceSize: number | null | undefined,
 ): Reach {
   if (audience.everyone) {
-    return { count: workspaceSize ?? 0, exact: workspaceSize != null, everyone: true };
+    return {
+      count: workspaceSize ?? 0,
+      exact: workspaceSize != null,
+      everyone: true,
+      unknown: workspaceSize == null,
+    };
   }
-  const inGroups = audience.groups.reduce((sum, id) => sum + (sizeOf(id) ?? 0), 0);
+  const sizes = audience.groups.map((id) => sizeOf(id));
+  const inGroups = sizes.reduce<number>((sum, size) => sum + (size ?? 0), 0);
   return {
     count: audience.people.length + inGroups,
     exact: audience.groups.length === 0,
     everyone: false,
+    unknown: sizes.some((size) => size == null),
   };
 }
 
 /** "14 people", "About 40 people"; everyone reads as the workspace's size when it is known. */
 export function reachLabel(reach: Reach): string {
   if (reach.everyone) return reach.exact ? peopleLabel(reach.count) : "Everyone in the workspace";
+  if (reach.unknown) return "Size not known yet";
   if (reach.count === 0) return "Nobody yet";
   if (!reach.exact) {
     return reach.count === 1 ? "About 1 person" : `About ${count(reach.count)} people`;
@@ -439,17 +464,20 @@ export function reachLabel(reach: Reach): string {
   return peopleLabel(reach.count);
 }
 
-/** Sending to everyone or to more than 50 people asks once more. DECISIONS.md, Sending. */
+/**
+ * Sending to everyone or to more than 50 people asks once more. DECISIONS.md, Sending. A group of
+ * unknown size could be any size, so it asks too.
+ */
 export const bigSendAbove = 50;
 
 export function isBigSend(reach: Reach): boolean {
-  return reach.everyone || reach.count > bigSendAbove;
+  return reach.everyone || reach.unknown || reach.count > bigSendAbove;
 }
 
 /** The plum button names the reach: "Send to 14 people", "Schedule for everyone". */
 export function sendActionLabel(reach: Reach, scheduled: boolean): string {
   if (reach.everyone) return scheduled ? "Schedule for everyone" : "Send to everyone";
-  if (reach.count === 0) return scheduled ? "Schedule" : "Send";
+  if (reach.count === 0 || reach.unknown) return scheduled ? "Schedule" : "Send";
   if (reach.count === 1) return scheduled ? "Schedule for 1 person" : "Send to 1 person";
   const n = count(reach.count);
   return scheduled ? `Schedule for ${n} people` : `Send to ${n} people`;
@@ -486,12 +514,12 @@ export function composeBarSummary(
   surface: AnswerSurface,
   questionCount: number,
   problem?: string | undefined,
-): { title: string; detail: string | null; tone?: "danger" | undefined } {
-  if (problem) return { title: problem, detail: null, tone: "danger" };
-  if (surface.where === "chase") return { title: answeredInLabel(surface), detail: null };
+): { title: string; description: string | null; tone?: "danger" | undefined } {
+  if (problem) return { title: problem, description: null, tone: "danger" };
+  if (surface.where === "chase") return { title: answeredInLabel(surface), description: null };
   return {
     title: answeredInLabel(surface),
-    detail: questionCount === 0 ? "No questions yet" : questionsLabel(questionCount),
+    description: questionCount === 0 ? "No questions yet" : questionsLabel(questionCount),
   };
 }
 
@@ -500,7 +528,7 @@ export function sendBarSummary(
   reach: Reach,
   fields: Pick<SendFields, "sendAt" | "sendInRecipientTimeZone" | "closesAt" | "closeAfterHours">,
   context: SummaryContext,
-): { title: string; detail: string } {
+): { title: string; description: string } {
   const { now, senderZone, zones, locale } = context;
   const window = sendWindow({
     sendAt: fields.sendAt,
@@ -512,5 +540,5 @@ export function sendBarSummary(
   const closes = dayTime(closeTime(fields, window), { locale, timeZone: senderZone });
   const who = reach.everyone ? "Everyone" : reachLabel(reach);
   const when = fields.sendAt ? dayTime(fields.sendAt, { locale, timeZone: senderZone }) : "now";
-  return { title: `${who}, ${when}`, detail: `Closes ${closes}` };
+  return { title: `${who}, ${when}`, description: `Closes ${closes}` };
 }

@@ -13,7 +13,7 @@ import {
   personEntry,
   type Resolved,
 } from "@/components/editor/send/directory";
-import { SendBar } from "@/components/editor/send/send-bar";
+import { type BigSend, SendBar, SendButton } from "@/components/editor/send/send-bar";
 import {
   answeredInLabel,
   audienceReach,
@@ -31,7 +31,6 @@ import { SendSettings, type SendSettingsRow } from "@/components/editor/send/sen
 import { type PreviewHoller, SlackPreview } from "@/components/editor/send/slack-preview";
 import { useNow } from "@/components/editor/send/use-now";
 import { Button } from "@/components/ui/button";
-import { DateTimeInput } from "@/components/ui/date-time-input";
 import { Variants } from "../frame";
 import type { Group } from "./types";
 
@@ -151,13 +150,16 @@ const spread: Audience = {
 
 // ─── Dates that stay true whenever the page is opened ────────────────────────────────────────
 
-const DAY = 24 * 3600_000;
+const big: Audience = { people: ["U0JB", "U0AT"], groups: ["S0ENG", "C0GEN"], everyone: false };
+const everyone: Audience = { people: [], groups: [], everyone: true };
+
 function nextMonday(hour: number) {
   const at = new Date();
   at.setDate(at.getDate() + ((8 - at.getDay()) % 7 || 7));
   at.setHours(hour, 0, 0, 0);
   return at;
 }
+const DAY = 24 * 3600_000;
 const mondayNine = nextMonday(9);
 const fridayFive = new Date(nextMonday(17).getTime() + 4 * DAY);
 const yesterdayFive = (() => {
@@ -177,80 +179,6 @@ const defaults: SendFields = {
   tags: [],
 };
 
-// ─── Demos ───────────────────────────────────────────────────────────────────────────────────
-
-const isEmpty = (audience: Audience) =>
-  !audience.everyone && audience.people.length === 0 && audience.groups.length === 0;
-
-function PickerDemo({
-  start,
-  problem,
-  query,
-  paste,
-  searchWith = search,
-  withKnown = true,
-}: {
-  start: Audience;
-  problem?: string;
-  /** Typed already, with its matches listed. */
-  query?: string;
-  /** Pasted into the field once it mounts. */
-  paste?: string;
-  searchWith?: DirectorySearch;
-  /** Off, so the list has nothing to show before the search answers. */
-  withKnown?: boolean;
-}) {
-  const [empty, setEmpty] = useState(isEmpty(start));
-  const ref = useRef<HTMLElement>(null);
-  useEffect(() => {
-    const input = ref.current?.querySelector("input");
-    if (!paste || !input) return;
-    const data = new DataTransfer();
-    data.setData("text/plain", paste);
-    input.dispatchEvent(new ClipboardEvent("paste", { clipboardData: data, bubbles: true }));
-  }, [paste]);
-  return (
-    <AudiencePicker
-      ref={ref}
-      className="w-full"
-      defaultValue={start}
-      onChange={(next) => setEmpty(isEmpty(next))}
-      problem={empty ? problem : undefined}
-      known={withKnown ? known : undefined}
-      workspaceSize={WORKSPACE}
-      search={searchWith}
-      resolve={resolve}
-      defaultInputValue={query}
-      inline
-    />
-  );
-}
-
-function SettingsDemo({
-  start,
-  audience = four,
-  openRow,
-}: {
-  start: Partial<SendFields>;
-  audience?: Audience;
-  openRow?: SendSettingsRow;
-}) {
-  const [value, setValue] = useState<SendFields>({ ...defaults, ...start });
-  return (
-    <SendSettings
-      className="w-full"
-      value={value}
-      onChange={(patch) => setValue((v) => ({ ...v, ...patch }))}
-      reach={audienceReach(audience, sizeOf, WORKSPACE)}
-      zones={zonesOf(audience.people)}
-      tagSuggestions={["weekly", "design", "retro", "offsite", "hiring"]}
-      knownChannels={groups.filter((g) => g.kind === "channel")}
-      search={search}
-      defaultOpenRow={openRow}
-    />
-  );
-}
-
 const option = (label: string) => ({ label });
 const pulse: PreviewHoller = {
   mode: "pulse",
@@ -262,6 +190,18 @@ const pulse: PreviewHoller = {
       style: "plain",
       prompt: "How was your week?",
       options: ["Great", "Fine", "Rough"].map(option),
+    },
+  ],
+};
+const pulseWithNote: PreviewHoller = {
+  ...pulse,
+  questions: [
+    {
+      type: "single",
+      style: "plain",
+      prompt: "How was your week?",
+      options: ["Great", "Fine", "Rough"].map(option),
+      followUp: { prompt: "Anything behind that?", onlyAfter: null },
     },
   ],
 };
@@ -325,70 +265,165 @@ const chase: PreviewHoller = {
   questions: [],
 };
 
-function BarDemo({
-  stage,
-  audience,
+// ─── Demos ───────────────────────────────────────────────────────────────────────────────────
+
+/** The send a press would make, as the editor shell builds it from the draft. */
+function sendFor(audience: Audience, fields: SendFields): BigSend {
+  const chosen = [
+    ...audience.groups.map((id) => {
+      const group = groups.find((g) => g.slackId === id) as DirectoryGroup;
+      return { kind: "group" as const, id, group };
+    }),
+    ...audience.people.map((id) => {
+      const p = team.find((t) => t.slackUserId === id) as DirectoryPerson;
+      return { kind: "person" as const, id, person: p };
+    }),
+  ];
+  return {
+    title: "How was your week?",
+    reach: audienceReach(audience, sizeOf, WORKSPACE),
+    chosen,
+    when: fields.sendAt ? dayTime(fields.sendAt) : "now",
+    scheduled: Boolean(fields.sendAt),
+  };
+}
+
+function ComposeBarDemo({ problem }: { problem?: string }) {
+  const summary = composeBarSummary({ where: "dm" }, 1, problem);
+  return (
+    <SendBar
+      className="w-full"
+      description={summary.description}
+      tone={summary.tone}
+      action={<Button variant="primary">Next: who and when</Button>}
+    >
+      {summary.title}
+    </SendBar>
+  );
+}
+
+function SendBarDemo({
+  audience = four,
   start,
-  problem,
 }: {
-  stage: "compose" | "send";
-  audience?: Audience;
-  start?: Partial<SendFields>;
-  problem?: string;
+  audience?: Audience | undefined;
+  start?: Partial<SendFields> | undefined;
 }) {
   const [sent, setSent] = useState(false);
-  if (stage === "compose") {
-    const summary = composeBarSummary({ where: "dm" }, 1, problem);
-    return (
-      <SendBar
-        className="w-full"
-        title={summary.title}
-        detail={summary.detail}
-        tone={summary.tone}
-        action="Next: who and when"
-        onAction={() => {}}
-      />
-    );
-  }
   const fields = { ...defaults, ...start };
-  const who = audience ?? four;
-  const reach = audienceReach(who, sizeOf, WORKSPACE);
+  const send = sendFor(audience, fields);
   const context = {
     now: new Date(),
     senderZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     zones: [],
   };
-  const summary = sendBarSummary(reach, fields, context);
-  const chosen = [
-    ...who.groups.map((id) => {
-      const group = groups.find((g) => g.slackId === id) as DirectoryGroup;
-      return { kind: "group" as const, id, group };
-    }),
-    ...who.people.map((id) => {
-      const p = team.find((t) => t.slackUserId === id) as DirectoryPerson;
-      return { kind: "person" as const, id, person: p };
-    }),
-  ];
+  const summary = sendBarSummary(send.reach, fields, context);
   return (
     <SendBar
       className="w-full"
-      title={sent ? "Sent. It is on its way." : summary.title}
-      detail={summary.detail}
+      description={summary.description}
       secondary={
         <Button variant="ghost">
           <ArrowLeft aria-hidden />
           Compose
         </Button>
       }
-      action={sendActionLabel(reach, Boolean(fields.sendAt))}
-      onAction={() => setSent(true)}
-      send={{
-        title: "How was your week?",
-        reach,
-        chosen,
-        when: fields.sendAt ? dayTime(fields.sendAt) : "now",
-        scheduled: Boolean(fields.sendAt),
-      }}
+      action={
+        <SendButton send={send} onSend={() => setSent(true)}>
+          {sendActionLabel(send.reach, send.scheduled)}
+        </SendButton>
+      }
+    >
+      {sent ? "Sent. It is on its way." : summary.title}
+    </SendBar>
+  );
+}
+
+function SendButtonDemo({ audience, start }: { audience: Audience; start?: Partial<SendFields> }) {
+  const [sent, setSent] = useState(false);
+  const send = sendFor(audience, { ...defaults, ...start });
+  return (
+    <div className="flex items-center gap-3">
+      <SendButton send={send} onSend={() => setSent(true)}>
+        {sendActionLabel(send.reach, send.scheduled)}
+      </SendButton>
+      {sent && <span className="text-muted text-sm">Sent</span>}
+    </div>
+  );
+}
+
+/** Who, with the send refused while nobody is chosen: the editor shell owns the value. */
+const isEmpty = (audience: Audience) =>
+  !audience.everyone && audience.people.length === 0 && audience.groups.length === 0;
+
+function PickerDemo({
+  start,
+  problem,
+  query,
+  paste,
+  searchWith = search,
+  withKnown = true,
+}: {
+  start: Audience;
+  problem?: string;
+  /** Typed already, with its matches listed. */
+  query?: string;
+  /** Pasted into the field once it mounts. */
+  paste?: string;
+  searchWith?: DirectorySearch;
+  /** Off, so the list has nothing to show before the search answers. */
+  withKnown?: boolean;
+}) {
+  const [empty, setEmpty] = useState(isEmpty(start));
+  const ref = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const input = ref.current?.querySelector("input");
+    if (!paste || !input) return;
+    const data = new DataTransfer();
+    data.setData("text/plain", paste);
+    input.dispatchEvent(new ClipboardEvent("paste", { clipboardData: data, bubbles: true }));
+  }, [paste]);
+  return (
+    <AudiencePicker
+      ref={ref}
+      className="w-full"
+      defaultValue={start}
+      onValueChange={(next) => setEmpty(isEmpty(next))}
+      problem={empty ? problem : undefined}
+      known={withKnown ? known : undefined}
+      workspaceSize={WORKSPACE}
+      search={searchWith}
+      resolve={resolve}
+      defaultInputValue={query}
+      inline
+    />
+  );
+}
+
+function SettingsDemo({
+  start,
+  audience = four,
+  openRow,
+  timeZone,
+  channelsKnown = true,
+}: {
+  start: Partial<SendFields>;
+  audience?: Audience;
+  openRow?: SendSettingsRow;
+  timeZone?: string;
+  channelsKnown?: boolean;
+}) {
+  return (
+    <SendSettings
+      className="w-full"
+      defaultValue={{ ...defaults, ...start }}
+      defaultOpenRow={openRow}
+      reach={audienceReach(audience, sizeOf, WORKSPACE)}
+      zones={zonesOf(audience.people)}
+      tagSuggestions={["weekly", "design", "retro", "offsite", "hiring"]}
+      knownChannels={channelsKnown ? groups.filter((g) => g.kind === "channel") : []}
+      timeZone={timeZone}
+      search={search}
     />
   );
 }
@@ -397,19 +432,19 @@ function BarDemo({
 function SendStageDemo() {
   const [audience, setAudience] = useState<Audience>(four);
   const [fields, setFields] = useState<SendFields>(defaults);
+  const [openRow, setOpenRow] = useState<SendSettingsRow | null>(null);
   const [summary, setSummary] = useState<AudienceSummary | null>(null);
-  const reach: Reach = summary?.reach ?? { count: 0, exact: true, everyone: false };
+  const reach: Reach = summary?.reach ?? { count: 0, exact: true, everyone: false, unknown: false };
   const zones = summary?.zones ?? [];
   const now = useNow();
   const senderZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  const context = { now, senderZone, zones };
-  const bar = sendBarSummary(reach, fields, context);
+  const bar = sendBarSummary(reach, fields, { now, senderZone, zones });
   const window = sendWindow({
     sendAt: fields.sendAt,
     inRecipientTimeZone: fields.sendInRecipientTimeZone,
     senderZone,
     zones,
-    now: context.now,
+    now,
   });
   const empty = reach.count === 0 && !reach.everyone;
   return (
@@ -427,7 +462,7 @@ function SendStageDemo() {
         </div>
         <AudiencePicker
           value={audience}
-          onChange={setAudience}
+          onValueChange={setAudience}
           problem={empty ? "Choose who to send it to." : undefined}
           known={known}
           workspaceSize={WORKSPACE}
@@ -437,44 +472,55 @@ function SendStageDemo() {
         <SendSettings
           now={now}
           value={fields}
-          onChange={(patch) => setFields((v) => ({ ...v, ...patch }))}
+          onValueChange={setFields}
+          openRow={openRow}
+          onOpenRowChange={setOpenRow}
           reach={reach}
           zones={zones}
           tagSuggestions={["weekly", "design"]}
           search={search}
         />
         <SendBar
-          title={empty ? "Choose who to send it to." : bar.title}
           tone={empty ? "danger" : "neutral"}
-          detail={empty ? null : bar.detail}
+          description={empty ? null : bar.description}
           secondary={
             <Button variant="ghost">
               <ArrowLeft aria-hidden />
               Compose
             </Button>
           }
-          action={sendActionLabel(reach, Boolean(fields.sendAt))}
-          disabled={empty}
-          onAction={() => {}}
-          send={{
-            title: "How was your week?",
-            reach,
-            chosen: summary?.chosen ?? [],
-            when: fields.sendAt ? dayTime(fields.sendAt) : "now",
-            scheduled: Boolean(fields.sendAt),
-          }}
-        />
+          action={
+            <SendButton
+              disabled={empty}
+              onSend={() => {}}
+              send={{
+                title: "How was your week?",
+                reach,
+                chosen: summary?.chosen ?? [],
+                when: fields.sendAt ? dayTime(fields.sendAt) : "now",
+                scheduled: Boolean(fields.sendAt),
+              }}
+            >
+              {sendActionLabel(reach, Boolean(fields.sendAt))}
+            </SendButton>
+          }
+        >
+          {empty ? "Choose who to send it to." : bar.title}
+        </SendBar>
       </div>
     </div>
   );
 }
 
-function DateTimeDemo({ start, invalid }: { start: Date; invalid?: boolean }) {
-  const [value, setValue] = useState<Date | null>(start);
-  return <DateTimeInput value={value} onChange={setValue} min={new Date()} invalid={invalid} />;
-}
-
-function PreviewDemo({ holler, recipient }: { holler: PreviewHoller; recipient?: string }) {
+function PreviewDemo({
+  holler,
+  recipient,
+  defaultView,
+}: {
+  holler: PreviewHoller;
+  recipient?: string;
+  defaultView?: "dm" | "tap" | "reminder";
+}) {
   return (
     <SlackPreview
       holler={holler}
@@ -482,6 +528,7 @@ function PreviewDemo({ holler, recipient }: { holler: PreviewHoller; recipient?:
       recipient={recipient}
       closesAt={fridayFive}
       sendsAt={mondayNine}
+      defaultView={defaultView}
     />
   );
 }
@@ -583,7 +630,7 @@ export const sending: Group = {
       slug: "send-settings",
       name: "SendSettings",
       source: "components/editor/send/send-settings.tsx",
-      note: "One plate of facts. Change opens one row at a time; a switch row acts at once. A time that has passed or comes too early says so in its row.",
+      note: "One plate of facts. Change opens one row at a time; a switch row acts at once. A time that has passed or comes too early says so in its row. Give it value and onValueChange, and openRow and onOpenRowChange to open a row from outside, or leave either to the settings.",
       Demo: () => (
         <Variants
           stack
@@ -620,6 +667,28 @@ export const sending: Group = {
               render: () => <SettingsDemo start={{ anonymous: true }} audience={three} />,
             },
             {
+              label: "The sender in New York",
+              note: "The boxes and the summary both read New York's clock, whatever this browser's is.",
+              render: () => (
+                <SettingsDemo
+                  start={{ sendAt: mondayNine }}
+                  openRow="send"
+                  timeZone="America/New_York"
+                />
+              ),
+            },
+            {
+              label: "Announced in a channel not named yet",
+              note: "The draft has a channel the page has no name for: it still says so, and it can be cleared.",
+              render: () => (
+                <SettingsDemo
+                  start={{ announceChannelId: "C0LDS" }}
+                  openRow="announce"
+                  channelsKnown={false}
+                />
+              ),
+            },
+            {
               label: "Announced, tagged, no reminders",
               render: () => (
                 <SettingsDemo
@@ -640,7 +709,7 @@ export const sending: Group = {
       slug: "slack-preview",
       name: "SlackPreview",
       source: "components/editor/send/slack-preview.tsx",
-      note: "Preview opens what a recipient sees in Slack: the DM, what follows a tap, and a reminder, shaped by where it is answered. Drawn in Holler's neutrals, never Slack's brand.",
+      note: "Preview opens what a recipient sees in Slack: the DM, what follows a tap, and a reminder, shaped by where it is answered. Drawn in Holler's neutrals, never Slack's brand. Pass view and onViewChange to choose the message from outside.",
       Demo: () => (
         <Variants
           items={[
@@ -648,6 +717,13 @@ export const sending: Group = {
               label: surfaceNote(pulse),
               note: "A pulse of one single choice.",
               render: () => <PreviewDemo holler={pulse} recipient="Jonas" />,
+            },
+            {
+              label: "A follow-up note in the DM",
+              note: "After a tap asks for a note. Without a follow-up, it only says thanks.",
+              render: () => (
+                <PreviewDemo holler={pulseWithNote} recipient="Jonas" defaultView="tap" />
+              ),
             },
             {
               label: "Free text in the DM",
@@ -663,7 +739,10 @@ export const sending: Group = {
               note: "A note only after some answers.",
               render: () => <PreviewDemo holler={web} />,
             },
-            { label: "A chase", render: () => <PreviewDemo holler={chase} recipient="Kai" /> },
+            {
+              label: "A chase, opening on the reminder",
+              render: () => <PreviewDemo holler={chase} recipient="Kai" defaultView="reminder" />,
+            },
           ]}
         />
       ),
@@ -672,46 +751,29 @@ export const sending: Group = {
       slug: "send-bar",
       name: "SendBar",
       source: "components/editor/send/send-bar.tsx",
-      note: "The bar at the bottom of Compose and Send. It rides at the bottom of the window and settles at the end of the page, with a shadow only while it floats. The plum button names the reach; everyone or more than 50 people asks once more.",
+      note: "The bar at the bottom of Compose and Send. It rides at the bottom of the window and settles at the end of the page, with a shadow only while it floats. Its children say what the next press does, and the action slot holds the one plum button.",
       Demo: () => (
         <Variants
           stack
           items={[
-            { label: "On Compose", render: () => <BarDemo stage="compose" /> },
+            { label: "On Compose", render: () => <ComposeBarDemo /> },
             {
               label: "On Compose, with something to fix",
-              render: () => (
-                <BarDemo stage="compose" problem="Give the second question a prompt." />
-              ),
+              render: () => <ComposeBarDemo problem="Give the second question a prompt." />,
             },
-            { label: "On Send", render: () => <BarDemo stage="send" /> },
+            { label: "On Send", render: () => <SendBarDemo /> },
             {
               label: "On Send, scheduled",
-              render: () => <BarDemo stage="send" start={{ sendAt: mondayNine }} />,
+              render: () => <SendBarDemo start={{ sendAt: mondayNine }} />,
             },
             {
-              label: "A big send",
-              note: "Press it: everyone or more than 50 people asks once more.",
-              render: () => (
-                <BarDemo
-                  stage="send"
-                  audience={{
-                    people: ["U0JB", "U0AT"],
-                    groups: ["S0ENG", "C0GEN"],
-                    everyone: false,
-                  }}
-                />
-              ),
-            },
-            {
-              label: "Everyone",
-              render: () => (
-                <BarDemo stage="send" audience={{ people: [], groups: [], everyone: true }} />
-              ),
+              label: "On Send, a big send",
+              note: "Press it: more than 50 people asks once more.",
+              render: () => <SendBarDemo audience={big} />,
             },
             {
               label: "On a page",
-              note: "Scroll inside: the bar floats, then settles.",
+              note: "The whole Send stage. Scroll inside: the bar floats, then settles.",
               render: () => <SendStageDemo />,
             },
           ]}
@@ -719,15 +781,32 @@ export const sending: Group = {
       ),
     },
     {
-      slug: "date-time-input",
-      name: "DateTimeInput",
-      source: "components/ui/date-time-input.tsx",
-      note: "A day and a time with the browser's own pickers, which every keyboard, screen reader and phone knows.",
+      slug: "send-button",
+      name: "SendButton",
+      source: "components/editor/send/send-bar.tsx",
+      note: "The plum button that sends. Its words name the reach. Everyone, or more than 50 people, asks once more in a dialog that says who it reaches and when; a smaller send goes at once.",
       Demo: () => (
         <Variants
           items={[
-            { label: "A time", render: () => <DateTimeDemo start={mondayNine} /> },
-            { label: "Wrong", render: () => <DateTimeDemo start={yesterdayFive} invalid /> },
+            { label: "A few people", render: () => <SendButtonDemo audience={four} /> },
+            {
+              label: "More than 50",
+              note: "Groups make the count approximate, and the dialog says so.",
+              render: () => <SendButtonDemo audience={big} />,
+            },
+            {
+              label: "A channel of unknown size",
+              note: "Holler cannot tell how many it reaches, so it asks.",
+              render: () => (
+                <SendButtonDemo
+                  audience={{ people: ["U0JB"], groups: ["C0NEW"], everyone: false }}
+                />
+              ),
+            },
+            {
+              label: "Everyone, scheduled",
+              render: () => <SendButtonDemo audience={everyone} start={{ sendAt: mondayNine }} />,
+            },
           ]}
         />
       ),

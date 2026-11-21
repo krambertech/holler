@@ -1,6 +1,7 @@
 import { Search } from "lucide-react";
 import { useState } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
+import { DateTimeInput } from "@/components/ui/date-time-input";
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input, InputGroup } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -10,6 +11,20 @@ import { Variants } from "../frame";
 import type { Group } from "./types";
 
 const box = "w-full max-w-sm";
+
+const DAY = 24 * 3600_000;
+/** Next Monday at nine, so the demo never shows a time already gone. */
+const mondayNine = (() => {
+  const at = new Date();
+  at.setHours(9, 0, 0, 0);
+  at.setTime(at.getTime() + ((8 - at.getDay()) % 7 || 7) * DAY);
+  return at;
+})();
+const yesterdayFive = (() => {
+  const at = new Date(Date.now() - DAY);
+  at.setHours(17, 0, 0, 0);
+  return at;
+})();
 
 function SwitchDemo() {
   const [on, setOn] = useState(true);
@@ -101,6 +116,42 @@ export const forms: Group = {
                 <InputGroup className={box} icon={<Search strokeWidth={2} />}>
                   <Input aria-label="Search hollers" placeholder="Search by title" />
                 </InputGroup>
+              ),
+            },
+          ]}
+        />
+      ),
+    },
+    {
+      slug: "date-time-input",
+      name: "DateTimeInput",
+      source: "components/ui/date-time-input.tsx",
+      note: "A day and a time. The day is the browser's own date box; the time is Holler's list in 15-minute steps, and typing 9:30, 930 or 9pm picks any minute. Give it value and onValueChange, or a defaultValue to let it keep its own.",
+      Demo: () => (
+        <Variants
+          items={[
+            {
+              label: "A time",
+              render: () => <DateTimeInput defaultValue={mondayNine} min={new Date()} />,
+            },
+            {
+              label: "In a Field with an error",
+              note: "Both boxes take the Field's error as their description and turn red.",
+              render: () => (
+                <Field className={box}>
+                  <FieldLabel>Closes</FieldLabel>
+                  <DateTimeInput defaultValue={yesterdayFive} min={new Date()} />
+                  <FieldError>Pick a time after it sends.</FieldError>
+                </Field>
+              ),
+            },
+            {
+              label: "In a disabled Field",
+              render: () => (
+                <Field disabled className={box}>
+                  <FieldLabel>Sends</FieldLabel>
+                  <DateTimeInput defaultValue={mondayNine} />
+                </Field>
               ),
             },
           ]}

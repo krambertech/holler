@@ -20,6 +20,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/cn";
 import { count, peopleLabel } from "@/lib/format";
+import { useControllableState } from "@/lib/use-controllable-state";
 import {
   type DirectoryGroup,
   type DirectorySearch,
@@ -29,6 +30,7 @@ import {
 import {
   anonymousWarning,
   answersSummary,
+  atWallClock,
   clockTime,
   closePresets,
   closeSummary,
@@ -41,6 +43,7 @@ import {
   type SendFields,
   sendSummary,
   sendWindow,
+  wallClock,
   weekday,
   type ZoneCount,
   zoneName,
@@ -52,9 +55,26 @@ type Row = SendSettingsRow;
 
 const MAX_TAGS = 10;
 
-interface Props extends Omit<ComponentProps<"section">, "onChange"> {
-  value: SendFields;
-  onChange: (patch: Partial<SendFields>) => void;
+/** A new draft's settings: sent when you press Send, closed three days later, named, reminded. */
+const fresh: SendFields = {
+  sendAt: null,
+  sendInRecipientTimeZone: false,
+  closesAt: null,
+  closeAfterHours: 72,
+  anonymous: false,
+  remindersEnabled: true,
+  announceChannelId: null,
+  tags: [],
+};
+
+interface Props extends Omit<ComponentProps<"section">, "defaultValue"> {
+  /**
+   * The draft's settings. Leave undefined to let the rows keep their own, starting at
+   * `defaultValue`. A draft with more fields than these fits; `onValueChange` hands it back whole.
+   */
+  value?: SendFields | undefined;
+  defaultValue?: SendFields | undefined;
+  onValueChange?: ((value: SendFields) => void) | undefined;
   /** The server's word on a field, beside the row it is about. */
   problems?: { sendAt?: string | undefined; closesAt?: string | undefined } | undefined;
   /** Who it reaches, from the AudiencePicker, for the anonymous warning. */
@@ -71,20 +91,57 @@ interface Props extends Omit<ComponentProps<"section">, "onChange"> {
   now?: Date | undefined;
   /** The sender's time zone; this browser's by default. */
   timeZone?: string | undefined;
-  /** A row to show open at first, such as Closes when a send was refused over its close time. */
-  defaultOpenRow?: Row | undefined;
+  /**
+   * The open row, such as Closes when a send was refused over its close time. Leave undefined to
+   * let the rows open and shut themselves, starting at `defaultOpenRow`.
+   */
+  openRow?: Row | null | undefined;
+  defaultOpenRow?: Row | null | undefined;
+  onOpenRowChange?: ((row: Row | null) => void) | undefined;
 }
 
-/** Tomorrow at the start of the working day, on this browser's clock. */
-function tomorrowMorning(now: Date): Date {
-  return new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, workdayStartHour, 0);
+/** Tomorrow at the start of the working day, on the sender's clock. */
+function tomorrowMorning(now: Date, zone: string): Date {
+  const today = wallClock(now, zone);
+  const tomorrow = new Date(Date.UTC(today.year, today.month - 1, today.day + 1));
+  return atWallClock(
+    {
+      year: tomorrow.getUTCFullYear(),
+      month: tomorrow.getUTCMonth() + 1,
+      day: tomorrow.getUTCDate(),
+      hour: workdayStartHour,
+      minute: 0,
+    },
+    zone,
+  );
 }
 
-function nextWholeHour(at: Date): Date {
-  const next = new Date(at);
-  next.setMinutes(0, 0, 0);
-  if (next.getTime() < at.getTime()) next.setHours(next.getHours() + 1);
-  return next;
+/** The first whole hour on the sender's clock at or after `at`. */
+function nextWholeHour(at: Date, zone: string): Date {
+  const next = atWallClock({ ...wallClock(at, zone), minute: 0 }, zone);
+  return next.getTime() < at.getTime() ? new Date(next.getTime() + 3_600_000) : next;
+}
+
+/*
+ * The browser's date and time pickers read and write this browser's clock. These carry a time
+ * across: the picker shows the sender's wall-clock time, and what is picked is read on it.
+ */
+function toPicker(at: Date, zone: string): Date {
+  const wall = wallClock(at, zone);
+  return new Date(wall.year, wall.month - 1, wall.day, wall.hour, wall.minute);
+}
+
+function fromPicker(picked: Date, zone: string): Date {
+  return atWallClock(
+    {
+      year: picked.getFullYear(),
+      month: picked.getMonth() + 1,
+      day: picked.getDate(),
+      hour: picked.getHours(),
+      minute: picked.getMinutes(),
+    },
+    zone,
+  );
 }
 
 // ─── A row ───────────────────────────────────────────────────────────────────────────────────
@@ -97,7 +154,7 @@ function Fact({ summary, value }: { summary: RowSummary; value?: ReactNode }) {
     <span className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5">
       <span className="font-normal text-ink tabular">{value ?? summary.value}</span>
       <span className={cn("text-sm", summary.tone === "danger" ? "text-danger-ink" : "text-muted")}>
-        {summary.detail}
+        {summary.description}
       </span>
     </span>
   );
@@ -282,7 +339,7 @@ function LandingPreview({
       )}
       {inRecipientTimeZone && noZone && (
         <p className="text-muted">
-          Anyone with no time zone in Slack gets it at {clockTime(sendAt, yours)} your time.
+          Anyone with no time zone in Slack gets it at {clockTime(sendAt, yours)} UTC.
         </p>
       )}
     </div>
@@ -454,8 +511,9 @@ function TagEditor({
  * Each row reads as a fact; Change opens one row at a time, so the defaults need no clicks.
  */
 function SendSettings({
-  value,
-  onChange,
+  value: valueProp,
+  defaultValue = fresh,
+  onValueChange,
   problems,
   reach,
   zones = [],
@@ -464,21 +522,37 @@ function SendSettings({
   search = searchDirectory,
   now: fixedNow,
   timeZone,
-  defaultOpenRow,
+  openRow,
+  defaultOpenRow = null,
+  onOpenRowChange,
   className,
   ...props
 }: Props) {
+  const [value, setValue] = useControllableState({
+    value: valueProp,
+    defaultValue,
+    onChange: onValueChange,
+  });
+  const onChange = (patch: Partial<SendFields>) => setValue({ ...value, ...patch });
   const headingId = useId();
   const now = useNow(fixedNow);
   const senderZone = timeZone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
   const context = { now, senderZone, zones };
-  const [open, setOpen] = useState<Row | null>(defaultOpenRow ?? null);
-  const toggle = (row: Row) => setOpen((current) => (current === row ? null : row));
+  const [open, setOpen] = useControllableState<Row | null>({
+    value: openRow,
+    defaultValue: defaultOpenRow,
+    onChange: onOpenRowChange,
+  });
+  const toggle = (row: Row) => setOpen(open === row ? null : row);
 
   const [channels, setChannels] = useState(
     () => new Map(knownChannels.map((c) => [c.slackId, c] as const)),
   );
-  const channel = value.announceChannelId ? (channels.get(value.announceChannelId) ?? null) : null;
+  const announceId = value.announceChannelId;
+  // Picked channels first, then what the caller knows, which may arrive after the first render.
+  const channel = announceId
+    ? (channels.get(announceId) ?? knownChannels.find((c) => c.slackId === announceId) ?? null)
+    : null;
 
   const send = sendSummary(value, context, problems?.sendAt);
   const close = closeSummary(value, context, problems?.closesAt);
@@ -512,15 +586,16 @@ function SendSettings({
           action={open === "send" ? "Done" : value.sendAt ? "Change" : "Send later"}
           open={open === "send"}
           onToggle={() => {
-            if (!value.sendAt && open !== "send") onChange({ sendAt: tomorrowMorning(now) });
+            if (!value.sendAt && open !== "send")
+              onChange({ sendAt: tomorrowMorning(now, senderZone) });
             toggle("send");
           }}
         >
           <DateTimeInput
-            value={value.sendAt}
-            min={now}
-            onChange={(sendAt) => onChange({ sendAt })}
-            invalid={send.tone === "danger"}
+            value={value.sendAt && toPicker(value.sendAt, senderZone)}
+            min={toPicker(now, senderZone)}
+            onValueChange={(picked) => onChange({ sendAt: fromPicker(picked, senderZone) })}
+            aria-invalid={send.tone === "danger" || undefined}
           />
           <RadioGroup
             aria-label="Whose clock it sends by"
@@ -576,7 +651,7 @@ function SendSettings({
             value={isPreset || closePick === "fixed" ? closePick : ""}
             onValueChange={(next) => {
               if (next === "fixed") {
-                onChange({ closesAt: nextWholeHour(closeTime(value, window)) });
+                onChange({ closesAt: nextWholeHour(closeTime(value, window), senderZone) });
               } else {
                 onChange({ closesAt: null, closeAfterHours: Number(next) });
               }
@@ -600,10 +675,10 @@ function SendSettings({
           </RadioGroup>
           {value.closesAt && (
             <DateTimeInput
-              value={value.closesAt}
-              min={value.sendAt ?? now}
-              onChange={(closesAt) => onChange({ closesAt })}
-              invalid={close.tone === "danger"}
+              value={toPicker(value.closesAt, senderZone)}
+              min={toPicker(value.sendAt ?? now, senderZone)}
+              onValueChange={(picked) => onChange({ closesAt: fromPicker(picked, senderZone) })}
+              aria-invalid={close.tone === "danger" || undefined}
             />
           )}
         </OpenRow>
@@ -637,11 +712,15 @@ function SendSettings({
         <OpenRow
           label="Announce"
           summary={
-            channel
-              ? { value: `#${channel.name}`, detail: "with a live count of answers" }
-              : { value: "Nowhere", detail: "or post a live count in a channel" }
+            announceId
+              ? {
+                  // Named once Holler knows the channel; the setting shows either way.
+                  value: channel ? `#${channel.name}` : "A channel",
+                  description: "with a live count of answers",
+                }
+              : { value: "Nowhere", description: "or post a live count in a channel" }
           }
-          action={open === "announce" ? "Done" : channel ? "Change" : "Pick a channel"}
+          action={open === "announce" ? "Done" : announceId ? "Change" : "Pick a channel"}
           open={open === "announce"}
           onToggle={() => toggle("announce")}
         >
@@ -657,7 +736,7 @@ function SendSettings({
               onChange({ announceChannelId: next.slackId });
             }}
           />
-          {channel && (
+          {announceId && (
             <div>
               <Button
                 variant="ghost"
@@ -678,7 +757,7 @@ function SendSettings({
           label="Tags"
           summary={{
             value: "None",
-            detail: value.tags.length > 0 ? "" : "to find it later on Home",
+            description: value.tags.length > 0 ? "" : "to find it later on Home",
           }}
           value={
             open === "tags" && value.tags.length > 0 ? (

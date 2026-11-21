@@ -77,10 +77,16 @@ describe("landingTimes", () => {
     // 03:00 in New York, 17:00 in Tokyo, 09:00 in Berlin.
     expect(byZone["America/New_York"]?.outsideWorkday).toBe(true);
     expect(byZone["Asia/Tokyo"]?.outsideWorkday).toBe(false);
-    // The person with no zone counts as the sender's.
-    expect(byZone["Europe/Berlin"]).toMatchObject({ people: 9, yours: true });
+    // The person with no zone counts as UTC, as delivery does.
+    expect(byZone["Europe/Berlin"]).toMatchObject({ people: 8, yours: true });
+    expect(byZone.UTC).toMatchObject({ people: 1, yours: false });
     // At one moment, west to east, so the local times read in clock order.
-    expect(rows.map((r) => r.zone)).toEqual(["America/New_York", "Europe/Berlin", "Asia/Tokyo"]);
+    expect(rows.map((r) => r.zone)).toEqual([
+      "America/New_York",
+      "UTC",
+      "Europe/Berlin",
+      "Asia/Tokyo",
+    ]);
   });
 
   it("in each person's time, reaches each zone at 09:00 on its clock, earliest first", () => {
@@ -88,6 +94,8 @@ describe("landingTimes", () => {
     expect(rows.map((r) => [r.zone, r.at.toISOString()])).toEqual([
       ["Asia/Tokyo", "2025-11-24T00:00:00.000Z"],
       ["Europe/Berlin", "2025-11-24T08:00:00.000Z"],
+      // No zone in Slack: 09:00 UTC, the instant delivery's sameWallClockIn picks.
+      ["UTC", "2025-11-24T09:00:00.000Z"],
       ["America/New_York", "2025-11-24T14:00:00.000Z"],
     ]);
     expect(rows.some((r) => r.passed)).toBe(false);
@@ -103,14 +111,14 @@ describe("landingTimes", () => {
 
 describe("sendSummary", () => {
   it("sends now by default", () => {
-    expect(sendSummary(fields, ctx)).toEqual({ value: "Now", detail: "when you press Send" });
+    expect(sendSummary(fields, ctx)).toEqual({ value: "Now", description: "when you press Send" });
   });
 
   it("says a scheduled time in the sender's zone", () => {
     const sendAt = new Date("2025-11-24T08:00:00Z");
     expect(sendSummary({ ...fields, sendAt }, ctx)).toEqual({
       value: "Mon 24 Nov, 09:00",
-      detail: "your time",
+      description: "your time",
     });
   });
 
@@ -129,7 +137,7 @@ describe("sendSummary", () => {
       sendSummary({ ...fields, sendAt, sendInRecipientTimeZone: true }, { ...ctx, zones }),
     ).toEqual({
       value: "Mon 24 Nov, 09:00",
-      detail: "each person's own time, from 10:00 to 15:00 yours",
+      description: "each person's own time, from 10:00 to 15:00 yours",
     });
   });
 
@@ -142,7 +150,7 @@ describe("closeSummary", () => {
   it("closes a preset after it sends", () => {
     expect(closeSummary(fields, ctx)).toEqual({
       value: "Mon 24 Nov, 10:00",
-      detail: "3 days after it sends",
+      description: "3 days after it sends",
     });
   });
 
@@ -155,7 +163,7 @@ describe("closeSummary", () => {
     );
     expect(summary).toEqual({
       value: "Tue 25 Nov, 15:00",
-      detail: "1 day after the last person gets it",
+      description: "1 day after the last person gets it",
     });
   });
 
@@ -163,7 +171,7 @@ describe("closeSummary", () => {
     const past = closeSummary({ ...fields, closesAt: new Date("2025-11-20T17:00:00Z") }, ctx);
     expect(past).toMatchObject({
       tone: "danger",
-      detail: "That time has passed. Pick a later one.",
+      description: "That time has passed. Pick a later one.",
     });
 
     const sendAt = new Date("2025-11-24T08:00:00Z");
@@ -173,14 +181,14 @@ describe("closeSummary", () => {
     );
     expect(early).toMatchObject({
       tone: "danger",
-      detail: "That is before it sends. Pick a later time.",
+      description: "That is before it sends. Pick a later time.",
     });
 
     const soon = closeSummary({ ...fields, closesAt: new Date("2025-11-21T09:30:00Z") }, ctx);
     expect(soon.tone).toBe("warning");
 
     const fine = closeSummary({ ...fields, closesAt: new Date("2025-11-28T16:00:00Z") }, ctx);
-    expect(fine).toEqual({ value: "Fri 28 Nov, 17:00", detail: "on the date you picked" });
+    expect(fine).toEqual({ value: "Fri 28 Nov, 17:00", description: "on the date you picked" });
   });
 });
 
@@ -206,11 +214,11 @@ describe("durations and reminders", () => {
   it("says the rhythm in plain words", () => {
     expect(remindersSummary(false, 168)).toEqual({
       value: "Off",
-      detail: "nobody gets a reminder",
+      description: "nobody gets a reminder",
     });
-    expect(remindersSummary(true, 24).detail).toBe("it closes before the first one is due");
-    expect(remindersSummary(true, 72).detail).toBe("a day in, to anyone still waiting");
-    expect(remindersSummary(true, 168).detail).toBe(
+    expect(remindersSummary(true, 24).description).toBe("it closes before the first one is due");
+    expect(remindersSummary(true, 72).description).toBe("a day in, to anyone still waiting");
+    expect(remindersSummary(true, 168).description).toBe(
       "a day, three days and five days in, to anyone still waiting",
     );
   });
@@ -226,15 +234,24 @@ describe("reach", () => {
       sizeOf,
       200,
     );
-    expect(people).toEqual({ count: 2, exact: true, everyone: false });
+    expect(people).toEqual({ count: 2, exact: true, everyone: false, unknown: false });
     expect(reachLabel(people)).toBe("2 people");
 
     const groups = audienceReach(
-      { people: ["U1", "U2", "U3"], groups: ["S_DESIGN", "C_GENERAL"], everyone: false },
+      { people: ["U1", "U2", "U3"], groups: ["S_DESIGN"], everyone: false },
       sizeOf,
       200,
     );
-    expect(groups).toEqual({ count: 14, exact: false, everyone: false });
+    expect(groups).toEqual({ count: 14, exact: false, everyone: false, unknown: false });
+    // A channel Holler has no size for yet: the count says nothing, so it asks before sending.
+    const unsized = audienceReach(
+      { people: ["U1"], groups: ["C_GENERAL"], everyone: false },
+      sizeOf,
+      200,
+    );
+    expect(unsized).toEqual({ count: 1, exact: false, everyone: false, unknown: true });
+    expect(reachLabel(unsized)).toBe("Size not known yet");
+    expect(sendActionLabel(unsized, false)).toBe("Send");
     expect(reachLabel(groups)).toBe("About 14 people");
   });
 
@@ -247,31 +264,41 @@ describe("reach", () => {
   });
 
   it("asks once more before everyone or more than 50 people", () => {
-    expect(isBigSend({ count: 50, exact: true, everyone: false })).toBe(false);
-    expect(isBigSend({ count: 51, exact: false, everyone: false })).toBe(true);
-    expect(isBigSend({ count: 3, exact: true, everyone: true })).toBe(true);
+    expect(isBigSend({ count: 50, exact: true, everyone: false, unknown: false })).toBe(false);
+    // A group of unknown size could be any size, so it asks.
+    expect(isBigSend({ count: 2, exact: false, everyone: false, unknown: true })).toBe(true);
+    expect(isBigSend({ count: 51, exact: false, everyone: false, unknown: false })).toBe(true);
+    expect(isBigSend({ count: 3, exact: true, everyone: true, unknown: false })).toBe(true);
   });
 
   it("names the reach on the button", () => {
-    expect(sendActionLabel({ count: 14, exact: false, everyone: false }, false)).toBe(
-      "Send to 14 people",
-    );
-    expect(sendActionLabel({ count: 1, exact: true, everyone: false }, true)).toBe(
+    expect(
+      sendActionLabel({ count: 14, exact: false, everyone: false, unknown: false }, false),
+    ).toBe("Send to 14 people");
+    expect(sendActionLabel({ count: 1, exact: true, everyone: false, unknown: false }, true)).toBe(
       "Schedule for 1 person",
     );
-    expect(sendActionLabel({ count: 214, exact: true, everyone: true }, false)).toBe(
-      "Send to everyone",
+    expect(
+      sendActionLabel({ count: 214, exact: true, everyone: true, unknown: false }, false),
+    ).toBe("Send to everyone");
+    expect(sendActionLabel({ count: 0, exact: true, everyone: false, unknown: false }, false)).toBe(
+      "Send",
     );
-    expect(sendActionLabel({ count: 0, exact: true, everyone: false }, false)).toBe("Send");
   });
 
   it("warns an anonymous Holler under five people", () => {
-    expect(anonymousWarning(true, { count: 3, exact: true, everyone: false })).toBe(
+    expect(anonymousWarning(true, { count: 3, exact: true, everyone: false, unknown: false })).toBe(
       "Results open at 5 answers, and only 3 people get this. Add people or make it named.",
     );
-    expect(anonymousWarning(true, { count: 5, exact: true, everyone: false })).toBeNull();
-    expect(anonymousWarning(false, { count: 3, exact: true, everyone: false })).toBeNull();
-    expect(anonymousWarning(true, { count: 0, exact: true, everyone: false })).toBeNull();
+    expect(
+      anonymousWarning(true, { count: 5, exact: true, everyone: false, unknown: false }),
+    ).toBeNull();
+    expect(
+      anonymousWarning(false, { count: 3, exact: true, everyone: false, unknown: false }),
+    ).toBeNull();
+    expect(
+      anonymousWarning(true, { count: 0, exact: true, everyone: false, unknown: false }),
+    ).toBeNull();
   });
 });
 
@@ -279,23 +306,26 @@ describe("the bar", () => {
   it("says where Compose's Holler is answered, or what to fix", () => {
     expect(composeBarSummary({ where: "dm" }, 1)).toEqual({
       title: "Answered right in the DM",
-      detail: "1 question",
+      description: "1 question",
     });
     expect(composeBarSummary({ where: "slack" }, 4, "Give it a title.")).toEqual({
       title: "Give it a title.",
-      detail: null,
+      description: null,
       tone: "danger",
     });
   });
 
   it("says who, when and when it closes on Send", () => {
-    expect(sendBarSummary({ count: 14, exact: true, everyone: false }, fields, ctx)).toEqual({
+    expect(
+      sendBarSummary({ count: 14, exact: true, everyone: false, unknown: false }, fields, ctx),
+    ).toEqual({
       title: "14 people, now",
-      detail: "Closes Mon 24 Nov, 10:00",
+      description: "Closes Mon 24 Nov, 10:00",
     });
-    expect(sendBarSummary({ count: 214, exact: true, everyone: true }, fields, ctx).title).toBe(
-      "Everyone, now",
-    );
+    expect(
+      sendBarSummary({ count: 214, exact: true, everyone: true, unknown: false }, fields, ctx)
+        .title,
+    ).toBe("Everyone, now");
   });
 
   it("explains a web page", () => {

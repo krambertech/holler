@@ -70,11 +70,11 @@ export interface AudienceSummary {
   chosen: AudienceEntry[];
 }
 
-interface Props extends Omit<ComponentProps<"section">, "onChange" | "defaultValue"> {
+interface Props extends Omit<ComponentProps<"section">, "defaultValue"> {
   /** Who it goes to. Leave it out, with `defaultValue`, for the picker to keep its own. */
   value?: AudienceSelection | undefined;
   defaultValue?: AudienceSelection | undefined;
-  onChange?: ((value: AudienceSelection) => void) | undefined;
+  onValueChange?: ((value: AudienceSelection) => void) | undefined;
   /** Why it cannot be sent to this audience, such as "Choose who to send it to." */
   problem?: string | undefined;
   /** People and groups already in the draft, so their chips have names before any search. */
@@ -266,7 +266,7 @@ const nobody: AudienceSelection = { people: [], groups: [], everyone: false };
 function AudiencePicker({
   value: valueProp,
   defaultValue = nobody,
-  onChange: onChangeProp,
+  onValueChange: onChangeProp,
   problem,
   known,
   workspaceSize,

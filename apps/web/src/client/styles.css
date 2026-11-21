@@ -44,6 +44,18 @@
     color: var(--tint-ink);
   }
 
+  /* The browser's own date and time pickers: the icon is muted like Holler's own icons and firms
+     under the pointer, instead of the system's full white or black. */
+  ::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    opacity: 0.6;
+    transition: opacity 150ms var(--ease-out);
+  }
+
+  ::-webkit-calendar-picker-indicator:hover {
+    opacity: 1;
+  }
+
   button {
     cursor: pointer;
   }
