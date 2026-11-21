@@ -7,6 +7,7 @@ import { Plate, PlateRow, Underplate, UnderplateStrip } from "@/components/ui/pl
 import { ProgressBar } from "@/components/ui/progress";
 import { cn } from "@/lib/cn";
 import { count, momentLabel } from "@/lib/format";
+import { useWakeAt } from "@/lib/use-wake-at";
 
 const FOLDED = 8;
 
@@ -27,16 +28,18 @@ function HollerPeople({
   canRemind,
   onRemind,
   reminding = false,
-  now = new Date(),
+  now: fixedNow,
   className,
   ...props
 }: Props) {
   const [open, setOpen] = useState(false);
   const { recipientCount, answeredCount, waitingCount, recipients } = people;
+  const reminderAt = people.reminderAvailableAt ? new Date(people.reminderAvailableAt) : null;
+  useWakeAt(fixedNow ? null : reminderAt);
+  const now = fixedNow ?? new Date();
   const ordered = anonymous ? recipients : [...recipients].sort((a, b) => rank(a) - rank(b));
   const shown = open ? ordered : ordered.slice(0, FOLDED);
   const share = recipientCount === 0 ? 0 : answeredCount / recipientCount;
-  const reminderAt = people.reminderAvailableAt ? new Date(people.reminderAvailableAt) : null;
   const canRemindNow = canRemind && reminderAt !== null && reminderAt <= now;
 
   return (
