@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Outlet, redirect, useLocation } from "@tanstack/react-router";
 import { AppHeader } from "@/components/app-header";
+import { toast } from "@/components/ui/toast";
 import { UninstalledNotice } from "@/components/uninstalled-notice";
 import { ApiError } from "@/lib/api";
 import { authClient } from "@/lib/auth-client";
@@ -24,13 +25,22 @@ export const Route = createFileRoute("/_app")({
   component: AppLayout,
 });
 
+async function signOut() {
+  const { error } = await authClient.signOut();
+  if (error) {
+    toast.add({ title: "Holler could not sign you out. Try again in a moment." });
+    return;
+  }
+  window.location.assign("/sign-in");
+}
+
 function AppLayout() {
   const { data: me } = useQuery(meQuery);
   // Settings says it in the workspace's own plate, with the button beside it.
   const onSettings = useLocation({ select: (l) => l.pathname === "/settings" });
   return (
     <div className="mx-auto flex w-full max-w-[880px] flex-col gap-6 px-4 pt-6 pb-12 sm:px-10 sm:pt-7 lg:px-20">
-      <AppHeader me={me?.member} />
+      <AppHeader me={me?.member} workspaceName={me?.workspace.name} onSignOut={signOut} />
       {me && !me.workspace.installed && !onSettings && (
         <UninstalledNotice canReinstall={me.member.role === "owner"} />
       )}

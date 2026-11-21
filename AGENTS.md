@@ -80,6 +80,7 @@ Project skills live in `.agents/skills/`; `.claude/skills` links to it so every 
 | Every modal element reads back into an answer `recordResponse` takes | `services/answering.test.ts` fills each element by type |
 | No cell of a CSV export runs as a formula, whatever anyone typed | `csvCell`; `services/exports.test.ts` writes every formula start into every field |
 | Anonymous results and exports keep no trace of answer order | `packages/core/src/results.test.ts` shuffles every answer; `services/exports.test.ts` |
+| Sign-out and other auth writes pass Better Auth's origin check where the product runs in tests | `PRODUCT_URL` from `e2e/origin.mjs`; `e2e/sign-out.spec.ts` |
 
 ## Generated files
 

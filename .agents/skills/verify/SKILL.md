@@ -13,7 +13,7 @@ A change is verified when every feature it reaches has been driven in a running 
 
 | Feature | Entry |
 | --- | --- |
-| Sign in | [sign-in.md](features/sign-in.md) |
+| Sign in and sign out | [sign-in.md](features/sign-in.md) |
 | Home | [home.md](features/home.md) |
 | An answer reaches the results | [answer.md](features/answer.md) |
 | A holler closes at its close time | [close-time.md](features/close-time.md) |
