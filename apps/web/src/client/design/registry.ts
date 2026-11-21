@@ -4,6 +4,7 @@ import { Brand } from "./brand";
 import { Colour } from "./colour";
 import { Motion } from "./motion";
 import { actions } from "./parts/actions";
+import { apiAccess } from "./parts/api-access";
 import { billing } from "./parts/billing";
 import { choosing } from "./parts/choosing";
 import { feedback } from "./parts/feedback";
@@ -74,6 +75,7 @@ export const GROUPS: Group[] = [
   navigation,
   settings,
   billing,
+  apiAccess,
 ];
 
 export interface DocItem {

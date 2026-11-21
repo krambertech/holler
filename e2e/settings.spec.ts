@@ -48,7 +48,7 @@ test("a sender sees the roles but cannot change them", async ({ page }) => {
   await signInAs(page, "sender");
   await page.goto("/settings");
   await expect(page.getByText("Mira Kask")).toBeVisible();
-  await expect(page.getByRole("combobox")).toHaveCount(0);
+  await expect(page.getByRole("combobox", { name: /^Role for/ })).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Reinstall" })).toHaveCount(0);
   await expectAccessible(page);
 });
