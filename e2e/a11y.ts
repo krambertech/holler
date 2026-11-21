@@ -3,6 +3,15 @@ import { expect, type Page } from "@playwright/test";
 
 /** Fails the test on any WCAG 2.2 AA violation on the page as it is now. */
 export async function expectAccessible(page: Page) {
+  await page.waitForFunction(() =>
+    document
+      .getAnimations()
+      .every(
+        (animation) =>
+          animation.playState !== "running" ||
+          animation.effect?.getComputedTiming().iterations === Number.POSITIVE_INFINITY,
+      ),
+  );
   const results = await new AxeBuilder({ page })
     .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
     .analyze();
