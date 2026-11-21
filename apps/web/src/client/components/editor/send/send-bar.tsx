@@ -30,6 +30,11 @@ const SHOWN = 8;
 function question(send: BigSend) {
   const { reach } = send;
   if (reach.everyone) return send.scheduled ? "Schedule it for everyone?" : "Send it to everyone?";
+  if (reach.unknown) {
+    return send.scheduled
+      ? "Schedule it for everyone you chose?"
+      : "Send it to everyone you chose?";
+  }
   const n = reach.exact ? peopleLabel(reach.count) : `about ${count(reach.count)} people`;
   return send.scheduled ? `Schedule it for ${n}?` : `Send it to ${n}?`;
 }
@@ -41,6 +46,8 @@ function explanation(send: BigSend) {
     who = reach.exact
       ? `everyone in the workspace, ${peopleLabel(reach.count).toLocaleLowerCase()},`
       : "everyone in the workspace";
+  } else if (reach.unknown) {
+    who = "everyone you chose";
   } else {
     who = reach.exact
       ? peopleLabel(reach.count).toLocaleLowerCase()
@@ -51,6 +58,9 @@ function explanation(send: BigSend) {
       ? `"${send.title}" goes to ${who} on ${send.when}. Each of them gets a DM.`
       : `"${send.title}" goes to ${who} now. Each of them gets a DM.`,
   ];
+  if (!reach.everyone && reach.unknown) {
+    sentences.push("Holler does not know yet how many people are in every group.");
+  }
   if (!reach.everyone && !reach.exact) sentences.push("Anyone in two groups gets it once.");
   if (!send.scheduled) sentences.push("A sent Holler cannot be called back.");
   return sentences.join(" ");

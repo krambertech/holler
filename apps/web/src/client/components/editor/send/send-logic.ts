@@ -4,6 +4,7 @@ import {
   type HollerDraft,
   quietBeforeCloseHours,
   reminderTiers,
+  sameWallClockIn,
   workdayEndHour,
   workdayStartHour,
 } from "@holler/core";
@@ -128,7 +129,8 @@ export interface Landing {
 /**
  * When a scheduled Holler reaches each time zone. In your time everyone gets it at once; in each
  * person's time `sendAt` is read as a wall-clock time on the sender's clock, and each zone gets it
- * at that time on theirs. A person with no time zone counts as the sender's. Earliest first.
+ * at that time on theirs. A person with no time zone in Slack counts as UTC, as delivery does.
+ * Earliest first.
  */
 export function landingTimes({
   sendAt,
@@ -145,14 +147,14 @@ export function landingTimes({
 }): Landing[] {
   const merged = new Map<string, number>();
   for (const { zone, people } of zones) {
-    const key = isTimeZone(zone) ? zone : senderZone;
+    const key = isTimeZone(zone) ? zone : "UTC";
     merged.set(key, (merged.get(key) ?? 0) + people);
   }
-  const wall = wallClock(sendAt, senderZone);
   return (
     [...merged.entries()]
       .map(([zone, people]) => {
-        const at = inRecipientTimeZone ? atWallClock(wall, zone) : sendAt;
+        // The same conversion delivery makes, so the preview and the send agree.
+        const at = inRecipientTimeZone ? sameWallClockIn(sendAt, senderZone, zone) : sendAt;
         const hour = wallClock(at, zone).hour;
         return {
           zone,
@@ -359,7 +361,13 @@ export function answersSummary(anonymous: boolean): RowSummary {
  * results open. Nothing when nobody is chosen yet: the audience says so itself.
  */
 export function anonymousWarning(anonymous: boolean, reach: Reach): string | null {
-  if (!anonymous || reach.everyone || reach.count === 0 || reach.count >= anonymousThreshold) {
+  if (
+    !anonymous ||
+    reach.everyone ||
+    reach.unknown ||
+    reach.count === 0 ||
+    reach.count >= anonymousThreshold
+  ) {
     return null;
   }
   if (reach.count === 1) {
@@ -418,6 +426,8 @@ export interface Reach {
   /** False when groups may overlap or a size is unknown, so the count is a ceiling. */
   exact: boolean;
   everyone: boolean;
+  /** True when a chosen group's size is not known, so the count says nothing about the reach. */
+  unknown: boolean;
 }
 
 export function audienceReach(
@@ -426,19 +436,27 @@ export function audienceReach(
   workspaceSize: number | null | undefined,
 ): Reach {
   if (audience.everyone) {
-    return { count: workspaceSize ?? 0, exact: workspaceSize != null, everyone: true };
+    return {
+      count: workspaceSize ?? 0,
+      exact: workspaceSize != null,
+      everyone: true,
+      unknown: workspaceSize == null,
+    };
   }
-  const inGroups = audience.groups.reduce((sum, id) => sum + (sizeOf(id) ?? 0), 0);
+  const sizes = audience.groups.map((id) => sizeOf(id));
+  const inGroups = sizes.reduce<number>((sum, size) => sum + (size ?? 0), 0);
   return {
     count: audience.people.length + inGroups,
     exact: audience.groups.length === 0,
     everyone: false,
+    unknown: sizes.some((size) => size == null),
   };
 }
 
 /** "14 people", "About 40 people"; everyone reads as the workspace's size when it is known. */
 export function reachLabel(reach: Reach): string {
   if (reach.everyone) return reach.exact ? peopleLabel(reach.count) : "Everyone in the workspace";
+  if (reach.unknown) return "Size not known yet";
   if (reach.count === 0) return "Nobody yet";
   if (!reach.exact) {
     return reach.count === 1 ? "About 1 person" : `About ${count(reach.count)} people`;
@@ -446,17 +464,20 @@ export function reachLabel(reach: Reach): string {
   return peopleLabel(reach.count);
 }
 
-/** Sending to everyone or to more than 50 people asks once more. DECISIONS.md, Sending. */
+/**
+ * Sending to everyone or to more than 50 people asks once more. DECISIONS.md, Sending. A group of
+ * unknown size could be any size, so it asks too.
+ */
 export const bigSendAbove = 50;
 
 export function isBigSend(reach: Reach): boolean {
-  return reach.everyone || reach.count > bigSendAbove;
+  return reach.everyone || reach.unknown || reach.count > bigSendAbove;
 }
 
 /** The plum button names the reach: "Send to 14 people", "Schedule for everyone". */
 export function sendActionLabel(reach: Reach, scheduled: boolean): string {
   if (reach.everyone) return scheduled ? "Schedule for everyone" : "Send to everyone";
-  if (reach.count === 0) return scheduled ? "Schedule" : "Send";
+  if (reach.count === 0 || reach.unknown) return scheduled ? "Schedule" : "Send";
   if (reach.count === 1) return scheduled ? "Schedule for 1 person" : "Send to 1 person";
   const n = count(reach.count);
   return scheduled ? `Schedule for ${n} people` : `Send to ${n} people`;

@@ -77,10 +77,16 @@ describe("landingTimes", () => {
     // 03:00 in New York, 17:00 in Tokyo, 09:00 in Berlin.
     expect(byZone["America/New_York"]?.outsideWorkday).toBe(true);
     expect(byZone["Asia/Tokyo"]?.outsideWorkday).toBe(false);
-    // The person with no zone counts as the sender's.
-    expect(byZone["Europe/Berlin"]).toMatchObject({ people: 9, yours: true });
+    // The person with no zone counts as UTC, as delivery does.
+    expect(byZone["Europe/Berlin"]).toMatchObject({ people: 8, yours: true });
+    expect(byZone.UTC).toMatchObject({ people: 1, yours: false });
     // At one moment, west to east, so the local times read in clock order.
-    expect(rows.map((r) => r.zone)).toEqual(["America/New_York", "Europe/Berlin", "Asia/Tokyo"]);
+    expect(rows.map((r) => r.zone)).toEqual([
+      "America/New_York",
+      "UTC",
+      "Europe/Berlin",
+      "Asia/Tokyo",
+    ]);
   });
 
   it("in each person's time, reaches each zone at 09:00 on its clock, earliest first", () => {
@@ -88,6 +94,8 @@ describe("landingTimes", () => {
     expect(rows.map((r) => [r.zone, r.at.toISOString()])).toEqual([
       ["Asia/Tokyo", "2025-11-24T00:00:00.000Z"],
       ["Europe/Berlin", "2025-11-24T08:00:00.000Z"],
+      // No zone in Slack: 09:00 UTC, the instant delivery's sameWallClockIn picks.
+      ["UTC", "2025-11-24T09:00:00.000Z"],
       ["America/New_York", "2025-11-24T14:00:00.000Z"],
     ]);
     expect(rows.some((r) => r.passed)).toBe(false);
@@ -226,15 +234,24 @@ describe("reach", () => {
       sizeOf,
       200,
     );
-    expect(people).toEqual({ count: 2, exact: true, everyone: false });
+    expect(people).toEqual({ count: 2, exact: true, everyone: false, unknown: false });
     expect(reachLabel(people)).toBe("2 people");
 
     const groups = audienceReach(
-      { people: ["U1", "U2", "U3"], groups: ["S_DESIGN", "C_GENERAL"], everyone: false },
+      { people: ["U1", "U2", "U3"], groups: ["S_DESIGN"], everyone: false },
       sizeOf,
       200,
     );
-    expect(groups).toEqual({ count: 14, exact: false, everyone: false });
+    expect(groups).toEqual({ count: 14, exact: false, everyone: false, unknown: false });
+    // A channel Holler has no size for yet: the count says nothing, so it asks before sending.
+    const unsized = audienceReach(
+      { people: ["U1"], groups: ["C_GENERAL"], everyone: false },
+      sizeOf,
+      200,
+    );
+    expect(unsized).toEqual({ count: 1, exact: false, everyone: false, unknown: true });
+    expect(reachLabel(unsized)).toBe("Size not known yet");
+    expect(sendActionLabel(unsized, false)).toBe("Send");
     expect(reachLabel(groups)).toBe("About 14 people");
   });
 
@@ -247,31 +264,41 @@ describe("reach", () => {
   });
 
   it("asks once more before everyone or more than 50 people", () => {
-    expect(isBigSend({ count: 50, exact: true, everyone: false })).toBe(false);
-    expect(isBigSend({ count: 51, exact: false, everyone: false })).toBe(true);
-    expect(isBigSend({ count: 3, exact: true, everyone: true })).toBe(true);
+    expect(isBigSend({ count: 50, exact: true, everyone: false, unknown: false })).toBe(false);
+    // A group of unknown size could be any size, so it asks.
+    expect(isBigSend({ count: 2, exact: false, everyone: false, unknown: true })).toBe(true);
+    expect(isBigSend({ count: 51, exact: false, everyone: false, unknown: false })).toBe(true);
+    expect(isBigSend({ count: 3, exact: true, everyone: true, unknown: false })).toBe(true);
   });
 
   it("names the reach on the button", () => {
-    expect(sendActionLabel({ count: 14, exact: false, everyone: false }, false)).toBe(
-      "Send to 14 people",
-    );
-    expect(sendActionLabel({ count: 1, exact: true, everyone: false }, true)).toBe(
+    expect(
+      sendActionLabel({ count: 14, exact: false, everyone: false, unknown: false }, false),
+    ).toBe("Send to 14 people");
+    expect(sendActionLabel({ count: 1, exact: true, everyone: false, unknown: false }, true)).toBe(
       "Schedule for 1 person",
     );
-    expect(sendActionLabel({ count: 214, exact: true, everyone: true }, false)).toBe(
-      "Send to everyone",
+    expect(
+      sendActionLabel({ count: 214, exact: true, everyone: true, unknown: false }, false),
+    ).toBe("Send to everyone");
+    expect(sendActionLabel({ count: 0, exact: true, everyone: false, unknown: false }, false)).toBe(
+      "Send",
     );
-    expect(sendActionLabel({ count: 0, exact: true, everyone: false }, false)).toBe("Send");
   });
 
   it("warns an anonymous Holler under five people", () => {
-    expect(anonymousWarning(true, { count: 3, exact: true, everyone: false })).toBe(
+    expect(anonymousWarning(true, { count: 3, exact: true, everyone: false, unknown: false })).toBe(
       "Results open at 5 answers, and only 3 people get this. Add people or make it named.",
     );
-    expect(anonymousWarning(true, { count: 5, exact: true, everyone: false })).toBeNull();
-    expect(anonymousWarning(false, { count: 3, exact: true, everyone: false })).toBeNull();
-    expect(anonymousWarning(true, { count: 0, exact: true, everyone: false })).toBeNull();
+    expect(
+      anonymousWarning(true, { count: 5, exact: true, everyone: false, unknown: false }),
+    ).toBeNull();
+    expect(
+      anonymousWarning(false, { count: 3, exact: true, everyone: false, unknown: false }),
+    ).toBeNull();
+    expect(
+      anonymousWarning(true, { count: 0, exact: true, everyone: false, unknown: false }),
+    ).toBeNull();
   });
 });
 
@@ -289,13 +316,16 @@ describe("the bar", () => {
   });
 
   it("says who, when and when it closes on Send", () => {
-    expect(sendBarSummary({ count: 14, exact: true, everyone: false }, fields, ctx)).toEqual({
+    expect(
+      sendBarSummary({ count: 14, exact: true, everyone: false, unknown: false }, fields, ctx),
+    ).toEqual({
       title: "14 people, now",
       description: "Closes Mon 24 Nov, 10:00",
     });
-    expect(sendBarSummary({ count: 214, exact: true, everyone: true }, fields, ctx).title).toBe(
-      "Everyone, now",
-    );
+    expect(
+      sendBarSummary({ count: 214, exact: true, everyone: true, unknown: false }, fields, ctx)
+        .title,
+    ).toBe("Everyone, now");
   });
 
   it("explains a web page", () => {

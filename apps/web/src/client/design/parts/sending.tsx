@@ -50,6 +50,8 @@ const groups: DirectoryGroup[] = [
   { slackId: "C0GEN", kind: "channel", name: "general", handle: null, memberCount: 186 },
   { slackId: "C0LDS", kind: "channel", name: "leads", handle: null, memberCount: 9 },
   { slackId: "C0ANN", kind: "channel", name: "announcements", handle: null, memberCount: 214 },
+  // A channel Holler has not counted yet.
+  { slackId: "C0NEW", kind: "channel", name: "new-joiners", handle: null, memberCount: null },
 ];
 
 const WORKSPACE = 214;
@@ -215,6 +217,15 @@ export const sending: Group = {
               label: "More than 50",
               note: "Groups make the count approximate, and the dialog says so.",
               render: () => <SendButtonDemo audience={big} />,
+            },
+            {
+              label: "A channel of unknown size",
+              note: "Holler cannot tell how many it reaches, so it asks.",
+              render: () => (
+                <SendButtonDemo
+                  audience={{ people: ["U0JB"], groups: ["C0NEW"], everyone: false }}
+                />
+              ),
             },
             {
               label: "Everyone, scheduled",
