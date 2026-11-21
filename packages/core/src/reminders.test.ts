@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { nextReminder } from "./reminders";
+import { localHour, nextReminder, reminderTiers, snoozeTarget } from "./reminders";
 
 const state = (overrides: Partial<Parameters<typeof nextReminder>[0]> = {}) => ({
   invitedAt: new Date("2026-11-16T09:00:00Z"),
@@ -47,5 +47,80 @@ describe("nextReminder", () => {
     expect(
       nextReminder(state({ remindersSent: 3 }), "UTC", new Date("2026-11-20T10:00:00Z")),
     ).toBeNull();
+  });
+});
+
+describe("the rhythm's rules hold everywhere", () => {
+  // Whole, half and quarter-hour offsets, both hemispheres' daylight saving, UTC-11 to UTC+14.
+  const zones = [
+    "UTC",
+    "Europe/Tallinn",
+    "America/New_York",
+    "Asia/Kolkata",
+    "Asia/Kathmandu",
+    "Australia/Lord_Howe",
+    "Pacific/Kiritimati",
+    "Pacific/Pago_Pago",
+    null,
+  ];
+  const HOUR = 3600_000;
+  // Every 5 hours from 1 March to 10 April 2026: across Europe's and America's clock changes.
+  const starts = Array.from(
+    { length: 200 },
+    (_, i) => new Date(Date.UTC(2026, 2, 1) + i * 5 * HOUR),
+  );
+  const lengths = [24, 72, 168];
+
+  it("lands only in working hours, after its tier and any snooze, and clear of the close", () => {
+    let checked = 0;
+    for (const timeZone of zones) {
+      for (const invitedAt of starts) {
+        for (const hours of lengths) {
+          const closesAt = new Date(invitedAt.getTime() + hours * HOUR);
+          for (const remindersSent of [0, 1, 2, 3]) {
+            for (const snoozedUntil of [null, new Date(invitedAt.getTime() + 30 * HOUR)]) {
+              const now = new Date(invitedAt.getTime() + 2 * HOUR);
+              const next = nextReminder(
+                { invitedAt, remindersSent, snoozedUntil, closesAt },
+                timeZone,
+                now,
+              );
+              if (remindersSent === 3) expect(next).toBeNull();
+              if (!next) continue;
+              checked++;
+              const hour = localHour(next.dueAt, timeZone);
+              const tier = reminderTiers[remindersSent];
+              const where = `${timeZone} ${invitedAt.toISOString()} ${hours}h ${remindersSent}`;
+              expect(hour >= 9 && hour < 18, `${where}: lands at ${hour}:00`).toBe(true);
+              expect(next.tone).toBe(tier?.tone);
+              expect(next.dueAt.getTime()).toBeGreaterThanOrEqual(
+                invitedAt.getTime() + (tier?.afterHours ?? 0) * HOUR,
+              );
+              expect(next.dueAt.getTime()).toBeGreaterThanOrEqual(now.getTime());
+              if (snoozedUntil) expect(next.dueAt >= snoozedUntil, where).toBe(true);
+              expect(next.dueAt.getTime(), where).toBeLessThanOrEqual(
+                closesAt.getTime() - 2 * HOUR,
+              );
+            }
+          }
+        }
+      }
+    }
+    // The sweep must exercise the rules, not skip them all.
+    expect(checked).toBeGreaterThan(5000);
+  });
+
+  it("snoozes to 15:00 today or 09:00 tomorrow, local, at every half hour", () => {
+    for (const timeZone of zones) {
+      for (let i = 0; i < 48 * 12; i++) {
+        const now = new Date(Date.UTC(2026, 2, 25) + i * 30 * 60_000);
+        const until = snoozeTarget(now, timeZone);
+        const where = `${timeZone} ${now.toISOString()}`;
+        expect(until > now, where).toBe(true);
+        expect(until.getTime() - now.getTime(), where).toBeLessThanOrEqual(25 * HOUR);
+        expect([9, 15], where).toContain(localHour(until, timeZone));
+        expect(new Date(until).getUTCMinutes() % 15, where).toBe(0);
+      }
+    }
   });
 });

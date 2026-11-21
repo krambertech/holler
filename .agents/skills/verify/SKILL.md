@@ -19,6 +19,8 @@ A change is verified when every feature it reaches has been driven in a running 
 | A holler closes at its close time | [close-time.md](features/close-time.md) |
 | Make an API key | [api-keys.md](features/api-keys.md) |
 | Make a Holler | [editor.md](features/editor.md) |
+| Closing tells the creator in Slack | [slack-close.md](features/slack-close.md) |
+| A holler goes out in Slack and comes back answered | [slack-send.md](features/slack-send.md) |
 
 ## Launch
 
@@ -40,17 +42,17 @@ node .agents/skills/verify/scripts/run.mjs home answer --pr <n>
 
 Each feature signs in through `/api/dev/sign-in?as=<persona>&reset=1`, so it starts from the persona's seeded data whatever ran before, then runs the doctor, then the recipe in `features/<feature>.mjs`. The runner drives Chromium at 1280 px with a pointer and reduced motion. Run every feature four times for a change a person sees: plain, `--dark`, `--phone` (375 px with touch), and `--phone --dark`. `--url` drives another origin; for a pull request's preview, also pass its `DEV_ROUTES_KEY` with `--key` (or `HOLLER_DEV_KEY`) and `--version` with the id from the preview job's summary, as [`docs/operations.md`](../../../docs/operations.md#previews) shows. The doctor requires the preview to serve that version.
 
-A recipe exports `title`, optional `persona` (default `lead`) and `start` (default `/`), and a default function that receives `{ page, step, api, post, expect }`. `step(action, run)` is one sender action and its check; `run` returns the stored values that prove it. `api(path)` reads and `post(path, body)` writes through the session. Find elements by role and accessible name, never by CSS or test id; a control a recipe cannot name is an accessibility bug to fix, not to work around.
+A recipe exports `title`, optional `persona` (default `lead`) and `start` (default `/`), and a default function that receives `{ page, step, api, post, slackState, expect }`. `step(action, run)` is one sender action and its check; `run` returns the stored values that prove it. `api(path)` reads and `post(path, body)` writes through the session. Find elements by role and accessible name, never by CSS or test id; a control a recipe cannot name is an accessibility bug to fix, not to work around.
 
 ### Dev routes
 
 `apps/web/src/server/routes/dev.ts` owns them, behind `DEV_ROUTES=true`.
 
-- `GET /api/dev/state`: the persona, member, every holler with its recipients, answered count and waiting Slack ids, and the last 20 Activity rows.
-- `POST /api/dev/tick` with `{ "at": "<ISO time>" }`: runs the cron's pass at that time, so a close time passes without waiting.
-- `POST /api/dev/answer` with `{ hollerId, slackUserId, response }`: answers as a recipient, the way their Slack button would, through `recordResponse`.
+- `GET /api/dev/state`: the persona, member, every holler with its recipients, answered count and waiting Slack ids, the last 20 Activity rows, and `slack`: every message the dev FakeSlack posted and edited, with its channel and text.
+- `POST /api/dev/tick` with `{ "at": "<ISO time>" }`: runs the cron's pass at that time: scheduled sends, per-zone invites, reminders and closing. It answers with what each step did.
+- `POST /api/dev/answer` with `{ hollerId, slackUserId, response }`: answers as a recipient, the way their Slack button would, through `recordResponse`, and queues their thank-you.
 
-Slack sending is still a placeholder (`services/delivery.ts`). When it lands, add what `FakeSlack` sent to `/api/dev/state` so a recipe can prove a message or reminder went out.
+Slack calls go through the SLACK_SENDS queue, which runs a moment after the request. A recipe checks `slack` with `slackState(check, what)`, which rereads the state until `check` holds and fails after five seconds.
 
 ## Evidence
 

@@ -2,6 +2,7 @@ import { desc, eq, inArray } from "@holler/core/db";
 import { type Db, schema } from "../db";
 import { type ServiceContext, ServiceError } from "./context";
 import { DEV_TEAM_ID, personas } from "./dev-seed";
+import { devSlackRecord, forgetDevSlack } from "./slack-connection";
 
 /**
  * What the verify skill reads back after it drives a screen, so a recipe can prove the stored
@@ -64,6 +65,25 @@ export async function devState(ctx: ServiceContext) {
       subjectId: row.subjectId,
       at: row.at.toISOString(),
     })),
+    slack: slackRecord(ctx.workspaceId),
+  };
+}
+
+/**
+ * What the dev FakeSlack sent, newest last: every DM, reminder, announcement and close notice,
+ * and every message edited in place. A verify recipe proves a send went out with it.
+ */
+function slackRecord(workspaceId: string) {
+  const fake = devSlackRecord(workspaceId);
+  const summary = (message: { channel: string; text: string; ts: string }) => ({
+    channel: message.channel,
+    ts: message.ts,
+    text: message.text,
+  });
+  return {
+    posted: fake?.posted.map(summary) ?? [],
+    updated: fake?.updated.map(summary) ?? [],
+    modals: fake?.views.length ?? 0,
   };
 }
 
@@ -72,5 +92,9 @@ export async function devState(ctx: ServiceContext) {
  * again from scratch. Every persona shares it, so this resets all of them. Dev routes only.
  */
 export async function resetDevWorkspace(db: Db): Promise<void> {
-  await db.delete(schema.workspaces).where(eq(schema.workspaces.slackTeamId, DEV_TEAM_ID));
+  const deleted = await db
+    .delete(schema.workspaces)
+    .where(eq(schema.workspaces.slackTeamId, DEV_TEAM_ID))
+    .returning({ id: schema.workspaces.id });
+  for (const row of deleted) forgetDevSlack(row.id);
 }

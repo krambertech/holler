@@ -1,3 +1,4 @@
+import { blockKitProblems, viewProblems } from "./blocks/limits";
 import type {
   PostMessage,
   SlackChannel,
@@ -7,6 +8,11 @@ import type {
   SlackUserGroup,
   SlackView,
 } from "./client";
+
+/** Throws as Slack would when a payload breaks a Block Kit limit, naming every problem. */
+function refuseInvalid(method: string, problems: string[]) {
+  if (problems.length > 0) throw new Error(`Slack would refuse ${method}: ${problems.join("; ")}`);
+}
 
 /**
  * An in-memory Slack for tests and local development. It records every call, so a test asserts
@@ -18,6 +24,8 @@ export class FakeSlack implements SlackClient {
   readonly views: { triggerId: string; view: SlackView }[] = [];
   readonly homes: { userId: string; view: SlackView }[] = [];
   revoked = false;
+  /** A test sets an error for a user, channel or group id, and any call about it throws it. */
+  readonly failures = new Map<string, Error>();
   /** Slack paginates users.list; a test sets this to see Holler follow the cursor. */
   pageSize = Number.POSITIVE_INFINITY;
   private counter = 0;
@@ -30,6 +38,9 @@ export class FakeSlack implements SlackClient {
   ) {}
 
   async postMessage(input: PostMessage) {
+    refuseInvalid("chat.postMessage", blockKitProblems("message", input.blocks ?? [], input.text));
+    const failure = this.failures.get(input.channel);
+    if (failure) throw failure;
     const ts = `${1_700_000_000 + this.counter++}.000100`;
     this.posted.push({ ...input, ts });
     return {
@@ -39,14 +50,17 @@ export class FakeSlack implements SlackClient {
   }
 
   async updateMessage(input: PostMessage & { ts: string }) {
+    refuseInvalid("chat.update", blockKitProblems("message", input.blocks ?? [], input.text));
     this.updated.push(input);
   }
 
   async openView(input: { triggerId: string; view: SlackView }) {
+    refuseInvalid("views.open", viewProblems(input.view));
     this.views.push(input);
   }
 
   async publishHome(input: { userId: string; view: SlackView }) {
+    refuseInvalid("views.publish", viewProblems(input.view));
     this.homes.push(input);
   }
 
@@ -64,11 +78,21 @@ export class FakeSlack implements SlackClient {
   }
 
   async userGroupMembers(groupId: string) {
+    const failure = this.failures.get(groupId);
+    if (failure) throw failure;
     return this.groups.find((g) => g.id === groupId)?.members ?? [];
   }
 
-  async channelMembers() {
-    return { members: this.people.map((p) => p.id), nextCursor: "" };
+  /** Everyone is in every channel, paged like users.list. */
+  async channelMembers(channelId: string, cursor?: string) {
+    const failure = this.failures.get(channelId);
+    if (failure) throw failure;
+    const start = Number(cursor ?? 0);
+    const end = start + this.pageSize;
+    return {
+      members: this.people.slice(start, end).map((p) => p.id),
+      nextCursor: end < this.people.length ? String(end) : "",
+    };
   }
 
   async listChannels() {

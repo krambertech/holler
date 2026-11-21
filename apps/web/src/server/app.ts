@@ -17,6 +17,7 @@ import { settingsRoutes } from "./routes/settings";
 import { v1Routes } from "./routes/v1";
 import { ServiceError } from "./services/context";
 import { slackEventRoutes } from "./slack/events";
+import { slackInteractionRoutes } from "./slack/interactions";
 import { slackOAuthRoutes } from "./slack/oauth";
 
 export type AppEnv = {
@@ -98,6 +99,7 @@ app.route("/api/dev", devRoutes);
 
 app.route("/slack/oauth", slackOAuthRoutes);
 app.route("/slack/events", slackEventRoutes);
+app.route("/slack/interactions", slackInteractionRoutes);
 
 app.all("/api/*", (c) =>
   c.json({ error: { code: "not_found", message: "There is no API route here." } }, 404),
@@ -106,7 +108,14 @@ app.all("/api/*", (c) =>
 app.onError((error, c) => {
   if (error instanceof ServiceError) {
     return c.json(
-      { error: { code: error.code, message: error.message, field: error.field } },
+      {
+        error: {
+          code: error.code,
+          message: error.message,
+          field: error.field,
+          problems: error.problems,
+        },
+      },
       error.status,
     );
   }

@@ -90,6 +90,40 @@ The app is defined in [`slack-app-manifest.json`](../slack-app-manifest.json) at
 
 **Keep the bot scopes in the manifest and `BOT_SCOPES` in `apps/web/src/server/slack/oauth.ts` the same.** A scope added to one and not the other means a reinstall asks for something the code does not request, or the other way round.
 
+## Sending
+
+`sendHoller` in `services/delivery.ts` is the one way a Holler goes out, from every door. It refuses a draft with every problem from `sendProblems` at once, checks the monthly limit, and with a send time in the future only marks the Holler scheduled. Sending now resolves the audience into `recipients`, sets `sent_at` and `closes_at`, and puts one invite per person on the `SLACK_SENDS` queue.
+
+```mermaid
+sequenceDiagram
+  participant D as A door (web, API, MCP, cron)
+  participant S as sendHoller
+  participant Q as SLACK_SENDS
+  participant C as Queue consumer
+  participant K as Slack
+  D->>S: send
+  S->>S: sendProblems, assertCanSend, resolve audience
+  S->>S: recipients, status live, Activity, in one batch
+  S->>Q: one invite per person due now
+  Q->>C: batch
+  C->>K: chat.postMessage to the person
+  C->>C: store dm_channel_id, dm_ts, next_reminder_at
+```
+
+- **Who gets it.** People picked by name, members of the picked user groups and channels, and everyone in the directory for the whole workspace. Bots and people who left are skipped. The sender gets it too when the audience includes them, like anyone else.
+- **Send in their time zone.** The send time is a wall-clock time in the sender's zone, and each person gets it at that time in theirs. The Holler goes live when the earliest zone on Earth reaches it, and the cron invites each person as their time arrives. Someone whose time had already passed gets it at once. It closes `close_after_hours` after the last person's send.
+- **At most once.** A recipient is claimed (`invited_at`) before their invite is queued, and the consumer posts only while `dm_ts` is empty, so a queue retry never sends twice.
+- **Failures.** A permanent Slack error (`SlackApiError.permanent`) is stored in `recipients.failure` and not retried. A rate limit waits for `Retry-After`; any other error retries with backoff.
+- **Claims and the queue.** Every pass claims its rows (`invited_at`, `reminders_sent`, `reminded_at`, `close_queued_at`) with a guarded update, then queues through `queueClaimed`. When the queue refuses a batch, the claims for it and every later batch are given back, so the next cron run retries them and nothing is lost or sent twice. A send or close the person asked for still succeeds; its Slack work follows within a minute.
+- **Posts happen once.** `sendEffects` in `services/delivery.ts` says whether each kind of send posts a new message or edits one. Before posting, the consumer claims the send's `postKey` in `slack_deliveries`, so a send delivered twice, even at the same time, posts once; a failed post gives the claim back for the retry. Edits rewrite a message to the current state, so a repeat is harmless.
+- **Close work and announcements catch up.** Close work is claimed one Holler at a time, so a queue failure leaves the rest for the next pass. An announcement that never posted is queued again by the cron from two minutes after the send, for a day.
+- **Every DM edit goes through the queue**, so a rate limit retries it: thank-yous, closed lines, snoozed reminders.
+- **Block Kit.** `FakeSlack` refuses any payload that breaks a limit in `slack/blocks/limits.ts`, the way Slack would. A description longer than one section is split across several; a label over 75 characters is cut with an ellipsis.
+
+**Closing.** The close time passing, or **Close now**, closes the Holler. Each unanswered DM is edited in place to say it closed, with its buttons gone, the announcement shows its final count, and the sender gets the close notice.
+
+**Send reminder.** A sender's reminder goes at once to everyone waiting, outside working hours too, and counts as each person's next reminder in the rhythm. It can be sent once every four hours; a second try inside that window is refused with when the next one is possible.
+
 ## Answering: as few taps as the question allows
 
 The invite DM adapts to the Holler, so answering costs the least the question allows. `answerSurface` in `packages/core/src/surfaces.ts` decides which, and the editor says so before it is sent.
@@ -103,6 +137,8 @@ The invite DM adapts to the Holler, so answering costs the least the question al
 | A chase                                                                                         | **Open the form** links out; **I submitted it** records the response                                              |
 
 **Answering in the DM.** The buttons are one actions block. A tap records the answer at once through `recordResponse`, then the DM is updated in place: what they picked, and, when the question has a follow-up, the follow-up prompt over an input block holding a plain-text input with `dispatch_action: true` and `dispatch_action_config.trigger_actions_on: ["on_enter_pressed"]`. Pressing Enter sends a `block_actions` payload with the note, which is saved as the response's `note` row in `answer_notes`; an empty box saves nothing, and the note stays optional even when the question is required. A free-text pulse uses the same input block for the answer itself. Notes in the DM never use thread replies, which would need `im:history`.
+
+The note box's block id carries the response id (`note:<response>:<question>`), so a note on an anonymous Holler finds its response without Holler storing who wrote it: the link lives only in the person's own DM. A named response takes a note only from its own person. A web-only Holler's **Answer** is the person's signed link from `services/respond-links.ts`; the form at `/respond/<id>` checks it.
 
 **In a modal.** Each question is one input block, with the question's description as the block's `hint`, and `optional` set when the question is not required. Slack checks what it can; `recordResponse` checks everything again and its messages come back as `response_action: "errors"` keyed by block.
 

@@ -2,7 +2,7 @@ import { hollerDraftSchema, listHollersQuerySchema } from "@holler/core";
 import { sValidator } from "@hono/standard-validator";
 import { Hono } from "hono";
 import type { AppEnv } from "../app";
-import { sendHoller } from "../services/delivery";
+import { closeHoller, remindWaiting, sendHoller } from "../services/delivery";
 import { hollerPeople } from "../services/holler-people";
 import {
   copyHoller,
@@ -45,6 +45,12 @@ export const hollerRoutes = new Hono<AppEnv>()
   .get("/:id/preview", async (c) => c.json(await previewSend(requireMember(c), c.req.param("id"))))
   .post("/:id/send", async (c) =>
     c.json(hollerOut(await sendHoller(requireMember(c), c.env, c.req.param("id")))),
+  )
+  .post("/:id/close", async (c) =>
+    c.json(hollerOut(await closeHoller(requireMember(c), c.env, c.req.param("id")))),
+  )
+  .post("/:id/remind", async (c) =>
+    c.json(hollerOut(await remindWaiting(requireMember(c), c.env, c.req.param("id")))),
   )
   .get("/:id/people", async (c) => c.json(await hollerPeople(requireMember(c), c.req.param("id"))))
   .get("/:id/results", async (c) => {
