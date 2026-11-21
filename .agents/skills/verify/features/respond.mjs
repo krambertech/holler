@@ -53,9 +53,7 @@ export default async function drive({ page, step, api, post, expect }) {
 
   await step("Send, and the thank-you replaces the form", async () => {
     await page.getByRole("button", { name: "Send answers" }).click();
-    await expect(
-      page.getByRole("heading", { name: "Thank you, your answers are in" }),
-    ).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Your answers are in" })).toBeVisible();
     const after = await survey();
     expect(after.answered).toBe(1);
     expect(after.waiting).not.toContain("U0LEAD");

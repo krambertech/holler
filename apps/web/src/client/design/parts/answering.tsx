@@ -1,9 +1,9 @@
-import type { RespondGiven, RespondPerson, RespondQuestion } from "@holler/core";
-import { Check, Link2Off, Lock } from "lucide-react";
+import type { RespondPerson, RespondQuestion } from "@holler/core";
+import { Check, Link2Off, ListChecks, Lock, RotateCcw } from "lucide-react";
 import { useState } from "react";
 import { AnswerQuestion } from "@/components/respond/answer-question";
 import { RespondState } from "@/components/respond/respond-state";
-import { YourAnswers } from "@/components/respond/your-answers";
+import { Button } from "@/components/ui/button";
 import { Plate } from "@/components/ui/plate";
 import { type DraftAnswer, emptyAnswer } from "@/lib/respond";
 import { Variants } from "../frame";
@@ -15,23 +15,6 @@ const about = {
   senderSlackUserId: "U0LEAD",
   senderAvatarUrl: null,
 };
-
-const given: RespondGiven[] = [
-  {
-    questionId: "q1",
-    prompt: "Where would you rather go?",
-    picks: ["Tallinn"],
-    note: "The sauna, and it is close for most of us.",
-  },
-  {
-    questionId: "q2",
-    prompt: "Which weeks work for you?",
-    picks: ["8 March", "22 March"],
-    note: null,
-  },
-  { questionId: "q3", prompt: "How many nights can you stay?", picks: ["3"], note: null },
-  { questionId: "q4", prompt: "Anything else we should know?", picks: [], note: null },
-];
 
 const base: Omit<RespondQuestion, "id" | "type" | "prompt" | "options"> = {
   style: "plain",
@@ -88,6 +71,20 @@ const examples: { label: string; note?: string; question: RespondQuestion }[] = 
       options: options(["1", "2", "3", "4", "5"]),
       lowLabel: "Not at all",
       highLabel: "Very",
+    },
+  },
+  {
+    label: "Scale of 0 to 10",
+    note: "Past six numbers, a phone shows two rows so each number keeps a thumb-sized target.",
+    question: {
+      ...base,
+      id: "recommend",
+      type: "single",
+      style: "scale",
+      prompt: "How likely are you to recommend the offsite?",
+      options: options(["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10"]),
+      lowLabel: "Not at all likely",
+      highLabel: "Extremely likely",
     },
   },
   {
@@ -176,10 +173,38 @@ function Demo({ question, error }: { question: RespondQuestion; error?: string |
   );
 }
 
+function JustSent() {
+  const [play, setPlay] = useState(0);
+  return (
+    <div className="flex w-full max-w-xl flex-col items-end gap-3">
+      <RespondState
+        key={play}
+        className="w-full"
+        tone="answered"
+        arrive
+        icon={<Check strokeWidth={2.5} />}
+        title="Your answers are in"
+        holler={about}
+        description="Thank you. Mira sees them with everyone else's."
+        action={
+          <Button size="lg">
+            <ListChecks />
+            See my answers
+          </Button>
+        }
+      />
+      <Button size="sm" variant="ghost" onClick={() => setPlay(play + 1)}>
+        <RotateCcw />
+        Play again
+      </Button>
+    </div>
+  );
+}
+
 export const answering: Group = {
   slug: "answering",
   title: "Answering",
-  lede: "The web form at /respond, for a Holler Slack cannot show. One plate per question, drawn for its type, with the same rules and words as the server. The person answering has no account and never sees the app.",
+  lede: "The web form at /respond, for a Holler Slack cannot show. Every question on one sheet, each drawn for its type, with the same rules and words as the server. The person answering has no account and never sees the app.",
   entries: [
     {
       slug: "answer-question",
@@ -213,24 +238,9 @@ export const answering: Group = {
           stack
           items={[
             {
-              label: "Thank-you, with your answers",
-              render: () => (
-                <RespondState
-                  className="w-full max-w-xl"
-                  tone="answered"
-                  icon={<Check strokeWidth={2} />}
-                  title="Thank you, your answers are in"
-                  holler={about}
-                  description={
-                    <>
-                      <p>Mira sees them with everyone else's.</p>
-                      <p>You can close this page.</p>
-                    </>
-                  }
-                >
-                  <YourAnswers given={given} />
-                </RespondState>
-              ),
+              label: "Thank-you, just sent",
+              note: "Plays once, only right after sending. A reload shows it still.",
+              render: () => <JustSent />,
             },
             {
               label: "Closed",
@@ -239,9 +249,9 @@ export const answering: Group = {
                   className="w-full max-w-xl"
                   tone="closed"
                   icon={<Lock strokeWidth={2} />}
-                  title="This Holler is closed"
+                  title="This Holler has closed"
                   holler={about}
-                  description="It closed on Friday at 18:00, so it takes no more answers."
+                  description="It stopped taking answers on Friday at 18:00."
                 />
               ),
             },
@@ -258,17 +268,6 @@ export const answering: Group = {
             },
           ]}
         />
-      ),
-    },
-    {
-      slug: "your-answers",
-      name: "YourAnswers",
-      source: "components/respond/your-answers.tsx",
-      note: "What someone sent, read back on the thank-you page. Never shown for an anonymous Holler, whose answers keep no name.",
-      Demo: () => (
-        <Plate className="w-full max-w-xl">
-          <YourAnswers given={given} />
-        </Plate>
       ),
     },
   ],

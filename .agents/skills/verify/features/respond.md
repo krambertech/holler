@@ -12,7 +12,7 @@ A Holler Slack cannot show, such as one with a follow-up only after some answers
 
 ## End state
 
-The page says **Thank you, your answers are in**. `/api/dev/state` counts the survey answered by one and drops `U0LEAD` from `waiting`, and its results hold the Other write-in and the follow-up note.
+The page says **Your answers are in**, with a **See my answers** link to `/answers/<id>`. `/api/dev/state` counts the survey answered by one and drops `U0LEAD` from `waiting`, and its results hold the Other write-in and the follow-up note.
 
 ## Gotchas
 

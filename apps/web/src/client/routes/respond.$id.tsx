@@ -1,27 +1,36 @@
 import {
   modeLabels,
   type RespondForm,
-  type RespondGiven,
   type RespondPerson,
   type RespondQuestion,
 } from "@holler/core";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { Check, ExternalLink, Link2Off, Lock, Trash2 } from "lucide-react";
+import {
+  Check,
+  Clock,
+  ExternalLink,
+  ListChecks,
+  EyeOff,
+  Link2Off,
+  ListOrdered,
+  Lock,
+  Trash2,
+} from "lucide-react";
 import { type FormEvent, useEffect, useRef, useState } from "react";
 import { z } from "zod";
 import { ErrorState } from "@/components/error-state";
 import { Logo } from "@/components/logo";
+import { modeIcons } from "@/components/mode-glyph";
 import { AnswerQuestion } from "@/components/respond/answer-question";
 import { RespondState } from "@/components/respond/respond-state";
-import { YourAnswers } from "@/components/respond/your-answers";
 import { Skeleton } from "@/components/skeleton";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Chip } from "@/components/ui/chip";
 import { Plate, PlateRow } from "@/components/ui/plate";
 import { ApiError, api } from "@/lib/api";
-import { count, questionsLabel } from "@/lib/format";
+import { closesIn, count, questionsLabel } from "@/lib/format";
 import { markdown } from "@/lib/markdown";
 import { type Drafts, draftOf, problemsOf, toResponse } from "@/lib/respond";
 
@@ -38,6 +47,7 @@ const formKey = (id: string, u: string) => ["respond", id, u] as const;
 function RespondPage() {
   const { id } = Route.useParams();
   const { u, s } = Route.useSearch();
+  const [sent, setSent] = useState(false);
   const form = useQuery({
     queryKey: formKey(id, u),
     queryFn: () => api<RespondForm>(`/respond/${id}?${new URLSearchParams({ u, s })}`),
@@ -50,7 +60,7 @@ function RespondPage() {
       <div className="px-1">
         <Logo size={28} />
       </div>
-      <Body form={form} id={id} link={{ u, s }} />
+      <Body form={form} id={id} link={{ u, s }} sent={sent} onSent={() => setSent(true)} />
     </main>
   );
 }
@@ -59,9 +69,11 @@ interface BodyProps {
   form: ReturnType<typeof useQuery<RespondForm, Error>>;
   id: string;
   link: { u: string; s: string };
+  sent: boolean;
+  onSent: () => void;
 }
 
-function Body({ form, id, link }: BodyProps) {
+function Body({ form, id, link, sent, onSent }: BodyProps) {
   if (form.isPending) return <FormSkeleton />;
   if (form.isError) {
     const error = form.error;
@@ -92,36 +104,36 @@ function Body({ form, id, link }: BodyProps) {
     );
   }
   const data = form.data;
-  if (data.state === "answered") return <Answered holler={data.holler} given={data.given} />;
+  if (data.state === "answered") return <Answered holler={data.holler} arrive={sent} />;
   if (data.state === "closed") return <Closed holler={data.holler} />;
-  return <OpenForm form={data} id={id} link={link} />;
+  return <OpenForm form={data} id={id} link={link} onSent={onSent} />;
 }
 
 type HollerInfo = RespondForm["holler"];
 
-function Answered({ holler, given }: { holler: HollerInfo; given: RespondGiven[] | null }) {
+function Answered({ holler, arrive }: { holler: HollerInfo; arrive: boolean }) {
   useEffect(() => {
     window.scrollTo({ top: 0 });
   }, []);
   return (
     <RespondState
       tone="answered"
-      icon={<Check strokeWidth={2} />}
-      title="Thank you, your answers are in"
+      icon={<Check strokeWidth={2.5} />}
+      title="Your answers are in"
       holler={holler}
+      arrive={arrive}
       description={
-        <>
-          <p>
-            {holler.anonymous
-              ? `Your name is not kept with your answers, so ${holler.senderName} sees how many people answered, never who said what.`
-              : `${holler.senderName} sees them with everyone else's.`}
-          </p>
-          <p>You can close this page.</p>
-        </>
+        holler.anonymous
+          ? `Thank you. Your name is not kept with them, so ${holler.senderName} never sees who said what.`
+          : `Thank you. ${holler.senderName} sees them with everyone else's.`
       }
-    >
-      {given && given.length > 0 && <YourAnswers given={given} />}
-    </RespondState>
+      action={
+        <Button size="lg" render={<a href={`/answers/${holler.id}`} />}>
+          <ListChecks />
+          See my answers
+        </Button>
+      }
+    />
   );
 }
 
@@ -130,12 +142,12 @@ function Closed({ holler }: { holler: HollerInfo }) {
     <RespondState
       tone="closed"
       icon={<Lock strokeWidth={2} />}
-      title="This Holler is closed"
+      title="This Holler has closed"
       holler={holler}
       description={
         holler.closesAt
-          ? `It closed ${closesWhen(holler.closesAt, true)}, so it takes no more answers.`
-          : "It takes no more answers."
+          ? `It stopped taking answers ${closesWhen(holler.closesAt, true)}.`
+          : "It no longer takes answers."
       }
     />
   );
@@ -153,6 +165,20 @@ function closesWhen(iso: string, past = false): string {
     ? new Intl.DateTimeFormat(undefined, { weekday: "long" }).format(at)
     : new Intl.DateTimeFormat(undefined, { day: "numeric", month: "long" }).format(at);
   return past && near ? `on ${day} at ${time}` : `${day} at ${time}`;
+}
+
+function useNow(every: number) {
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), every);
+    return () => clearInterval(timer);
+  }, [every]);
+  return now;
+}
+
+function ClosesIn({ at }: { at: string }) {
+  const now = useNow(30_000);
+  return <>{closesIn(at, now)}</>;
 }
 
 function useDrafts(key: string) {
@@ -181,10 +207,12 @@ interface OpenFormProps {
   form: Extract<RespondForm, { state: "open" }>;
   id: string;
   link: { u: string; s: string };
+  onSent: () => void;
 }
 
-function OpenForm({ form, id, link }: OpenFormProps) {
+function OpenForm({ form, id, link, onSent }: OpenFormProps) {
   const { holler, questions } = form;
+  const ModeIcon = modeIcons[holler.mode];
   const queryClient = useQueryClient();
   const [drafts, setDrafts, forgetDrafts] = useDrafts(`holler:respond:${id}:${link.u}`);
   const [problems, setProblems] = useState<Record<string, string>>({});
@@ -199,6 +227,7 @@ function OpenForm({ form, id, link }: OpenFormProps) {
       }),
     onSuccess: (next) => {
       forgetDrafts();
+      if (next.state === "answered") onSent();
       queryClient.setQueryData(formKey(id, link.u), next);
     },
     onError: (error) => {
@@ -263,26 +292,32 @@ function OpenForm({ form, id, link }: OpenFormProps) {
               {markdown(holler.description)}
             </div>
           )}
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-muted text-sm">
-            <span>{modeLabels[holler.mode]}</span>
+          <ul className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-muted text-sm [&_svg]:size-4 [&_svg]:shrink-0">
+            <li className="flex items-center gap-1.5">
+              <ModeIcon aria-hidden strokeWidth={2} />
+              {modeLabels[holler.mode]}
+            </li>
             {questions.length > 0 && (
-              <>
-                <span aria-hidden="true">·</span>
-                <span>{questionsLabel(questions.length)}</span>
-              </>
+              <li className="flex items-center gap-1.5">
+                <ListOrdered aria-hidden strokeWidth={2} />
+                {questionsLabel(questions.length)}
+              </li>
             )}
             {holler.closesAt && (
-              <>
-                <span aria-hidden="true">·</span>
-                <span>Closes {closesWhen(holler.closesAt)}</span>
-              </>
+              <li className="flex items-center gap-1.5">
+                <Clock aria-hidden strokeWidth={2} />
+                <ClosesIn at={holler.closesAt} />
+              </li>
             )}
             {holler.anonymous && (
-              <Chip variant="tint" className="ms-1">
-                Anonymous
-              </Chip>
+              <li>
+                <Chip variant="tint">
+                  <EyeOff aria-hidden strokeWidth={2} />
+                  Anonymous
+                </Chip>
+              </li>
             )}
-          </div>
+          </ul>
           {holler.anonymous && (
             <p className="text-muted text-sm">
               Your name is not kept with your answers. {holler.senderName} sees how many people
@@ -301,9 +336,11 @@ function OpenForm({ form, id, link }: OpenFormProps) {
             </Button>
           </PlateRow>
         )}
-        {questions.map((question) => (
-          <PlateRow key={question.id} className="px-6 py-6 sm:px-8 sm:py-7">
+        <PlateRow className="flex flex-col gap-10 px-6 py-7 sm:px-8 sm:py-8">
+          {questions.map((question, index) => (
             <AnswerQuestion
+              key={question.id}
+              number={questions.length > 1 ? index + 1 : undefined}
               ref={(el) => {
                 if (el) refs.current.set(question.id, el);
                 else refs.current.delete(question.id);
@@ -316,14 +353,14 @@ function OpenForm({ form, id, link }: OpenFormProps) {
               error={problems[question.id]}
               searchPeople={searchPeople}
             />
-          </PlateRow>
-        ))}
+          ))}
+        </PlateRow>
+        <SendBar
+          pending={send.isPending}
+          chase={holler.mode === "chase"}
+          message={failed ?? (waiting > 0 ? problemsLine(waiting, questions) : null)}
+        />
       </Plate>
-      <SendBar
-        pending={send.isPending}
-        chase={holler.mode === "chase"}
-        message={failed ?? (waiting > 0 ? problemsLine(waiting, questions) : null)}
-      />
     </form>
   );
 }
@@ -343,7 +380,7 @@ function SendBar({
   message: string | null;
 }) {
   return (
-    <div className="flex flex-col-reverse items-stretch gap-3 px-1 sm:flex-row sm:items-center sm:justify-end">
+    <PlateRow className="flex flex-col-reverse items-stretch gap-3 bg-canvas/60 px-6 py-5 sm:flex-row sm:items-center sm:justify-end sm:px-8">
       {message && (
         <p role="alert" className="text-danger-ink text-sm sm:me-auto">
           {message}
@@ -352,7 +389,7 @@ function SendBar({
       <Button type="submit" variant="primary" size="lg" pending={pending} className="sm:min-w-48">
         {chase ? "I submitted it" : "Send answers"}
       </Button>
-    </div>
+    </PlateRow>
   );
 }
 

@@ -40,11 +40,12 @@ export function rangeMessage(min: number | null, max: number | null): string {
   return `Enter a whole number of ${count.format(max ?? 0)} or less.`;
 }
 
+export const needsAnswer = "This question needs an answer.";
+
 export function answerProblem(
   question: CheckedQuestion,
   answer: CheckedAnswer | undefined,
 ): string | null {
-  const needsAnswer = "This question needs an answer.";
   const note = answer?.note?.trim() || null;
   const otherText = answer?.otherText?.trim() || null;
   if (!isChoice(question.type)) {

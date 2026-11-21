@@ -20,7 +20,7 @@ const question = (page: Page, prompt: string) => page.getByRole("group", { name:
 test("a recipient answers every question type, with a follow-up after some answers", async ({
   page,
 }) => {
-  const { url } = await webSurvey();
+  const { id, url } = await webSurvey();
   const failures: string[] = [];
   page.on("console", (message) => {
     if (message.type() === "error") failures.push(message.text());
@@ -42,7 +42,7 @@ test("a recipient answers every question type, with a follow-up after some answe
   await page.getByRole("button", { name: "Send answers" }).click();
   await expect(page.getByText("7 answers need another look.")).toBeVisible();
   await expect(
-    question(page, "Will you fly?").getByText("This question needs an answer."),
+    question(page, "Will you fly?").getByText("Needs an answer", { exact: true }),
   ).toBeVisible();
   await expect(page.locator("fieldset [aria-invalid=true]")).toHaveCount(0);
   await expectAccessible(page);
@@ -81,17 +81,16 @@ test("a recipient answers every question type, with a follow-up after some answe
   );
 
   await page.getByRole("button", { name: "Send answers" }).click();
-  await expect(page.getByRole("heading", { name: "Thank you, your answers are in" })).toBeVisible();
-  await expect(page.getByText("Mira sees them with everyone else's.")).toBeVisible();
-  const yours = page.locator("[data-slot=your-answers]");
-  await expect(yours.getByRole("heading", { name: "Your answers" })).toBeVisible();
-  await expect(yours.getByText("Helsinki", { exact: true })).toBeVisible();
-  await expect(yours.getByText("Close to everyone")).toBeVisible();
-  await expect(yours.getByText("Marta Kowalska")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Your answers are in" })).toBeVisible();
+  await expect(page.getByText("Thank you. Mira sees them with everyone else's.")).toBeVisible();
+  await expect(page.getByRole("link", { name: "See my answers" })).toHaveAttribute(
+    "href",
+    `/answers/${id}`,
+  );
   await expectAccessible(page);
 
   await page.reload();
-  await expect(page.getByRole("heading", { name: "Thank you, your answers are in" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Your answers are in" })).toBeVisible();
   expect(failures).toEqual([]);
 });
 
@@ -108,7 +107,7 @@ test("a closed Holler says it closed instead of showing the form", async ({ page
   const closed = await lead.post(`/api/hollers/${id}/close`);
   expect(closed.status(), await closed.text()).toBe(200);
   await page.goto(url);
-  await expect(page.getByRole("heading", { name: "This Holler is closed" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "This Holler has closed" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Send answers" })).toHaveCount(0);
   await expectAccessible(page);
 });

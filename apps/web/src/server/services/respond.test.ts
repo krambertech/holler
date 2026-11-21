@@ -209,30 +209,6 @@ describe("the form", () => {
     expect(edit?.text).toBe("Thanks. Your answer to Offsite is in.");
   });
 
-  it("reads their own answers back once they answered, Other's words and the note included", async () => {
-    const { env, holler, as } = await live();
-    const ctx = await as("UA");
-    const form = await respondFormFor(ctx, holler.id);
-    if (form.state !== "open") throw new Error("expected an open form");
-    const [where, ...rest] = form.questions;
-    if (!where) throw new Error("expected the first question");
-    const other = where.options.find((o) => o.isOther);
-    const answers = [
-      { questionId: where.id, optionIds: [other?.id ?? ""], otherText: "Helsinki", note: "Sauna" },
-      ...rest.map(fill),
-    ];
-    const after = await answerOnWeb(ctx, env, holler.id, { answers });
-    if (after.state !== "answered") throw new Error("expected the answered state");
-    expect(after.given?.map((g) => g.prompt)).toEqual(form.questions.map((q) => q.prompt));
-    expect(after.given?.[0]).toMatchObject({ picks: ["Helsinki"], note: "Sauna" });
-    const days = after.given?.find((g) => g.prompt === "Which days?");
-    expect(days).toMatchObject({ picks: ["Day 1", "Day 2"], note: "Weekdays suit me" });
-    expect(after.given?.find((g) => g.prompt === "How many nights?")?.picks).toEqual(["1"]);
-    expect(after.given?.find((g) => g.prompt === "How calm?")?.picks).toEqual(["1, Chaos"]);
-    expect(after.given?.find((g) => g.prompt === "Anything else?")?.picks).toEqual(["Some words"]);
-    expect(after.given?.find((g) => g.prompt === "Who plans it?")?.picks).toHaveLength(2);
-  });
-
   it("keeps no name on an anonymous Holler's answers", async () => {
     const { env, holler, as } = await live({ anonymous: true });
     const ctx = await as("UA");
@@ -245,10 +221,7 @@ describe("the form", () => {
       .from(schema.responses)
       .where(eq(schema.responses.hollerId, holler.id));
     expect(response?.slackUserId).toBeNull();
-    await expect(respondFormFor(ctx, holler.id)).resolves.toMatchObject({
-      state: "answered",
-      given: null,
-    });
+    await expect(respondFormFor(ctx, holler.id)).resolves.toMatchObject({ state: "answered" });
   });
 
   it("says they answered on a second visit and on a second submit", async () => {

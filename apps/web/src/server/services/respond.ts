@@ -1,10 +1,4 @@
-import type {
-  RespondGiven,
-  RespondForm,
-  RespondLink,
-  RespondPerson,
-  ResponseInput,
-} from "@holler/core";
+import type { RespondForm, RespondLink, RespondPerson, ResponseInput } from "@holler/core";
 import { and, eq, inArray } from "@holler/core/db";
 import { type Db, schema } from "../db";
 import type { Bindings } from "../env";
@@ -77,10 +71,7 @@ export async function respondFormFor(ctx: ServiceContext, hollerId: string): Pro
     closesAt: (row.closedAt ?? row.closesAt)?.toISOString() ?? null,
     externalUrl: h.externalUrl,
   };
-  if (recipient.answeredAt) {
-    const given = h.anonymous ? null : await givenBy(ctx, hollerId, slackUserId);
-    return { state: "answered", holler, given };
-  }
+  if (recipient.answeredAt) return { state: "answered", holler };
   if (row.status !== "live") return { state: "closed", holler };
 
   const others =
@@ -131,88 +122,6 @@ export async function respondFormFor(ctx: ServiceContext, hollerId: string): Pro
     };
   });
   return { state: "open", holler, questions };
-}
-
-async function givenBy(
-  ctx: ServiceContext,
-  hollerId: string,
-  slackUserId: string,
-): Promise<RespondGiven[] | null> {
-  const response = await ctx.db.query.responses.findFirst({
-    where: and(
-      eq(schema.responses.hollerId, hollerId),
-      eq(schema.responses.slackUserId, slackUserId),
-    ),
-  });
-  if (!response) return null;
-  const [qs, rows, notes] = await Promise.all([
-    ctx.db
-      .select()
-      .from(schema.questions)
-      .where(eq(schema.questions.hollerId, hollerId))
-      .orderBy(schema.questions.position),
-    ctx.db.select().from(schema.answers).where(eq(schema.answers.responseId, response.id)),
-    ctx.db.select().from(schema.answerNotes).where(eq(schema.answerNotes.responseId, response.id)),
-  ]);
-  const opts =
-    qs.length === 0
-      ? []
-      : await ctx.db
-          .select()
-          .from(schema.options)
-          .where(
-            inArray(
-              schema.options.questionId,
-              qs.map((q) => q.id),
-            ),
-          )
-          .orderBy(schema.options.position);
-  const pickedPeople = rows.filter((a) => qs.find((q) => q.id === a.questionId)?.type === "person");
-  const people =
-    pickedPeople.length === 0
-      ? []
-      : await ctx.db
-          .select()
-          .from(schema.slackPeople)
-          .where(
-            and(
-              eq(schema.slackPeople.workspaceId, ctx.workspaceId),
-              inArray(
-                schema.slackPeople.slackUserId,
-                pickedPeople.map((a) => a.text ?? ""),
-              ),
-            ),
-          );
-  return qs.map((q) => {
-    const own = rows.filter((a) => a.questionId === q.id);
-    const noteOf = (kind: "note" | "other") =>
-      notes.find((n) => n.questionId === q.id && n.kind === kind)?.text ?? null;
-    let picks: string[];
-    if (q.type === "person") {
-      picks = own.map((a) => {
-        const p = people.find((person) => person.slackUserId === a.text);
-        return p?.name || p?.displayName || a.text || "";
-      });
-    } else if (q.type === "text" || q.type === "number") {
-      picks = own.map((a) => a.text ?? "");
-    } else {
-      const listed = opts.filter((o) => o.questionId === q.id && !o.isOther);
-      const endWord = (optionId: string) => {
-        if (q.style !== "scale") return null;
-        if (optionId === listed[0]?.id) return q.lowLabel;
-        if (optionId === listed[listed.length - 1]?.id) return q.highLabel;
-        return null;
-      };
-      picks = opts
-        .filter((o) => o.questionId === q.id && own.some((a) => a.optionId === o.id))
-        .map((o) => {
-          if (o.isOther) return noteOf("other") ?? "Other";
-          const word = endWord(o.id);
-          return word ? `${o.label}, ${word}` : o.label;
-        });
-    }
-    return { questionId: q.id, prompt: q.prompt, picks, note: noteOf("note") };
-  });
 }
 
 export async function answerOnWeb(

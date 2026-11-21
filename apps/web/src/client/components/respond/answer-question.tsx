@@ -1,11 +1,19 @@
 import { Radio as RadioPrimitive } from "@base-ui/react/radio";
 import { RadioGroup as RadioGroupPrimitive } from "@base-ui/react/radio-group";
 import type { RespondPerson, RespondQuestion } from "@holler/core";
-import { otherOption } from "@holler/core";
+import { needsAnswer, otherOption } from "@holler/core";
 import { EASE_OUT } from "@holler/design";
-import { CornerDownRight } from "lucide-react";
+import { Check, CircleAlert, CornerDownRight, X } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { type ComponentProps, type ReactNode, useEffect, useId, useRef, useState } from "react";
+import {
+  type ComponentProps,
+  type CSSProperties,
+  type ReactNode,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+} from "react";
 import { Avatar } from "@/components/ui/avatar";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -34,6 +42,7 @@ interface Props extends Omit<ComponentProps<"fieldset">, "onChange"> {
   value: DraftAnswer;
   onValueChange: (next: DraftAnswer) => void;
   error?: string | undefined;
+  number?: number | undefined;
   searchPeople: (query: string) => Promise<RespondPerson[]>;
 }
 
@@ -42,12 +51,14 @@ function AnswerQuestion({
   value,
   onValueChange,
   error,
+  number,
   searchPeople,
   className,
   ...props
 }: Props) {
   const legendId = useId();
   const hint = hintFor(question);
+  const missing = error === needsAnswer;
   return (
     <FieldSet
       data-slot="answer-question"
@@ -62,8 +73,18 @@ function AnswerQuestion({
           question.description || hint ? "mb-1" : "mb-3",
         )}
       >
+        {number !== undefined && (
+          <span className="w-6 shrink-0 text-muted tabular">{count(number)}</span>
+        )}
         <span className="min-w-0 flex-1 text-pretty">{question.prompt}</span>
-        {!question.required && <span className="shrink-0 text-muted text-sm">Optional</span>}
+        {missing ? (
+          <span className="flex shrink-0 items-center gap-1 self-center text-danger-ink text-sm">
+            <CircleAlert aria-hidden size={14} strokeWidth={2} />
+            Needs an answer
+          </span>
+        ) : (
+          !question.required && <span className="shrink-0 text-muted text-sm">Optional</span>
+        )}
       </FieldLegend>
       {(question.description || hint) && (
         <div className="flex flex-col gap-0.5 text-muted text-sm">
@@ -79,6 +100,7 @@ function AnswerQuestion({
         invalid={Boolean(error)}
         searchPeople={searchPeople}
       />
+      <FieldError>{missing ? null : error}</FieldError>
       <Reveal shown={noteShown(question, value)}>
         <Field data-slot="follow-up" className="gap-2.5 rounded-control bg-well p-4">
           <FieldLabel aside="Optional" className="flex items-center gap-2 text-ink">
@@ -98,7 +120,6 @@ function AnswerQuestion({
           />
         </Field>
       </Reveal>
-      <FieldError>{error}</FieldError>
     </FieldSet>
   );
 }
@@ -158,6 +179,7 @@ function Control(props: ControlProps) {
       return <PeoplePicker {...props} />;
     case "single":
       if (question.style === "scale" && numbered(question)) return <NumberScale {...props} />;
+      if (question.style === "scale" && !otherOption(question)) return <WordScale {...props} />;
       if (question.style === "binary") return <Tiles {...props} />;
       return question.options.length > inlineOptions ? (
         <OptionSearch {...props} />
@@ -211,7 +233,11 @@ function OptionRadios(props: ControlProps) {
         className="gap-0"
       >
         {question.options.map((option, index) => (
-          <Field key={option.id} orientation="horizontal" className="min-h-11 py-1">
+          <Field
+            key={option.id}
+            orientation="horizontal"
+            className="min-h-8 py-0.5 pointer-coarse:min-h-11"
+          >
             <RadioGroupItem value={option.id} />
             <FieldLabel className="text-base text-ink">{labelOf(question, index)}</FieldLabel>
           </Field>
@@ -238,7 +264,7 @@ function OptionChecks(props: ControlProps) {
             <Field
               key={option.id}
               orientation="horizontal"
-              className="min-h-11 py-1"
+              className="min-h-8 py-0.5 pointer-coarse:min-h-11"
               disabled={full && !on}
             >
               <Checkbox
@@ -278,6 +304,16 @@ const tileClassName = cn(
   "focus-visible:outline-2 focus-visible:outline-focus focus-visible:outline-offset-2",
 );
 
+const phoneRow = 6;
+
+function scaleColumns(count: number): CSSProperties {
+  const phone = count <= phoneRow ? count : Math.ceil(count / 2);
+  return {
+    "--scale-phone": `repeat(${phone}, minmax(0, 1fr))`,
+    "--scale-columns": `repeat(${count}, minmax(0, 1fr))`,
+  } as CSSProperties;
+}
+
 function NumberScale({ question, value, onValueChange, legendId }: ControlProps) {
   const picked = value.optionIds[0] ?? null;
   return (
@@ -286,8 +322,8 @@ function NumberScale({ question, value, onValueChange, legendId }: ControlProps)
         aria-labelledby={legendId}
         value={picked}
         onValueChange={(next) => onValueChange({ ...value, optionIds: next ? [next] : [] })}
-        className="grid gap-1.5"
-        style={{ gridTemplateColumns: `repeat(${question.options.length}, minmax(0, 1fr))` }}
+        className="grid grid-cols-(--scale-phone) gap-1.5 sm:grid-cols-(--scale-columns)"
+        style={scaleColumns(question.options.length)}
       >
         {question.options.map((option, index) => (
           <RadioPrimitive.Root
@@ -319,9 +355,41 @@ function Tiles({ question, value, onValueChange, legendId }: ControlProps) {
       onValueChange={(next) => onValueChange({ ...value, optionIds: next ? [next] : [] })}
       className="grid grid-cols-2 gap-2 sm:max-w-sm"
     >
-      {question.options.map((option) => (
-        <RadioPrimitive.Root key={option.id} value={option.id} className={tileClassName}>
+      {question.options.map((option, index) => (
+        <RadioPrimitive.Root
+          key={option.id}
+          value={option.id}
+          className={cn(tileClassName, "flex gap-2 [&_svg]:size-[18px]")}
+        >
+          {index === 0 ? <Check aria-hidden strokeWidth={2} /> : <X aria-hidden strokeWidth={2} />}
           {option.label}
+        </RadioPrimitive.Root>
+      ))}
+    </RadioGroupPrimitive>
+  );
+}
+
+function WordScale({ question, value, onValueChange, legendId }: ControlProps) {
+  const picked = value.optionIds[0] ?? null;
+  return (
+    <RadioGroupPrimitive<string | null>
+      aria-labelledby={legendId}
+      value={picked}
+      onValueChange={(next) => onValueChange({ ...value, optionIds: next ? [next] : [] })}
+      className="grid gap-1.5 sm:grid-cols-(--scale-columns)"
+      style={
+        {
+          "--scale-columns": `repeat(${question.options.length}, minmax(0, 1fr))`,
+        } as CSSProperties
+      }
+    >
+      {question.options.map((option, index) => (
+        <RadioPrimitive.Root
+          key={option.id}
+          value={option.id}
+          className={cn(tileClassName, "py-2 text-center text-balance leading-snug sm:text-sm")}
+        >
+          {labelOf(question, index)}
         </RadioPrimitive.Root>
       ))}
     </RadioGroupPrimitive>
