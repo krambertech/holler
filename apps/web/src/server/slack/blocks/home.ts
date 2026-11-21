@@ -107,7 +107,6 @@ function senderBlocks(sender: NonNullable<HomeState["sender"]>, state: HomeState
     blocks.push(context("Nothing is live right now. A Holler you send shows up here."));
     return blocks;
   }
-  blocks.push(divider);
   for (const row of sender.live) blocks.push(...liveRow(row, state));
   if (sender.moreLive === 1) {
     blocks.push(context(`And 1 more live Holler. <${state.productUrl}|See it in Holler>`));

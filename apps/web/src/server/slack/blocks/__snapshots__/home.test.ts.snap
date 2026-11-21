@@ -117,9 +117,6 @@ From Mira Kask · Closes Sunday at 12:00",
       "type": "actions",
     },
     {
-      "type": "divider",
-    },
-    {
       "block_id": "live:h_offsite",
       "text": {
         "text": "*Where should the offsite be?*
