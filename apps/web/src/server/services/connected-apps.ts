@@ -1,5 +1,5 @@
 import { and, eq, inArray, isNull, max } from "@holler/core/db";
-import { inChunks } from "../batch";
+import { readInChunks } from "../batch";
 import type { Db } from "../db";
 import { schema } from "../db";
 import { currentMemberFor, type Scope, scopesOf } from "../principal";
@@ -61,10 +61,10 @@ export async function listConnectedApps(ctx: ServiceContext): Promise<ConnectedA
       and(eq(schema.oauthConsent.userId, userId), eq(schema.oauthConsent.referenceId, memberId)),
     );
   if (consents.length === 0) return [];
-  const used = [];
-  for (const chunk of inChunks(consents.map((c) => c.clientId))) {
-    used.push(
-      ...(await ctx.db
+  const used = await readInChunks(
+    consents.map((c) => c.clientId),
+    (chunk) =>
+      ctx.db
         .select({
           clientId: schema.oauthAccessToken.clientId,
           at: max(schema.oauthAccessToken.createdAt),
@@ -76,9 +76,8 @@ export async function listConnectedApps(ctx: ServiceContext): Promise<ConnectedA
             inArray(schema.oauthAccessToken.clientId, chunk),
           ),
         )
-        .groupBy(schema.oauthAccessToken.clientId)),
-    );
-  }
+        .groupBy(schema.oauthAccessToken.clientId),
+  );
   const lastUsed = new Map(used.map((row) => [row.clientId, row.at]));
   return consents
     .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())

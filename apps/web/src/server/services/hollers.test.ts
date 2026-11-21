@@ -356,6 +356,28 @@ describe("home", () => {
     expect(preview.groups).toHaveLength(100);
     expect(preview.reach).toBe(200);
   });
+
+  it("counts a group once when the audience names it in two lookups", async () => {
+    const { ctx, workspaceId } = await workspaceFixture(db);
+    const groups = Array.from({ length: 90 }, (_, i) => `S${i}`);
+    for (const slackId of groups) {
+      await db.insert(schema.slackGroups).values({
+        workspaceId,
+        slackId,
+        kind: "usergroup",
+        name: slackId,
+        searchName: slackId.toLocaleLowerCase(),
+        memberCount: 2,
+      });
+    }
+    const draft = await createDraft(ctx, {
+      ...pulse,
+      audience: { people: [], groups: [...groups, "S0"], everyone: false },
+    });
+    const preview = await previewSend(ctx, draft.id);
+    expect(preview.groups).toHaveLength(90);
+    expect(preview.reach).toBe(180);
+  });
 });
 
 describe("sendProblems", () => {

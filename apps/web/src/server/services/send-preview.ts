@@ -1,6 +1,6 @@
 import type { SendPreview } from "@holler/core";
 import { and, eq, inArray, sql } from "@holler/core/db";
-import { inChunks } from "../batch";
+import { readInChunks } from "../batch";
 import { schema } from "../db";
 import { hmacSha256, timingSafeEqual } from "../hmac";
 import { type ServiceContext, ServiceError } from "./context";
@@ -42,24 +42,21 @@ export async function previewSend(ctx: ServiceContext, id: string): Promise<Send
             ),
           );
   const nameOf = new Map(people.map((p) => [p.slackUserId, p.name]));
-  const groups: { name: string; kind: "usergroup" | "channel"; memberCount: number | null }[] = [];
-  for (const chunk of inChunks(audience.groups)) {
-    groups.push(
-      ...(await ctx.db
-        .select({
-          name: schema.slackGroups.name,
-          kind: schema.slackGroups.kind,
-          memberCount: schema.slackGroups.memberCount,
-        })
-        .from(schema.slackGroups)
-        .where(
-          and(
-            eq(schema.slackGroups.workspaceId, ctx.workspaceId),
-            inArray(schema.slackGroups.slackId, chunk),
-          ),
-        )),
-    );
-  }
+  const groups = await readInChunks(audience.groups, (chunk) =>
+    ctx.db
+      .select({
+        name: schema.slackGroups.name,
+        kind: schema.slackGroups.kind,
+        memberCount: schema.slackGroups.memberCount,
+      })
+      .from(schema.slackGroups)
+      .where(
+        and(
+          eq(schema.slackGroups.workspaceId, ctx.workspaceId),
+          inArray(schema.slackGroups.slackId, chunk),
+        ),
+      ),
+  );
   let reach = audience.people.length + groups.reduce((sum, g) => sum + (g.memberCount ?? 0), 0);
   if (audience.everyone) {
     const [row] = await ctx.db

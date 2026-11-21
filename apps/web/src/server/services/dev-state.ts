@@ -1,5 +1,5 @@
 import { desc, eq, inArray } from "@holler/core/db";
-import { inChunks } from "../batch";
+import { readInChunks } from "../batch";
 import { type Db, schema } from "../db";
 import { type ServiceContext, ServiceError } from "./context";
 import { DEV_TEAM_ID, personas } from "./dev-seed";
@@ -22,15 +22,11 @@ export async function devState(ctx: ServiceContext) {
     where: eq(schema.hollers.workspaceId, ctx.workspaceId),
     orderBy: desc(schema.hollers.createdAt),
   });
-  const recipients: (typeof schema.recipients.$inferSelect)[] = [];
-  for (const chunk of inChunks(hollers.map((holler) => holler.id))) {
-    recipients.push(
-      ...(await ctx.db
-        .select()
-        .from(schema.recipients)
-        .where(inArray(schema.recipients.hollerId, chunk))),
-    );
-  }
+  const recipients = await readInChunks(
+    hollers.map((holler) => holler.id),
+    (chunk) =>
+      ctx.db.select().from(schema.recipients).where(inArray(schema.recipients.hollerId, chunk)),
+  );
   const recipientsOf = (hollerId: string) =>
     recipients.filter((recipient) => recipient.hollerId === hollerId);
   const activity = await ctx.db.query.activity.findMany({
