@@ -17,6 +17,10 @@ test("a lead types who to send to, adds by keyboard, and takes one out with Back
   // Typing lists matches at once, accents or not; Enter adds the first.
   await field.pressSequentially("tomas");
   await expect(page.getByRole("option", { name: /Tomás Ruiz/ })).toBeVisible();
+  // Axe reads colours mid-fade as low contrast, so it waits for the list to settle.
+  await page
+    .locator('[data-slot="audience-results"]')
+    .evaluate((list) => Promise.all(list.getAnimations({ subtree: true }).map((a) => a.finished)));
   await expectAccessible(page);
   await page.keyboard.press("Enter");
   await expect(chips).toHaveText([/Tomás Ruiz/]);
@@ -36,11 +40,12 @@ test("a lead types who to send to, adds by keyboard, and takes one out with Back
   await page.keyboard.press("Backspace");
   await expect(page.getByRole("button", { name: "Remove Tomás Ruiz" })).toBeFocused();
   await expect(chips).toHaveCount(2);
+  // Before the Undo toast: Base UI hides its close button from screen readers until the toasts expand.
+  await expectAccessible(page);
   await page.keyboard.press("Backspace");
   await expect(chips).toHaveText([/@design/]);
   await expect(field).toBeFocused();
   await expect(status).toHaveText("Removed Tomás Ruiz. About 6 people.");
-  await expectAccessible(page);
 
   // Undo brings it back.
   await page.getByRole("button", { name: "Undo" }).click();
@@ -56,4 +61,6 @@ test("a lead types who to send to, adds by keyboard, and takes one out with Back
   await page.keyboard.press("Escape");
   await page.keyboard.press("Escape");
   await expect(chips).toHaveCount(2);
+  await expect(page.locator('[data-slot="toast-close"]')).toHaveCount(0);
+  await expectAccessible(page);
 });
