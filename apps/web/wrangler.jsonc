@@ -43,8 +43,17 @@
   ],
   "queues": {
     // One message per Slack send: invites, reminders, thank-yous, close notices. docs/stack.md, Sending.
-    // The consumer is added with src/server/slack/queue.ts, which owns sending.
-    "producers": [{ "binding": "SLACK_SENDS", "queue": "holler-slack-sends" }]
+    "producers": [{ "binding": "SLACK_SENDS", "queue": "holler-slack-sends" }],
+    // src/server/slack/queue.ts. Small batches keep each run well inside Slack's rate limits;
+    // a message retries on its own with backoff or Slack's Retry-After.
+    "consumers": [
+      {
+        "queue": "holler-slack-sends",
+        "max_batch_size": 10,
+        "max_batch_timeout": 1,
+        "max_retries": 6
+      }
+    ]
   },
   // `CLOUDFLARE_ENV=preview pnpm build` targets this. A separate Worker and database with the dev
   // personas on, for pull request previews. Bindings are not inherited, so each is restated.
@@ -73,7 +82,15 @@
       ],
       "kv_namespaces": [{ "binding": "SESSIONS", "id": "b324f9e8fc594b12a2dc747e78987ae6" }],
       "queues": {
-        "producers": [{ "binding": "SLACK_SENDS", "queue": "holler-preview-slack-sends" }]
+        "producers": [{ "binding": "SLACK_SENDS", "queue": "holler-preview-slack-sends" }],
+        "consumers": [
+          {
+            "queue": "holler-preview-slack-sends",
+            "max_batch_size": 10,
+            "max_batch_timeout": 1,
+            "max_retries": 6
+          }
+        ]
       }
     }
   }

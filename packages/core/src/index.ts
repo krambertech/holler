@@ -7,3 +7,4 @@ export * from "./results";
 export * from "./surfaces";
 export * from "./templates";
 export * from "./types";
+export * from "./zones";

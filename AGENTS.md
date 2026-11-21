@@ -20,7 +20,7 @@ Holler needs Node 24 (`.nvmrc`).
 pnpm verify
 ```
 
-It runs formatting, lint, the design, styling and migration checks, typechecking, every test, both builds and the bundle boundary check. `pnpm fix` writes Biome's fixes. For a change a person sees, also run `pnpm test:e2e` and prove it with the [`verify`](.agents/skills/verify/SKILL.md) skill: it drives each feature the diff reaches at 1280 px and 375 px, in day and night, and keeps the evidence. A product change is not done until it has been driven.
+It runs formatting, lint, the design, styling and migration checks, typechecking, every test, both builds and the bundle boundary check. A bug fix ships with a check that fails for its whole class, and a row in the Enforced rules table; [`docs/testing.md`](docs/testing.md) says how. `pnpm fix` writes Biome's fixes. For a change a person sees, also run `pnpm test:e2e` and prove it with the [`verify`](.agents/skills/verify/SKILL.md) skill: it drives each feature the diff reaches at 1280 px and 375 px, in day and night, and keeps the evidence. A product change is not done until it has been driven.
 
 Open pull requests with the [`open-pr`](.agents/skills/open-pr/SKILL.md) skill and the [template](.github/pull_request_template.md). For branches, commit messages, pull request titles and merging, follow [`docs/git-workflow.md`](docs/git-workflow.md).
 
@@ -64,6 +64,16 @@ Project skills live in `.agents/skills/`; `.claude/skills` links to it so every 
 | Every journey page passes axe at WCAG 2.2 AA                                | `e2e/`                                               |
 | Concurrent first dev sign-ins all succeed and seed once                    | `apps/web/src/server/routes/dev-concurrency.test.ts` |
 | Pull request titles follow `type(scope): summary` within 72 characters      | `scripts/check-pr-title.mjs` in CI                   |
+| Server inserts one row per statement, inside D1's 100-value limit | `biome-plugins/no-multi-row-insert.grit` |
+| Every Slack message and view fits Block Kit's limits | `FakeSlack` refuses what Slack would; `slack/blocks/messages.test.ts` sends the largest Holler |
+| Work claimed for the queue is given back when the queue refuses it | `queueClaimed`; `services/delivery.test.ts`, "no claimed work is lost" |
+| A send, close, reminder or answer happens once when callers race | `services/delivery.test.ts`, "exactly once under concurrency" |
+| Every queued send that posts to Slack posts once, however often it arrives | `sendEffects` and `postKey` in `services/delivery.ts`; `services/delivery.test.ts`, "every send that posts, posts once" |
+| One cron step failing never stops another | `runSteps`; `cron.test.ts` |
+| Reminders land in working hours, clear of the close, in every zone | `packages/core/src/reminders.test.ts` sweep |
+| The dev seed leaves room to send on every day of a month | `services/dev-seed.test.ts` |
+| Server tests pass in any order | `sequence.shuffle` with a fixed seed in `apps/web/vitest.config.ts` |
+| Every modal element reads back into an answer `recordResponse` takes | `services/answering.test.ts` fills each element by type |
 
 ## Generated files
 

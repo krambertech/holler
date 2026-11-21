@@ -117,6 +117,8 @@ export async function seedLeadHollers(db: Db, workspaceId: string, creatorId: st
     tags?: string[];
     externalUrl?: string;
     recipients: string[];
+    /** Who it goes to when that differs from who got it: a scheduled Holler has no recipients yet. */
+    audience?: string[];
     answered: number;
     sentAt?: Date;
     sendAt?: Date;
@@ -187,6 +189,7 @@ export async function seedLeadHollers(db: Db, workspaceId: string, creatorId: st
       title: "Retro: what should we change?",
       anonymous: true,
       recipients: [],
+      audience: team.slice(0, 5),
       answered: 0,
       sendAt: at(3 * DAY),
       questions: [{ type: "text", prompt: "What should we change?" }],
@@ -198,9 +201,9 @@ export async function seedLeadHollers(db: Db, workspaceId: string, creatorId: st
       tags: ["weekly"],
       recipients: team.slice(0, 12),
       answered: 11,
-      sentAt: at(-11 * DAY),
-      closesAt: at(-7 * DAY),
-      closedAt: at(-7 * DAY),
+      sentAt: at(-40 * DAY),
+      closesAt: at(-36 * DAY),
+      closedAt: at(-36 * DAY),
       questions: [mood],
     },
     {
@@ -209,9 +212,9 @@ export async function seedLeadHollers(db: Db, workspaceId: string, creatorId: st
       title: "New laptop: Mac or Framework?",
       recipients: team.slice(0, 6),
       answered: 6,
-      sentAt: at(-20 * DAY),
-      closesAt: at(-16 * DAY),
-      closedAt: at(-16 * DAY),
+      sentAt: at(-50 * DAY),
+      closesAt: at(-46 * DAY),
+      closedAt: at(-46 * DAY),
       questions: [
         { type: "single", style: "binary", prompt: "Mac?", options: ["Yes", "No"] },
         { type: "text", prompt: "Why?" },
@@ -236,11 +239,12 @@ export async function seedLeadHollers(db: Db, workspaceId: string, creatorId: st
         anonymous: seed.anonymous ?? false,
         tags: seed.tags ?? [],
         externalUrl: seed.externalUrl ?? null,
-        audience: { people: seed.recipients, groups: [], everyone: false },
+        audience: { people: seed.audience ?? seed.recipients, groups: [], everyone: false },
         sendAt: seed.sendAt ?? null,
         sentAt: seed.sentAt ?? null,
         closesAt: seed.closesAt ?? null,
         closedAt: seed.closedAt ?? null,
+        closeQueuedAt: seed.closedAt ?? null,
         createdVia: "web",
         idempotencyKey,
         createdAt: seed.sentAt ?? at(-1 * HOUR),
@@ -283,6 +287,9 @@ export async function seedLeadHollers(db: Db, workspaceId: string, creatorId: st
           slackUserId,
           addedVia: "person",
           invitedAt: seed.sentAt ?? null,
+          // Each invite was a DM, so answering, reminding and closing can edit it.
+          dmChannelId: `D${slackUserId.slice(1)}`,
+          dmTs: `${Math.floor((seed.sentAt?.getTime() ?? 0) / 1000)}.${String(index).padStart(6, "0")}`,
           answeredAt: answeredAt && seed.anonymous ? anonymousTime(answeredAt) : answeredAt,
           remindersSent: answered ? 0 : 1,
         }),

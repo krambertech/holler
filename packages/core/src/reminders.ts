@@ -1,3 +1,5 @@
+import { instantOf, wallClockIn } from "./zones";
+
 /**
  * The reminder rhythm, fixed for every Holler. A gentle reminder a day after the invite, a nudge
  * three days in, and a last one five days in, each only while the person is still waiting and
@@ -27,16 +29,7 @@ export interface ReminderState {
 
 /** The local hour in an IANA time zone, falling back to UTC for an unknown zone. */
 export function localHour(at: Date, timeZone: string | null): number {
-  try {
-    const hour = new Intl.DateTimeFormat("en-GB", {
-      hour: "numeric",
-      hourCycle: "h23",
-      timeZone: timeZone ?? "UTC",
-    }).format(at);
-    return Number(hour);
-  } catch {
-    return at.getUTCHours();
-  }
+  return wallClockIn(at, timeZone).hour;
 }
 
 /**
@@ -62,3 +55,22 @@ export function nextReminder(
   if (dueAt.getTime() > state.closesAt.getTime() - quietBeforeCloseHours * HOUR) return null;
   return { tone: tier.tone, dueAt };
 }
+
+/**
+ * Where "Remind me later" moves a person's next reminder: 15:00 today in their zone, or 09:00
+ * tomorrow when it is already 15:00 or later.
+ */
+export function snoozeTarget(now: Date, timeZone: string | null): Date {
+  const wall = wallClockIn(now, timeZone);
+  if (wall.hour < snoozeAfternoonHour) {
+    return instantOf({ ...wall, hour: snoozeAfternoonHour, minute: 0 }, timeZone);
+  }
+  // Noon today plus a day is always tomorrow, whatever daylight saving does tonight.
+  const tomorrow = wallClockIn(
+    new Date(instantOf({ ...wall, hour: 12, minute: 0 }, timeZone).getTime() + 24 * HOUR),
+    timeZone,
+  );
+  return instantOf({ ...tomorrow, hour: workdayStartHour, minute: 0 }, timeZone);
+}
+
+export const snoozeAfternoonHour = 15;

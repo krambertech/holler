@@ -1,5 +1,6 @@
 import { newId } from "@holler/core";
 import { eq } from "@holler/core/db";
+import { runBatch } from "../batch";
 import { type Db, schema } from "../db";
 import type { ServiceContext } from "./context";
 
@@ -23,13 +24,13 @@ export async function workspaceFixture(db: Db, now = new Date("2026-11-20T10:00:
     db
       .insert(schema.members)
       .values({ id: memberId, workspaceId, userId, slackUserId: "ULEAD", role: "owner" }),
-    db.insert(schema.slackPeople).values(
-      ["ULEAD", "UA", "UB", "UC", "UD", "UE", "UF"].map((slackUserId) => ({
+    ...["ULEAD", "UA", "UB", "UC", "UD", "UE", "UF"].map((slackUserId) =>
+      db.insert(schema.slackPeople).values({
         workspaceId,
         slackUserId,
         name: `Person ${slackUserId}`,
         searchName: `person ${slackUserId}`.toLocaleLowerCase(),
-      })),
+      }),
     ),
   ]);
   const ctx: ServiceContext = {
@@ -47,12 +48,12 @@ export async function makeLive(db: Db, hollerId: string, slackUserIds: string[],
     .update(schema.hollers)
     .set({ status: "live", sentAt: now, closesAt: new Date(now.getTime() + 72 * 3600_000) })
     .where(eq(schema.hollers.id, hollerId));
-  await db.insert(schema.recipients).values(
-    slackUserIds.map((slackUserId) => ({
-      hollerId,
-      slackUserId,
-      addedVia: "person",
-      invitedAt: now,
-    })),
+  await runBatch(
+    db,
+    slackUserIds.map((slackUserId) =>
+      db
+        .insert(schema.recipients)
+        .values({ hollerId, slackUserId, addedVia: "person", invitedAt: now }),
+    ),
   );
 }

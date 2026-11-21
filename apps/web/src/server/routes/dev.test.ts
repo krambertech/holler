@@ -63,7 +63,7 @@ const week = (s: State) => {
 
 describe("dev routes", () => {
   it("reports the signed-in persona's seeded workspace", async () => {
-    const s = await state(await signIn("as=lead"));
+    const s = await state(await signIn("as=lead&reset=1"));
     expect(s.persona).toBe("lead");
     expect(s.member?.role).toBe("owner");
     expect(s.hollers.map((h) => h.status).sort()).toEqual([
@@ -78,7 +78,7 @@ describe("dev routes", () => {
   });
 
   it("answers as a waiting recipient and records it", async () => {
-    const cookie = await signIn("as=lead");
+    const cookie = await signIn("as=lead&reset=1");
     const holler = week(await state(cookie));
     const slackUserId = holler.waiting[0];
     const detail = (await (await request(`/api/hollers/${holler.id}`, {}, cookie)).json()) as {
@@ -110,7 +110,7 @@ describe("dev routes", () => {
   });
 
   it("closes a live holler once a tick runs past its close time", async () => {
-    const cookie = await signIn("as=lead");
+    const cookie = await signIn("as=lead&reset=1");
     const holler = week(await state(cookie));
     const at = new Date(new Date(holler.closesAt ?? "").getTime() + 60_000).toISOString();
 
@@ -125,6 +125,12 @@ describe("dev routes", () => {
   });
 
   it("puts the seed back with reset=1", async () => {
+    const cookie = await signIn("as=lead&reset=1");
+    const holler = week(await state(cookie));
+    const closesAt = new Date(holler.closesAt ?? "").getTime();
+    await post("/api/dev/tick", { at: new Date(closesAt + 60_000).toISOString() }, cookie);
+    const closed = await state(cookie);
+    expect(() => week(closed)).toThrow();
     const s = await state(await signIn("as=lead&reset=1"));
     expect(week(s)).toMatchObject({ status: "live", answered: 7 });
     expect(s.activity).toEqual([]);

@@ -1,4 +1,4 @@
-import { lt } from "@holler/core/db";
+import { eq, lt } from "@holler/core/db";
 import { type Db, schema } from "../db";
 
 /** Slack retries a delivery for about an hour; a day of ids is plenty to recognise one. */
@@ -15,6 +15,11 @@ export async function claimSlackDelivery(db: Db, id: string, now: Date): Promise
     .onConflictDoNothing()
     .returning({ id: schema.slackDeliveries.id });
   return inserted.length > 0;
+}
+
+/** Gives a claim back, so a send that failed on its way to Slack can be tried again. */
+export async function releaseSlackDelivery(db: Db, id: string): Promise<void> {
+  await db.delete(schema.slackDeliveries).where(eq(schema.slackDeliveries.id, id));
 }
 
 /** The cron's pass: forgets delivery ids older than a day. */
