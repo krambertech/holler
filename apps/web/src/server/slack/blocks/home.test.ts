@@ -333,6 +333,7 @@ describe("the quick pulse", () => {
       quickSentView(sent, { timeZone: "Europe/Tallinn", now: NOW }, productUrl),
       quickSentView({ ...sent, recipients: 12 }, { timeZone: null, now: NOW }, productUrl),
       quickFailedView({ hollerId: "h1", message: "M".repeat(400) }, productUrl),
+      quickFailedView({ hollerId: null, message: "M".repeat(400) }, productUrl),
       signInView(productUrl),
     ]) {
       expect(viewProblems(view)).toEqual([]);

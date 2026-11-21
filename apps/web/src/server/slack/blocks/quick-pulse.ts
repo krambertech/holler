@@ -332,21 +332,22 @@ export function quickSentView(
 }
 
 export function quickFailedView(
-  failed: { hollerId: string; message: string },
+  failed: { hollerId: string | null; message: string },
   productUrl: string,
 ): SlackView {
+  const saved = failed.hollerId !== null;
   return resultView("Not sent", [
     section(`${escapeMrkdwn(failed.message)}`),
-    context("Your pulse is saved as a draft."),
+    ...(saved ? [context("Your pulse is saved as a draft.")] : []),
     {
       type: "actions",
-      block_id: `quick:failed:${failed.hollerId}`,
+      block_id: `quick:failed:${failed.hollerId ?? "unsaved"}`,
       elements: [
         {
           type: "button",
           action_id: actionIds.productLink,
           text: plain("Open in Holler"),
-          url: `${productUrl}/hollers/${failed.hollerId}/edit`,
+          url: saved ? `${productUrl}/hollers/${failed.hollerId}/edit` : `${productUrl}/new`,
         },
       ],
     },

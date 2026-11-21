@@ -22,7 +22,7 @@ export function quickPulseProblems(ctx: ServiceContext, input: HollerDraftInput)
 
 export type QuickPulseOutcome =
   | { status: "sent"; hollerId: string; prompt: string; recipients: number; closesAt: Date | null }
-  | { status: "failed"; hollerId: string; message: string };
+  | { status: "failed"; hollerId: string | null; message: string };
 
 export async function sendQuickPulse(
   ctx: ServiceContext,
@@ -34,10 +34,10 @@ export async function sendQuickPulse(
   try {
     await sendHoller(ctx, env, draft.id);
   } catch (error) {
-    if (!(error instanceof ServiceError)) throw error;
-    if (error.code !== "conflict") {
+    if (error instanceof ServiceError && error.code !== "conflict") {
       return { status: "failed", hollerId: draft.id, message: error.message };
     }
+    if (!(error instanceof ServiceError)) console.error("quick pulse send failed", error);
   }
   const [row] = await ctx.db
     .select({
@@ -62,3 +62,6 @@ export async function sendQuickPulse(
     closesAt: row.closesAt,
   };
 }
+
+export const quickPulseUnsavedMessage =
+  "Holler could not save this pulse. Try again in a minute, or start it in Holler.";

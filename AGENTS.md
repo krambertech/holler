@@ -83,6 +83,7 @@ Project skills live in `.agents/skills/`; `.claude/skills` links to it so every 
 | A burst of changes publishes each App Home once, and only to people who opened it | `queueHomes` claims `slack_homes.queued_at`; `services/slack-home.test.ts` |
 | Every App Home, quick pulse and `/holler` reply fits Block Kit's limits at its fullest | `slack/blocks/home.test.ts` builds the largest of each |
 | A quick pulse Slack submits twice makes one Holler and sends it once | View id as `createDraft`'s idempotency key; `slack/sending.test.ts` |
+| A quick pulse that was acknowledged ends on Sent or Not sent, whatever fails | `finishQuickPulse` catches every error; `slack/sending.test.ts`, "never on Sending" |
 
 ## Generated files
 

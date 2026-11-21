@@ -12,7 +12,12 @@ import {
 } from "../services/answering";
 import { ServiceError } from "../services/context";
 import { remindWaiting } from "../services/delivery";
-import { quickPulseProblems, sendQuickPulse } from "../services/quick-pulse";
+import {
+  type QuickPulseOutcome,
+  quickPulseProblems,
+  quickPulseUnsavedMessage,
+  sendQuickPulse,
+} from "../services/quick-pulse";
 import { slackFor } from "../services/slack-connection";
 import { refreshHomes, slackSenderContext, timeZoneFor } from "../services/slack-home";
 import { workspaceIdForTeam } from "../services/workspaces";
@@ -250,7 +255,12 @@ async function finishQuickPulse(
   draft: Parameters<typeof sendQuickPulse>[2],
   viewId: string,
 ) {
-  const outcome = await sendQuickPulse(sender, env, draft, viewId);
+  const outcome = await sendQuickPulse(sender, env, draft, viewId).catch(
+    (error: unknown): QuickPulseOutcome => {
+      console.error("quick pulse failed", error);
+      return { status: "failed", hollerId: null, message: quickPulseUnsavedMessage };
+    },
+  );
   const slack = await slackFor(env, db, sender.workspaceId);
   const slackUserId = "slackUserId" in sender.actor ? sender.actor.slackUserId : "";
   const view =

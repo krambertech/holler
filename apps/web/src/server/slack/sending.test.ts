@@ -11,7 +11,7 @@ import { testDb } from "../test-db";
 import { deliveryEnv, emptyDatabase } from "../test-delivery";
 import { blockKitProblems, viewProblems } from "./blocks/limits";
 import { quickBlocks } from "./blocks/quick-pulse";
-import type { SlackView } from "./client";
+import { SlackApiError, type SlackView } from "./client";
 import { sign } from "./verify";
 
 let db: Db;
@@ -26,7 +26,10 @@ beforeEach(async () => {
   vi.setSystemTime(NOW);
   await emptyDatabase(raw);
 });
-afterEach(() => vi.useRealTimers());
+afterEach(() => {
+  vi.useRealTimers();
+  vi.restoreAllMocks();
+});
 
 async function setup() {
   const fixture = await workspaceFixture(db, NOW);
@@ -96,7 +99,13 @@ async function setup() {
 }
 
 function filled(
-  over: { prompt?: string; kind?: string; options?: string; people?: string[] } = {},
+  over: {
+    prompt?: string;
+    kind?: string;
+    options?: string;
+    people?: string[];
+    channels?: string[];
+  } = {},
 ) {
   return {
     [quickBlocks.prompt]: {
@@ -114,7 +123,9 @@ function filled(
     [quickBlocks.people]: {
       value: { type: "multi_users_select", selected_users: over.people ?? ["UA", "UB"] },
     },
-    [quickBlocks.channels]: { value: { type: "multi_channels_select", selected_channels: [] } },
+    [quickBlocks.channels]: {
+      value: { type: "multi_channels_select", selected_channels: over.channels ?? [] },
+    },
     [quickBlocks.closes]: { value: { type: "static_select", selected_option: { value: "24" } } },
     [quickBlocks.anonymous]: { value: { type: "checkboxes", selected_options: [] } },
   };
@@ -267,6 +278,22 @@ describe("the quick pulse", () => {
     const drafts = (await hollersOf(workspaceId)).filter((h) => h.status === "draft");
     expect(drafts).toHaveLength(1);
     expect(shown).toContain(`/hollers/${drafts[0]?.id}/edit`);
+  });
+
+  it("ends on Not sent with the draft when Slack fails mid-send, never on Sending", async () => {
+    const { command, interact, slack, workspaceId } = await setup();
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    slack.failures.set("CBUSY", new SlackApiError("conversations.members", "ratelimited", 30));
+    await command("ULEAD", "");
+    const view = slack.views[0]?.view;
+    if (!view) throw new Error("no modal");
+    await interact(submit(view, filled({ people: [], channels: ["CBUSY"] })));
+    const shown = slack.viewUpdates.at(-1);
+    expect(shown?.viewId).toBe("VQUICK1");
+    expect(JSON.stringify(shown?.view.blocks)).toContain("Your pulse is saved as a draft.");
+    const [draft] = await hollersOf(workspaceId);
+    expect(draft?.status).toBe("draft");
+    expect(JSON.stringify(shown?.view.blocks)).toContain(`/hollers/${draft?.id}/edit`);
   });
 
   it("redraws without the options box when the answers are a template", async () => {
