@@ -69,6 +69,7 @@ describe("dev routes", () => {
     expect(s.hollers.map((h) => h.status).sort()).toEqual([
       "closed",
       "closed",
+      "closed",
       "live",
       "live",
       "live",
