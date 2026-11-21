@@ -99,6 +99,36 @@ const activity = (hollerId: string) =>
     .where(eq(schema.activity.subjectId, hollerId))
     .orderBy(schema.activity.at);
 
+function writesOnlyInBatches(db: Db): Db {
+  const guard = <T extends object>(builder: T): T =>
+    new Proxy(builder, {
+      get(target, key, receiver) {
+        if (key === "then") {
+          return () => {
+            throw new Error("A sharing write ran outside a batch, apart from its Activity.");
+          };
+        }
+        const value = Reflect.get(target, key, receiver);
+        if (typeof value !== "function") return value;
+        return (...args: unknown[]) => {
+          const out = value.apply(target, args);
+          return out === target || (out && typeof out === "object" && "then" in out)
+            ? guard(out)
+            : out;
+        };
+      },
+    });
+  return new Proxy(db, {
+    get(target, key, receiver) {
+      const value = Reflect.get(target, key, receiver);
+      if (key === "insert" || key === "update" || key === "delete") {
+        return (...args: unknown[]) => guard(value.apply(target, args));
+      }
+      return typeof value === "function" ? value.bind(target) : value;
+    },
+  });
+}
+
 describe("viewers", () => {
   it("see the Holler once shared, and not after they are removed", async () => {
     const { ctx, env, holler } = await setup();
@@ -141,6 +171,54 @@ describe("viewers", () => {
     ).rejects.toMatchObject({ code: "invalid", field: "slackUserIds" });
     const again = await addViewers(ctx, env, holler.id, { slackUserIds: ["UA", "ULEAD", "UA"] });
     expect(again.viewers.map((v) => v.slackUserId)).toEqual(["UA"]);
+  });
+
+  it("are added and removed once when the same change arrives twice at once", async () => {
+    const { ctx, env, holler, queued, drain, slack } = await setup();
+    const later = { ...ctx, now: () => new Date(NOW.getTime() + 1000) };
+    await Promise.all([
+      addViewers(ctx, env, holler.id, { slackUserIds: ["UA"] }),
+      addViewers(later, env, holler.id, { slackUserIds: ["UA"] }),
+    ]);
+    expect(sharesQueued(queued)).toHaveLength(1);
+    await drain(new Date(NOW.getTime() + 2000));
+    expect(slack.posted.filter((m) => m.channel === "UA")).toHaveLength(1);
+    await Promise.all([
+      removeViewer(ctx, env, holler.id, "UA"),
+      removeViewer(later, env, holler.id, "UA"),
+    ]);
+    await Promise.all([makeReportLink(ctx, env, holler.id), makeReportLink(later, env, holler.id)]);
+    await Promise.all([
+      turnOffReportLink(ctx, env, holler.id),
+      turnOffReportLink(later, env, holler.id),
+    ]);
+    expect(
+      (await activity(holler.id))
+        .map((a) => a.action)
+        .filter((a) => a !== "holler.created")
+        .sort(),
+    ).toEqual(["report_link.made", "report_link.turned_off", "viewer.added", "viewer.removed"]);
+  });
+
+  it("change who sees a Holler only in the same batch as its Activity", async () => {
+    const { ctx, env, holler } = await setup();
+    const guarded = { ...ctx, db: writesOnlyInBatches(db) };
+    await addViewers(guarded, env, holler.id, { slackUserIds: ["UA", "UB"] });
+    await removeViewer(guarded, env, holler.id, "UA");
+    await setVisibility(guarded, env, holler.id, "workspace");
+    await makeReportLink(guarded, env, holler.id);
+    await turnOffReportLink(guarded, env, holler.id);
+    await expect(
+      ctx.db.update(schema.hollers).set({ title: "x" }).where(eq(schema.hollers.id, "none")),
+    ).resolves.toBeDefined();
+    await expect(
+      (async () => {
+        await guarded.db
+          .update(schema.hollers)
+          .set({ title: "x" })
+          .where(eq(schema.hollers.id, "none"));
+      })(),
+    ).rejects.toThrow("outside a batch");
   });
 
   it("cannot be added to a draft, which nobody but its creator ever sees", async () => {

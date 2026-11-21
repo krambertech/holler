@@ -6,11 +6,11 @@ import {
   viewersInputSchema,
   withoutNames,
 } from "@holler/core";
-import { and, eq, gte, inArray, isNull, sql } from "@holler/core/db";
-import { runBatch } from "../batch";
+import { and, eq, gte, inArray, isNull, not, sql } from "@holler/core/db";
+import { batchResults, runBatch } from "../batch";
 import { type Db, schema } from "../db";
 import type { Bindings } from "../env";
-import { auditStatement } from "./audit";
+import { auditStatement, auditUnless } from "./audit";
 import { type ServiceContext, ServiceError } from "./context";
 import { queueClaimed, type SlackSend } from "./delivery";
 import { getHoller, type HollerDetail } from "./hollers";
@@ -34,6 +34,14 @@ async function creatorsHoller(ctx: ServiceContext, id: string, doing: string) {
   const holler = await getHoller(ctx, id);
   requireCreator(holler, doing);
   return holler;
+}
+
+function viewerExists(hollerId: string, slackUserId: string) {
+  return sql`exists (select 1 from viewers v where v.holler_id = ${hollerId} and v.slack_user_id = ${slackUserId})`;
+}
+
+function hasReportLink(hollerId: string) {
+  return sql`exists (select 1 from hollers h where h.id = ${hollerId} and h.report_token is not null)`;
 }
 
 export function reportUrl(env: LinkEnv, token: string): string {
@@ -153,38 +161,39 @@ export async function addViewers(
       "slackUserIds",
     );
   }
-  const already = await ctx.db
-    .select({ slackUserId: viewers.slackUserId })
-    .from(viewers)
-    .where(and(eq(viewers.hollerId, holler.id), inArray(viewers.slackUserId, wanted)));
-  const have = new Set(already.map((v) => v.slackUserId));
-  const added = wanted.filter((u) => !have.has(u));
-  if (added.length === 0) return sharingOf(ctx, env, holler.id);
-
   const now = ctx.now();
   const memberId = "memberId" in ctx.actor ? ctx.actor.memberId : undefined;
   if (!memberId) throw new ServiceError("forbidden", "This needs a signed-in member.");
-  await runBatch(
-    ctx.db,
-    added.flatMap((slackUserId) => [
-      ctx.db
-        .insert(viewers)
-        .values({
-          hollerId: holler.id,
-          slackUserId,
-          addedById: memberId,
-          addedAt: now,
-          notifiedAt: now,
-        })
-        .onConflictDoNothing(),
-      auditStatement(ctx, {
+  const perViewer = wanted.map((slackUserId) => [
+    ...auditUnless(
+      ctx,
+      {
         action: "viewer.added",
         subjectType: "holler",
         subjectId: holler.id,
         data: { slackUserId },
-      }),
-    ]),
-  );
+      },
+      viewerExists(holler.id, slackUserId),
+    ),
+    ctx.db
+      .insert(viewers)
+      .values({
+        hollerId: holler.id,
+        slackUserId,
+        addedById: memberId,
+        addedAt: now,
+        notifiedAt: now,
+      })
+      .onConflictDoNothing()
+      .returning({ slackUserId: viewers.slackUserId }),
+  ]);
+  const results = await batchResults(ctx.db, perViewer.flat());
+  const statementsPerViewer = perViewer[0]?.length ?? 0;
+  const added = wanted.filter((_, index) => {
+    const inserted = results[index * statementsPerViewer + statementsPerViewer - 1];
+    return Array.isArray(inserted) && inserted.length > 0;
+  });
+  if (added.length === 0) return sharingOf(ctx, env, holler.id);
   const sends: SlackSend[] = added.map((slackUserId) => ({
     kind: "shared",
     hollerId: holler.id,
@@ -228,18 +237,21 @@ export async function removeViewer(
   slackUserId: string,
 ): Promise<SharingOut> {
   const holler = await creatorsHoller(ctx, id, "change who sees it");
-  const removed = await ctx.db
-    .delete(viewers)
-    .where(and(eq(viewers.hollerId, holler.id), eq(viewers.slackUserId, slackUserId)))
-    .returning({ slackUserId: viewers.slackUserId });
-  if (removed.length > 0) {
-    await auditStatement(ctx, {
-      action: "viewer.removed",
-      subjectType: "holler",
-      subjectId: holler.id,
-      data: { slackUserId },
-    });
-  }
+  await runBatch(ctx.db, [
+    ...auditUnless(
+      ctx,
+      {
+        action: "viewer.removed",
+        subjectType: "holler",
+        subjectId: holler.id,
+        data: { slackUserId },
+      },
+      not(viewerExists(holler.id, slackUserId)),
+    ),
+    ctx.db
+      .delete(viewers)
+      .where(and(eq(viewers.hollerId, holler.id), eq(viewers.slackUserId, slackUserId))),
+  ]);
   return sharingOf(ctx, env, holler.id);
 }
 
@@ -253,18 +265,17 @@ export async function makeReportLink(
     throw new ServiceError("invalid", "A report link can be made once the Holler is sent.");
   }
   if (!holler.reportToken) {
-    const made = await ctx.db
-      .update(hollers)
-      .set({ reportToken: newReportToken() })
-      .where(and(eq(hollers.id, holler.id), isNull(hollers.reportToken)))
-      .returning({ id: hollers.id });
-    if (made.length > 0) {
-      await auditStatement(ctx, {
-        action: "report_link.made",
-        subjectType: "holler",
-        subjectId: holler.id,
-      });
-    }
+    await runBatch(ctx.db, [
+      ...auditUnless(
+        ctx,
+        { action: "report_link.made", subjectType: "holler", subjectId: holler.id },
+        hasReportLink(holler.id),
+      ),
+      ctx.db
+        .update(hollers)
+        .set({ reportToken: newReportToken() })
+        .where(and(eq(hollers.id, holler.id), isNull(hollers.reportToken))),
+    ]);
   }
   return sharingOf(ctx, env, holler.id);
 }
@@ -276,13 +287,13 @@ export async function turnOffReportLink(
 ): Promise<SharingOut> {
   const holler = await creatorsHoller(ctx, id, "turn off its report link");
   if (holler.reportToken) {
-    await ctx.db.batch([
+    await runBatch(ctx.db, [
+      ...auditUnless(
+        ctx,
+        { action: "report_link.turned_off", subjectType: "holler", subjectId: holler.id },
+        not(hasReportLink(holler.id)),
+      ),
       ctx.db.update(hollers).set({ reportToken: null }).where(eq(hollers.id, holler.id)),
-      auditStatement(ctx, {
-        action: "report_link.turned_off",
-        subjectType: "holler",
-        subjectId: holler.id,
-      }),
     ]);
   }
   return sharingOf(ctx, env, holler.id);
