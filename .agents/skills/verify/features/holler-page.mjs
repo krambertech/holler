@@ -28,7 +28,10 @@ export default async function drive({ page, step, api, slackState, expect }) {
       (s) => s.slack.posted.length >= before + pulse.waiting.length,
       "a reminder DM for each waiting person",
     );
-    const reminded = sent.slack.posted.slice(before).map((m) => m.channel).sort();
+    const reminded = sent.slack.posted
+      .slice(before)
+      .map((m) => m.channel)
+      .sort();
     expect(reminded).toEqual([...pulse.waiting].sort());
     await expect(page.getByRole("button", { name: "Send reminder" })).toBeDisabled();
     await expect(page.getByText(/You can send the next reminder/)).toBeVisible();
