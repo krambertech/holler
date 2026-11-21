@@ -126,7 +126,7 @@ export const forms: Group = {
       slug: "date-time-input",
       name: "DateTimeInput",
       source: "components/ui/date-time-input.tsx",
-      note: "A day and a time with the browser's own pickers, which every keyboard, screen reader and phone knows. Give it value and onValueChange, or a defaultValue to let it keep its own.",
+      note: "A day and a time. The day is the browser's own date box; the time is Holler's list in 15-minute steps, and typing 9:30, 930 or 9pm picks any minute. Give it value and onValueChange, or a defaultValue to let it keep its own.",
       Demo: () => (
         <Variants
           items={[
