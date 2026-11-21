@@ -68,6 +68,7 @@ Project skills live in `.agents/skills/`; `.claude/skills` links to it so every 
 | Files under `apps/web/src/client` are kebab-case                            | Oxlint `unicorn/filename-case`                       |
 | Every journey page passes axe at WCAG 2.2 AA                                | `e2e/`                                               |
 | Concurrent first dev sign-ins all succeed and seed once                    | `apps/web/src/server/routes/dev-concurrency.test.ts` |
+| Every e2e sign-in lands where the test goes next, so no redirect races its navigation | `holler/sign-in-lands` in `oxlint-plugin-holler`; `signInAs` in `e2e/a11y.ts` |
 | Pull request titles follow `type(scope): summary` within 72 characters      | `scripts/check-pr-title.mjs` in CI                   |
 | Server inserts one row per statement, inside D1's 100-value limit | `holler/no-multi-row-insert` in `oxlint-plugin-holler` |
 | Every Slack message and view fits Block Kit's limits | `FakeSlack` refuses what Slack would; `slack/blocks/messages.test.ts` sends the largest Holler |
@@ -86,6 +87,11 @@ Project skills live in `.agents/skills/`; `.claude/skills` links to it so every 
 | A quick pulse Slack submits twice makes one Holler and sends it once | View id as `createDraft`'s idempotency key; `slack/sending.test.ts` |
 | A quick pulse that was acknowledged ends on Sent or Not sent, whatever fails | `finishQuickPulse` catches every error; `slack/sending.test.ts`, "never on Sending" |
 | Only Your answers reads who gave an anonymous response | `holler/no-response-owners` in `oxlint-plugin-holler`; `services/own-answers.test.ts`, "never reaches results or exports" |
+| Every round of a repeating pulse lands on the first round's day and time, in every zone, for a year | `packages/core/src/repeats.test.ts` sweep |
+| A round that goes out schedules exactly one next round, never in the past | `services/rounds.test.ts` |
+| Every Holler column is either copied to the next round or set for each round | `roundColumns` in `services/rounds.ts` (typecheck); `services/rounds.test.ts` |
+| Every round of a repeating pulse closes before anyone gets the next, across clock changes and late sends | `goLive` caps `closesAt` at the next round's first invite; `services/rounds.test.ts` |
+| Once Stop repeating returns, no further round goes out, whichever write lands first | `unlessStillRepeating` in `services/rounds.ts`; `services/rounds.test.ts`, both race cases |
 
 ## Generated files
 

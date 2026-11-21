@@ -47,7 +47,14 @@
     {
       "idx": 6,
       "version": "6",
-      "when": 1795293917883,
+      "when": 1795294275604,
+      "tag": "0006_repeating_rounds",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1795300136779,
       "tag": "0006_slack_homes",
       "breakpoints": true
     }

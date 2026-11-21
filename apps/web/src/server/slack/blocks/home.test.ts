@@ -267,7 +267,7 @@ describe("the quick pulse", () => {
       const read = quickPulseDraft({ about: null }, fill({ kind: kind.id }));
       if (!("draft" in read)) throw new Error(`${kind.id}: ${JSON.stringify(read.errors)}`);
       const draft = hollerDraftSchema.parse(read.draft);
-      expect(sendProblems(draft, NOW), kind.id).toEqual([]);
+      expect(sendProblems({ ...draft, repeatRule: draft.repeat }, NOW), kind.id).toEqual([]);
     }
   });
 

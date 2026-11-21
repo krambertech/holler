@@ -14,7 +14,7 @@ export function quickPulseProblems(ctx: ServiceContext, input: HollerDraftInput)
       field: issue.path.join("."),
     }));
   }
-  return sendProblems(draft.data, ctx.now()).map((p) => ({
+  return sendProblems({ ...draft.data, repeatRule: draft.data.repeat }, ctx.now()).map((p) => ({
     message: p.message,
     field: p.field ?? null,
   }));
