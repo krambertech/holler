@@ -305,8 +305,7 @@ function LandingPreview({
       )}
       {inRecipientTimeZone && noZone && (
         <p className="text-muted">
-          Anyone with no time zone in Slack gets it at {clockTime(sendAt, yours)} UTC, as Slack has
-          no clock for them.
+          Anyone with no time zone in Slack gets it at {clockTime(sendAt, yours)} UTC.
         </p>
       )}
     </div>
