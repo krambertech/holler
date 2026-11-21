@@ -26,6 +26,7 @@ import { auditStatement } from "./audit";
 import { type ServiceContext, ServiceError } from "./context";
 import { getHoller, presentQuestion, sendProblems } from "./hollers";
 import { respondUrl } from "./respond-links";
+import { nextRoundStatements } from "./rounds";
 import { slackFor } from "./slack-connection";
 import { claimSlackDelivery, releaseSlackDelivery } from "./slack-deliveries";
 import { assertCanSend } from "./usage";
@@ -382,12 +383,15 @@ async function goLive(
       ctx.db.insert(recipients).values({ hollerId: holler.id, ...row }),
     );
     for (const chunk of chunks(inserts)) await runBatch(ctx.db, chunk);
-    await auditStatement(ctx, {
-      action: "holler.sent",
-      subjectType: "holler",
-      subjectId: holler.id,
-      data: { recipients: rows.length },
-    });
+    await runBatch(ctx.db, [
+      auditStatement(ctx, {
+        action: "holler.sent",
+        subjectType: "holler",
+        subjectId: holler.id,
+        data: { recipients: rows.length },
+      }),
+      ...(await nextRoundStatements(ctx, holler.id, creatorZone)),
+    ]);
   } catch (error) {
     // D1 runs each batch as a transaction but not the chunks together, so undo the send by hand.
     await ctx.db.delete(recipients).where(eq(recipients.hollerId, holler.id));

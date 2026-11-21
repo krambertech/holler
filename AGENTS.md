@@ -80,6 +80,9 @@ Project skills live in `.agents/skills/`; `.claude/skills` links to it so every 
 | Every modal element reads back into an answer `recordResponse` takes | `services/answering.test.ts` fills each element by type |
 | No cell of a CSV export runs as a formula, whatever anyone typed | `csvCell`; `services/exports.test.ts` writes every formula start into every field |
 | Anonymous results and exports keep no trace of answer order | `packages/core/src/results.test.ts` shuffles every answer; `services/exports.test.ts` |
+| Every round of a repeating pulse lands on the first round's day and time, in every zone, for a year | `packages/core/src/repeats.test.ts` sweep |
+| A round that goes out schedules exactly one next round, never in the past | `services/rounds.test.ts` |
+| Every Holler column is either copied to the next round or set for each round | `roundColumns` in `services/rounds.ts` (typecheck); `services/rounds.test.ts` |
 
 ## Generated files
 
