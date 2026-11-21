@@ -22,6 +22,7 @@ Features: ${features.join(", ")}
 
   --url <origin>     Instance to drive (default: http://localhost:5280)
   --sha <commit>     Commit the instance should serve (default: HEAD of this worktree)
+  --version <id>     Worker version a preview should serve, from its CI job summary
   --key <key>        A preview's DEV_ROUTES_KEY (default: $HOLLER_DEV_KEY)
   --pr <n>           Pull request the evidence belongs to (default: the branch name)
   --out <dir>        Evidence root (default: $HOLLER_EVIDENCE_DIR, else the temp dir)
@@ -36,6 +37,7 @@ const { values, positionals } = parseArgs({
     url: { type: "string", default: "http://localhost:5280" },
     sha: { type: "string" },
     key: { type: "string" },
+    version: { type: "string" },
     pr: { type: "string" },
     out: { type: "string" },
     phone: { type: "boolean", default: false },
@@ -156,7 +158,7 @@ async function driveFeature(browser, name) {
     // The first load after a cold start waits for Vite to bundle the dependencies.
     await page.getByRole("main").first().waitFor({ timeout: 90_000 });
     const cookie = (await context.cookies(base)).map((c) => `${c.name}=${c.value}`).join("; ");
-    checks = await doctor({ url: base, sha, persona, cookie, key });
+    checks = await doctor({ url: base, sha, version: values.version, persona, cookie, key });
     if (!report(checks)) throw new Error("the doctor found this instance not worth driving");
     await feature.default({ page, base, step, api, post, expect: patient });
   } catch (error) {

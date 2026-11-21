@@ -12,8 +12,12 @@ test("accepts any tag when none is expected", () => {
   assert.equal(mismatch({ ...healthy, tag: null }, "holler"), null);
 });
 
+test("accepts the expected version id when the alias reports no tag", () => {
+  assert.equal(mismatch({ ...healthy, tag: "" }, "holler", "v1"), null);
+});
+
 test("refuses an older version still answering", () => {
-  assert.match(mismatch(healthy, "holler", "def456"), /serves abc123, expected def456/);
+  assert.match(mismatch(healthy, "holler", "def456"), /tag abc123, expected def456/);
 });
 
 test("refuses another worker on the origin", () => {

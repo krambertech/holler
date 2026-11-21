@@ -106,17 +106,21 @@ jobs:
       - name: Upload this pull request's version
         if: steps.credentials.outputs.skip != 'true'
         working-directory: apps/web
+        env:
+          WRANGLER_OUTPUT_FILE_PATH: ${{ runner.temp }}/wrangler-preview.jsonl
         run: >-
           pnpm exec wrangler versions upload -c dist/holler/wrangler.json
           --preview-alias "pr-$PR" --tag "$SHA" --message "PR #$PR at $SHA"
-      - name: Wait for the preview to serve this commit
+      # A preview alias reports an empty tag at runtime, so match the uploaded version id instead.
+      - name: Wait for the preview to serve this version
         id: url
         if: steps.credentials.outputs.skip != 'true'
         run: |
           url="https://pr-$PR-holler-preview.k-porshnieva.workers.dev"
-          node scripts/check-deployment.mjs "$url" holler "$SHA"
+          version=$(node scripts/wrangler-version.mjs "$RUNNER_TEMP/wrangler-preview.jsonl")
+          node scripts/check-deployment.mjs "$url" holler "$version"
           echo "url=$url" >> "$GITHUB_OUTPUT"
-          echo "Preview: $url (dev routes need the DEV_ROUTES_KEY header)" >> "$GITHUB_STEP_SUMMARY"
+          echo "Preview: $url, version $version. Dev routes need the DEV_ROUTES_KEY header; verify with --version $version." >> "$GITHUB_STEP_SUMMARY"
 
   # Production and the preview Worker's base version follow main. Merging is the deploy.
   deploy:
@@ -154,16 +158,22 @@ jobs:
         run: pnpm exec wrangler d1 migrations apply holler --remote
       - name: Deploy the product
         working-directory: apps/web
+        env:
+          WRANGLER_OUTPUT_FILE_PATH: ${{ runner.temp }}/wrangler-product.jsonl
         run: pnpm exec wrangler deploy -c dist/holler/wrangler.json --tag "$GITHUB_SHA" --message "main at $GITHUB_SHA"
       - name: Build and deploy the site
         working-directory: apps/site
+        env:
+          WRANGLER_OUTPUT_FILE_PATH: ${{ runner.temp }}/wrangler-site.jsonl
         run: |
           pnpm build
           pnpm exec wrangler deploy --tag "$GITHUB_SHA" --message "main at $GITHUB_SHA"
-      - name: Check production serves this commit
+      - name: Check production serves the new versions
         run: |
-          node scripts/check-deployment.mjs https://holler.k-porshnieva.workers.dev holler "$GITHUB_SHA"
-          node scripts/check-deployment.mjs https://holler-site.k-porshnieva.workers.dev holler-site "$GITHUB_SHA"
+          node scripts/check-deployment.mjs https://holler.k-porshnieva.workers.dev holler \
+            "$(node scripts/wrangler-version.mjs "$RUNNER_TEMP/wrangler-product.jsonl")"
+          node scripts/check-deployment.mjs https://holler-site.k-porshnieva.workers.dev holler-site \
+            "$(node scripts/wrangler-version.mjs "$RUNNER_TEMP/wrangler-site.jsonl")"
 
       - name: Build for the preview Worker
         run: pnpm --filter @holler/web exec vite build
@@ -174,6 +184,9 @@ jobs:
         run: pnpm exec wrangler d1 migrations apply holler-preview --remote --env preview
       - name: Deploy the preview Worker's base version
         working-directory: apps/web
+        env:
+          WRANGLER_OUTPUT_FILE_PATH: ${{ runner.temp }}/wrangler-preview-base.jsonl
         run: |
           pnpm exec wrangler deploy -c dist/holler/wrangler.json --tag "$GITHUB_SHA" --message "main at $GITHUB_SHA"
-          node ../../scripts/check-deployment.mjs https://holler-preview.k-porshnieva.workers.dev holler "$GITHUB_SHA"
+          node ../../scripts/check-deployment.mjs https://holler-preview.k-porshnieva.workers.dev holler \
+            "$(node ../../scripts/wrangler-version.mjs "$RUNNER_TEMP/wrangler-preview-base.jsonl")"

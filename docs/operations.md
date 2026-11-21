@@ -17,7 +17,7 @@ Merging to `main` is the deploy. The `deploy` job in `.github/workflows/ci.yml` 
 
 1. applies new migrations to the production D1,
 2. deploys `holler` and `holler-site` with the commit as the version tag,
-3. polls each `/api/health` until it serves that commit (`scripts/check-deployment.mjs`),
+3. polls each `/api/health` until it serves the version just deployed (`scripts/check-deployment.mjs`, with the id from `scripts/wrangler-version.mjs`),
 4. does the same for the `holler-preview` base version.
 
 A green deploy step does not prove the new version answers; step 3 does. Run `pnpm deploy:health` to see what production serves now. Every pull request also runs `pnpm deploy:check`, a dry run of both deploys.
@@ -28,10 +28,10 @@ Migrations reach production before the code that uses them, so a migration must 
 
 The `preview` job uploads each pull request's build as a version of `holler-preview` at the alias `pr-<n>`, after migrating the preview D1. The job's environment link on the pull request opens it. Previews have no cron; close hollers with `/api/dev/tick`.
 
-Previews run with `DEV_ROUTES=true` and seeded personas, never real Slack data. Because `workers.dev` is public, `/api/dev/*` answers only requests carrying the `x-holler-dev-key` header with the Worker's `DEV_ROUTES_KEY` secret. Drive a preview with the verify skill:
+Previews run with `DEV_ROUTES=true` and seeded personas, never real Slack data. Because `workers.dev` is public, `/api/dev/*` answers only requests carrying the `x-holler-dev-key` header with the Worker's `DEV_ROUTES_KEY` secret. A preview alias reports an empty version tag at runtime, so CI and the verify doctor match the version id instead; the preview job's summary prints it. Drive a preview with the verify skill:
 
 ```bash
-HOLLER_DEV_KEY=$(cat ~/.holler-dev-key) node .agents/skills/verify/scripts/run.mjs home --url https://pr-<n>-holler-preview.k-porshnieva.workers.dev --pr <n>
+HOLLER_DEV_KEY=$(cat ~/.holler-dev-key) node .agents/skills/verify/scripts/run.mjs home --url https://pr-<n>-holler-preview.k-porshnieva.workers.dev --version <id> --pr <n>
 ```
 
 Every pull request shares the preview D1. A branch's migration applies to it before merging, so keep migrations additive while they are open.
