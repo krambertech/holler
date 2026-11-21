@@ -127,6 +127,19 @@
         "holler/no-sql-lower": "error",
         "holler/no-multi-row-insert": "error"
       }
+    },
+    {
+      "files": ["apps/web/src/**", "packages/core/src/**"],
+      "excludeFiles": [
+        "packages/core/src/schema/**",
+        "apps/web/src/server/services/own-answers.ts",
+        "apps/web/src/server/services/responses.ts",
+        "apps/web/src/server/services/dev-seed.ts",
+        "**/*.test.ts"
+      ],
+      "rules": {
+        "holler/no-response-owners": "error"
+      }
     }
   ]
 }

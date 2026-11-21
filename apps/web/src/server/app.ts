@@ -13,6 +13,7 @@ import { healthRoutes } from "./routes/health";
 import { hollerRoutes } from "./routes/hollers";
 import { installRoutes } from "./routes/install";
 import { meRoutes } from "./routes/me";
+import { ownAnswerRoutes } from "./routes/own-answers";
 import { respondRoutes } from "./routes/respond";
 import { settingsRoutes } from "./routes/settings";
 import { v1Routes } from "./routes/v1";
@@ -83,6 +84,7 @@ app.use("/api/*", async (c, next) => {
 
 app.route("/api/health", healthRoutes);
 app.route("/api/me", meRoutes);
+app.route("/api/answers", ownAnswerRoutes);
 app.route("/api/hollers", hollerRoutes);
 app.route("/api/directory", directoryRoutes);
 app.route("/api/settings", settingsRoutes);

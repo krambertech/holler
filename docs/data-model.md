@@ -1,6 +1,6 @@
 # Data model
 
-The schema is in `packages/core/src/schema`. This page explains the shape and the rules the schema cannot say by itself. Every top-level product table carries `workspace_id`. The tables that hang off a Holler (`questions`, `options`, `recipients`, `viewers`, `responses`, `answers` and `answer_notes`) do not: they are scoped through `holler_id`, so a service reaches them only after it has loaded the Holler filtered by the context's workspace.
+The schema is in `packages/core/src/schema`. This page explains the shape and the rules the schema cannot say by itself. Every top-level product table carries `workspace_id`. The tables that hang off a Holler (`questions`, `options`, `recipients`, `viewers`, `responses`, `response_owners`, `answers` and `answer_notes`) do not: they are scoped through `holler_id`, so a service reaches them only after it has loaded the Holler filtered by the context's workspace.
 
 ```mermaid
 erDiagram
@@ -19,6 +19,7 @@ erDiagram
   hollers ||--o{ viewers : "is shared with"
   responses ||--o{ answers : "holds"
   responses ||--o{ answer_notes : "adds"
+  responses ||--o| response_owners : "privately belongs to"
   answer_notes }o--|| questions : "goes with"
   answers }o--|| questions : "answers"
   answers }o--o| options : "picks"
@@ -37,6 +38,7 @@ erDiagram
 | `questions`, `options`                                    | What a Holler asks                          | Synced by id while a draft or scheduled; frozen once sent. One option row per question may be Other (`is_other`), always last |
 | `recipients`                                              | One person a Holler went to                 | The completion ledger: invited, answered, reminders, the DM to update       |
 | `responses`, `answers`                                    | One person's answers                        | No person on an anonymous Holler                                            |
+| `response_owners`                                         | The private link from an anonymous response to its person | Read only by `services/own-answers.ts`; ADR 0003                |
 | `answer_notes`                                            | A follow-up note or an Other write-in       | Beside a choice answer, at most one of each kind per question per response  |
 | `viewers`                                                 | A member a Holler's results are shared with |                                                                             |
 | `activity`                                                | One write                                   | The only writer is `services/audit.ts`                                      |
@@ -60,7 +62,7 @@ Sending is the moment a Holler counts against the monthly limit (`hollers.sent_a
 
 ## Rules
 
-**Anonymity.** For an anonymous Holler, `responses.slack_user_id` is null and `responses.submitted_at` and `recipients.answered_at` are rounded down to the hour. `recipients.answered_at` is how Holler knows who answered without knowing what they said. Results open only at five responses (`anonymousThreshold` in `packages/core/src/results.ts`), and the same gate applies to the web app, the API, MCP, exports and Slack.
+**Anonymity.** For an anonymous Holler, `responses.slack_user_id` is null and `responses.submitted_at` and `recipients.answered_at` are rounded down to the hour. `recipients.answered_at` is how reminders know who answered. `response_owners` links each anonymous response to its person, so Your answers can show them their own; only `services/own-answers.ts` reads it, and Oxlint's `holler/no-response-owners` refuses it anywhere else ([ADR 0003](adr/0003-anonymous-answers-stay-linked-to-their-person.md)). Results open only at five responses (`anonymousThreshold` in `packages/core/src/results.ts`), and the same gate applies to the web app, the API, MCP, exports and Slack. Written answers on an anonymous Holler come back sorted by what they say, not in arrival order, because arrival order could be matched to when someone was reminded or thanked (`summarize` in `packages/core/src/results.ts`).
 
 **One response per person.** The answer path claims `recipients.answered_at` with a guarded update before it writes the response, so two submits at once produce one response. On a named Holler the partial unique index `responses_one_per_person` backs it up.
 

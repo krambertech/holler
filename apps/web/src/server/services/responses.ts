@@ -12,8 +12,17 @@ import { and, eq, inArray, isNull, sql } from "@holler/core/db";
 import { schema } from "../db";
 import { type ServiceContext, ServiceError } from "./context";
 
-const { hollers, questions, options, recipients, responses, answers, answerNotes, slackPeople } =
-  schema;
+const {
+  hollers,
+  questions,
+  options,
+  recipients,
+  responses,
+  responseOwners,
+  answers,
+  answerNotes,
+  slackPeople,
+} = schema;
 
 export function checkedQuestion(
   question: typeof questions.$inferSelect,
@@ -40,8 +49,8 @@ export type ResponseVia = "slack_button" | "slack_modal" | "web" | "api";
  * gives the claim back. The two steps are separate statements, so a Worker that dies between them
  * leaves the person marked answered with no response.
  *
- * Anonymous: the response row gets no person and an hour-rounded time; only the recipient row
- * says they answered. Results stay gated in core/results.ts.
+ * Anonymous: the response row gets no person and an hour-rounded time; response_owners keeps the
+ * private link that only the person's own answers read. Results stay gated in core/results.ts.
  */
 export async function recordResponse(
   ctx: ServiceContext,
@@ -162,6 +171,9 @@ export async function recordResponse(
         submittedAt: holler.anonymous ? anonymousTime(now) : now,
         via,
       }),
+      ...(holler.anonymous
+        ? [ctx.db.insert(responseOwners).values({ responseId, hollerId, slackUserId })]
+        : []),
       // One answer per statement: D1 binds at most 100 values in one query.
       ...rows.map((row) => ctx.db.insert(answers).values(row)),
       ...notes.map((row) => ctx.db.insert(answerNotes).values(row)),

@@ -85,6 +85,7 @@ Project skills live in `.agents/skills/`; `.claude/skills` links to it so every 
 | No effect returns a value that is not its cleanup | `holler/no-effect-expression-body` in `oxlint-plugin-holler` |
 | The web form searches the directory only while the people picker is open, and makes no failed call | `e2e/respond.spec.ts`, "a recipient answers every question type" |
 | An answer kept while the queue refused still reaches the DM when the person sends again | `services/respond.test.ts`, "puts the DM right when the answers were kept but the queue refused" |
+| Only Your answers reads who gave an anonymous response | `holler/no-response-owners` in `oxlint-plugin-holler`; `services/own-answers.test.ts`, "never reaches results or exports" |
 
 ## Generated files
 

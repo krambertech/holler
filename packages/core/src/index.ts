@@ -2,6 +2,7 @@ export * from "./answers";
 export * from "./api";
 export * from "./ids";
 export * from "./modes";
+export * from "./own-answers";
 export * from "./plans";
 export * from "./reminders";
 export * from "./results";

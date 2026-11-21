@@ -21,6 +21,7 @@ A change is verified when every feature it reaches has been driven in a running 
 | Closing tells the creator in Slack | [slack-close.md](features/slack-close.md) |
 | A holler goes out in Slack and comes back answered | [slack-send.md](features/slack-send.md) |
 | A recipient answers on the web form | [respond.md](features/respond.md) |
+| Your answers, named and anonymous | [answers.md](features/answers.md) |
 
 ## Launch
 
