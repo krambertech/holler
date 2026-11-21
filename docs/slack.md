@@ -154,6 +154,8 @@ The note box's block id carries the response id (`note:<response>:<question>`), 
 | Other                     | The Other option sits last in the radio buttons or checkboxes, followed by an optional `plain_text_input` block labelled "If Other, what?". Text there without Other picked is refused, and so is Other with no text |
 | Follow-up note            | A `plain_text_input` block after the question, labelled with the follow-up prompt, always optional. A follow-up shown only after some answers cannot be shown or hidden in a modal, so that Holler goes to the web form |
 
+**On the web form.** `/respond/<id>` needs no sign-in: every call to `/api/respond/<id>` carries the signed link, and `services/respond.ts` checks it before reading anything. Each question is its own plate, drawn for its type: radio rows, a row of numbers for a numbered scale, two tiles for yes or no, checkboxes, a search past 12 options, the workspace's people for a person question. The Other box and the follow-up note open under the answers that ask for them, by the same `noteAsked` rule `recordResponse` keeps notes by, and a note or write-in for an answer no longer picked is never sent. Send shows every problem at once in the words of `answerProblem`, the checks `recordResponse` runs. Answers in progress stay on the person's device until they are sent. After sending, the page thanks them and the DM is put right through the queue; a second visit, or a Holler that closed meanwhile, shows that instead of the form.
+
 After a response, the DM is updated in place with a short thank-you and what they answered (or "Answered anonymously"), so the conversation never shows a stale question. An answer to a closed Holler gets a polite line saying it closed, not an error.
 
 ## Messages
