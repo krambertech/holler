@@ -24,6 +24,7 @@ import {
   updateDraft,
 } from "../../services/hollers";
 import { resultsFor } from "../../services/responses";
+import { stopRepeating } from "../../services/rounds";
 import { previewSend } from "../../services/send-preview";
 import { requireMember } from "../context";
 import { describe, input } from "./http";
@@ -179,6 +180,19 @@ export const v1Hollers = new Hono<AppEnv>()
     input("param", idParam),
     async (c) =>
       c.json(hollerOut(await closeHoller(requireMember(c), c.env, c.req.valid("param").id))),
+  )
+  .post(
+    "/:id/stop-repeating",
+    describe({
+      tags,
+      summary: "Stop a pulse repeating",
+      description:
+        "Stops a repeating pulse after the rounds already sent, and deletes the next round, which has not gone out. Answers to earlier rounds stay.",
+      ok: { schema: hollerOutSchema, description: "The first round of the series" },
+      errors: [404],
+    }),
+    input("param", idParam),
+    async (c) => c.json(hollerOut(await stopRepeating(requireMember(c), c.req.valid("param").id))),
   )
   .post(
     "/:id/remind",

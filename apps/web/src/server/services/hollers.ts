@@ -14,6 +14,8 @@ import {
   type QuestionStyle,
   type QuestionType,
   questionLimits,
+  type RepeatEvery,
+  repeatDays,
 } from "@holler/core";
 import {
   and,
@@ -419,6 +421,7 @@ async function insertDraft(
       closesAt: draft.closesAt,
       closeAfterHours: draft.closeAfterHours,
       remindersEnabled: draft.remindersEnabled,
+      repeatRule: draft.repeat,
       createdVia: ctx.actor.via === "system" ? "web" : ctx.actor.via,
       idempotencyKey,
       createdAt: now,
@@ -469,6 +472,7 @@ export async function updateDraft(ctx: ServiceContext, id: string, input: Holler
         closesAt: draft.closesAt,
         closeAfterHours: draft.closeAfterHours,
         remindersEnabled: draft.remindersEnabled,
+        repeatRule: draft.repeat,
         updatedAt: ctx.now(),
       })
       .where(eq(hollers.id, id)),
@@ -499,6 +503,7 @@ export async function copyHoller(ctx: ServiceContext, id: string) {
     closesAt: null,
     closeAfterHours: source.closeAfterHours,
     remindersEnabled: source.remindersEnabled,
+    repeat: source.repeatRule,
     questions: source.questions.map((q) => {
       const { id: _id, position: _position, options: opts, ...rest } = presentQuestion(q);
       return { ...rest, options: opts.map((o) => ({ label: o.label, score: o.score })) };
@@ -693,6 +698,8 @@ export function sendProblems(
     audience: { people: string[]; groups: string[]; everyone: boolean };
     sendAt: Date | null;
     closesAt: Date | null;
+    closeAfterHours: number;
+    repeatRule: RepeatEvery | null;
     questions: readonly ProblemQuestion[];
   },
   now: Date,
@@ -731,7 +738,39 @@ export function sendProblems(
       problem("It would close before it sends. Pick a close time after the send time.", "closesAt");
     }
   }
+  if (holler.repeatRule) repeatProblems(holler, holler.repeatRule, problem);
   return problems;
+}
+
+function repeatProblems(
+  holler: { mode: Mode; sendAt: Date | null; closesAt: Date | null; closeAfterHours: number },
+  every: RepeatEvery,
+  problem: (message: string, field: string) => void,
+) {
+  if (holler.mode !== "pulse") {
+    problem("Only a pulse repeats. Make it a pulse, or turn off repeating.", "repeat");
+    return;
+  }
+  if (!holler.sendAt) {
+    problem(
+      "Pick when the first round goes out. Each round goes out on that day and time.",
+      "sendAt",
+    );
+  }
+  if (holler.closesAt) {
+    problem(
+      "A repeating pulse closes a set time after each round. Clear the close date.",
+      "closesAt",
+    );
+  }
+  if (holler.closeAfterHours > repeatDays[every] * 24) {
+    problem(
+      every === "week"
+        ? "Each round closes before the next goes out. Close it within 7 days."
+        : "Each round closes before the next goes out. Close it within 14 days.",
+      "closeAfterHours",
+    );
+  }
 }
 
 function questionProblems(

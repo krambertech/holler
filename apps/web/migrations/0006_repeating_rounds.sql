@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX `hollers_round` ON `hollers` (`repeat_of_id`,`send_at`);
