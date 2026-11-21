@@ -62,6 +62,7 @@ Project skills live in `.agents/skills/`; `.claude/skills` links to it so every 
 | A new source file has no comments, and an older one never gains any | `holler/no-comments` and `pnpm check:comments` against `scripts/comment-baseline.json` |
 | Every lint suppression still suppresses something | `oxlint --report-unused-disable-directives-severity error` in `pnpm check` |
 | Applied migrations never change                                             | `pnpm check:migrations`                              |
+| A migration a branch pushed keeps its name and contents, so the shared preview database never applies it twice | `keptSincePush` in `scripts/check-migrations.mjs` against `@{upstream}`; `scripts/check-migrations.test.mjs` |
 | No dev tools in the production bundle                                       | `pnpm check:boundaries`                              |
 | Every exported component has an entry on the design site | `pnpm check:design-coverage` |
 | Files under `apps/web/src/client` are kebab-case                            | Oxlint `unicorn/filename-case`                       |
