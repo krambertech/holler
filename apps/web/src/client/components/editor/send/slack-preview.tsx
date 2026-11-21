@@ -220,6 +220,12 @@ function FormQuestion({ q, index }: { q: PreviewQuestion; index: number }) {
       </p>
       {q.description && <p className="text-muted text-xs">{q.description}</p>}
       {control}
+      {q.allowOther && q.type !== "text" && q.type !== "number" && q.type !== "person" && (
+        <>
+          <p className="font-semibold">If Other, what?</p>
+          <SlackBox>Optional</SlackBox>
+        </>
+      )}
       {q.followUp && !q.followUp.onlyAfter && (
         <>
           <p className="font-semibold">{q.followUp.prompt || "Anything to add?"}</p>
@@ -227,6 +233,48 @@ function FormQuestion({ q, index }: { q: PreviewQuestion; index: number }) {
         </>
       )}
     </div>
+  );
+}
+
+/**
+ * How a message lets them answer, the same on the invite and every reminder, as delivery's
+ * `controls` builds it: the options as buttons, a text box, the chase's two buttons, or one button.
+ */
+function AnswerControls({ holler, label }: { holler: PreviewHoller; label: string }) {
+  const surface = answerSurface(holler);
+  const only = holler.questions[0];
+  if (surface.where === "dm" && only?.type === "text") {
+    return (
+      <span className="grid gap-1.5">
+        <SlackBox>Write your answer</SlackBox>
+        <span>
+          <SlackButton>Send</SlackButton>
+        </span>
+      </span>
+    );
+  }
+  if (surface.where === "dm" && only) {
+    return (
+      <span className="flex flex-wrap gap-1.5">
+        {only.options.map((o, i) => (
+          // biome-ignore lint/suspicious/noArrayIndexKey: a drawing of the draft, redrawn whole on every edit.
+          <SlackButton key={`${i}-${o.label}`}>{o.label || "Option"}</SlackButton>
+        ))}
+      </span>
+    );
+  }
+  if (surface.where === "chase") {
+    return (
+      <span className="flex flex-wrap gap-1.5">
+        <SlackButton link>Open the form</SlackButton>
+        <SlackButton>I submitted it</SlackButton>
+      </span>
+    );
+  }
+  return (
+    <span>
+      <SlackButton link={surface.where === "web"}>{label}</SlackButton>
+    </span>
   );
 }
 
@@ -245,39 +293,6 @@ function Invite({
 }) {
   const surface = answerSurface(holler);
   const only = holler.questions[0];
-  let controls: ReactNode;
-  if (surface.where === "dm" && only?.type === "text") {
-    controls = (
-      <span className="grid gap-1.5">
-        <SlackBox>Write your answer</SlackBox>
-        <span>
-          <SlackButton>Send</SlackButton>
-        </span>
-      </span>
-    );
-  } else if (surface.where === "dm" && only) {
-    controls = (
-      <span className="flex flex-wrap gap-1.5">
-        {only.options.map((o, i) => (
-          // biome-ignore lint/suspicious/noArrayIndexKey: a drawing of the draft, redrawn whole on every edit.
-          <SlackButton key={`${i}-${o.label}`}>{o.label || "Option"}</SlackButton>
-        ))}
-      </span>
-    );
-  } else if (surface.where === "chase") {
-    controls = (
-      <span className="flex flex-wrap gap-1.5">
-        <SlackButton link>Open the form</SlackButton>
-        <SlackButton>I submitted it</SlackButton>
-      </span>
-    );
-  } else {
-    controls = (
-      <span>
-        <SlackButton link={surface.where === "web"}>Answer</SlackButton>
-      </span>
-    );
-  }
   const question = surface.where === "dm" ? only?.prompt.trim() : null;
   return (
     <SlackMessage time={time}>
@@ -290,62 +305,53 @@ function Invite({
       {surface.where === "dm" && only?.description && (
         <p className="text-muted text-xs">{only.description}</p>
       )}
-      {controls}
+      <AnswerControls holler={holler} label="Answer" />
       <Context>{contextLine(holler, closes)}</Context>
     </SlackMessage>
   );
 }
 
-function AfterTap({
-  holler,
-  title,
-  closes,
-  time,
-}: {
-  holler: PreviewHoller;
-  title: string;
-  closes: string;
-  time: string;
-}) {
+function AfterTap({ holler, title, time }: { holler: PreviewHoller; title: string; time: string }) {
   const surface = answerSurface(holler);
   const only = holler.questions[0];
-  if (surface.where === "dm" && only?.type === "text") {
-    return (
-      <SlackMessage time={time}>
-        <p className="font-semibold">{title}</p>
-        <p>Thanks. Your answer is in.</p>
-        <Context>
-          {holler.anonymous ? "Answered anonymously" : "You can change it until it closes."}
-        </Context>
-      </SlackMessage>
-    );
-  }
   if (surface.where === "dm" && only) {
+    // The first option that brings the follow-up note, so the preview shows it when there is one.
+    const pick = only.followUp?.onlyAfter?.[0] ?? 0;
+    const given = only.type === "text" ? "What you wrote" : only.options[pick]?.label || "Option";
+    const note =
+      only.type !== "text" &&
+      only.followUp &&
+      (only.followUp.onlyAfter === null || only.followUp.onlyAfter.includes(pick))
+        ? only.followUp
+        : null;
     return (
       <SlackMessage time={time}>
-        <p className="font-semibold">{title}</p>
-        <span className="flex flex-wrap gap-1.5">
-          {only.options.map((o, i) => (
-            // biome-ignore lint/suspicious/noArrayIndexKey: a drawing of the draft, redrawn whole on every edit.
-            <SlackButton key={`${i}-${o.label}`} picked={i === 0}>
-              {o.label || "Option"}
-            </SlackButton>
-          ))}
-        </span>
-        <p className="font-semibold">
-          Thanks. {only.followUp?.prompt.trim() || "Anything to add?"}
+        <p>
+          Thanks. Your answer to <span className="italic">{title}</span> is in.
         </p>
-        <SlackBox>Optional. Press Enter to send</SlackBox>
-        {holler.anonymous && <Context>Answered anonymously</Context>}
+        {holler.anonymous ? (
+          <Context>Answered anonymously</Context>
+        ) : (
+          <Context>
+            <span className="block font-semibold">{only.prompt.trim() || title}</span>
+            <span className="block">{given}</span>
+          </Context>
+        )}
+        {note && (
+          <>
+            <p className="font-semibold">{note.prompt.trim() || "Anything to add?"}</p>
+            <SlackBox>Optional. Press Enter to send.</SlackBox>
+          </>
+        )}
       </SlackMessage>
     );
   }
   if (surface.where === "chase") {
     return (
       <SlackMessage time={time}>
-        <p className="font-semibold">{title}</p>
-        <p>Thanks. You said you submitted it, so Holler will stop reminding you.</p>
-        <Context>{contextLine(holler, closes)}</Context>
+        <p>
+          Thanks. You marked <span className="italic">{title}</span> as submitted.
+        </p>
       </SlackMessage>
     );
   }
@@ -419,16 +425,18 @@ function Reminder({
   closes: string;
   time: string;
 }) {
+  const surface = answerSurface(holler);
+  const only = holler.questions[0];
+  const question = surface.where === "dm" && only?.type !== "text" ? only?.prompt.trim() : null;
   return (
     <SlackMessage time={time}>
       <p>
         A reminder: <span className="font-semibold">{sender}</span> still needs your answer to{" "}
         <span className="italic">{title}</span>
       </p>
-      <span className="flex flex-wrap gap-1.5">
-        <SlackButton link={holler.mode === "chase"}>
-          {holler.mode === "chase" ? "Open the form" : "Answer now"}
-        </SlackButton>
+      {question && question !== title && <p className="font-semibold">{question}</p>}
+      <AnswerControls holler={holler} label="Answer now" />
+      <span>
         <SlackButton>Remind me later</SlackButton>
       </span>
       <Context>{contextLine(holler, closes)}</Context>
@@ -522,10 +530,10 @@ function SlackPreview({
           {view === "tap" &&
             (surface.where === "dm" || surface.where === "chase" ? (
               <SlackFrame label="The DM after answering">
-                <AfterTap holler={holler} title={title} closes={closes} time={later} />
+                <AfterTap holler={holler} title={title} time={later} />
               </SlackFrame>
             ) : (
-              <AfterTap holler={holler} title={title} closes={closes} time={later} />
+              <AfterTap holler={holler} title={title} time={later} />
             ))}
           {view === "reminder" && (
             <SlackFrame label="A reminder in Slack">

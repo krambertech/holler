@@ -102,6 +102,18 @@ const pulse: PreviewHoller = {
     },
   ],
 };
+const pulseWithNote: PreviewHoller = {
+  ...pulse,
+  questions: [
+    {
+      type: "single",
+      style: "plain",
+      prompt: "How was your week?",
+      options: ["Great", "Fine", "Rough"].map(option),
+      followUp: { prompt: "Anything behind that?", onlyAfter: null },
+    },
+  ],
+};
 const textPulse: PreviewHoller = {
   mode: "pulse",
   title: "",
@@ -289,6 +301,13 @@ export const sending: Group = {
               label: surfaceNote(pulse),
               note: "A pulse of one single choice.",
               render: () => <PreviewDemo holler={pulse} recipient="Jonas" />,
+            },
+            {
+              label: "A follow-up note in the DM",
+              note: "After a tap asks for a note. Without a follow-up, it only says thanks.",
+              render: () => (
+                <PreviewDemo holler={pulseWithNote} recipient="Jonas" defaultView="tap" />
+              ),
             },
             {
               label: "Free text in the DM",
