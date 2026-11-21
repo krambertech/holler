@@ -32,7 +32,7 @@ async function userOf(ctx: ServiceContext): Promise<string> {
   return member.userId;
 }
 
-export function metadataMember(metadata: string | null): string | null {
+function metadataMember(metadata: string | null): string | null {
   if (!metadata) return null;
   try {
     const value: unknown = JSON.parse(metadata);

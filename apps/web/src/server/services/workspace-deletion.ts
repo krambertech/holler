@@ -19,9 +19,15 @@ import { runBatch } from "../batch";
 import { type Db, schema } from "../db";
 import type { Bindings } from "../env";
 import type { SlackClient } from "../slack/client";
-import { metadataMember } from "./api-keys";
 import { memberOf, ServiceError, type ServiceContext } from "./context";
 import { forgetDevSlack, slackFor } from "./slack-connection";
+
+const metadataJson = sql`case when json_valid(${schema.apikey.metadata}) then ${schema.apikey.metadata} end`;
+const keyMember = sql`coalesce(
+  json_extract(${metadataJson}, '$.memberId'),
+  case when json_type(${metadataJson}) = 'text' and json_valid(json_extract(${metadataJson}, '$'))
+    then json_extract(json_extract(${metadataJson}, '$'), '$.memberId') end
+)`;
 
 const BOUND_VALUES_PER_STATEMENT = 90;
 
@@ -44,37 +50,6 @@ export async function deletionStatements(
     .where(eq(schema.members.workspaceId, workspaceId));
   const memberIds = members.map((member) => member.id);
   const userIds = [...new Set(members.map((member) => member.userId))];
-  const sharedUsers = new Set<string>();
-  const keys: { id: string; referenceId: string; metadata: string | null }[] = [];
-  for (const chunk of inChunks(userIds)) {
-    const elsewhere = await db
-      .select({ userId: schema.members.userId })
-      .from(schema.members)
-      .where(
-        and(
-          inArray(schema.members.userId, chunk),
-          sql`${schema.members.workspaceId} <> ${workspaceId}`,
-        ),
-      );
-    for (const row of elsewhere) sharedUsers.add(row.userId);
-    keys.push(
-      ...(await db
-        .select({
-          id: schema.apikey.id,
-          referenceId: schema.apikey.referenceId,
-          metadata: schema.apikey.metadata,
-        })
-        .from(schema.apikey)
-        .where(inArray(schema.apikey.referenceId, chunk))),
-    );
-  }
-  const ownMembers = new Set(memberIds);
-  const keyIds = keys
-    .filter(
-      (key) =>
-        !sharedUsers.has(key.referenceId) || ownMembers.has(metadataMember(key.metadata) ?? ""),
-    )
-    .map((key) => key.id);
 
   const workspaceGone = notExists(
     db
@@ -84,8 +59,24 @@ export async function deletionStatements(
   );
   return [
     db.delete(schema.workspaces).where(and(eq(schema.workspaces.id, workspaceId), stillDue)),
-    ...inChunks(keyIds).map((chunk) =>
-      db.delete(schema.apikey).where(and(inArray(schema.apikey.id, chunk), workspaceGone)),
+    ...inChunks(userIds).map((chunk) =>
+      db
+        .delete(schema.apikey)
+        .where(
+          and(
+            inArray(schema.apikey.referenceId, chunk),
+            workspaceGone,
+            notExists(
+              db
+                .select({ id: schema.members.id })
+                .from(schema.members)
+                .where(eq(schema.members.userId, schema.apikey.referenceId)),
+            ),
+          ),
+        ),
+    ),
+    ...inChunks(memberIds).map((chunk) =>
+      db.delete(schema.apikey).where(and(inArray(keyMember, chunk), workspaceGone)),
     ),
     ...inChunks(memberIds).flatMap((chunk) => [
       db

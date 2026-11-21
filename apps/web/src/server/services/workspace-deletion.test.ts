@@ -246,6 +246,46 @@ describe("deleteWorkspace", () => {
     expect(await snapshot()).toEqual(before);
   });
 
+  it("deletes the keys members make while the deletion is on its way, and no one else's", async () => {
+    const clientId = await sharedClient();
+    const kept = await fullWorkspace(clientId);
+    await db.insert(schema.apikey).values({
+      id: crypto.randomUUID(),
+      referenceId: kept.secondUserId,
+      key: crypto.randomUUID(),
+      metadata: "not json",
+      createdAt: now,
+      updatedAt: now,
+    });
+    const before = await snapshot();
+    const doomed = await fullWorkspace(clientId, { userId: kept.secondUserId });
+    const lead = await db.query.members.findFirst({
+      where: eq(schema.members.id, doomed.memberId),
+    });
+    if (!lead) throw new Error("fixture member missing");
+    const statements = await deletionStatements(db, doomed.workspaceId);
+    const lateKeys = [
+      { userId: lead.userId, metadata: JSON.stringify({ memberId: doomed.memberId }) },
+      {
+        userId: kept.secondUserId,
+        metadata: JSON.stringify(JSON.stringify({ memberId: doomed.secondMemberId })),
+      },
+      { userId: kept.secondUserId, metadata: JSON.stringify({ memberId: doomed.secondMemberId }) },
+    ];
+    for (const late of lateKeys) {
+      await db.insert(schema.apikey).values({
+        id: crypto.randomUUID(),
+        referenceId: late.userId,
+        key: crypto.randomUUID(),
+        metadata: late.metadata,
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+    await runBatch(db, statements);
+    expect(await snapshot()).toEqual(before);
+  });
+
   it("is only for owners who type the workspace's name, and never while Team renews", async () => {
     const clientId = await sharedClient();
     const workspace = await fullWorkspace(clientId);
