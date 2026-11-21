@@ -30,12 +30,15 @@ export function devRoutesEnabled(env: { DEV_ROUTES: string }): boolean {
 }
 
 /** Extra origins Better Auth accepts, comma separated, `*` wildcards allowed. Previews list their aliases. */
-export function trustedOrigins(env: { TRUSTED_ORIGINS?: string }): string[] {
-  return (env.TRUSTED_ORIGINS ?? "")
+export function trustedOrigins(env: { TRUSTED_ORIGINS?: string; DEV_ROUTES: string }): string[] {
+  const listed = (env.TRUSTED_ORIGINS ?? "")
     .split(",")
     .map((origin) => origin.trim())
     .filter(Boolean);
+  return devRoutesEnabled(env) ? [...listed, ...localOrigins] : listed;
 }
+
+export const localOrigins = ["http://localhost:*"];
 
 /** No key configured (local, tests) lets every request through; otherwise the header must match it. */
 export function devKeyAccepted(key: string | undefined, given: string | undefined): boolean {

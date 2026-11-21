@@ -26,7 +26,7 @@ export default defineConfig({
               config: {
                 vars: {
                   DEV_ROUTES: "true",
-                  PRODUCT_URL: "http://localhost:5280",
+                  PRODUCT_URL: process.env.HOLLER_E2E_ORIGIN ?? "http://localhost:5290",
                   PUBLIC_SITE_URL: "http://localhost:5281",
                   BETTER_AUTH_SECRET: "holler-e2e-secret-at-least-thirty-two-characters",
                   SLACK_TOKEN_KEY: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",

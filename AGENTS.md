@@ -81,6 +81,8 @@ Project skills live in `.agents/skills/`; `.claude/skills` links to it so every 
 | No cell of a CSV export runs as a formula, whatever anyone typed | `csvCell`; `services/exports.test.ts` writes every formula start into every field |
 | Anonymous results and exports keep no trace of answer order | `packages/core/src/results.test.ts` shuffles every answer; `services/exports.test.ts` |
 | Only Your answers reads who gave an anonymous response | `holler/no-response-owners` in `oxlint-plugin-holler`; `services/own-answers.test.ts`, "never reaches results or exports" |
+| Sign-out and other auth writes pass Better Auth's origin check where the product runs in tests | `PRODUCT_URL` from `e2e/origin.mjs`; `e2e/sign-out.spec.ts` |
+| Sign-out and every auth write work from any local port, and tests run the real origin check | `localOrigins` in `server/env.ts`; `disableOriginCheck: false` in `server/auth.ts`; `routes/local-origins.test.ts` |
 | Deleting a workspace leaves the database as it was before the workspace existed, and touches no other workspace | `services/workspace-deletion.test.ts` fills every table and compares every row |
 | A workspace reinstalled while the cron deletes it keeps everything | `services/workspace-deletion.test.ts`; every statement after the first waits for the workspace row to be gone |
 

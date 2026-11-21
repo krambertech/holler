@@ -1,4 +1,5 @@
 import { defineConfig, devices } from "@playwright/test";
+import { E2E_ORIGIN } from "./e2e/origin.mjs";
 
 // The product and the site on their own ports, with dev routes and an isolated local D1.
 export default defineConfig({
@@ -9,14 +10,14 @@ export default defineConfig({
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? [["github"], ["html", { open: "never" }]] : "list",
-  use: { baseURL: "http://localhost:5290", trace: "retain-on-failure" },
+  use: { baseURL: E2E_ORIGIN, trace: "retain-on-failure" },
   projects: [
     { name: "chromium", use: { ...devices["Desktop Chrome"] } },
     { name: "webkit-phone", use: { ...devices["iPhone 15"] } },
   ],
   webServer: {
     command: "node e2e/server.mjs",
-    url: "http://localhost:5290/api/health",
+    url: `${E2E_ORIGIN}/api/health`,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
   },
