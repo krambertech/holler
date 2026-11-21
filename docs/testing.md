@@ -30,7 +30,7 @@ Test a service, not a route, unless the route itself has logic. A service test n
 
 `e2e/` runs the product and the site on their own ports with `HOLLER_E2E=1`, signs in through `/api/dev/sign-in?as=<persona>` and never types a Slack password. Every journey ends with `expectAccessible(page)`, which runs axe for WCAG 2.2 AA and fails on any violation.
 
-Personas are in `apps/web/src/server/services/dev-seed.ts`: `lead` has live, scheduled and closed hollers; `sender` has nothing, for the empty states.
+Personas are in `apps/web/src/server/services/dev-seed.ts`: `lead` has live, scheduled and closed hollers; `sender` has nothing, for the empty states. Parallel workers sign in at the same time, so every seed write is guarded by a unique index and re-read when it loses the race; `routes/dev-concurrency.test.ts` fires first sign-ins at once and checks each one succeeds and the seed lands once.
 
 ## Proving a change in the browser
 

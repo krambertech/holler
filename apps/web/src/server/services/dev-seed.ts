@@ -1,5 +1,5 @@
 import { anonymousTime, newId } from "@holler/core";
-import { type BatchItem, eq } from "@holler/core/db";
+import { and, type BatchItem, eq } from "@holler/core/db";
 import { runBatch } from "../batch";
 import type { Db } from "../db";
 import { schema } from "../db";
@@ -51,50 +51,54 @@ export async function seedDevWorkspace(db: Db): Promise<{ workspaceId: string }>
   if (existing) return { workspaceId: existing.id };
 
   const workspaceId = newId("workspace");
-  // Two first sign-ins at once both get here; the unique team id lets only one batch through.
-  const claimed = await db
-    .insert(schema.workspaces)
-    .values({
-      id: workspaceId,
-      slackTeamId: DEV_TEAM_ID,
-      name: "Northwind",
-      slackDomain: "northwind-dev",
-      plan: "free",
-    })
-    .onConflictDoNothing()
-    .returning({ id: schema.workspaces.id });
-  if (claimed.length === 0) return seedDevWorkspace(db);
-  await runBatch(db, [
-    // One row per statement: D1 binds at most 100 values in one query.
-    ...people.map(([slackUserId, name, timeZone]) =>
-      db.insert(schema.slackPeople).values({
-        workspaceId,
-        slackUserId,
-        name,
-        displayName: name.split(" ")[0] ?? name,
-        email: `${slackUserId.toLowerCase()}@northwind.example`,
-        timeZone,
-        searchName: name.toLocaleLowerCase(),
+  try {
+    // One batch, so no sign-in ever reads the workspace without its people.
+    await runBatch(db, [
+      db.insert(schema.workspaces).values({
+        id: workspaceId,
+        slackTeamId: DEV_TEAM_ID,
+        name: "Northwind",
+        slackDomain: "northwind-dev",
+        plan: "free",
       }),
-    ),
-    db.insert(schema.slackGroups).values({
-      workspaceId,
-      slackId: "S0DESIGN",
-      kind: "usergroup",
-      name: "Design team",
-      handle: "design",
-      memberCount: 6,
-      searchName: "design team",
-    }),
-    db.insert(schema.slackGroups).values({
-      workspaceId,
-      slackId: "C0GENERAL",
-      kind: "channel",
-      name: "general",
-      memberCount: people.length,
-      searchName: "general",
-    }),
-  ]);
+      // One row per statement: D1 binds at most 100 values in one query.
+      ...people.map(([slackUserId, name, timeZone]) =>
+        db.insert(schema.slackPeople).values({
+          workspaceId,
+          slackUserId,
+          name,
+          displayName: name.split(" ")[0] ?? name,
+          email: `${slackUserId.toLowerCase()}@northwind.example`,
+          timeZone,
+          searchName: name.toLocaleLowerCase(),
+        }),
+      ),
+      db.insert(schema.slackGroups).values({
+        workspaceId,
+        slackId: "S0DESIGN",
+        kind: "usergroup",
+        name: "Design team",
+        handle: "design",
+        memberCount: 6,
+        searchName: "design team",
+      }),
+      db.insert(schema.slackGroups).values({
+        workspaceId,
+        slackId: "C0GENERAL",
+        kind: "channel",
+        name: "general",
+        memberCount: people.length,
+        searchName: "general",
+      }),
+    ]);
+  } catch (error) {
+    // Two first sign-ins raced; the unique team id let one batch through. Use the winner's.
+    const winner = await db.query.workspaces.findFirst({
+      where: eq(schema.workspaces.slackTeamId, DEV_TEAM_ID),
+    });
+    if (winner) return { workspaceId: winner.id };
+    throw error;
+  }
   return { workspaceId };
 }
 
@@ -215,8 +219,10 @@ export async function seedLeadHollers(db: Db, workspaceId: string, creatorId: st
     },
   ];
 
-  for (const seed of seeds) {
+  for (const [order, seed] of seeds.entries()) {
     const hollerId = newId("holler");
+    // The key's unique index lets each seeded holler in once when two lead sign-ins race.
+    const idempotencyKey = `dev-seed ${order}`;
     const statements: BatchItem<"sqlite">[] = [];
     statements.push(
       db.insert(schema.hollers).values({
@@ -236,6 +242,7 @@ export async function seedLeadHollers(db: Db, workspaceId: string, creatorId: st
         closesAt: seed.closesAt ?? null,
         closedAt: seed.closedAt ?? null,
         createdVia: "web",
+        idempotencyKey,
         createdAt: seed.sentAt ?? at(-1 * HOUR),
         updatedAt: seed.closedAt ?? seed.sentAt ?? at(-1 * HOUR),
       }),
@@ -332,7 +339,17 @@ export async function seedLeadHollers(db: Db, workspaceId: string, creatorId: st
         }
       }
     });
-    await runBatch(db, statements);
+    try {
+      await runBatch(db, statements);
+    } catch (error) {
+      const winner = await db.query.hollers.findFirst({
+        where: and(
+          eq(schema.hollers.workspaceId, workspaceId),
+          eq(schema.hollers.idempotencyKey, idempotencyKey),
+        ),
+      });
+      if (!winner) throw error;
+    }
   }
 }
 
