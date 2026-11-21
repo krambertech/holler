@@ -12,16 +12,6 @@ exports[`App Home > puts what is waiting on them first, then their own hollers 1
       "type": "header",
     },
     {
-      "accessory": {
-        "action_id": "holler_open",
-        "text": {
-          "emoji": false,
-          "text": "Answer",
-          "type": "plain_text",
-        },
-        "type": "button",
-        "value": "h_week",
-      },
       "block_id": "wait:h_week",
       "text": {
         "text": "*How was your week?*
@@ -29,6 +19,22 @@ From Mira Kask · Closes Sunday at 12:00",
         "type": "mrkdwn",
       },
       "type": "section",
+    },
+    {
+      "block_id": "wait-actions:h_week",
+      "elements": [
+        {
+          "action_id": "holler_open",
+          "text": {
+            "emoji": false,
+            "text": "Answer",
+            "type": "plain_text",
+          },
+          "type": "button",
+          "value": "h_week",
+        },
+      ],
+      "type": "actions",
     },
     {
       "block_id": "wait:h_form",
@@ -114,59 +120,90 @@ From Mira Kask · Closes Sunday at 12:00",
       "type": "divider",
     },
     {
-      "accessory": {
-        "action_id": "holler_home_remind",
-        "text": {
-          "emoji": false,
-          "text": "Send reminder",
-          "type": "plain_text",
-        },
-        "type": "button",
-        "value": "h_offsite",
-      },
       "block_id": "live:h_offsite",
       "text": {
-        "text": "*<https://app.holler.team/hollers/h_offsite|Where should the offsite be?>*
+        "text": "*Where should the offsite be?*
 7 of 12 answered · Closes Saturday at 18:00",
         "type": "mrkdwn",
       },
       "type": "section",
     },
     {
+      "block_id": "live-actions:h_offsite",
+      "elements": [
+        {
+          "action_id": "holler_product",
+          "text": {
+            "emoji": false,
+            "text": "See results",
+            "type": "plain_text",
+          },
+          "type": "button",
+          "url": "https://app.holler.team/hollers/h_offsite",
+        },
+        {
+          "action_id": "holler_home_remind",
+          "text": {
+            "emoji": false,
+            "text": "Send reminder",
+            "type": "plain_text",
+          },
+          "type": "button",
+          "value": "h_offsite",
+        },
+      ],
+      "type": "actions",
+    },
+    {
       "block_id": "live:h_retro",
       "text": {
-        "text": "*<https://app.holler.team/hollers/h_retro|Sprint retro>*
-3 of 5 answered · Closes Saturday at 18:00",
+        "text": "*Sprint retro*
+3 of 5 answered · Closes Saturday at 18:00
+Reminded at 11:00. You can remind again at 15:00.",
         "type": "mrkdwn",
       },
       "type": "section",
     },
     {
+      "block_id": "live-actions:h_retro",
       "elements": [
         {
-          "text": "Reminder sent at 11:00. You can send the next one at 15:00.",
-          "type": "mrkdwn",
+          "action_id": "holler_product",
+          "text": {
+            "emoji": false,
+            "text": "See results",
+            "type": "plain_text",
+          },
+          "type": "button",
+          "url": "https://app.holler.team/hollers/h_retro",
         },
       ],
-      "type": "context",
+      "type": "actions",
     },
     {
       "block_id": "live:h_done",
       "text": {
-        "text": "*<https://app.holler.team/hollers/h_done|Laptop survey>*
+        "text": "*Laptop survey*
 4 of 4 answered · Closes Saturday at 18:00",
         "type": "mrkdwn",
       },
       "type": "section",
     },
     {
+      "block_id": "live-actions:h_done",
       "elements": [
         {
-          "text": "Everyone answered.",
-          "type": "mrkdwn",
+          "action_id": "holler_product",
+          "text": {
+            "emoji": false,
+            "text": "See results",
+            "type": "plain_text",
+          },
+          "type": "button",
+          "url": "https://app.holler.team/hollers/h_done",
         },
       ],
-      "type": "context",
+      "type": "actions",
     },
   ],
   "type": "home",
@@ -198,7 +235,8 @@ exports[`App Home > tells someone who has not signed in how to send their own 1`
     },
     {
       "text": {
-        "text": "Holler asks your team something in Slack and reminds the people who have not answered. To send your own, sign in to Holler once with Slack.",
+        "text": "*Ask your team something*
+Sign in once with Slack to send your own.",
         "type": "mrkdwn",
       },
       "type": "section",

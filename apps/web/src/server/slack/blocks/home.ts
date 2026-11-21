@@ -56,37 +56,32 @@ function numbers({ live, waiting, scheduled }: HomeCounts) {
   return section(`*${n(live)}* live now   ·   ${people}   ·   *${n(scheduled)}* scheduled`);
 }
 
-const titleLink = (title: string, url: string) => `*<${url}|${escapeMrkdwn(title)}>*`;
-
 function liveRow(row: HomeLive, state: HomeState): unknown[] {
   const parts = [`${n(row.answered)} of ${n(row.recipients)} answered`];
   if (row.closesAt) parts.push(`Closes ${when(row.closesAt, state.timeZone, state.now)}`);
-  const title = titleLink(row.title, `${state.productUrl}/hollers/${row.id}`);
-  const blocks: unknown[] = [
-    {
-      type: "section",
-      block_id: `live:${row.id}`,
-      text: { type: "mrkdwn", text: `${title}\n${parts.join(" · ")}` },
-      ...(row.remind.status === "ready"
-        ? {
-            accessory: {
-              type: "button",
-              action_id: actionIds.homeRemind,
-              text: plain("Send reminder"),
-              value: row.id,
-            },
-          }
-        : {}),
-    },
-  ];
+  const lines = [`*${escapeMrkdwn(row.title)}*`, parts.join(" · ")];
   if (row.remind.status === "wait") {
     const last = timeOfDay(row.remind.last, state.timeZone);
     const next = timeOfDay(row.remind.next, state.timeZone);
-    blocks.push(context(`Reminder sent at ${last}. You can send the next one at ${next}.`));
-  } else if (row.remind.status === "nobody" && row.answered === row.recipients) {
-    blocks.push(context("Everyone answered."));
+    lines.push(`Reminded at ${last}. You can remind again at ${next}.`);
   }
-  return blocks;
+  const elements: unknown[] = [link("See results", `${state.productUrl}/hollers/${row.id}`)];
+  if (row.remind.status === "ready") {
+    elements.push({
+      type: "button",
+      action_id: actionIds.homeRemind,
+      text: plain("Send reminder"),
+      value: row.id,
+    });
+  }
+  return [
+    {
+      type: "section",
+      block_id: `live:${row.id}`,
+      text: { type: "mrkdwn", text: lines.join("\n") },
+    },
+    { type: "actions", block_id: `live-actions:${row.id}`, elements },
+  ];
 }
 
 function senderBlocks(sender: NonNullable<HomeState["sender"]>, state: HomeState): unknown[] {
@@ -131,13 +126,9 @@ function waitingRow({ holler, respondUrl }: HomeWaiting, state: HomeState): unkn
   if (holler.closesAt) parts.push(`Closes ${when(holler.closesAt, state.timeZone, state.now)}`);
   const text = { type: "mrkdwn", text: `*${escapeMrkdwn(holler.title)}*\n${parts.join(" · ")}` };
   const where = surfaceOf(holler).where;
-  if (where === "chase") {
-    return [
-      { type: "section", block_id: `wait:${holler.id}`, text },
-      {
-        type: "actions",
-        block_id: `wait-actions:${holler.id}`,
-        elements: [
+  const controls =
+    where === "chase"
+      ? [
           { ...link("Open the form", holler.externalUrl ?? state.productUrl, actionIds.formLink) },
           {
             type: "button",
@@ -145,15 +136,14 @@ function waitingRow({ holler, respondUrl }: HomeWaiting, state: HomeState): unkn
             text: plain("I submitted it"),
             value: holler.id,
           },
-        ],
-      },
-    ];
-  }
-  const accessory =
-    where === "web" && respondUrl
-      ? link("Answer", respondUrl, actionIds.respondLink)
-      : { type: "button", action_id: actionIds.open, text: plain("Answer"), value: holler.id };
-  return [{ type: "section", block_id: `wait:${holler.id}`, text, accessory }];
+        ]
+      : where === "web" && respondUrl
+        ? [link("Answer", respondUrl, actionIds.respondLink)]
+        : [{ type: "button", action_id: actionIds.open, text: plain("Answer"), value: holler.id }];
+  return [
+    { type: "section", block_id: `wait:${holler.id}`, text },
+    { type: "actions", block_id: `wait-actions:${holler.id}`, elements: controls },
+  ];
 }
 
 function waitingBlocks(state: HomeState): unknown[] {
@@ -176,9 +166,7 @@ function waitingBlocks(state: HomeState): unknown[] {
 function signInBlocks(state: HomeState): unknown[] {
   return [
     divider,
-    section(
-      "Holler asks your team something in Slack and reminds the people who have not answered. To send your own, sign in to Holler once with Slack.",
-    ),
+    section("*Ask your team something*\nSign in once with Slack to send your own."),
     {
       type: "actions",
       block_id: "home:sign-in",

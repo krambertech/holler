@@ -101,7 +101,7 @@ export default async function drive({ page, step, post, slackState, expect }) {
       const state = await slackState(
         (s) =>
           s.slack.posted.filter((m) => m.text.startsWith("A reminder") && m.text.endsWith(QUESTION))
-            .length === 2 && says(homeOf(s, "U0LEAD"), "Reminder sent at"),
+            .length === 2 && says(homeOf(s, "U0LEAD"), "Reminded at"),
         "two reminders and the redrawn Home",
       );
       expect(

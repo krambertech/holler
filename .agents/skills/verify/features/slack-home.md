@@ -12,7 +12,7 @@ Slack draws these surfaces, so there is no screen to click. `POST /api/dev/slack
 
 ## End state
 
-Mira's Home shows "Your hollers" with the seeded live pulse; the quick pulse modal opens with the question filled in and is rewritten to "went to 2 people"; `slack.posted` holds the two invites and, after Send reminder, two reminders; Mira's last Home says "Reminder sent at"; Amara's Home lists the pulse under "Waiting on you"; the web Home links it.
+Mira's Home shows "Your hollers" with the seeded live pulse; the quick pulse modal opens with the question filled in and is rewritten to "went to 2 people"; `slack.posted` holds the two invites and, after Send reminder, two reminders; Mira's last Home says "Reminded at"; Amara's Home lists the pulse under "Waiting on you"; the web Home links it.
 
 ## Gotchas
 

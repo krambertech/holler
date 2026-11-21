@@ -143,8 +143,8 @@ describe("App Home", () => {
   it("offers Send reminder only when it can go, and says when it can otherwise", () => {
     const blocks = texts(homeView(state()).blocks);
     expect(blocks.match(/"Send reminder"/g)).toHaveLength(1);
-    expect(blocks).toContain("Reminder sent at 11:00. You can send the next one at 15:00.");
-    expect(blocks).toContain("Everyone answered.");
+    expect(blocks).toContain("Reminded at 11:00. You can remind again at 15:00.");
+    expect(blocks).toContain("4 of 4 answered");
   });
 
   it("answers each kind of Holler the way its DM would", () => {

@@ -399,7 +399,7 @@ describe("App Home", () => {
     const reminders = () => slack.posted.filter((m) => m.text.startsWith("A reminder"));
     expect(reminders()).toHaveLength(2);
     const home = JSON.stringify(slack.homes.at(-1)?.view.blocks);
-    expect(home).toContain("Reminder sent at 10:00. You can send the next one at 14:00.");
+    expect(home).toContain("Reminded at 10:00. You can remind again at 14:00.");
     expect(home).not.toContain("holler_home_remind");
 
     await press();
