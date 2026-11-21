@@ -178,7 +178,7 @@ export const sending: Group = {
       slug: "send-bar",
       name: "SendBar",
       source: "components/editor/send/send-bar.tsx",
-      note: "The bar at the bottom of Compose and Send. It rides at the bottom of the window and settles at the end of the page, with a shadow only while it floats. Its children say what the next press does; `action` holds the one plum button.",
+      note: "The bar at the bottom of Compose and Send. It rides at the bottom of the window and settles at the end of the page, with a shadow only while it floats. Its children say what the next press does, and the action slot holds the one plum button.",
       Demo: () => (
         <Variants
           stack
