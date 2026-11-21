@@ -4,5 +4,6 @@
   "0002_polar_events.sql": "0ee2f3f6d2f0d244768d067ee8265d1336fc48adf323e7f096b3b2e9a8a6db64",
   "0003_question_extras.sql": "95ff6373fb65c7ca0f3b462b5498317258fad968479d6b05e86ecce4c4530da0",
   "0004_slack_delivery.sql": "6a388946073f6ae5ec527ce6633be2c3a8e326bcb3fb1f6f0a120f7f01e3d12d",
-  "0005_viewers_by_slack_user.sql": "f813f8cd96f341be6b6a594c426ea5463145dc8e0b79876142dd5373eaa37229"
+  "0005_response_owners.sql": "cd4dfb38c2a1e43bf5913a7059935ea24bfdc33cf75362fd35501dfd1381e39d",
+  "0006_viewers_by_slack_user.sql": "f813f8cd96f341be6b6a594c426ea5463145dc8e0b79876142dd5373eaa37229"
 }

@@ -68,11 +68,13 @@ Holler asks a team something in Slack, reminds the people who have not answered,
 
 **Snooze**: A recipient's "Remind me later" on a reminder, which moves only their next reminder. _Avoid_: Mute, dismiss
 
-**Anonymous**: A Holler whose responses carry no link to who sent them. Holler still knows who answered, so it can stop reminding them, but not which response is theirs, and its sender sees how many answered, never who. Results open only once at least five people answered. _Avoid_: Private (which is about who can see results), confidential
+**Anonymous**: A Holler whose sender sees how many answered, never who said what. Holler still knows who answered, so it can stop reminding them, and keeps a private link from each response to its person so they can read their own answers; nobody else ever sees that link (ADR 0003). Results open only once at least five people answered. _Avoid_: Private (which is about who can see results), confidential
 
 **Results**: What a Holler's responses add up to: counts per option, averages for scales, and the text answers. _Avoid_: Report (for the in-app view), analytics, stats, insights
 
 **Report**: A read-only page of a Holler's results, opened with an unguessable link, so it can be shared with people who are not members. It names no one, even on a named Holler. _Avoid_: Public link, share page
+
+**Your answers**: A person's own page in the web app listing every Holler sent to them, where it stands (waiting on you, answered, closed before you answered), and what they answered. _Avoid_: My responses, history, inbox
 
 **Export**: A file of a Holler's results or responses: CSV for spreadsheets, Markdown for docs. _Avoid_: Download (as the noun), dump
 

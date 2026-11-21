@@ -3,6 +3,8 @@ import type {
   HollerSummary,
   HomeCounts,
   InstallStatus,
+  OwnAnswer,
+  OwnHoller,
   RecipientsOut,
   Results,
   SettingsMember,
@@ -97,4 +99,15 @@ export const directoryQuery = (q: string) =>
     queryKey: ["directory", q],
     queryFn: () => api<DirectoryOut>(`/directory?q=${encodeURIComponent(q)}`),
     staleTime: 60_000,
+  });
+
+export const ownAnswersQuery = queryOptions({
+  queryKey: ["answers", "list"],
+  queryFn: () => api<{ hollers: OwnHoller[] }>("/answers").then((r) => r.hollers),
+});
+
+export const ownAnswerQuery = (id: string) =>
+  queryOptions({
+    queryKey: ["answers", id],
+    queryFn: () => api<OwnAnswer>(`/answers/${id}`),
   });
