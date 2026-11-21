@@ -1,9 +1,10 @@
-import type { HollerDraft } from "@holler/core";
+import { answerSurface, type HollerDraft } from "@holler/core";
 import { ArrowLeft } from "lucide-react";
 import { useState } from "react";
 import type { DirectoryGroup, DirectoryPerson } from "@/components/editor/send/directory";
 import { type BigSend, SendBar, SendButton } from "@/components/editor/send/send-bar";
 import {
+  answeredInLabel,
   audienceReach,
   composeBarSummary,
   dayTime,
@@ -11,6 +12,7 @@ import {
   sendActionLabel,
   sendBarSummary,
 } from "@/components/editor/send/send-logic";
+import { type PreviewHoller, SlackPreview } from "@/components/editor/send/slack-preview";
 import { Button } from "@/components/ui/button";
 import { Variants } from "../frame";
 import type { Group } from "./types";
@@ -69,7 +71,9 @@ function nextMonday(hour: number) {
   at.setHours(hour, 0, 0, 0);
   return at;
 }
+const DAY = 24 * 3600_000;
 const mondayNine = nextMonday(9);
+const fridayFive = new Date(nextMonday(17).getTime() + 4 * DAY);
 
 const defaults: SendFields = {
   sendAt: null,
@@ -80,6 +84,80 @@ const defaults: SendFields = {
   remindersEnabled: true,
   announceChannelId: null,
   tags: [],
+};
+
+const option = (label: string) => ({ label });
+const pulse: PreviewHoller = {
+  mode: "pulse",
+  title: "",
+  anonymous: false,
+  questions: [
+    {
+      type: "single",
+      style: "plain",
+      prompt: "How was your week?",
+      options: ["Great", "Fine", "Rough"].map(option),
+    },
+  ],
+};
+const textPulse: PreviewHoller = {
+  mode: "pulse",
+  title: "",
+  anonymous: true,
+  questions: [{ type: "text", style: "plain", prompt: "What should we stop doing?", options: [] }],
+};
+const survey: PreviewHoller = {
+  mode: "survey",
+  title: "Q4 retro",
+  description: "Ten minutes, before Thursday's retro.",
+  anonymous: false,
+  questions: [
+    {
+      type: "single",
+      style: "scale",
+      prompt: "How did the quarter feel?",
+      options: ["1", "2", "3", "4", "5"].map(option),
+      lowLabel: "Rough",
+      highLabel: "Great",
+    },
+    {
+      type: "multi",
+      style: "plain",
+      prompt: "What slowed us down?",
+      options: ["Meetings", "Unclear priorities", "Reviews", "On-call"].map(option),
+      allowOther: true,
+      maxChoices: 2,
+    },
+    { type: "text", style: "plain", prompt: "One thing to change next quarter", options: [] },
+  ],
+};
+const web: PreviewHoller = {
+  ...survey,
+  title: "Offsite planning",
+  description: "",
+  questions: [
+    {
+      type: "single",
+      style: "plain",
+      prompt: "Can you make the offsite?",
+      options: ["Yes", "Maybe", "No"].map(option),
+      followUp: { prompt: "What would make it work?", onlyAfter: [1, 2] },
+    },
+    {
+      type: "person",
+      style: "plain",
+      prompt: "Who should you room with?",
+      options: [],
+      maxChoices: 1,
+    },
+  ],
+};
+const chase: PreviewHoller = {
+  mode: "chase",
+  title: "Fill in the benefits enrolment form",
+  description: "It takes five minutes, and enrolment closes Friday.",
+  anonymous: false,
+  questions: [],
 };
 
 // ─── Demos ───────────────────────────────────────────────────────────────────────────────────
@@ -169,11 +247,69 @@ function SendButtonDemo({ audience, start }: { audience: Audience; start?: Parti
   );
 }
 
+function PreviewDemo({
+  holler,
+  recipient,
+  defaultView,
+}: {
+  holler: PreviewHoller;
+  recipient?: string;
+  defaultView?: "dm" | "tap" | "reminder";
+}) {
+  return (
+    <SlackPreview
+      holler={holler}
+      sender="Mira"
+      recipient={recipient}
+      closesAt={fridayFive}
+      sendsAt={mondayNine}
+      defaultView={defaultView}
+    />
+  );
+}
+
+const surfaceNote = (holler: PreviewHoller) => answeredInLabel(answerSurface(holler));
+
 export const sending: Group = {
   slug: "sending",
   title: "Sending",
   lede: "The Send stage of the editor: who it goes to, when and how, what they see in Slack, and the bar that sends it. Each part reads as plain facts until you change one.",
   entries: [
+    {
+      slug: "slack-preview",
+      name: "SlackPreview",
+      source: "components/editor/send/slack-preview.tsx",
+      note: "Preview opens what a recipient sees in Slack: the DM, what follows a tap, and a reminder, shaped by where it is answered. Drawn in Holler's neutrals, never Slack's brand. Pass view and onViewChange to choose the message from outside.",
+      Demo: () => (
+        <Variants
+          items={[
+            {
+              label: surfaceNote(pulse),
+              note: "A pulse of one single choice.",
+              render: () => <PreviewDemo holler={pulse} recipient="Jonas" />,
+            },
+            {
+              label: "Free text in the DM",
+              note: "Anonymous.",
+              render: () => <PreviewDemo holler={textPulse} />,
+            },
+            {
+              label: surfaceNote(survey),
+              render: () => <PreviewDemo holler={survey} recipient="Ana" />,
+            },
+            {
+              label: surfaceNote(web),
+              note: "A note only after some answers.",
+              render: () => <PreviewDemo holler={web} />,
+            },
+            {
+              label: "A chase, opening on the reminder",
+              render: () => <PreviewDemo holler={chase} recipient="Kai" defaultView="reminder" />,
+            },
+          ]}
+        />
+      ),
+    },
     {
       slug: "send-bar",
       name: "SendBar",
