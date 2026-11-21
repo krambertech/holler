@@ -62,6 +62,7 @@ Project skills live in `.agents/skills/`; `.claude/skills` links to it so every 
 | Every exported component has an entry on the design site | `pnpm check:design-coverage` |
 | Files under `apps/web/src/client` are kebab-case                            | Biome `useFilenamingConvention`                      |
 | Every journey page passes axe at WCAG 2.2 AA                                | `e2e/`                                               |
+| Concurrent first dev sign-ins all succeed and seed once                    | `apps/web/src/server/routes/dev-concurrency.test.ts` |
 | Pull request titles follow `type(scope): summary` within 72 characters      | `scripts/check-pr-title.mjs` in CI                   |
 
 ## Generated files
