@@ -9,6 +9,7 @@ export const activityActions = [
   "holler.send_failed",
   "holler.reminded",
   "holler.closed",
+  "holler.repeat_stopped",
   "reminder.snoozed",
   "response.noted",
   "member.joined",

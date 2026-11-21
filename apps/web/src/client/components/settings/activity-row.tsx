@@ -107,6 +107,11 @@ const sentences: Record<ActivityAction, (entry: ActivityEntry) => ReactNode> = {
         <HollerTitle entry={e} /> closed at its close time.
       </>
     ),
+  "holler.repeat_stopped": (e) => (
+    <>
+      {who(e)} stopped <HollerTitle entry={e} /> repeating.
+    </>
+  ),
   "reminder.snoozed": (e) => (
     <>
       Someone put off a reminder for <HollerTitle entry={e} last />
