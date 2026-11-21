@@ -1,19 +1,26 @@
 import type { ApiKeyCreatedOut, ApiKeyOut } from "@holler/core";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronDown } from "lucide-react";
 import { type FormEvent, useCallback, useId, useState } from "react";
+import { ErrorState } from "@/components/error-state";
+import { Skeleton } from "@/components/skeleton";
 import { Button } from "@/components/ui/button";
 import { Chip } from "@/components/ui/chip";
+import { Field, FieldError, FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
 import { Plate, PlateRow, PlateStrip } from "@/components/ui/plate";
+import { Select, SelectContent, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ApiError } from "@/lib/api";
-import { cn } from "@/lib/cn";
-import { CopyButton, DOCS_URL, SettingsSection, whenLabel } from "./parts";
-import { apiKeysQuery, createApiKey, revokeApiKey } from "./queries";
+import { CopyButton, SettingsSection, whenLabel } from "./parts";
+import { apiKeysQuery, createApiKey, DOCS_URL, revokeApiKey } from "./queries";
 
 const scopeLabel = { read: "Read only", write: "Read and write" } as const;
+const scopes = [
+  { value: "read", label: scopeLabel.read },
+  { value: "write", label: scopeLabel.write },
+];
 
 /** Settings → API keys: the member's own keys in this workspace, made and revoked here only. */
-export function ApiKeysSection() {
+function ApiKeysSection() {
   const keys = useQuery(apiKeysQuery);
   const [created, setCreated] = useState<ApiKeyCreatedOut | null>(null);
   return (
@@ -23,16 +30,21 @@ export function ApiKeysSection() {
       description={
         <>
           A key lets a script use Holler as you, in this workspace.{" "}
-          <a href={DOCS_URL} className="text-ink underline underline-offset-2 hover:text-primary">
+          <a
+            href={DOCS_URL}
+            className="text-ink underline underline-offset-2 hoverable:hover:text-primary"
+          >
             Read the API docs
           </a>
         </>
       }
     >
       {keys.isError ? (
-        <Plate className="px-5 py-4 text-danger-ink">
-          Unable to load your API keys. Refresh the page to try again.
-        </Plate>
+        <ErrorState
+          title="We could not load your API keys"
+          onRetry={() => keys.refetch()}
+          pending={keys.isRefetching}
+        />
       ) : keys.data ? (
         <Plate>
           {created && <NewKey created={created} onDone={() => setCreated(null)} />}
@@ -49,7 +61,7 @@ export function ApiKeysSection() {
           <NewKeyForm onCreated={setCreated} />
         </Plate>
       ) : (
-        <Plate aria-hidden className="h-[148px] animate-pulse" />
+        <Skeleton aria-hidden className="h-[148px] rounded-plate" />
       )}
     </SettingsSection>
   );
@@ -65,8 +77,8 @@ function NewKey({ created, onDone }: { created: ApiKeyCreatedOut; onDone: () => 
       </PlateStrip>
       <PlateRow className="flex flex-col gap-3 px-5 py-4" aria-labelledby={id}>
         <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-          <span className="font-normal text-md">{created.name}</span>
-          <Chip tone={created.scope === "write" ? "tint" : "quiet"}>
+          <span className="font-normal">{created.name}</span>
+          <Chip variant={created.scope === "write" ? "tint" : "quiet"}>
             {scopeLabel[created.scope]}
           </Chip>
         </div>
@@ -74,7 +86,7 @@ function NewKey({ created, onDone }: { created: ApiKeyCreatedOut; onDone: () => 
           <code className="min-w-0 flex-1 break-all rounded-sm bg-well px-3 py-2 font-mono text-ink text-sm">
             {created.key}
           </code>
-          <CopyButton text={created.key} label={`Copy the key ${created.name}`} />
+          <CopyButton text={created.key} aria-label={`Copy the key ${created.name}`} />
           <Button size="sm" variant="ghost" onClick={onDone}>
             Done
           </Button>
@@ -122,8 +134,8 @@ function KeyRow({ apiKey }: { apiKey: ApiKeyOut }) {
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
           <div className="flex min-w-0 flex-1 flex-col">
             <span className="flex flex-wrap items-center gap-2">
-              <span className="truncate font-normal text-md">{apiKey.name}</span>
-              <Chip tone={apiKey.scope === "write" ? "tint" : "quiet"}>
+              <span className="truncate font-normal">{apiKey.name}</span>
+              <Chip variant={apiKey.scope === "write" ? "tint" : "quiet"}>
                 {scopeLabel[apiKey.scope]}
               </Chip>
             </span>
@@ -159,9 +171,6 @@ function KeyRow({ apiKey }: { apiKey: ApiKeyOut }) {
 
 function NewKeyForm({ onCreated }: { onCreated: (key: ApiKeyCreatedOut) => void }) {
   const queryClient = useQueryClient();
-  const nameId = useId();
-  const scopeId = useId();
-  const errorId = useId();
   const [name, setName] = useState("");
   const [scope, setScope] = useState<"read" | "write">("read");
   const create = useMutation({
@@ -194,12 +203,11 @@ function NewKeyForm({ onCreated }: { onCreated: (key: ApiKeyCreatedOut) => void 
 
   return (
     <PlateRow>
-      <form onSubmit={submit} className="flex flex-col gap-2 px-5 py-4" noValidate>
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-          <label htmlFor={nameId} className="flex min-w-0 flex-1 flex-col gap-1.5">
-            <span className="text-muted text-sm">Name</span>
-            <input
-              id={nameId}
+      <form onSubmit={submit} className="flex flex-col gap-3 px-5 py-4" noValidate>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
+          <Field className="min-w-0 flex-1">
+            <FieldLabel>Name</FieldLabel>
+            <Input
               value={name}
               maxLength={60}
               onChange={(event) => {
@@ -207,35 +215,23 @@ function NewKeyForm({ onCreated }: { onCreated: (key: ApiKeyCreatedOut) => void 
                 setMissingName(false);
               }}
               placeholder="Weekly pulse script"
-              aria-invalid={missingName || undefined}
-              aria-describedby={error ? errorId : undefined}
-              className={cn(
-                "h-10 rounded-control bg-plate px-3 text-ink shadow-[0_0_0_1px_var(--edge-2)] placeholder:text-muted",
-                missingName && "shadow-[0_0_0_1px_var(--danger-dot)]",
-              )}
             />
-          </label>
-          <label htmlFor={scopeId} className="flex flex-col gap-1.5">
-            <span className="text-muted text-sm">Access</span>
-            <span className="relative inline-flex">
-              <select
-                id={scopeId}
-                value={scope}
-                onChange={(event) => setScope(event.target.value as "read" | "write")}
-                className="h-10 w-full appearance-none rounded-control bg-plate ps-3 pe-9 text-ink shadow-[0_0_0_1px_var(--edge-2)] hover:bg-well sm:w-auto"
-              >
-                <option value="read">Read only</option>
-                <option value="write">Read and write</option>
-              </select>
-              <ChevronDown
-                aria-hidden
-                size={16}
-                strokeWidth={2}
-                className="pointer-events-none absolute end-3 top-1/2 -translate-y-1/2 text-muted"
-              />
-            </span>
-          </label>
-          <Button type="submit" pending={create.isPending}>
+            <FieldError>{error}</FieldError>
+          </Field>
+          <Field className="sm:w-48">
+            <FieldLabel>Access</FieldLabel>
+            <Select
+              value={scope}
+              onValueChange={(next) => setScope(next as "read" | "write")}
+              items={scopes}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent />
+            </Select>
+          </Field>
+          <Button type="submit" pending={create.isPending} className="sm:mt-[26px]">
             Make key
           </Button>
         </div>
@@ -244,12 +240,9 @@ function NewKeyForm({ onCreated }: { onCreated: (key: ApiKeyCreatedOut) => void 
             ? "Can also create, edit, send and close hollers, and send reminders."
             : "Can list hollers and read their results. Cannot change or send anything."}
         </p>
-        {error && (
-          <p id={errorId} role="alert" className="text-danger-ink text-sm">
-            {error}
-          </p>
-        )}
       </form>
     </PlateRow>
   );
 }
+
+export { ApiKeysSection };

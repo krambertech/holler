@@ -8,9 +8,9 @@ import { jwt } from "better-auth/plugins/jwt";
 import type { Db } from "./db";
 import { schema } from "./db";
 import { type Bindings, devRoutesEnabled } from "./env";
-import { applyPolarEvent, polarClient, polarConfigured } from "./services/billing";
 import { fetchClientMetadataResource } from "./mcp/cimd-fetch";
 import { API_KEY_PERMISSION, MCP_MEMBER_CLAIM } from "./principal";
+import { applyPolarEvent, polarClient, polarConfigured } from "./services/billing";
 import { consentMemberFor } from "./services/connected-apps";
 import { linkSlackAccount } from "./services/members";
 

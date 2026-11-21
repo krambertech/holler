@@ -1,24 +1,31 @@
 import { Check, Copy } from "lucide-react";
-import { type ReactNode, useEffect, useState } from "react";
+import { type ComponentProps, type ReactNode, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-
-/** Where the public site documents the API and MCP. docs/api.md is the source. */
-export const DOCS_URL = "https://holler.team/docs/api";
+import { cn } from "@/lib/cn";
 
 /** A Settings section, drawn the same way as the ones settings.tsx draws itself. */
-export function SettingsSection({
+interface SettingsSectionProps extends Omit<ComponentProps<"section">, "title"> {
+  /** The heading's id, which names the section. */
+  id: string;
+  title: string;
+  description: ReactNode;
+}
+
+function SettingsSection({
   id,
   title,
   description,
   children,
-}: {
-  id: string;
-  title: string;
-  description: ReactNode;
-  children: ReactNode;
-}) {
+  className,
+  ...props
+}: SettingsSectionProps) {
   return (
-    <section aria-labelledby={id} className="flex flex-col gap-3">
+    <section
+      data-slot="settings-section"
+      aria-labelledby={id}
+      className={cn("flex flex-col gap-3", className)}
+      {...props}
+    >
       <div>
         <h2 id={id} className="text-lg">
           {title}
@@ -31,7 +38,13 @@ export function SettingsSection({
 }
 
 /** Copies text and says so for a moment, out loud too. */
-export function CopyButton({ text, label }: { text: string; label: string }) {
+interface CopyButtonProps extends Omit<ComponentProps<typeof Button>, "onClick" | "children"> {
+  text: string;
+  /** What is copied, for screen readers: "Copy the MCP server address". */
+  "aria-label": string;
+}
+
+function CopyButton({ text, size = "sm", ...props }: CopyButtonProps) {
   const [copied, setCopied] = useState(false);
   const [failed, setFailed] = useState(false);
   useEffect(() => {
@@ -42,14 +55,9 @@ export function CopyButton({ text, label }: { text: string; label: string }) {
   return (
     <>
       <Button
-        size="sm"
-        icon={
-          copied ? (
-            <Check aria-hidden size={16} strokeWidth={2} />
-          ) : (
-            <Copy aria-hidden size={16} strokeWidth={2} />
-          )
-        }
+        data-slot="copy-button"
+        size={size}
+        {...props}
         onClick={async () => {
           try {
             await navigator.clipboard.writeText(text);
@@ -59,8 +67,8 @@ export function CopyButton({ text, label }: { text: string; label: string }) {
             setFailed(true);
           }
         }}
-        aria-label={label}
       >
+        {copied ? <Check aria-hidden strokeWidth={2} /> : <Copy aria-hidden strokeWidth={2} />}
         {copied ? "Copied" : "Copy"}
       </Button>
       <span className="sr-only" aria-live="polite">
@@ -73,7 +81,7 @@ export function CopyButton({ text, label }: { text: string; label: string }) {
 const relative = new Intl.RelativeTimeFormat(undefined, { numeric: "auto" });
 
 /** "today", "yesterday", "3 days ago", then a date. */
-export function whenLabel(iso: string, now = new Date()): string {
+function whenLabel(iso: string, now = new Date()): string {
   const days = Math.round(
     (new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime() -
       new Date(new Date(iso).setHours(0, 0, 0, 0)).getTime()) /
@@ -84,3 +92,5 @@ export function whenLabel(iso: string, now = new Date()): string {
     new Date(iso),
   );
 }
+
+export { CopyButton, SettingsSection, whenLabel };

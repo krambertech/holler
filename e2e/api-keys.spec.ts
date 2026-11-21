@@ -10,7 +10,8 @@ test("a lead makes an API key, uses it once, and revokes it", async ({ page, req
   await expect(page.getByText(/MCP server:/)).toBeVisible();
 
   await page.getByLabel("Name").fill(name);
-  await page.getByLabel("Access").selectOption("write");
+  await page.getByLabel("Access").click();
+  await page.getByRole("option", { name: "Read and write" }).click();
   await expect(page.getByText("Can also create, edit, send and close hollers")).toBeVisible();
   await page.getByRole("button", { name: "Make key" }).click();
 

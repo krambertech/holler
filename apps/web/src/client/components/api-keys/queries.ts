@@ -18,3 +18,6 @@ export const createApiKey = (input: ApiKeyInput) =>
 export const revokeApiKey = (id: string) => api(`/v1/keys/${id}`, { method: "DELETE" });
 
 export const disconnectApp = (id: string) => api(`/v1/connected-apps/${id}`, { method: "DELETE" });
+
+/** Where the public site documents the API and MCP. docs/api.md is the source. */
+export const DOCS_URL = "https://holler.team/docs/api";

@@ -5,7 +5,7 @@ import { useState } from "react";
 import { z } from "zod";
 import { Logo } from "@/components/logo";
 import { WorkspaceIcon } from "@/components/settings/workspace-icon";
-import { Button, buttonClasses } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { Plate, PlateRow } from "@/components/ui/plate";
 import { authClient } from "@/lib/auth-client";
 import { meQuery } from "@/lib/queries";
@@ -92,7 +92,7 @@ function Consent() {
           ) : (
             <>
               <div>
-                <h1 className="text-2xl tracking-title [text-wrap:balance]">
+                <h1 className="text-balance text-4xl tracking-title">
                   {client.isPending && clientId
                     ? "Connect an app to Holler"
                     : `Allow ${appName} to use Holler?`}
@@ -102,7 +102,7 @@ function Consent() {
                     <WorkspaceIcon
                       name={me.data.workspace.name}
                       src={me.data.workspace.iconUrl}
-                      size={32}
+                      size="md"
                     />
                     <span>
                       It acts as {me.data.member.name}, in {me.data.workspace.name} only.
@@ -114,9 +114,8 @@ function Consent() {
                 <li className="flex gap-3">
                   <Check
                     aria-hidden
-                    size={18}
                     strokeWidth={2}
-                    className="mt-0.5 shrink-0 text-primary"
+                    className="mt-0.5 size-[18px] shrink-0 text-primary"
                   />
                   <span>
                     See your hollers, who answered and the results. Anonymous results stay hidden
@@ -174,7 +173,7 @@ function Consent() {
               You can disconnect it at any time in{" "}
               <Link
                 to="/settings"
-                className="text-ink underline underline-offset-2 hover:text-primary"
+                className="text-ink underline underline-offset-2 hoverable:hover:text-primary"
               >
                 Settings
               </Link>
@@ -190,7 +189,7 @@ function Consent() {
 function Done({ appName, outcome }: { appName: string; outcome: Outcome }) {
   return (
     <div role="status" className="flex flex-col gap-4">
-      <h1 className="text-2xl tracking-title [text-wrap:balance]">
+      <h1 className="text-balance text-4xl tracking-title">
         {outcome === "allowed" ? `${appName} is connected` : `${appName} was not connected`}
       </h1>
       <p className="text-ink-2">
@@ -199,9 +198,9 @@ function Done({ appName, outcome }: { appName: string; outcome: Outcome }) {
           : "Nothing was shared with it. You can close this tab."}
       </p>
       {outcome === "allowed" && (
-        <Link to="/settings" className={`${buttonClasses("secondary")} self-start`}>
+        <Button className="self-start" render={<Link to="/settings" />}>
           Manage connected apps
-        </Link>
+        </Button>
       )}
     </div>
   );

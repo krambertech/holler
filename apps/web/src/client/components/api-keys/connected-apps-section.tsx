@@ -1,18 +1,20 @@
 import type { ConnectedAppOut } from "@holler/core";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useState } from "react";
+import { ErrorState } from "@/components/error-state";
+import { Skeleton } from "@/components/skeleton";
 import { Button } from "@/components/ui/button";
 import { Chip } from "@/components/ui/chip";
 import { Plate, PlateRow, PlateStrip } from "@/components/ui/plate";
 import { ApiError } from "@/lib/api";
-import { CopyButton, DOCS_URL, SettingsSection, whenLabel } from "./parts";
-import { connectedAppsQuery, disconnectApp } from "./queries";
+import { CopyButton, SettingsSection, whenLabel } from "./parts";
+import { connectedAppsQuery, DOCS_URL, disconnectApp } from "./queries";
 
 /** The address an MCP client is given. It is this app's own origin. */
 const mcpUrl = () => `${window.location.origin}/mcp`;
 
 /** Settings → Connected apps: the assistants the member let in, what each may do, and revoke. */
-export function ConnectedAppsSection() {
+function ConnectedAppsSection() {
   const apps = useQuery(connectedAppsQuery);
   return (
     <SettingsSection
@@ -24,7 +26,7 @@ export function ConnectedAppsSection() {
           works only in this workspace.{" "}
           <a
             href={`${DOCS_URL}#connect-an-assistant-over-mcp`}
-            className="text-ink underline underline-offset-2 hover:text-primary"
+            className="text-ink underline underline-offset-2 hoverable:hover:text-primary"
           >
             Read how to connect one
           </a>
@@ -32,9 +34,11 @@ export function ConnectedAppsSection() {
       }
     >
       {apps.isError ? (
-        <Plate className="px-5 py-4 text-danger-ink">
-          Unable to load your connected apps. Refresh the page to try again.
-        </Plate>
+        <ErrorState
+          title="We could not load your connected apps"
+          onRetry={() => apps.refetch()}
+          pending={apps.isRefetching}
+        />
       ) : apps.data ? (
         <Plate>
           {apps.data.length === 0 ? (
@@ -48,11 +52,11 @@ export function ConnectedAppsSection() {
             <span className="min-w-0">
               MCP server: <span className="whitespace-nowrap font-mono">{mcpUrl()}</span>
             </span>
-            <CopyButton text={mcpUrl()} label="Copy the MCP server address" />
+            <CopyButton text={mcpUrl()} aria-label="Copy the MCP server address" />
           </PlateStrip>
         </Plate>
       ) : (
-        <Plate aria-hidden className="h-[120px] animate-pulse" />
+        <Skeleton aria-hidden className="h-[120px] rounded-plate" />
       )}
     </SettingsSection>
   );
@@ -107,8 +111,8 @@ function AppRow({ app }: { app: ConnectedAppOut }) {
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
           <div className="flex min-w-0 flex-1 flex-col">
             <span className="flex flex-wrap items-center gap-2">
-              <span className="truncate font-normal text-md">{name}</span>
-              <Chip tone={app.scope === "write" ? "tint" : "quiet"}>
+              <span className="truncate font-normal">{name}</span>
+              <Chip variant={app.scope === "write" ? "tint" : "quiet"}>
                 {app.scope === "write" ? "Read and write" : "Read only"}
               </Chip>
             </span>
@@ -138,3 +142,5 @@ function AppRow({ app }: { app: ConnectedAppOut }) {
     </PlateRow>
   );
 }
+
+export { ConnectedAppsSection };
