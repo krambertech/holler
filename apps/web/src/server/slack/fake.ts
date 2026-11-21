@@ -21,7 +21,9 @@ function refuseInvalid(method: string, problems: string[]) {
 export class FakeSlack implements SlackClient {
   readonly posted: (PostMessage & { ts: string })[] = [];
   readonly updated: (PostMessage & { ts: string })[] = [];
-  readonly views: { triggerId: string; view: SlackView }[] = [];
+  readonly views: { triggerId: string; view: SlackView; viewId: string }[] = [];
+  /** Every rewrite of an open modal, in order. */
+  readonly viewUpdates: { viewId: string; view: SlackView }[] = [];
   readonly homes: { userId: string; view: SlackView }[] = [];
   revoked = false;
   /** A test sets an error for a user, channel or group id, and any call about it throws it. */
@@ -56,7 +58,14 @@ export class FakeSlack implements SlackClient {
 
   async openView(input: { triggerId: string; view: SlackView }) {
     refuseInvalid("views.open", viewProblems(input.view));
-    this.views.push(input);
+    const viewId = `V${String(this.counter++).padStart(6, "0")}`;
+    this.views.push({ ...input, viewId });
+    return { viewId };
+  }
+
+  async updateView(input: { viewId: string; view: SlackView }) {
+    refuseInvalid("views.update", viewProblems(input.view));
+    this.viewUpdates.push(input);
   }
 
   async publishHome(input: { userId: string; view: SlackView }) {

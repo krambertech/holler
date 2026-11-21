@@ -41,6 +41,7 @@ erDiagram
 | `viewers`                                                 | A member a Holler's results are shared with |                                                                             |
 | `activity`                                                | One write                                   | The only writer is `services/audit.ts`                                      |
 | `slack_deliveries`                                        | A Slack event or view already handled       | Drops Slack's retries                                                       |
+| `slack_homes` | Someone who opened Holler's App Home, and whether a fresh one is queued | Pushes go only to people with a Home; `queued_at` turns a burst of changes into one publish |
 | `user`, `session`, `account`, `apikey`, `jwks`, `oauth_*` | Better Auth                                 | Generated: `pnpm --filter @holler/web auth:schema`. Never edit by hand      |
 
 ## Lifecycle

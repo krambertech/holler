@@ -80,6 +80,9 @@ Project skills live in `.agents/skills/`; `.claude/skills` links to it so every 
 | Every modal element reads back into an answer `recordResponse` takes | `services/answering.test.ts` fills each element by type |
 | No cell of a CSV export runs as a formula, whatever anyone typed | `csvCell`; `services/exports.test.ts` writes every formula start into every field |
 | Anonymous results and exports keep no trace of answer order | `packages/core/src/results.test.ts` shuffles every answer; `services/exports.test.ts` |
+| A burst of changes publishes each App Home once, and only to people who opened it | `queueHomes` claims `slack_homes.queued_at`; `services/slack-home.test.ts` |
+| Every App Home, quick pulse and `/holler` reply fits Block Kit's limits at its fullest | `slack/blocks/home.test.ts` builds the largest of each |
+| A quick pulse Slack submits twice makes one Holler and sends it once | View id as `createDraft`'s idempotency key; `slack/sending.test.ts` |
 
 ## Generated files
 

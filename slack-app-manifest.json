@@ -1,5 +1,8 @@
 {
-  "_metadata": { "major_version": 2, "minor_version": 1 },
+  "_metadata": {
+    "major_version": 2,
+    "minor_version": 1
+  },
   "display_information": {
     "name": "Holler",
     "description": "Ask your team in Slack. Holler reminds the quiet ones and shows the results.",
@@ -12,13 +15,25 @@
       "messages_tab_enabled": true,
       "messages_tab_read_only_enabled": false
     },
-    "bot_user": { "display_name": "Holler", "always_online": true },
+    "bot_user": {
+      "display_name": "Holler",
+      "always_online": true
+    },
+    "shortcuts": [
+      {
+        "name": "Send a Holler about this",
+        "type": "message",
+        "callback_id": "holler_about_message",
+        "description": "Ask your team about this message"
+      }
+    ],
     "slash_commands": [
       {
         "command": "/holler",
         "url": "https://app.holler.team/slack/commands",
-        "description": "See your hollers and who still has to answer",
-        "should_escape": false
+        "description": "Send a quick pulse, or see your live hollers",
+        "should_escape": false,
+        "usage_hint": "[question] or results"
       }
     ]
   },

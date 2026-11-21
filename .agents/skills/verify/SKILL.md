@@ -20,6 +20,7 @@ A change is verified when every feature it reaches has been driven in a running 
 | Make an API key | [api-keys.md](features/api-keys.md) |
 | Closing tells the creator in Slack | [slack-close.md](features/slack-close.md) |
 | A holler goes out in Slack and comes back answered | [slack-send.md](features/slack-send.md) |
+| Holler inside Slack for senders: App Home, `/holler`, the quick pulse | [slack-home.md](features/slack-home.md) |
 
 ## Launch
 
@@ -50,6 +51,7 @@ A recipe exports `title`, optional `persona` (default `lead`) and `start` (defau
 - `GET /api/dev/state`: the persona, member, every holler with its recipients, answered count and waiting Slack ids, the last 20 Activity rows, and `slack`: every message the dev FakeSlack posted and edited, with its channel and text.
 - `POST /api/dev/tick` with `{ "at": "<ISO time>" }`: runs the cron's pass at that time: scheduled sends, per-zone invites, reminders and closing. It answers with what each step did.
 - `POST /api/dev/answer` with `{ hollerId, slackUserId, response }`: answers as a recipient, the way their Slack button would, through `recordResponse`, and queues their thank-you.
+- `POST /api/dev/slack` with `{ path: "commands", as, text }`, `{ path: "interactions", as, payload }` or `{ path: "events", as, event }`: sends it to `/slack/<path>` as Slack would, signed, from the Slack user `as`, and answers `{ status, body }`. `slack.homes`, `slack.views` and `slack.viewUpdates` in the state hold the text of each Home and modal.
 
 Slack calls go through the SLACK_SENDS queue, which runs a moment after the request. A recipe checks `slack` with `slackState(check, what)`, which rereads the state until `check` holds and fails after five seconds.
 

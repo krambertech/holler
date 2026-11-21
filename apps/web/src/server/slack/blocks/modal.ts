@@ -179,6 +179,7 @@ export interface StateValue {
   selected_options?: { value: string }[];
   selected_user?: string | null;
   selected_users?: string[];
+  selected_channels?: string[];
 }
 
 type Answer = ResponseInput["answers"][number];

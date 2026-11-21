@@ -23,6 +23,9 @@ export const blockKitLimits = {
   placeholder: 150,
   textInputLength: 3000,
   viewTitle: 24,
+  headerText: 150,
+  sectionFields: 10,
+  sectionField: 2000,
   callbackId: 255,
   privateMetadata: 3000,
 } as const;
@@ -50,6 +53,8 @@ interface Block {
   type?: string;
   block_id?: string;
   text?: TextObject;
+  fields?: TextObject[];
+  accessory?: Element;
   elements?: (Element & TextObject)[];
   element?: Element;
   label?: TextObject;
@@ -67,6 +72,7 @@ const inputElements = new Set([
   "checkboxes",
   "static_select",
   "multi_static_select",
+  "multi_channels_select",
 ]);
 const optionElements = new Set([
   "radio_buttons",
@@ -118,10 +124,35 @@ export function blockKitProblems(surface: Surface, blocks: unknown[], text?: str
       }
       actionIds.add(element.action_id);
     };
+    const button = (element: Element, where: string) => {
+      plainText(`${where} text`, element.text, limits.buttonText);
+      if (element.value !== undefined) {
+        over(`${where} value length`, element.value.length, limits.buttonValue);
+      }
+      if (element.url !== undefined) over(`${where} url length`, element.url.length, limits.url);
+      if (element.value === undefined && element.url === undefined) {
+        problems.push(`${where} has neither a value nor a url`);
+      }
+    };
     switch (block.type) {
       case "section":
-        if (!block.text?.text) problems.push(`${at} has no text`);
-        else over(`${at} text length`, block.text.text.length, limits.sectionText);
+        if (!block.text?.text && !block.fields?.length) problems.push(`${at} has no text`);
+        if (block.text?.text) over(`${at} text length`, block.text.text.length, limits.sectionText);
+        over(`${at} fields`, block.fields?.length ?? 0, limits.sectionFields);
+        for (const [i, field] of (block.fields ?? []).entries()) {
+          if (!field.text) problems.push(`${at} field ${i} is empty`);
+          over(`${at} field ${i} length`, field.text?.length ?? 0, limits.sectionField);
+        }
+        if (block.accessory) {
+          action(block.accessory, `${at} accessory`);
+          if (block.accessory.type === "button") button(block.accessory, `${at} accessory`);
+          else problems.push(`${at} accessory ${block.accessory.type} is not one Holler builds`);
+        }
+        break;
+      case "header":
+        plainText(`${at} text`, block.text, limits.headerText);
+        break;
+      case "divider":
         break;
       case "context":
         over(`${at} elements`, block.elements?.length ?? 0, limits.contextElements);
@@ -135,16 +166,7 @@ export function blockKitProblems(surface: Surface, blocks: unknown[], text?: str
         for (const [i, element] of (block.elements ?? []).entries()) {
           const where = `${at} element ${i}`;
           action(element, where);
-          if (element.type !== "button") continue;
-          plainText(`${where} text`, element.text, limits.buttonText);
-          if (element.value !== undefined) {
-            over(`${where} value length`, element.value.length, limits.buttonValue);
-          }
-          if (element.url !== undefined)
-            over(`${where} url length`, element.url.length, limits.url);
-          if (element.value === undefined && element.url === undefined) {
-            problems.push(`${where} has neither a value nor a url`);
-          }
+          if (element.type === "button") button(element, where);
         }
         break;
       case "input": {
@@ -210,11 +232,14 @@ export function viewProblems(view: {
   const problems = blockKitProblems(surface, view.blocks);
   if (surface !== "modal") return problems;
   const limits = blockKitLimits;
+  // Slack wants a submit button only on a modal with inputs to submit.
+  const hasInputs = view.blocks.some((block) => (block as Block).type === "input");
   for (const [what, value] of [
     ["title", view.title],
     ["submit", view.submit],
     ["close", view.close],
   ] as const) {
+    if (what === "submit" && !value && !hasInputs) continue;
     if (!value?.text || value.type !== "plain_text")
       problems.push(`modal ${what} needs plain_text`);
     else if (value.text.length > limits.viewTitle) {

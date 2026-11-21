@@ -482,7 +482,7 @@ describe("blockKitProblems", () => {
         },
         { type: "actions", block_id: "same", elements: [] },
         { type: "input", label: { type: "plain_text", text: "Q" } },
-        { type: "header" },
+        { type: "video" },
       ],
       " ",
     );
@@ -497,7 +497,42 @@ describe("blockKitProblems", () => {
       "block 2 (actions) has no elements",
       "block 3 (input) is an input in a message without dispatch_action",
       "block 3 (input) has no element",
-      "block 4 (header) is a block type Holler does not build",
+      "block 4 (video) is a block type Holler does not build",
+    ]);
+  });
+
+  it("checks headers, section fields and a section's accessory button", () => {
+    const problems = blockKitProblems("home", [
+      { type: "header", text: { type: "plain_text", text: "x".repeat(151) } },
+      {
+        type: "section",
+        fields: [{ type: "mrkdwn", text: "" }, ...Array(10).fill({ type: "mrkdwn", text: "ok" })],
+      },
+      { type: "section" },
+      {
+        type: "section",
+        text: { type: "mrkdwn", text: "Row" },
+        accessory: {
+          type: "button",
+          action_id: "go",
+          text: { type: "plain_text", text: "x".repeat(76) },
+        },
+      },
+      {
+        type: "section",
+        text: { type: "mrkdwn", text: "Row" },
+        accessory: { type: "image", action_id: "pic" },
+      },
+      { type: "divider" },
+    ]);
+    expect(problems).toEqual([
+      "block 0 (header) text length is 151, over Slack's 150",
+      "block 1 (section) fields is 11, over Slack's 10",
+      "block 1 (section) field 0 is empty",
+      "block 2 (section) has no text",
+      "block 3 (section) accessory text length is 76, over Slack's 75",
+      "block 3 (section) accessory has neither a value nor a url",
+      "block 4 (section) accessory image is not one Holler builds",
     ]);
   });
 });

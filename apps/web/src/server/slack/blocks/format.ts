@@ -37,9 +37,20 @@ export const actionIds = {
   formLink: "holler_form",
   respondLink: "holler_respond",
   resultsLink: "holler_results",
+  /** App Home: New holler opens the quick pulse; Send reminder reminds everyone waiting. */
+  homeNew: "holler_home_new",
+  homeRemind: "holler_home_remind",
+  /** App Home and /holler link buttons into the web app. Slack reports the tap; Holler ignores it. */
+  productLink: "holler_product",
+  /** The quick pulse's "Answers" menu, which redraws the modal with or without the options box. */
+  quickKind: "holler_quick_kind",
 } as const;
 
 export const answerViewId = "holler_answer";
+/** The quick pulse modal from /holler, New holler on App Home and the message shortcut. */
+export const quickPulseViewId = "holler_quick_pulse";
+/** The message shortcut "Send a Holler about this", as the manifest names it. */
+export const aboutMessageShortcutId = "holler_about_message";
 
 /** Where this Holler is answered. `answerSurface` in core decides; docs/slack.md, Answering. */
 export function surfaceOf(

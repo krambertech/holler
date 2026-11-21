@@ -5,4 +5,5 @@ export * from "./directory";
 export * from "./hollers";
 export * from "./notes";
 export * from "./responses";
+export * from "./slack-homes";
 export * from "./workspaces";

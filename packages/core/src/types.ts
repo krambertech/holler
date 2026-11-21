@@ -234,6 +234,29 @@ export const devAnswerInputSchema = z.object({
   response: responseInputSchema,
 });
 
+/**
+ * Local development only: a request as Slack would send it, signed for the dev workspace. `as` is
+ * the Slack user it comes from; the dev route adds the team. A command's fields, an
+ * interaction's payload, or an event.
+ */
+export const devSlackInputSchema = z.discriminatedUnion("path", [
+  z.object({
+    path: z.literal("commands"),
+    as: z.string(),
+    text: z.string().default(""),
+  }),
+  z.object({
+    path: z.literal("interactions"),
+    as: z.string(),
+    payload: z.record(z.string(), z.unknown()),
+  }),
+  z.object({
+    path: z.literal("events"),
+    as: z.string(),
+    event: z.record(z.string(), z.unknown()),
+  }),
+]);
+
 /** Local development only: runs the cron's pass as if it fired at `at`, or now. */
 export const devTickInputSchema = z.object({ at: z.iso.datetime().optional() });
 

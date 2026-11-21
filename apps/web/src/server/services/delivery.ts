@@ -28,6 +28,7 @@ import { getHoller, presentQuestion, sendProblems } from "./hollers";
 import { respondUrl } from "./respond-links";
 import { slackFor } from "./slack-connection";
 import { claimSlackDelivery, releaseSlackDelivery } from "./slack-deliveries";
+import { publishHome, refreshHomes } from "./slack-home";
 import { assertCanSend } from "./usage";
 
 /**
@@ -62,7 +63,9 @@ export type SlackSend =
   | { kind: "snoozed"; hollerId: string; slackUserId: string; reminder: DmRef }
   | { kind: "announce"; hollerId: string }
   | { kind: "close_notice"; hollerId: string }
-  | { kind: "send_failed"; hollerId: string; reason: string; queuedAt: string };
+  | { kind: "send_failed"; hollerId: string; reason: string; queuedAt: string }
+  /** A fresh App Home for one person, built from the state when it runs. */
+  | { kind: "home"; workspaceId: string; slackUserId: string };
 
 /**
  * What each send does in Slack. A post makes a new message, so the consumer claims it in
@@ -79,6 +82,7 @@ export const sendEffects = {
   answered: "edits",
   closed: "edits",
   snoozed: "edits",
+  home: "edits",
 } as const satisfies Record<SlackSend["kind"], "posts" | "edits">;
 
 /** The once-only identity of a send that posts. */
@@ -138,11 +142,13 @@ export async function queueClaimed(
   env: Bindings,
   sends: SlackSend[],
   release: (unqueued: SlackSend[]) => Promise<unknown>,
+  options: { delaySeconds?: number } = {},
 ): Promise<void> {
   const batches = chunks(sends);
+  const delay = options.delaySeconds ? { delaySeconds: options.delaySeconds } : {};
   for (const [index, batch] of batches.entries()) {
     try {
-      await env.SLACK_SENDS.sendBatch(batch.map((body) => ({ body })));
+      await env.SLACK_SENDS.sendBatch(batch.map((body) => ({ body, ...delay })));
     } catch (error) {
       await release(batches.slice(index).flat());
       throw error;
@@ -269,9 +275,11 @@ export async function sendHoller(
         }),
       ]);
     }
+    await refreshHomes(env, ctx.db, ctx.workspaceId, [creator.slackUserId], now);
     return getHoller(ctx, id);
   }
   await goLive(ctx, env, holler, creator.timeZone);
+  await refreshHomes(env, ctx.db, ctx.workspaceId, [creator.slackUserId], now);
   return getHoller(ctx, id);
 }
 
@@ -610,6 +618,13 @@ export async function remindWaiting(
     subjectId: id,
     data: { recipients: reminded.length },
   });
+  await refreshHomes(
+    env,
+    ctx.db,
+    ctx.workspaceId,
+    [(await creatorOf(ctx.db, holler)).slackUserId],
+    now,
+  );
   return getHoller(ctx, id);
 }
 
@@ -807,6 +822,7 @@ type Loaded = NonNullable<Awaited<ReturnType<typeof loadSlackHoller>>>;
  * recipient; any other Slack error is thrown, and the consumer retries it.
  */
 export async function deliver(env: Bindings, db: Db, send: SlackSend, now: Date): Promise<void> {
+  if (send.kind === "home") return publishHome(env, db, send.workspaceId, send.slackUserId, now);
   const loaded = await loadSlackHoller(db, send.hollerId);
   if (!loaded) return;
   const { row, holler } = loaded;
@@ -815,10 +831,25 @@ export async function deliver(env: Bindings, db: Db, send: SlackSend, now: Date)
   switch (send.kind) {
     case "invite":
     case "reminder":
-      return postToRecipient(env, db, slack, loaded, send, now);
+      await postToRecipient(env, db, slack, loaded, send, now);
+      // A new invite is something waiting on them; a reminder changes nothing on a Home.
+      if (send.kind === "invite")
+        await refreshHomes(env, db, row.workspaceId, [send.slackUserId], now);
+      return;
     case "answered":
     case "closed":
-      return updateRecipient(db, slack, loaded, send, now);
+      await updateRecipient(db, slack, loaded, send, now);
+      // Their Home loses the question; the creator's count moves.
+      await refreshHomes(
+        env,
+        db,
+        row.workspaceId,
+        send.kind === "answered"
+          ? [send.slackUserId, loaded.creatorSlackUserId]
+          : [send.slackUserId],
+        now,
+      );
+      return;
     case "snoozed":
       return showSnoozed(env, db, slack, loaded, send, now);
     case "announce": {
@@ -855,6 +886,7 @@ export async function deliver(env: Bindings, db: Db, send: SlackSend, now: Date)
           ...closeNoticeMessage(holler, counts, `${env.PRODUCT_URL}/hollers/${row.id}`),
         }),
       );
+      await refreshHomes(env, db, row.workspaceId, [loaded.creatorSlackUserId], now);
       return;
     }
     case "send_failed":

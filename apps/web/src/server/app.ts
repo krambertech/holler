@@ -16,6 +16,7 @@ import { meRoutes } from "./routes/me";
 import { settingsRoutes } from "./routes/settings";
 import { v1Routes } from "./routes/v1";
 import { ServiceError } from "./services/context";
+import { slackCommandRoutes } from "./slack/commands";
 import { slackEventRoutes } from "./slack/events";
 import { slackInteractionRoutes } from "./slack/interactions";
 import { slackOAuthRoutes } from "./slack/oauth";
@@ -100,6 +101,7 @@ app.route("/api/dev", devRoutes);
 app.route("/slack/oauth", slackOAuthRoutes);
 app.route("/slack/events", slackEventRoutes);
 app.route("/slack/interactions", slackInteractionRoutes);
+app.route("/slack/commands", slackCommandRoutes);
 
 app.all("/api/*", (c) =>
   c.json({ error: { code: "not_found", message: "There is no API route here." } }, 404),
