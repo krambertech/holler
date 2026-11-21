@@ -4,6 +4,7 @@ import noEffectExpressionBody from "./rules/no-effect-expression-body.mjs";
 import noMultiRowInsert from "./rules/no-multi-row-insert.mjs";
 import noResponseOwners from "./rules/no-response-owners.mjs";
 import noSqlLower from "./rules/no-sql-lower.mjs";
+import signInLands from "./rules/sign-in-lands.mjs";
 
 export default definePlugin({
   meta: { name: "holler" },
@@ -13,5 +14,6 @@ export default definePlugin({
     "no-multi-row-insert": noMultiRowInsert,
     "no-response-owners": noResponseOwners,
     "no-sql-lower": noSqlLower,
+    "sign-in-lands": signInLands,
   },
 });

@@ -1,11 +1,10 @@
-import { type APIRequestContext, expect, type Page, request, test } from "@playwright/test";
-import { expectAccessible } from "./a11y";
+import { type APIRequestContext, expect, type Page, test } from "@playwright/test";
+import { expectAccessible, requestAs } from "./a11y";
 
 let lead: APIRequestContext;
 
 test.beforeAll(async ({ baseURL }) => {
-  lead = await request.newContext({ baseURL });
-  await lead.get("/api/dev/sign-in?as=lead");
+  lead = await requestAs(baseURL, "lead");
 });
 test.afterAll(() => lead.dispose());
 
