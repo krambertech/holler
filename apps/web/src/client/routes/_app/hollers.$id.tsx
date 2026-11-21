@@ -68,7 +68,8 @@ function HollerPage() {
     mutationFn: () => api<{ id: string }>(`/hollers/${id}/copy`, { method: "POST" }),
     onSuccess: (draft) => {
       void queryClient.invalidateQueries({ queryKey: ["hollers"], refetchType: "none" });
-      void navigate({ href: `/new?draft=${encodeURIComponent(draft.id)}` });
+      toast.add({ title: "Copied into a new draft." });
+      void navigate({ to: "/hollers/$id", params: { id: draft.id } });
     },
     onError: (error) => toast.add({ tone: "danger", title: error.message }),
   });

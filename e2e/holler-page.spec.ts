@@ -47,3 +47,42 @@ test("Export downloads every response as CSV", async ({ page }) => {
   const file = await download;
   expect(file.suggestedFilename()).toMatch(/^holler-hol_.+\.csv$/);
 });
+
+test("Copy into a new draft opens the draft it made", async ({ page }) => {
+  await signInAs(page, "lead");
+  await page
+    .getByRole("region", { name: /^Live \d+$/ })
+    .getByRole("link", { name: "Offsite: which dates work?" })
+    .click();
+  const original = page.url();
+  await page.getByRole("button", { name: "More for this Holler" }).click();
+  await page.getByRole("menuitem", { name: "Copy into a new draft" }).click();
+  await expect(page).not.toHaveURL(original);
+  await expect(page).toHaveURL(/\/hollers\/hol_/);
+  await expect(page.getByText("Copied into a new draft.")).toBeVisible();
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Offsite: which dates work?" }),
+  ).toBeVisible();
+  await expect(page.getByText("Draft", { exact: true }).first()).toBeVisible();
+});
+
+test("Send reminder wakes up when the wait between reminders ends", async ({ page }) => {
+  await page.clock.install();
+  await page.route("**/api/hollers/*/people", async (route) => {
+    const response = await route.fetch();
+    const people = await response.json();
+    await route.fulfill({
+      response,
+      json: { ...people, reminderAvailableAt: new Date(Date.now() + 60_000).toISOString() },
+    });
+  });
+  await signInAs(page, "lead");
+  await page
+    .getByRole("region", { name: /^Live \d+$/ })
+    .getByRole("link", { name: "How was your week?" })
+    .click();
+  const remind = page.getByRole("button", { name: "Send reminder" });
+  await expect(remind).toBeDisabled();
+  await page.clock.fastForward("01:05");
+  await expect(remind).toBeEnabled();
+});
