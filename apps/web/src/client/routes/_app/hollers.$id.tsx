@@ -124,6 +124,28 @@ function QuestionPlate({ question }: { question: QuestionResult }) {
             </PlateRow>
           ))
         )
+      ) : question.type === "number" ? (
+        <PlateRow className="px-5 py-3 text-ink-2 tabular">
+          {question.average === null
+            ? "No answers yet."
+            : `Average ${question.average} · median ${question.median} · from ${question.min} to ${question.max}`}
+        </PlateRow>
+      ) : question.type === "person" ? (
+        question.people.length === 0 ? (
+          <PlateRow className="px-5 py-3 text-muted">No one picked yet.</PlateRow>
+        ) : (
+          question.people.map((person) => (
+            <PlateRow
+              key={person.slackUserId}
+              className="flex justify-between gap-3 px-5 py-3 text-base"
+            >
+              <span>{person.name}</span>
+              <span className="text-muted tabular">
+                {count(person.count)} · {percent(person.share)}
+              </span>
+            </PlateRow>
+          ))
+        )
       ) : (
         <div className="flex flex-col gap-3 px-5 pb-5">
           {question.average !== null && <Chip variant="tint">Average {question.average}</Chip>}

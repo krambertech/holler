@@ -238,13 +238,18 @@ export function buildMcpServer(mcp: McpPrincipal): McpServer {
   return server;
 }
 
-/** The draft as a tool takes it: JSON Schema has no Date, so sendAt is an ISO string. */
+/** The draft as a tool takes it: JSON Schema has no Date, so sendAt and closesAt are ISO strings. */
 const draftInput = hollerDraftSchema.extend({
   sendAt: z.iso
     .datetime({ offset: true })
     .nullable()
     .default(null)
     .describe("When to send, as an ISO time. Null sends as soon as it is confirmed."),
+  closesAt: z.iso
+    .datetime({ offset: true })
+    .nullable()
+    .default(null)
+    .describe("A fixed close time, as an ISO time. Null closes it closeAfterHours after sending."),
 });
 
 const sendOut = z.object({

@@ -99,7 +99,7 @@ The invite DM adapts to the Holler, so answering costs the least the question al
 | A pulse with one single-choice question of at most 5 options                               | One tap on a button in the DM. No modal                                                                          |
 | A pulse or survey that fits a modal (at most 100 blocks, at most 100 options per question) | **Answer** opens a modal. Radio buttons and checkboxes up to 10 options, a select menu above that                |
 | Anything bigger                                                                            | **Answer** links to the web form at `/respond/<id>`, which identifies the person through a signed link in the DM |
-| A form chase                                                                               | **Open the form** links out; **I submitted it** records the response                                             |
+| A chase                                                                                    | **Open the form** links out; **I submitted it** records the response                                             |
 
 After a response, the DM is updated in place with a short thank-you and what they answered (or "Answered anonymously"), so the conversation never shows a stale question. An answer to a closed Holler gets a polite line saying it closed, not an error.
 

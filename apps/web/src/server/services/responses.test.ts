@@ -46,7 +46,7 @@ describe("recordResponse", () => {
     const results = await resultsFor(ctx, holler.id);
     if (results.state !== "open") throw new Error("expected open results");
     const [where, notes] = results.questions;
-    expect(where?.type !== "text" && where?.options.map((o) => [o.label, o.count])).toEqual([
+    expect(where?.type === "single" && where.options.map((o) => [o.label, o.count])).toEqual([
       ["Lisbon", 0],
       ["Tallinn", 1],
     ]);

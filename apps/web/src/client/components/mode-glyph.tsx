@@ -1,10 +1,10 @@
 import type { Mode } from "@holler/core";
 import { modeLabels } from "@holler/core";
-import { Activity, FileCheck2, ListChecks } from "lucide-react";
+import { Activity, ExternalLink, ListChecks } from "lucide-react";
 import type { ComponentProps } from "react";
 import { cn } from "@/lib/cn";
 
-const icons = { pulse: Activity, survey: ListChecks, chase: FileCheck2 } as const;
+const icons = { pulse: Activity, survey: ListChecks, chase: ExternalLink } as const;
 
 /** The recurring identity unit of a row: the mode's icon on a tint tile. Quiet once a Holler is not live. */
 interface Props extends ComponentProps<"span"> {

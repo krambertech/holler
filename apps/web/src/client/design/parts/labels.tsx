@@ -78,7 +78,7 @@ export const labels: Group = {
       slug: "mode-glyph",
       name: "ModeGlyph",
       source: "components/mode-glyph.tsx",
-      note: "Pulse, survey and form chase. Tinted while live, quiet otherwise. It names its mode for screen readers.",
+      note: "Pulse, survey and chase. Tinted while live, quiet otherwise. It names its mode for screen readers.",
       Demo: () => (
         <Variants
           items={[
