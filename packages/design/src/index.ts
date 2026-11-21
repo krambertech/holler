@@ -22,5 +22,6 @@ export const wordmark = { text: "holler", weight: 600, tracking: "-0.035em" } as
 /** Every status the interface shows. Each has a surface, an ink and a dot token of the same name. */
 export type Status = "answered" | "waiting" | "away" | "closed" | "danger";
 
+export * from "./illustrations";
 export * from "./motion";
 export { type Pair, pairs } from "./pairs";

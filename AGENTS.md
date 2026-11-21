@@ -66,6 +66,7 @@ Project skills live in `.agents/skills/`; `.claude/skills` links to it so every 
 | Every exported component has an entry on the design site | `pnpm check:design-coverage` |
 | Files under `apps/web/src/client` are kebab-case                            | Oxlint `unicorn/filename-case`                       |
 | Every journey page passes axe at WCAG 2.2 AA                                | `e2e/`                                               |
+| No journey page logs a console error, throws, or gets a 5xx | `e2e/fixtures.ts`, which every spec imports by the Oxlint `no-restricted-imports` rule on `e2e/` |
 | Concurrent first dev sign-ins all succeed and seed once                    | `apps/web/src/server/routes/dev-concurrency.test.ts` |
 | Pull request titles follow `type(scope): summary` within 72 characters      | `scripts/check-pr-title.mjs` in CI                   |
 | Server inserts one row per statement, inside D1's 100-value limit | `holler/no-multi-row-insert` in `oxlint-plugin-holler` |
@@ -80,6 +81,7 @@ Project skills live in `.agents/skills/`; `.claude/skills` links to it so every 
 | Every modal element reads back into an answer `recordResponse` takes | `services/answering.test.ts` fills each element by type |
 | No cell of a CSV export runs as a formula, whatever anyone typed | `csvCell`; `services/exports.test.ts` writes every formula start into every field |
 | Anonymous results and exports keep no trace of answer order | `packages/core/src/results.test.ts` shuffles every answer; `services/exports.test.ts` |
+| Every illustration fills the grid, has one subject and at most one accent, and tilts no object past 12 degrees | `packages/design/src/illustrations.test.ts` |
 
 ## Generated files
 
