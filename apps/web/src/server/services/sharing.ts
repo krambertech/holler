@@ -150,6 +150,7 @@ export async function addViewers(
         eq(slackPeople.workspaceId, ctx.workspaceId),
         eq(slackPeople.isBot, false),
         eq(slackPeople.isDeleted, false),
+        // oxlint-disable-next-line holler/bounded-in-array -- viewersInputSchema takes at most 50 people
         inArray(slackPeople.slackUserId, wanted),
       ),
     );

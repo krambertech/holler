@@ -133,7 +133,9 @@
       "files": ["apps/web/src/server/**", "packages/core/src/**"],
       "rules": {
         "holler/no-sql-lower": "error",
-        "holler/no-multi-row-insert": "error"
+        "holler/no-spread-rows": "error",
+        "holler/no-multi-row-insert": "error",
+        "holler/bounded-in-array": "error"
       }
     },
     {
