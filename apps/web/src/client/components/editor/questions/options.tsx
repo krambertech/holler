@@ -12,7 +12,9 @@ import {
   type CardProblems,
   type EditorQuestion,
   filled,
+  MOST_LABEL,
   newKey,
+  pastedLabels,
   removeOption,
   setAllowOther,
   setOptionLabel,
@@ -125,19 +127,15 @@ function ChoiceOptions({ question, number, onEdit, problems = {} }: Props) {
 
   // Several lines pasted into one row become one option each, starting with the row itself.
   const onPaste = (event: ClipboardEvent<HTMLInputElement>, index: number) => {
-    const lines = event.clipboardData
-      .getData("text")
-      .split(/\r?\n/)
-      .map((line) => line.trim())
-      .filter(Boolean);
-    if (lines.length < 2) return;
+    const pasted = pastedLabels(
+      event.currentTarget.value,
+      event.clipboardData.getData("text"),
+      MOST_OPTIONS - q.options.length,
+    );
+    if (!pasted) return;
     event.preventDefault();
-    const room = MOST_OPTIONS - q.options.length;
-    const [first = "", ...rest] = lines;
-    const current = event.currentTarget.value;
-    const labelled = setOptionLabel(question, index, current ? `${current} ${first}` : first);
-    let next = labelled;
-    const added = rest.slice(0, room);
+    const { first, added } = pasted;
+    let next = setOptionLabel(question, index, first);
     added.forEach((label, i) => {
       next = setOptionLabel(addOption(next, index + i), index + i + 1, label);
     });
@@ -181,7 +179,7 @@ function ChoiceOptions({ question, number, onEdit, problems = {} }: Props) {
                   aria-label={`Question ${number}, option ${index + 1}`}
                   aria-invalid={problem ? true : undefined}
                   aria-describedby={problem ? problemId : undefined}
-                  maxLength={150}
+                  maxLength={MOST_LABEL}
                   enterKeyHint="next"
                   onChange={(event) =>
                     onEdit(setOptionLabel(question, index, event.target.value), [

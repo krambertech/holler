@@ -196,6 +196,33 @@ export function addOption(question: EditorQuestion, after?: number): EditorQuest
   return withPositions({ ...q, options }, (pos) => (pos >= at ? pos + 1 : pos));
 }
 
+/** The longest option label `optionInputSchema` takes. */
+export const MOST_LABEL = 150;
+
+/**
+ * What a paste of several lines into an option row becomes: the row's own words joined to the
+ * first line, then one new option per further line while there is room. Every label is cut to
+ * `MOST_LABEL`, since a paste goes around the input's own `maxLength`. Undefined for a paste
+ * of one line, which the input takes as it is.
+ */
+export function pastedLabels(
+  current: string,
+  text: string,
+  room: number,
+): { first: string; added: string[] } | undefined {
+  const lines = text
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+  if (lines.length < 2) return undefined;
+  const [first = "", ...rest] = lines;
+  const clip = (label: string) => label.slice(0, MOST_LABEL).trim();
+  return {
+    first: clip(current ? `${current} ${first}` : first),
+    added: rest.slice(0, Math.max(0, room)).map(clip),
+  };
+}
+
 /** Removes one option. A choice question keeps at least two, so this does nothing below three. */
 export function removeOption(question: EditorQuestion, index: number): EditorQuestion {
   const q = filled(question);
