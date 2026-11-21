@@ -1,8 +1,10 @@
-import { hollerDraftSchema, listHollersQuerySchema } from "@holler/core";
+import { exportFormatSchema, hollerDraftSchema, listHollersQuerySchema } from "@holler/core";
 import { sValidator } from "@hono/standard-validator";
 import { Hono } from "hono";
+import { z } from "zod";
 import type { AppEnv } from "../app";
 import { closeHoller, remindWaiting, sendHoller } from "../services/delivery";
+import { exportCsv, exportMarkdown } from "../services/exports";
 import { hollerPeople } from "../services/holler-people";
 import {
   copyHoller,
@@ -58,4 +60,19 @@ export const hollerRoutes = new Hono<AppEnv>()
     // getHoller throws not_found unless the member may see it.
     await getHoller(ctx, c.req.param("id"));
     return c.json(await resultsFor(ctx, c.req.param("id")));
-  });
+  })
+  .get(
+    "/:id/export",
+    sValidator("query", z.object({ format: exportFormatSchema.default("csv") })),
+    async (c) => {
+      const ctx = requireMember(c);
+      const id = c.req.param("id");
+      const { format } = c.req.valid("query");
+      const body = format === "csv" ? await exportCsv(ctx, id) : await exportMarkdown(ctx, id);
+      return c.body(body, 200, {
+        "content-type":
+          format === "csv" ? "text/csv; charset=utf-8" : "text/markdown; charset=utf-8",
+        "content-disposition": `attachment; filename="holler-${id}.${format}"`,
+      });
+    },
+  );

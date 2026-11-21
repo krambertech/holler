@@ -75,6 +75,8 @@ Project skills live in `.agents/skills/`; `.claude/skills` links to it so every 
 | Server tests pass in any order | `sequence.shuffle` with a fixed seed in `apps/web/vitest.config.ts` |
 | Every modal element reads back into an answer `recordResponse` takes | `services/answering.test.ts` fills each element by type |
 | Escape in the audience field never clears who is chosen | `fieldKeyAction` in `send/audience-logic.ts`; `e2e/audience.spec.ts` |
+| No cell of a CSV export runs as a formula, whatever anyone typed | `csvCell`; `services/exports.test.ts` writes every formula start into every field |
+| Anonymous results and exports keep no trace of answer order | `packages/core/src/results.test.ts` shuffles every answer; `services/exports.test.ts` |
 
 ## Generated files
 

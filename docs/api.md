@@ -42,7 +42,7 @@ All paths are under `https://app.holler.team/api/v1`.
 | POST   | `/hollers/{id}/remind`   | Reminds everyone who has not answered                        |
 | GET    | `/hollers/{id}/people`   | Who it went to and who answered                              |
 | GET    | `/hollers/{id}/results`  | Counts, scale averages and text answers                      |
-| GET    | `/hollers/{id}/export`   | `format=csv` or `format=md`                                  |
+| GET    | `/hollers/{id}/export`   | `format=csv`: every response, one row each. `format=md`: the results summary, naming no one |
 | GET    | `/directory`             | People, user groups and channels, matched on `q`             |
 | GET    | `/me`                    | The member, the workspace, the key's access, this month's sends |
 
@@ -108,7 +108,7 @@ Every error has one shape. The message is written for a person and says what to 
 
 ## Anonymous results
 
-An anonymous Holler's results stay `gated` until five people answer, in the API, MCP, exports, Slack and the web app alike. Under five, results return only the count and how many more are needed:
+An anonymous Holler's results stay `gated` until five people answer, in the API, MCP, exports, Slack and the web app alike. Under five, exports are refused with `403`, and results return only the count and how many more are needed:
 
 ```json
 { "state": "gated", "responseCount": 3, "needed": 2 }
@@ -140,6 +140,6 @@ The MCP server uses OAuth 2.1. Clients identify themselves with a Client ID Meta
 | `send_holler`    | Sends, in two steps                                                  |
 | `close_holler`   | Stops taking answers now                                             |
 | `send_reminder`  | Reminds everyone who has not answered                                |
-| `export_results` | Results as CSV or Markdown                                           |
+| `export_results` | Every response as CSV, or the results summary as Markdown            |
 
 **An assistant cannot send in one step.** The first `send_holler` call sends nothing: it returns who the Holler reaches, up to ten names, when it closes, and a confirm token. The assistant shows you that, and sends only with a second call that carries the token. The token lasts ten minutes, and any edit to the Holler makes it stale.
