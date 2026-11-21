@@ -43,7 +43,7 @@ function afterWords(onlyAfter: number[] | null, labels: string[]) {
  */
 const quietPicker = cn(
   "relative -mx-1 inline-flex h-7 max-w-full min-w-0 items-center gap-0.5 rounded-sm px-1 text-ink text-sm",
-  "transition-[background-color,box-shadow] duration-150 hoverable:hover:bg-track data-popup-open:bg-track active:bg-track aria-invalid:bg-danger aria-invalid:edge-danger",
+  "transition-[background-color,box-shadow] duration-150 hoverable:hover:bg-track data-popup-open:bg-track active:bg-track data-invalid:bg-danger data-invalid:edge-danger",
   "pointer-coarse:before:absolute pointer-coarse:before:-inset-y-2 pointer-coarse:before:inset-x-0 pointer-coarse:before:content-['']",
 );
 
@@ -74,8 +74,7 @@ function ShowAfter({ number, onlyAfter, labels, invalid, describedBy, onChange }
           <button
             type="button"
             aria-label={`Show the note after: ${afterWords(onlyAfter, labels)}`}
-            // oxlint-disable-next-line jsx-a11y/role-supports-aria-props -- Biome let this pass; ARIA has no aria-invalid on a button, so move the error to the field
-            aria-invalid={invalid || undefined}
+            data-invalid={invalid || undefined}
             aria-describedby={describedBy}
             className={quietPicker}
           />
