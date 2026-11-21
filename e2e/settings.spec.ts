@@ -25,8 +25,7 @@ test("an owner makes a sender an owner and back, and cannot leave the workspace 
   page,
 }) => {
   rolesProjectOnly();
-  await signInAs(page, "lead");
-  await page.goto("/settings");
+  await signInAs(page, "lead", "/settings");
   const tom = page.getByRole("combobox", { name: "Role for Tom Okafor" });
   const mira = page.getByRole("combobox", { name: "Role for Mira Kask" });
 
@@ -45,8 +44,7 @@ test("an owner makes a sender an owner and back, and cannot leave the workspace 
 
 test("a sender sees the roles but cannot change them", async ({ page }) => {
   rolesProjectOnly();
-  await signInAs(page, "sender");
-  await page.goto("/settings");
+  await signInAs(page, "sender", "/settings");
   await expect(page.getByText("Mira Kask")).toBeVisible();
   await expect(page.getByRole("combobox", { name: /^Role for/ })).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Reinstall" })).toHaveCount(0);
@@ -66,8 +64,7 @@ test("an owner reads Activity, a sender does not see it", async ({ page }) => {
   );
   await expectAccessible(page);
 
-  await signInAs(page, "sender");
-  await page.goto("/settings");
+  await signInAs(page, "sender", "/settings");
   await expect(page.getByRole("heading", { name: "Members" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Activity" })).toHaveCount(0);
 });
