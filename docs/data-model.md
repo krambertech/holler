@@ -39,7 +39,7 @@ erDiagram
 | `responses`, `answers`                                    | One person's answers                        | No person on an anonymous Holler                                            |
 | `answer_notes`                                            | A follow-up note or an Other write-in       | Beside a choice answer, at most one of each kind per question per response  |
 | `viewers`                                                 | A member a Holler's results are shared with |                                                                             |
-| `activity`                                                | One write                                   | The only writer is `services/audit.ts`                                      |
+| `activity`                                                | One write                                   | The only writer is `services/audit.ts`. `action` is one of `activityActions` in `packages/core/src/activity.ts`, and Settings has a sentence for each |
 | `slack_deliveries`                                        | A Slack event or view already handled       | Drops Slack's retries                                                       |
 | `user`, `session`, `account`, `apikey`, `jwks`, `oauth_*` | Better Auth                                 | Generated: `pnpm --filter @holler/web auth:schema`. Never edit by hand      |
 
@@ -69,6 +69,8 @@ Sending is the moment a Holler counts against the monthly limit (`hollers.sent_a
 **What `answers.text` holds.** A free-text answer's words; a number answer's whole number as its decimal string, such as `"12"` or `"-3"`; a person answer's Slack user id, one `answers` row for each person picked. `recordResponse` checks a number against the question's `number_min` and `number_max`, and a person against `slack_people` for the workspace, before it writes.
 
 **Other and follow-up notes.** A plain choice question with `allowOther` has exactly one option row with `is_other` true, labelled Other and placed after every option the sender wrote. The editor never sends it as an option: `syncQuestions` keeps its id across autosaves and deletes it when Other is turned off. What someone writes beside Other, and the follow-up note after a choice question, are `answer_notes` rows (`kind` is `other` or `note`), because an `answers` row holds an option or text, never both. A follow-up's `follow_up_when` lists option positions, with Other at the last position; null shows it after any answer.
+
+**Activity.** `services/audit.ts` takes an `ActivityAction`, so a new action does not typecheck until it is added to `activityActions`, and the client's `Record<ActivityAction, …>` of sentences in `components/settings/activity-row.tsx` does not typecheck until it says it in words. `listActivity` in `services/activity.ts` is for owners only and pages 50 rows at a time by `(at, id)`, so rows written in the same millisecond are neither skipped nor repeated. It passes on only a few known fields of `data` (`recipients` as `count`, `from`, `to`, `reason`, `name`, `role`), so a field such as a Polar subscription id never reaches the page.
 
 **Mode.** The mode may change while a Holler is a draft or scheduled. A chase has no questions, so saving a draft as a chase deletes its questions.
 

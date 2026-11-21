@@ -135,6 +135,7 @@ Numbers in tables and counts use `tabular`.
 | `AppHeader`                       | `components/app-header.tsx`   | The logo home and the member, who opens Settings                                             |
 | `UninstalledNotice`               | `components/uninstalled-notice.tsx` | Top of every page while Holler is out of Slack; owners get Add to Slack again          |
 | `MemberRow`, `RoleSelect`         | `components/settings/`        | A member in Settings; owners pick Owner or Sender                                            |
+| `ActivityRow` | `components/settings/activity-row.tsx` | One write as a sentence, then where it came from and when. Owners only, at the end of Settings |
 | `WorkspaceIcon`                   | `components/settings/workspace-icon.tsx` | The Slack workspace's icon, or its initials on a tint tile                        |
 | `Field`, `Input`, `Textarea` | `components/ui/field.tsx`, `input.tsx`, `textarea.tsx` | One box for every text control; label above, description or error below, wired by context |
 | `Checkbox`, `Switch`, `RadioGroup` | `components/ui/` | Checkbox applies on save; Switch acts at once; RadioGroup for a few visible choices |

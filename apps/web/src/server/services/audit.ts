@@ -1,11 +1,10 @@
-import { newId } from "@holler/core";
+import { type ActivityAction, type activitySubjectTypes, newId } from "@holler/core";
 import { schema } from "../db";
 import type { ServiceContext } from "./context";
 
 export interface AuditEntry {
-  /** Past-tense and dotted: `holler.created`, `holler.sent`, `reminder.sent`. */
-  action: string;
-  subjectType: "holler" | "workspace" | "member" | "api_key" | "connected_app";
+  action: ActivityAction;
+  subjectType: (typeof activitySubjectTypes)[number];
   subjectId: string;
   /** Never a response's answers, a token or anything a recipient wrote. */
   data?: Record<string, unknown>;

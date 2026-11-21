@@ -53,6 +53,25 @@ test("a sender sees the roles but cannot change them", async ({ page }) => {
   await expectAccessible(page);
 });
 
+test("an owner reads Activity, a sender does not see it", async ({ page }) => {
+  await signInAs(page, "lead");
+  const draft = await page.request.post("/api/hollers", {
+    data: { mode: "pulse", title: "Activity draft" },
+  });
+  expect(draft.ok()).toBe(true);
+  await page.goto("/settings");
+  const activity = page.getByRole("list", { name: "Activity" });
+  await expect(activity.getByRole("listitem").first()).toContainText(
+    "Mira started the draft Activity draft.",
+  );
+  await expectAccessible(page);
+
+  await signInAs(page, "sender");
+  await page.goto("/settings");
+  await expect(page.getByRole("heading", { name: "Members" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Activity" })).toHaveCount(0);
+});
+
 test("someone signed out can add Holler to Slack", async ({ page }) => {
   await page.goto("/install");
   await expect(page.getByRole("heading", { name: "Add Holler to Slack" })).toBeVisible();

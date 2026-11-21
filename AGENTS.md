@@ -80,6 +80,8 @@ Project skills live in `.agents/skills/`; `.claude/skills` links to it so every 
 | Every modal element reads back into an answer `recordResponse` takes | `services/answering.test.ts` fills each element by type |
 | No cell of a CSV export runs as a formula, whatever anyone typed | `csvCell`; `services/exports.test.ts` writes every formula start into every field |
 | Anonymous results and exports keep no trace of answer order | `packages/core/src/results.test.ts` shuffles every answer; `services/exports.test.ts` |
+| Every Activity action has a sentence in Settings | `ActivityAction` on `AuditEntry` and `Record<ActivityAction, …>` in `activity-row.tsx` (typecheck) |
+| Activity pages through every row once, and only owners read it | `services/activity.test.ts` |
 
 ## Generated files
 
