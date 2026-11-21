@@ -16,5 +16,5 @@ export async function signInAs(page: Page, persona: "lead" | "sender", to = "/")
   const landing = new URL(to, "http://holler.test").pathname;
   await page.goto(`/api/dev/sign-in?as=${persona}&to=${encodeURIComponent(to)}`);
   await page.waitForURL((url) => url.pathname === landing);
-  await page.waitForLoadState("load");
+  await page.waitForLoadState("networkidle");
 }

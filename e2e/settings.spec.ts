@@ -52,12 +52,12 @@ test("a sender sees the roles but cannot change them", async ({ page }) => {
 });
 
 test("an owner reads Activity, a sender does not see it", async ({ page }) => {
-  await signInAs(page, "lead");
+  await signInAs(page, "lead", "/settings");
   const draft = await page.request.post("/api/hollers", {
     data: { mode: "pulse", title: "Activity draft" },
   });
   expect(draft.ok()).toBe(true);
-  await page.goto("/settings");
+  await page.reload();
   const activity = page.getByRole("list", { name: "Activity" });
   await expect(activity.getByRole("listitem").first()).toContainText(
     "Mira started the draft Activity draft.",
