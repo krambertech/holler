@@ -72,6 +72,8 @@ Project skills live in `.agents/skills/`; `.claude/skills` links to it so every 
 | Activity links a Holler only when the owner reading it can open it | `visibleTo` in `services/activity.ts`; `services/activity.test.ts` |
 | Pull request titles follow `type(scope): summary` within 72 characters      | `scripts/check-pr-title.mjs` in CI                   |
 | Server inserts one row per statement, inside D1's 100-value limit | `holler/no-multi-row-insert` in `oxlint-plugin-holler` |
+| A lookup by a list of ids stays inside D1's 100-value limit however long the list grows | `holler/bounded-in-array` in `oxlint-plugin-holler`; `readInChunks` in `server/batch.ts`, which also reads a repeated id once; `services/hollers.test.ts` lists 101 Hollers and previews 100 groups and a repeated one |
+| No read spreads its rows into a call's arguments, so a large read never overflows the argument limit | `holler/no-spread-rows` in `oxlint-plugin-holler`; `server/batch.test.ts` reads 300,000 rows |
 | Every Slack message and view fits Block Kit's limits | `FakeSlack` refuses what Slack would; `slack/blocks/messages.test.ts` sends the largest Holler |
 | Work claimed for the queue is given back when the queue refuses it | `queueClaimed`; `services/delivery.test.ts`, "no claimed work is lost" |
 | A send, close, reminder or answer happens once when callers race | `services/delivery.test.ts`, "exactly once under concurrency" |

@@ -1,6 +1,6 @@
 import type { ActivityEntry, ActivityOut } from "@holler/core";
 import { and, desc, eq, inArray, lt, or, sql } from "@holler/core/db";
-import { inChunks } from "../batch";
+import { readInChunks } from "../batch";
 import { schema } from "../db";
 import { memberOf, type ServiceContext, ServiceError } from "./context";
 import { visibleTo } from "./hollers";
@@ -40,28 +40,25 @@ async function requireOwner(ctx: ServiceContext) {
 }
 
 async function namesOfMembers(ctx: ServiceContext, ids: string[]) {
-  const rows = [];
-  for (const chunk of inChunks(ids)) {
-    rows.push(
-      ...(await ctx.db
-        .select({
-          id: members.id,
-          slackUserId: members.slackUserId,
-          name: slackPeople.name,
-          displayName: slackPeople.displayName,
-          avatarUrl: slackPeople.avatarUrl,
-        })
-        .from(members)
-        .leftJoin(
-          slackPeople,
-          and(
-            eq(slackPeople.workspaceId, members.workspaceId),
-            eq(slackPeople.slackUserId, members.slackUserId),
-          ),
-        )
-        .where(and(eq(members.workspaceId, ctx.workspaceId), inArray(members.id, chunk)))),
-    );
-  }
+  const rows = await readInChunks(ids, (chunk) =>
+    ctx.db
+      .select({
+        id: members.id,
+        slackUserId: members.slackUserId,
+        name: slackPeople.name,
+        displayName: slackPeople.displayName,
+        avatarUrl: slackPeople.avatarUrl,
+      })
+      .from(members)
+      .leftJoin(
+        slackPeople,
+        and(
+          eq(slackPeople.workspaceId, members.workspaceId),
+          eq(slackPeople.slackUserId, members.slackUserId),
+        ),
+      )
+      .where(and(eq(members.workspaceId, ctx.workspaceId), inArray(members.id, chunk))),
+  );
   return new Map(
     rows.map((r) => [
       r.id,
@@ -76,32 +73,26 @@ async function namesOfMembers(ctx: ServiceContext, ids: string[]) {
 
 async function titlesOfHollers(ctx: ServiceContext, ids: string[]) {
   const memberId = memberOf(ctx);
-  const rows = [];
-  for (const chunk of inChunks(ids)) {
-    rows.push(
-      ...(await ctx.db
-        .select({
-          id: hollers.id,
-          title: hollers.title,
-          canOpen: sql<number>`case when ${visibleTo(ctx, memberId)} then 1 else 0 end`,
-        })
-        .from(hollers)
-        .where(and(eq(hollers.workspaceId, ctx.workspaceId), inArray(hollers.id, chunk)))),
-    );
-  }
+  const rows = await readInChunks(ids, (chunk) =>
+    ctx.db
+      .select({
+        id: hollers.id,
+        title: hollers.title,
+        canOpen: sql<number>`case when ${visibleTo(ctx, memberId)} then 1 else 0 end`,
+      })
+      .from(hollers)
+      .where(and(eq(hollers.workspaceId, ctx.workspaceId), inArray(hollers.id, chunk))),
+  );
   return new Map(rows.map((r) => [r.id, { title: r.title, canOpen: r.canOpen === 1 }]));
 }
 
 async function namesOfApps(ctx: ServiceContext, clientIds: string[]) {
-  const rows = [];
-  for (const chunk of inChunks(clientIds)) {
-    rows.push(
-      ...(await ctx.db
-        .select({ clientId: oauthClient.clientId, name: oauthClient.name })
-        .from(oauthClient)
-        .where(inArray(oauthClient.clientId, chunk))),
-    );
-  }
+  const rows = await readInChunks(clientIds, (chunk) =>
+    ctx.db
+      .select({ clientId: oauthClient.clientId, name: oauthClient.name })
+      .from(oauthClient)
+      .where(inArray(oauthClient.clientId, chunk)),
+  );
   return new Map(rows.filter((r) => r.name).map((r) => [r.clientId, r.name as string]));
 }
 

@@ -9,6 +9,17 @@ export function inChunks<T>(list: T[], size = BOUND_VALUES_PER_LIST): T[][] {
   return chunks;
 }
 
+export async function readInChunks<T, R>(
+  list: readonly T[],
+  read: (chunk: T[]) => Promise<R[]>,
+): Promise<R[]> {
+  const rows: R[] = [];
+  for (const chunk of inChunks([...new Set(list)])) {
+    for (const row of await read(chunk)) rows.push(row);
+  }
+  return rows;
+}
+
 /** D1 runs a batch as one transaction. Drizzle's batch wants a non-empty tuple; this takes a list. */
 export async function runBatch(db: Db, statements: BatchItem<"sqlite">[]): Promise<void> {
   const [first, ...rest] = statements;
