@@ -1,4 +1,3 @@
-/** A time on a clock, with no day: 09:30 is `{ hour: 9, minute: 30 }`. */
 export interface TimeOfDay {
   hour: number;
   minute: number;
@@ -6,12 +5,10 @@ export interface TimeOfDay {
 
 const pad = (n: number) => String(n).padStart(2, "0");
 
-/** "09:30", the way Holler prints a time everywhere else. */
 export function timeKey({ hour, minute }: TimeOfDay): string {
   return `${pad(hour)}:${pad(minute)}`;
 }
 
-/** Every time in a day, `step` minutes apart, from 00:00. */
 export function timeSlots(step = 15): TimeOfDay[] {
   const slots: TimeOfDay[] = [];
   for (let at = 0; at < 24 * 60; at += step) {
@@ -20,10 +17,6 @@ export function timeSlots(step = 15): TimeOfDay[] {
   return slots;
 }
 
-/**
- * What someone typed, read as a time: "9", "9:30", "9.30", "930", "0930", "21h", "9pm", "9:30 am".
- * Null when it is not a time on a clock.
- */
 export function parseTimeOfDay(text: string): TimeOfDay | null {
   const typed = text.trim().toLocaleLowerCase().replace(/\s+/g, "");
   const match = /^(\d{1,4})(?:[:.h](\d{0,2}))?(am|pm|a|p)?$/.exec(typed);
@@ -40,7 +33,6 @@ export function parseTimeOfDay(text: string): TimeOfDay | null {
     hour = Number(lead);
     minute = 0;
   } else {
-    // "930" and "0930": the last two digits are the minutes.
     hour = Number(lead.slice(0, -2));
     minute = Number(lead.slice(-2));
   }
@@ -53,11 +45,6 @@ export function parseTimeOfDay(text: string): TimeOfDay | null {
   return { hour, minute };
 }
 
-/**
- * The times to offer for what was typed. Nothing typed offers the whole day. A typed time comes
- * first, even off the 15-minute steps, then the rest of its hour; "9" with no am or pm also offers
- * the evening's 21:00, since both are nine.
- */
 export function timeOptions(query: string, step = 15): TimeOfDay[] {
   const slots = timeSlots(step);
   if (!query.trim()) return slots;

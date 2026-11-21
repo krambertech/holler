@@ -458,7 +458,6 @@ function DropdownMenuRadioGroup({
 
 interface RadioItemProps extends RowProps {
   value: string;
-  /** Shown but not choosable; say why in the row. */
   disabled?: boolean | undefined;
   /** False when the menu holds more to choose, such as a filter menu. */
   closeOnClick?: boolean | undefined;

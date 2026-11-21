@@ -29,10 +29,6 @@ interface TimePickerProps {
   "aria-describedby"?: string | undefined;
 }
 
-/**
- * A time from a list in 15-minute steps, or any minute typed: "9:30", "930", "9pm". Holler's own
- * list, since the browser's time box paints its parts in the system's colours.
- */
 function TimePicker({
   id,
   label,
@@ -46,7 +42,6 @@ function TimePicker({
   const list = useRef<HTMLDivElement>(null);
   const items = useMemo(() => {
     const options = timeOptions(query);
-    // A chosen time off the steps keeps its row in the full list, so its tick has somewhere to sit.
     if (!query.trim() && value && !options.some((o) => timeKey(o) === timeKey(value))) {
       return [...options, value].sort((a, b) => a.hour * 60 + a.minute - (b.hour * 60 + b.minute));
     }
@@ -54,7 +49,6 @@ function TimePicker({
   }, [query, value]);
   const typed = query.trim() ? parseTimeOfDay(query) : null;
   return (
-    // The Field around the whole input names the day box; this list answers to its own label.
     <FieldItems>
       <Combobox<TimeOfDay>
         items={items}
@@ -65,14 +59,12 @@ function TimePicker({
         }}
         inputValue={query}
         onInputValueChange={setQuery}
-        // Enter takes a row only once something is typed, never the top of the day by accident.
         autoHighlight={Boolean(typed)}
         isItemEqualToValue={(a, b) => timeKey(a) === timeKey(b)}
         itemToStringLabel={timeKey}
         disabled={disabled}
         onOpenChange={(open) => {
           if (!open) setQuery("");
-          // Open on the chosen time, not at midnight.
           else
             requestAnimationFrame(() =>
               list.current?.querySelector("[data-selected]")?.scrollIntoView({ block: "center" }),
@@ -111,26 +103,16 @@ function TimePicker({
 }
 
 interface Props extends Omit<ComponentProps<"div">, "onChange" | "defaultValue"> {
-  /** An instant, read and written on this browser's clock. Leave undefined to let the input keep its own. */
   value?: Date | null | undefined;
   defaultValue?: Date | null | undefined;
   onValueChange?: ((value: Date) => void) | undefined;
-  /** The earliest day the day box offers. */
   min?: Date | undefined;
-  /** Visible labels over the two boxes. */
   dayLabel?: string | undefined;
   timeLabel?: string | undefined;
-  /** The id of the day box, which a `FieldLabel` points at. Inside a Field it comes from the Field. */
   id?: string | undefined;
   disabled?: boolean | undefined;
 }
 
-/**
- * A day and a time, side by side. The day is the browser's own date box, which every keyboard,
- * screen reader and phone knows; the time is Holler's list in 15-minute steps that also takes any
- * minute typed. A half-cleared day keeps the last whole value. Inside a Field, both take the
- * Field's description, invalid and disabled state.
- */
 function DateTimeInput({
   value: valueProp,
   defaultValue = null,
@@ -173,7 +155,6 @@ function DateTimeInput({
   };
   const box = cn(controlBase, controlSize, "px-3.5 tabular");
   return (
-    // Side by side where there is room, one over the other in a narrow row on a phone.
     <div
       data-slot="date-time-input"
       className={cn("@container w-full max-w-sm", className)}

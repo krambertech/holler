@@ -13,7 +13,6 @@ import type { Group } from "./types";
 const box = "w-full max-w-sm";
 
 const DAY = 24 * 3600_000;
-/** Next Monday at nine, so the demo never shows a time already gone. */
 const mondayNine = (() => {
   const at = new Date();
   at.setHours(9, 0, 0, 0);

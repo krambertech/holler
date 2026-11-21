@@ -10,7 +10,6 @@ export const directoryRoutes = new Hono<AppEnv>()
   .get("/", sValidator("query", z.object({ q: z.string().max(100).default("") })), async (c) =>
     c.json(await searchDirectory(requireMember(c), c.req.valid("query").q)),
   )
-  // The people and groups a saved audience names: `?ids=U1,S2`.
   .get(
     "/lookup",
     sValidator("query", z.object({ ids: z.string().max(4000).default("") })),
@@ -23,7 +22,6 @@ export const directoryRoutes = new Hono<AppEnv>()
       return c.json(await lookupDirectory(requireMember(c), ids));
     },
   )
-  // Names, handles or emails pasted as a list, each matched to one person or group.
   .post("/resolve", sValidator("json", directoryResolveInSchema), async (c) =>
     c.json(await resolveDirectory(requireMember(c), c.req.valid("json").terms)),
   );

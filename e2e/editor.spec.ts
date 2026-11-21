@@ -29,7 +29,6 @@ test("a lead writes a survey, it saves as a draft, and Send names what is missin
   await page.getByLabel("Question 1, option 1").fill("Faster onboarding");
   await page.getByLabel("Question 1, option 2").fill("Billing clean-up");
 
-  // The first save makes the draft and puts it in the address, without reopening the page.
   await expect(page).toHaveURL(/draft=hol_/);
   await expect(page.getByText("Draft saved")).toBeVisible();
 
@@ -45,7 +44,6 @@ test("a lead writes a survey, it saves as a draft, and Send names what is missin
   await expect(page.getByRole("heading", { name: "Who" })).toBeVisible();
   await expectAccessible(page);
 
-  // The bar's plum button names the reach; with nobody chosen yet it reads Send.
   await page.locator('[data-slot="send-bar"]').getByRole("button", { name: "Send" }).click();
   await expect(page.getByText("Choose who to send it to.").first()).toBeVisible();
   await expectAccessible(page);
@@ -75,13 +73,10 @@ test("leaving the editor straight after typing keeps the draft", async ({ page }
   const saved = page.waitForResponse(
     (r) => r.url().endsWith("/api/hollers") && r.request().method() === "POST",
   );
-  // Well inside the save's wait.
   await page.getByRole("link", { name: "Your hollers" }).click();
   const response = await saved;
   expect(response.status()).toBe(201);
   await expect(page.getByRole("heading", { name: "Your hollers" })).toBeVisible();
-  // Read back by id: tests run in parallel against one dev workspace, and another test's sign-in
-  // can re-seed Home's list while this one runs.
   const { id } = (await response.json()) as { id: string };
   const draft = await page.request.get(`/api/hollers/${id}`);
   expect(((await draft.json()) as { title: string }).title).toBe("Left in a hurry");

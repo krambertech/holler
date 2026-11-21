@@ -55,7 +55,6 @@ type Row = SendSettingsRow;
 
 const MAX_TAGS = 10;
 
-/** A new draft's settings: sent when you press Send, closed three days later, named, reminded. */
 const fresh: SendFields = {
   sendAt: null,
   sendInRecipientTimeZone: false,
@@ -68,39 +67,22 @@ const fresh: SendFields = {
 };
 
 interface Props extends Omit<ComponentProps<"section">, "defaultValue"> {
-  /**
-   * The draft's settings. Leave undefined to let the rows keep their own, starting at
-   * `defaultValue`. A draft with more fields than these fits; `onValueChange` hands it back whole.
-   */
   value?: SendFields | undefined;
   defaultValue?: SendFields | undefined;
   onValueChange?: ((value: SendFields) => void) | undefined;
-  /** The server's word on a field, beside the row it is about. */
   problems?: { sendAt?: string | undefined; closesAt?: string | undefined } | undefined;
-  /** Who it reaches, from the AudiencePicker, for the anonymous warning. */
   reach: Reach;
-  /** The chosen people's time zones, from the AudiencePicker, for when it lands. */
   zones?: ZoneCount[] | undefined;
-  /** Tags already used in this workspace, offered before a new one is made. */
   tagSuggestions?: string[] | undefined;
-  /** The announcement channel, when the draft has one, so the row can name it. */
   knownChannels?: DirectoryGroup[] | undefined;
-  /** The directory search for channels; the API by default. */
   search?: DirectorySearch | undefined;
-  /** The clock, shared with the bar through `useNow`. Ticks every half minute by default. */
   now?: Date | undefined;
-  /** The sender's time zone; this browser's by default. */
   timeZone?: string | undefined;
-  /**
-   * The open row, such as Closes when a send was refused over its close time. Leave undefined to
-   * let the rows open and shut themselves, starting at `defaultOpenRow`.
-   */
   openRow?: Row | null | undefined;
   defaultOpenRow?: Row | null | undefined;
   onOpenRowChange?: ((row: Row | null) => void) | undefined;
 }
 
-/** Tomorrow at the start of the working day, on the sender's clock. */
 function tomorrowMorning(now: Date, zone: string): Date {
   const today = wallClock(now, zone);
   const tomorrow = new Date(Date.UTC(today.year, today.month - 1, today.day + 1));
@@ -116,16 +98,11 @@ function tomorrowMorning(now: Date, zone: string): Date {
   );
 }
 
-/** The first whole hour on the sender's clock at or after `at`. */
 function nextWholeHour(at: Date, zone: string): Date {
   const next = atWallClock({ ...wallClock(at, zone), minute: 0 }, zone);
   return next.getTime() < at.getTime() ? new Date(next.getTime() + 3_600_000) : next;
 }
 
-/*
- * The browser's date and time pickers read and write this browser's clock. These carry a time
- * across: the picker shows the sender's wall-clock time, and what is picked is read on it.
- */
 function toPicker(at: Date, zone: string): Date {
   const wall = wallClock(at, zone);
   return new Date(wall.year, wall.month - 1, wall.day, wall.hour, wall.minute);
@@ -143,8 +120,6 @@ function fromPicker(picked: Date, zone: string): Date {
     zone,
   );
 }
-
-// ─── A row ───────────────────────────────────────────────────────────────────────────────────
 
 const rowGrid =
   "grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-0.5 px-5 py-3.5 text-start sm:grid-cols-[6rem_minmax(0,1fr)_auto]";
@@ -168,7 +143,6 @@ function RowLabel({ id, children }: { id?: string | undefined; children: ReactNo
   );
 }
 
-/** A row that opens: the whole line is the button, and its action word says what a press does. */
 function OpenRow({
   label,
   summary,
@@ -203,7 +177,6 @@ function OpenRow({
         <Fact summary={summary} value={value} />
         <span className="text-primary text-sm">{action}</span>
       </button>
-      {/* Grows to its content's own height: no measuring, and nothing inside is reachable while shut. */}
       <div
         id={panelId}
         inert={!open}
@@ -220,7 +193,6 @@ function OpenRow({
   );
 }
 
-/** A row that a switch decides, at once. */
 function SwitchRow({
   label,
   summary,
@@ -248,14 +220,8 @@ function SwitchRow({
   );
 }
 
-// ─── When it lands ───────────────────────────────────────────────────────────────────────────
-
 const SHOWN_ZONES = 8;
 
-/**
- * What the chosen time means where people are. In your time: the time on their clocks, flagged
- * outside the working day. In each person's time: when each zone gets it on your clock.
- */
 function LandingPreview({
   sendAt,
   inRecipientTimeZone,
@@ -345,8 +311,6 @@ function LandingPreview({
     </div>
   );
 }
-
-// ─── Lists in rows ───────────────────────────────────────────────────────────────────────────
 
 function ChannelPicker({
   channel,
@@ -504,12 +468,6 @@ function TagEditor({
   );
 }
 
-// ─── The plate ───────────────────────────────────────────────────────────────────────────────
-
-/**
- * When it sends and closes, how answers are kept, reminders, where it is announced, and tags.
- * Each row reads as a fact; Change opens one row at a time, so the defaults need no clicks.
- */
 function SendSettings({
   value: valueProp,
   defaultValue = fresh,
@@ -549,7 +507,6 @@ function SendSettings({
     () => new Map(knownChannels.map((c) => [c.slackId, c] as const)),
   );
   const announceId = value.announceChannelId;
-  // Picked channels first, then what the caller knows, which may arrive after the first render.
   const channel = announceId
     ? (channels.get(announceId) ?? knownChannels.find((c) => c.slackId === announceId) ?? null)
     : null;
@@ -714,7 +671,6 @@ function SendSettings({
           summary={
             announceId
               ? {
-                  // Named once Holler knows the channel; the setting shows either way.
                   value: channel ? `#${channel.name}` : "A channel",
                   description: "with a live count of answers",
                 }

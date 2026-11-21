@@ -54,37 +54,28 @@ import { type SaveState, useAutosave } from "./use-autosave";
 
 export type EditorStage = "compose" | "send";
 
-/** How the editor reaches the server. The routes pass the API; the design site passes fakes. */
 export interface EditorIo {
   save: (payload: HollerDraftInput, id: string | null) => Promise<HollerOut>;
   send: (id: string) => Promise<HollerOut>;
   remove: (id: string) => Promise<void>;
-  /** The last save when the tab closes, which must not wait for an answer. */
   beacon?: ((payload: HollerDraftInput, id: string) => void) | undefined;
-  /** The directory the audience picker searches; the API by default. */
   search?: DirectorySearch | undefined;
 }
 
 interface Props {
   io: EditorIo;
   initial: EditorDraft;
-  /** The saved Holler, when there is one. */
   saved?: HollerOut | null | undefined;
   stage: EditorStage;
   onStageChange: (stage: EditorStage) => void;
-  /** Who sends it, as the preview names them. */
   sender: string;
   workspaceSize?: number | null | undefined;
-  /** The people and groups the saved audience names, so its chips have names. */
   known?: { people?: DirectoryPerson[]; groups?: DirectoryGroup[] } | undefined;
   tagSuggestions?: string[] | undefined;
-  /** The first save made the draft: the route moves to its own address. */
   onCreated?: ((holler: HollerOut) => void) | undefined;
   onSent?: ((holler: HollerOut) => void) | undefined;
   onDeleted?: (() => void) | undefined;
-  /** Where Back goes. */
   backLink: ReactNode;
-  /** A fixed clock, for the design site. */
   now?: Date | undefined;
 }
 
@@ -175,10 +166,6 @@ const bareTitle =
 const bareIntro =
   "w-full resize-none border-0 bg-transparent p-0 text-ink-2 outline-none placeholder:text-muted field-sizing-content";
 
-/**
- * The editor: Compose (what you ask) and Send (who, when, how), with the mode in the page title and
- * a bar that names what the next press does. It saves as the sender types.
- */
 function HollerEditor({
   io,
   initial,
@@ -282,7 +269,6 @@ function HollerEditor({
     setDraft((d) => applyTemplate(d, template));
   };
 
-  // Moving between stages lands at the top of the new one.
   const goTo = (next: EditorStage) => {
     onStageChange(next);
     window.scrollTo({ top: 0 });
@@ -352,8 +338,6 @@ function HollerEditor({
     />
   );
 
-  // ─── The bar ───────────────────────────────────────────────────────────────────────────────
-
   const composeProblem = composeShown[0]?.message;
   const composeBar = composeBarSummary(surface, draft.questions.length, composeProblem);
   const sendBar = sendBarSummary(summary.reach, draft, { now, senderZone, zones: summary.zones });
@@ -383,8 +367,6 @@ function HollerEditor({
             if (scheduled) autosave.flush().catch(() => {});
             else void send();
           },
-          // The big-send question follows the audience on screen, never the last save's problems,
-          // which can be stale: an audience picked a moment ago has not been checked yet.
           send: scheduled
             ? undefined
             : {
@@ -395,8 +377,6 @@ function HollerEditor({
                 scheduled: !!draft.sendAt,
               },
         };
-
-  // ─── The page ──────────────────────────────────────────────────────────────────────────────
 
   const qProblems = questionProblems(composeShown);
   const titleProblem = problemFor(composeShown, "title");
@@ -611,7 +591,6 @@ function HollerEditor({
   );
 }
 
-/** The Back link's arrow and words, shared by the routes. */
 function BackLabel() {
   return (
     <>

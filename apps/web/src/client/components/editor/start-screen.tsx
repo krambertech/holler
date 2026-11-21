@@ -10,12 +10,10 @@ interface Props extends ComponentProps<"div"> {
   onSeeAllTemplates: () => void;
 }
 
-/** The templates the start screen shows before See all: one of each kind people reach for most. */
 const featured = ["weekly-pulse", "retro", "enps"];
 
 const line = "block h-[5px] rounded-full bg-edge-3";
 
-/** A small drawing of the Slack message each mode sends: what the person answering gets. */
 function Drawing({ mode }: { mode: Mode }) {
   return (
     <span
@@ -61,10 +59,6 @@ function Drawing({ mode }: { mode: Mode }) {
   );
 }
 
-/**
- * What New holler opens: the three modes, each with a drawing of what people get, and below them a
- * few templates. One click on a mode opens Compose in it; a template opens it filled in.
- */
 function StartScreen({
   onPickMode,
   onPickTemplate,

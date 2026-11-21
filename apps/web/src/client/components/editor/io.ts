@@ -3,10 +3,7 @@ import type { QueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import type { EditorIo } from "./holler-editor";
 
-/** The editor talking to the real API. Every write refreshes Home's lists and counts. */
 export function apiIo(queryClient: QueryClient): EditorIo {
-  // Home's lists and counts. A save that lands after the editor is gone, such as the one made on
-  // the way out, refetches them if Home is already showing.
   const refresh = () =>
     Promise.all([
       queryClient.invalidateQueries({ queryKey: ["hollers", "list"] }),
@@ -33,7 +30,6 @@ export function apiIo(queryClient: QueryClient): EditorIo {
       void refresh();
     },
     beacon: (payload, id) => {
-      // keepalive lets the request finish after the tab is gone; nothing waits for its answer.
       void fetch(`/api/hollers/${id}`, {
         method: "PUT",
         credentials: "same-origin",

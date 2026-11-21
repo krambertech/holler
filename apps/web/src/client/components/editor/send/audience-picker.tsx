@@ -7,6 +7,7 @@ import {
   type ComponentProps,
   type KeyboardEvent,
   type PointerEvent,
+  useCallback,
   useEffect,
   useId,
   useMemo,
@@ -58,41 +59,28 @@ import {
   zoneName,
 } from "./send-logic";
 
-/** People, groups and channels, or everyone: the draft's audience. */
 type AudienceSelection = HollerDraft["audience"];
 
-/** What the rest of the Send stage needs to know about the audience. */
 export interface AudienceSummary {
   reach: Reach;
-  /** The chosen people's time zones. People in groups are not known until it sends. */
   zones: ZoneCount[];
-  /** What was chosen, in order, for the big-send check. */
   chosen: AudienceEntry[];
 }
 
 interface Props extends Omit<ComponentProps<"section">, "defaultValue"> {
-  /** Who it goes to. Leave it out, with `defaultValue`, for the picker to keep its own. */
   value?: AudienceSelection | undefined;
   defaultValue?: AudienceSelection | undefined;
   onValueChange?: ((value: AudienceSelection) => void) | undefined;
-  /** Why it cannot be sent to this audience, such as "Choose who to send it to." */
   problem?: string | undefined;
-  /** People and groups already in the draft, so their chips have names before any search. */
   known?: { people?: DirectoryPerson[]; groups?: DirectoryGroup[] } | undefined;
-  /** Everyone in the workspace, for the reach of Everyone. */
   workspaceSize?: number | null | undefined;
   onSummaryChange?: ((summary: AudienceSummary) => void) | undefined;
-  /** The directory search; the API by default. */
   search?: DirectorySearch | undefined;
-  /** Matches a pasted list; the API by default. */
   resolve?: DirectoryResolve | undefined;
-  /** Starts with this typed in the field and its matches listed. */
   defaultInputValue?: string | undefined;
-  /** Lists matches in the page flow instead of over what follows, as the design site shows it. */
   inline?: boolean | undefined;
 }
 
-/** Rows the list shows at most, Everyone included. */
 const MAX_ROWS = 30;
 
 const tile = "grid size-[26px] shrink-0 place-items-center rounded-full bg-tint text-tint-ink";
@@ -116,7 +104,6 @@ function EntryMark({ entry }: { entry: AudienceEntry }) {
   );
 }
 
-/** The line under a result: what tells two people with one name apart, or what a group is. */
 function entryDescription(entry: AudienceEntry): string | undefined {
   if (entry.kind === "everyone") return "Every person in this Slack workspace";
   if (entry.kind === "person") {
@@ -130,7 +117,6 @@ function entryDescription(entry: AudienceEntry): string | undefined {
   return entry.group.name === entryName(entry) ? "User group" : `User group, ${entry.group.name}`;
 }
 
-/** How many people a result brings with it, or null for a person. */
 function entrySize(entry: AudienceEntry, workspaceSize: number | null | undefined) {
   if (entry.kind === "group") return entry.group.memberCount;
   if (entry.kind === "everyone") return workspaceSize ?? null;
@@ -141,7 +127,6 @@ function addsLabel(size: number): string {
   return size === 1 ? "Adds 1 person" : `Adds ${count(size)} people`;
 }
 
-/** A chosen person or group. Its remove button is where Backspace and the arrows land. */
 function AudienceChip({
   entry,
   workspaceSize,
@@ -172,7 +157,6 @@ function AudienceChip({
       <button
         ref={buttonRef}
         type="button"
-        // Out of the tab order: Backspace or Left from the field reaches it, like Slack's To.
         tabIndex={-1}
         aria-label={`Remove ${name}`}
         onClick={onRemove}
@@ -210,7 +194,6 @@ function ResultRow({
       <EntryMark entry={entry} />
       <span className="min-w-0 flex-1">
         <span className="block truncate">{entryName(entry)}</span>
-        {/* On a phone the group's size takes the second line, so the name keeps the width. */}
         {(description || size != null) && (
           <span className={cn(descriptionClassName, "truncate whitespace-nowrap")}>
             {size != null && !added ? (
@@ -253,14 +236,6 @@ function LoadingRows() {
   );
 }
 
-/**
- * Who a Holler goes to: people, Slack user groups and channels' members, or everyone. One field
- * holds the chosen ones as chips and a place to type, like Slack's To line. Typing lists matches
- * under the field at once; Enter, Tab or a comma adds the highlighted one; Backspace on an empty
- * field reaches the last chip and removes it on a second press, with Undo. A pasted list adds
- * every name, handle and email it can match. The count is approximate once groups are in it,
- * because they can overlap.
- */
 const nobody: AudienceSelection = { people: [], groups: [], everyone: false };
 
 function AudiencePicker({
@@ -294,15 +269,12 @@ function AudiencePicker({
   const highlighted = useRef<AudienceEntry | undefined>(undefined);
   const [open, setOpen] = useState(defaultInputValue !== "");
   const [query, setQuery] = useState(defaultInputValue);
-  // The directory loads once the field is first used, not on page load.
   const [engaged, setEngaged] = useState(defaultInputValue !== "");
   const directory = useDirectory(search, query, engaged);
   const [announcement, setAnnouncement] = useState("");
   const [note, setNote] = useState<string | null>(null);
   const [pasting, setPasting] = useState<number | null>(null);
 
-  // Every entry seen, so a chip keeps its name and size after the search moves on, and the list
-  // can rank what it has while the directory answers the next letter.
   const [seen, setSeen] = useState(() => {
     const map = new Map<string, AudienceEntry>();
     for (const person of known?.people ?? []) map.set(person.slackUserId, personEntry(person));
@@ -324,12 +296,13 @@ function AudiencePicker({
     const data = directory.data;
     return data ? [...data.groups.map(groupEntry), ...data.people.map(personEntry)] : [];
   }, [directory.data]);
-  // biome-ignore lint/correctness/useExhaustiveDependencies: remember reads seen, which this fills
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- remember changes with every entry it keeps; only new results need keeping
   useEffect(() => remember(fetched), [fetched]);
 
+  const current = directory.current;
   const matches = useMemo(
-    () => rankEntries(directory.current ? fetched : [...seen.values()], query),
-    [directory.current, fetched, seen, query],
+    () => rankEntries(current ? fetched : [...seen.values()], query),
+    [current, fetched, seen, query],
   );
   const results = useMemo(() => resultList(matches, query).slice(0, MAX_ROWS), [matches, query]);
   const typed = query.trim() !== "";
@@ -363,17 +336,19 @@ function AudiencePicker({
   }, [value, seen]);
   const chosenIds = useMemo(() => new Set(chosen.map((entry) => entry.id)), [chosen]);
 
-  const reachOf = (next: AudienceSelection) =>
-    audienceReach(
-      next,
-      (id) => {
-        const entry = seen.get(id);
-        return entry?.kind === "group" ? entry.group.memberCount : null;
-      },
-      workspaceSize,
-    );
-  // biome-ignore lint/correctness/useExhaustiveDependencies: reachOf reads seen and workspaceSize
-  const reach = useMemo(() => reachOf(value), [value, seen, workspaceSize]);
+  const reachOf = useCallback(
+    (next: AudienceSelection) =>
+      audienceReach(
+        next,
+        (id) => {
+          const entry = seen.get(id);
+          return entry?.kind === "group" ? entry.group.memberCount : null;
+        },
+        workspaceSize,
+      ),
+    [seen, workspaceSize],
+  );
+  const reach = useMemo(() => reachOf(value), [reachOf, value]);
   const zones = useMemo<ZoneCount[]>(() => {
     const byZone = new Map<string | null, number>();
     for (const entry of chosen) {
@@ -384,7 +359,6 @@ function AudiencePicker({
     return [...byZone.entries()].map(([zone, people]) => ({ zone, people }));
   }, [chosen]);
 
-  // A press anywhere else, or focus moving on, closes the list.
   useEffect(() => {
     if (!open) return;
     const outside = (target: EventTarget | null) =>
@@ -409,7 +383,6 @@ function AudiencePicker({
     report.current?.({ reach, zones, chosen });
   }, [reach, zones, chosen]);
 
-  // The latest value, for an Undo pressed after other changes.
   const latest = useRef(value);
   latest.current = value;
   const lastRemoved = useRef<{ entry: AudienceEntry; index: number } | null>(null);
@@ -420,7 +393,6 @@ function AudiencePicker({
     setAnnouncement(`${said} ${reachLabel(reachOf(next))}.`);
   };
 
-  /** Adds results. Everyone holds every person already; a pick after it narrows to that pick. */
   const add = (entries: readonly AudienceEntry[], said: string) => {
     const current = latest.current;
     if (entries.some((entry) => entry.kind === "everyone")) {
@@ -450,7 +422,6 @@ function AudiencePicker({
           : `Added ${entryName(entry)}.`,
       );
     }
-    // After a search the list steps aside for the next name; while browsing it stays.
     if (typed) setOpen(false);
     setQuery("");
   };
@@ -468,7 +439,6 @@ function AudiencePicker({
       return;
     }
     if (current.everyone || [...current.people, ...current.groups].includes(entry.id)) return;
-    // Back where it was: groups come first in the field, then people.
     const groups = [...current.groups];
     const people = [...current.people];
     if (entry.kind === "group") groups.splice(index, 0, entry.id);
@@ -500,7 +470,6 @@ function AudiencePicker({
   const onChipKey = (index: number) => (event: KeyboardEvent<HTMLButtonElement>) => {
     const action = chipKeyAction(event.key, index, chosen.length);
     if (!action) return;
-    // A letter moves focus before it lands, so it is typed in the field.
     if (event.key.length !== 1) event.preventDefault();
     const entry = chosen[index];
     if (action.remove && entry) remove(entry);
@@ -532,7 +501,6 @@ function AudiencePicker({
   };
 
   const onPaste = (event: ClipboardEvent<HTMLInputElement>) => {
-    // Pasting into a name half typed is part of that name.
     if (typed) return;
     const list = parsePastedList(event.clipboardData.getData("text"));
     if (!list) return;
@@ -556,7 +524,6 @@ function AudiencePicker({
       .finally(() => setPasting(null));
   };
 
-  // A press on the field's empty space puts the caret in it, as in any text box.
   const onFieldPointerDown = (event: PointerEvent<HTMLDivElement>) => {
     if (event.target !== event.currentTarget) return;
     event.preventDefault();
@@ -623,7 +590,6 @@ function AudiencePicker({
         filter={null}
         value={chosen}
         onValueChange={(next) => {
-          // A press on a row already in the field reads as a removal to Base UI; it stays in.
           const entry = next.find((e) => !chosenIds.has(e.id)) ?? highlighted.current;
           if (entry) pick(entry);
         }}
@@ -644,8 +610,6 @@ function AudiencePicker({
         isItemEqualToValue={(a, b) => a.id === b.id}
         itemToStringLabel={entryName}
         autoHighlight
-        // The list sits under the field rather than in Base UI's popup, which hides the rest of
-        // the page from screen readers while it is open.
         inline
       >
         <div ref={frame} className="relative">
@@ -695,7 +659,6 @@ function AudiencePicker({
               onPaste={onPaste}
               onFocus={() => {
                 setEngaged(true);
-                // With more chips than fit, the place to type is at the end.
                 field.current?.scrollTo({ top: field.current.scrollHeight });
               }}
               className={cn(
@@ -704,7 +667,6 @@ function AudiencePicker({
               )}
             />
           </div>
-          {/* Mounted while closed too, so the field's aria-controls always names a list. */}
           <div
             data-slot="audience-results"
             hidden={!open}

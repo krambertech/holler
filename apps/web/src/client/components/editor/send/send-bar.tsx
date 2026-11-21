@@ -15,12 +15,10 @@ import { count, peopleLabel } from "@/lib/format";
 import { type AudienceEntry, entryName } from "./directory";
 import { isBigSend, type Reach } from "./send-logic";
 
-/** What the big-send question shows: the Holler, who it reaches, and when. */
 export interface BigSend {
   title: string;
   reach: Reach;
   chosen: AudienceEntry[];
-  /** "now", or the day and time it is scheduled for. */
   when: string;
   scheduled: boolean;
 }
@@ -67,18 +65,11 @@ function explanation(send: BigSend) {
 }
 
 interface SendButtonProps extends Omit<ComponentProps<typeof Button>, "onClick" | "variant"> {
-  /**
-   * The send this press makes. Sending to everyone or to more than 50 people asks once more in a
-   * dialog that shows who it reaches; a smaller send, or none given, goes at once.
-   */
   send?: BigSend | undefined;
-  /** Runs on the press, or after "Send" in the dialog when it asks. */
   onSend: () => void;
-  /** The words on the button, which the dialog's own button repeats: "Send to 14 people". */
   children: ReactNode;
 }
 
-/** The plum button that sends a Holler. It asks once more before a big send. */
 function SendButton({ send, onSend, children, ...props }: SendButtonProps) {
   const [asking, setAsking] = useState(false);
   const shown = send?.chosen.slice(0, SHOWN) ?? [];
@@ -140,23 +131,13 @@ function SendButton({ send, onSend, children, ...props }: SendButtonProps) {
 }
 
 interface SendBarProps extends ComponentProps<"div"> {
-  /** What the next press does, or the one thing to fix: "14 people, now". */
   children: ReactNode;
-  /** A second line under it: "Closes Mon 24 Nov, 17:00". */
   description?: ReactNode | undefined;
-  /** `danger` when the children name a problem to fix. */
   tone?: "neutral" | "danger" | undefined;
-  /** A button before the plum one, such as going back to Compose. Hidden on a phone. */
   secondary?: ReactNode | undefined;
-  /** The plum button: a `SendButton` on Send, a primary `Button` on Compose. Full width on a phone. */
   action: ReactNode;
 }
 
-/**
- * The bar at the bottom of Compose and Send. It rides along at the bottom of the window while the
- * page scrolls and settles into place at the end of the page, so it never covers the last row.
- * Left, what the next press does; right, the one plum button. Put it last in the page column.
- */
 function SendBar({
   children,
   description,
@@ -169,7 +150,6 @@ function SendBar({
   const end = useRef<HTMLDivElement>(null);
   const [settled, setSettled] = useState(true);
 
-  // The bar floats while the end of the page is below the window, and rests once it is in view.
   useEffect(() => {
     const el = end.current;
     if (!el) return;
@@ -197,7 +177,6 @@ function SendBar({
             settled ? "bg-plate edge" : "floating",
           )}
         >
-          {/* A phone puts the button on its own line before it cuts the words short. */}
           <div className="grid min-w-0 flex-1 basis-44 leading-snug" aria-live="polite">
             <span
               className={cn(

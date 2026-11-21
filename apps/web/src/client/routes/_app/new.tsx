@@ -15,15 +15,10 @@ import { directoryLookupQuery, hollerQuery, meQuery, workspaceSettingsQuery } fr
 const searchSchema = z.object({
   mode: z.enum(modes).optional(),
   template: z.string().optional(),
-  /** The saved draft, once the first save made one. */
   draft: z.string().optional(),
   stage: z.enum(["compose", "send"]).optional(),
 });
 
-/**
- * New holler: the start screen, then the editor. One route holds both a new Holler and a saved
- * draft (`?draft=<id>`), so the first save changes the address without remounting the editor.
- */
 export const Route = createFileRoute("/_app/new")({
   validateSearch: searchSchema,
   component: NewHoller,
@@ -45,8 +40,6 @@ function NewHoller() {
   const navigate = Route.useNavigate();
   const [templatesOpen, setTemplatesOpen] = useState(false);
   const fromTemplate = template ? hollerTemplates.find((t) => t.id === template) : undefined;
-  // Started here from a mode or a template: the editor already holds the draft, so a save that
-  // adds `draft` to the address must not load it again.
   const startedHere = useRef(false);
   const fresh = Boolean(mode || fromTemplate);
   if (fresh && !draft) startedHere.current = true;
@@ -82,9 +75,6 @@ function NewHoller() {
 
 function SavedDraft({ id, stage }: { id: string; stage: "compose" | "send" }) {
   const holler = useQuery(hollerQuery(id));
-  // The names the draft's audience had when it opened. Saves later change the cached Holler, but
-  // never this lookup, so the editor is never swapped for the skeleton while someone types; the
-  // audience picker keeps the names of anyone picked after that itself.
   const [ids, setIds] = useState<string[] | null>(null);
   if (holler.data && ids === null) {
     const { audience, announceChannelId } = holler.data;
@@ -109,7 +99,6 @@ function SavedDraft({ id, stage }: { id: string; stage: "compose" | "send" }) {
       </>
     );
   }
-  // Only the first load waits; once the editor is up it stays up.
   if (!opened.current && (!holler.data || known.isPending)) return <EditorSkeleton />;
   opened.current = true;
   if (!holler.data) return <EditorSkeleton />;
@@ -162,7 +151,6 @@ function Editor({
   );
 }
 
-/** The editor's shape while a draft loads. */
 function EditorSkeleton() {
   return (
     <section aria-busy aria-label="Opening your draft" className="flex flex-col gap-7">

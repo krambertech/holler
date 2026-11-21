@@ -34,8 +34,6 @@ import { Button } from "@/components/ui/button";
 import { Variants } from "../frame";
 import type { Group } from "./types";
 
-// ─── A pretend workspace ─────────────────────────────────────────────────────────────────────
-
 const person = (
   slackUserId: string,
   name: string,
@@ -77,7 +75,6 @@ const WORKSPACE = 214;
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-/** The pretend directory, matched and ranked the way the server does it. */
 function lookUp(query: string): Directory {
   const found = rankEntries([...groups.map(groupEntry), ...team.map(personEntry)], query);
   return {
@@ -90,13 +87,11 @@ const search: DirectorySearch = async (query) => {
   await wait(250);
   return lookUp(query);
 };
-/** A directory still being read the first time. */
 const syncingSearch: DirectorySearch = async (query) => {
   await wait(250);
   const found = lookUp(query);
   return { people: found.people.slice(0, 2), groups: [], syncing: true };
 };
-/** A search that never answers, to hold the loading rows. */
 const slowSearch: DirectorySearch = () => new Promise(() => {});
 const failingSearch: DirectorySearch = async () => {
   await wait(250);
@@ -107,7 +102,6 @@ const resolve: DirectoryResolve = async (terms) => {
   await wait(400);
   const missed: Resolved["missed"] = [];
   const found: Directory = { people: [], groups: [] };
-  // Whole words only, as the server matches a paste.
   const whole = (names: (string | null)[], term: string) => {
     const words = new Set(names.flatMap((name) => (name ? foldText(name).split(" ") : [])));
     const { tokens } = parseSearch(term);
@@ -147,8 +141,6 @@ const spread: Audience = {
   groups: [],
   everyone: false,
 };
-
-// ─── Dates that stay true whenever the page is opened ────────────────────────────────────────
 
 const big: Audience = { people: ["U0JB", "U0AT"], groups: ["S0ENG", "C0GEN"], everyone: false };
 const everyone: Audience = { people: [], groups: [], everyone: true };
@@ -265,9 +257,6 @@ const chase: PreviewHoller = {
   questions: [],
 };
 
-// ─── Demos ───────────────────────────────────────────────────────────────────────────────────
-
-/** The send a press would make, as the editor shell builds it from the draft. */
 function sendFor(audience: Audience, fields: SendFields): BigSend {
   const chosen = [
     ...audience.groups.map((id) => {
@@ -352,7 +341,6 @@ function SendButtonDemo({ audience, start }: { audience: Audience; start?: Parti
   );
 }
 
-/** Who, with the send refused while nobody is chosen: the editor shell owns the value. */
 const isEmpty = (audience: Audience) =>
   !audience.everyone && audience.people.length === 0 && audience.groups.length === 0;
 
@@ -366,12 +354,9 @@ function PickerDemo({
 }: {
   start: Audience;
   problem?: string;
-  /** Typed already, with its matches listed. */
   query?: string;
-  /** Pasted into the field once it mounts. */
   paste?: string;
   searchWith?: DirectorySearch;
-  /** Off, so the list has nothing to show before the search answers. */
   withKnown?: boolean;
 }) {
   const [empty, setEmpty] = useState(isEmpty(start));
@@ -428,7 +413,6 @@ function SettingsDemo({
   );
 }
 
-/** The Send stage as the editor shell lays it out, so the bar can be seen riding and settling. */
 function SendStageDemo() {
   const [audience, setAudience] = useState<Audience>(four);
   const [fields, setFields] = useState<SendFields>(defaults);

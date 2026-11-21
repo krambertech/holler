@@ -7,11 +7,6 @@ import type {
 } from "@holler/core";
 import { type EditorQuestion, withKey } from "./questions/model";
 
-/*
- * The draft the editor holds while someone writes: everything a Holler saves, with a key on each
- * question for React and reordering. Pure functions, so the rules have tests.
- */
-
 export interface EditorDraft {
   mode: Mode;
   title: string;
@@ -56,7 +51,6 @@ const copyQuestion = (q: QuestionInput): QuestionInput => ({
   ...(q.followUp ? { followUp: { ...q.followUp } } : {}),
 });
 
-/** A template, filled in and ready to edit. */
 export function draftFromTemplate(template: HollerTemplate): EditorDraft {
   return {
     ...blankDraft(template.mode),
@@ -67,7 +61,6 @@ export function draftFromTemplate(template: HollerTemplate): EditorDraft {
   };
 }
 
-/** Puts a template's questions into a draft someone already started, keeping who and when. */
 export function applyTemplate(draft: EditorDraft, template: HollerTemplate): EditorDraft {
   const fresh = draftFromTemplate(template);
   return {
@@ -101,7 +94,6 @@ function questionFromOut(q: QuestionOut): QuestionInput {
   };
 }
 
-/** A saved Holler as the editor holds it. */
 export function draftFromHoller(holler: HollerOut): EditorDraft {
   return {
     mode: holler.mode,
@@ -115,7 +107,6 @@ export function draftFromHoller(holler: HollerOut): EditorDraft {
     announceChannelId: holler.announceChannelId,
     sendAt: holler.sendAt ? new Date(holler.sendAt) : null,
     sendInRecipientTimeZone: holler.sendInRecipientTimeZone,
-    // A sent Holler's close time is its real one; a draft's is the one the sender fixed.
     closesAt: holler.closesAt ? new Date(holler.closesAt) : null,
     closeAfterHours: holler.closeAfterHours,
     remindersEnabled: holler.remindersEnabled,
@@ -123,7 +114,6 @@ export function draftFromHoller(holler: HollerOut): EditorDraft {
   };
 }
 
-/** What the server saves. A chase saves no questions. */
 export function toPayload(draft: EditorDraft): HollerDraftInput {
   return {
     mode: draft.mode,
@@ -145,7 +135,6 @@ export function toPayload(draft: EditorDraft): HollerDraftInput {
   };
 }
 
-/** Nothing worth keeping yet, so no draft is made for it. */
 export function isBlank(draft: EditorDraft): boolean {
   if (draft.title.trim() || draft.description.trim() || draft.externalUrl?.trim()) return false;
   const { people, groups, everyone } = draft.audience;
@@ -153,10 +142,6 @@ export function isBlank(draft: EditorDraft): boolean {
   return draft.questions.length === 0;
 }
 
-/**
- * Takes the ids the server gave new questions and options into the questions on screen, without
- * undoing anything typed while the save was on its way. `sent` is what that save sent.
- */
 export function adoptIds(
   local: EditorQuestion[],
   sent: EditorQuestion[],
@@ -187,7 +172,6 @@ export function adoptIds(
   });
 }
 
-/** The send problems the question list shows, keyed by field path: "questions.1.prompt". */
 export function questionProblems(problems: readonly { message: string; field: string | null }[]) {
   const out: Record<string, string> = {};
   for (const p of problems) {
@@ -196,7 +180,6 @@ export function questionProblems(problems: readonly { message: string; field: st
   return out;
 }
 
-/** The first problem with one of these fields, or among the questions. */
 export function problemFor(
   problems: readonly { message: string; field: string | null }[],
   field: string,
@@ -206,7 +189,6 @@ export function problemFor(
 
 const sendFields = new Set(["audience", "sendAt", "closesAt"]);
 
-/** Problems the Compose stage owns: the title, the form link and the questions. */
 export function composeProblems(problems: readonly { message: string; field: string | null }[]) {
   return problems.filter((p) => !(p.field && sendFields.has(p.field)));
 }

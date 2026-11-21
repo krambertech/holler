@@ -62,7 +62,6 @@ function HollerPage() {
     );
   }
   const h = holler.data;
-  // A draft, or a scheduled Holler, opens where it is written.
   if (h.isCreator && (h.status === "draft" || h.status === "scheduled")) {
     return <Navigate to="/new" search={{ draft: h.id }} replace />;
   }

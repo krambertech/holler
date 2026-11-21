@@ -68,7 +68,6 @@ async function workspace() {
   return fixture;
 }
 
-/** A Holler this sender sent, to these people, naming these groups. */
 async function sent(ctx: ServiceContext, now: Date, people: string[], groups: string[] = []) {
   const holler = await createDraft(ctx, {
     mode: "chase",
@@ -105,7 +104,6 @@ describe("searchDirectory", () => {
       "Anastasia Moreau",
       "Dana Alon",
     ]);
-    // Sent once, Anastasia still comes after a whole first name, and before Ana Lima on "an".
     expect(names(await searchDirectory(ctx, "an")).slice(0, 2)).toEqual([
       "Ana Torres",
       "Anastasia Moreau",
@@ -144,7 +142,6 @@ describe("searchDirectory", () => {
   it("puts the groups the sender sends to first", async () => {
     const { ctx, now } = await workspace();
     await sent(ctx, now, ["U2"], ["S2"]);
-    // "product" names the channel outright; "prod" starts both, so the sends decide.
     expect((await searchDirectory(ctx, "product")).groups[0]?.slackId).toBe("C1");
     const prod = await searchDirectory(ctx, "prod");
     expect(prod.groups.map((g) => [g.slackId, g.sends])).toEqual([
@@ -190,7 +187,6 @@ describe("resolveDirectory", () => {
 
   it("matches the words of a name in any order", async () => {
     const { ctx } = await workspace();
-    // Tomás has no handle, so his folded name holds the words only in their own order.
     const found = await resolveDirectory(ctx, ["Ruiz Tomás"]);
     expect(found.people.map((p) => p.slackUserId)).toEqual(["U5"]);
   });

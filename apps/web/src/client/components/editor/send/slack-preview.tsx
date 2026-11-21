@@ -27,7 +27,6 @@ import { questionsLabel } from "@/lib/format";
 import { useControllableState } from "@/lib/use-controllable-state";
 import { answeredInLabel, clockTime, dayTime, webReason } from "./send-logic";
 
-/** What the preview needs of a question. Any draft question fits. */
 export interface PreviewQuestion {
   type: QuestionType;
   style: QuestionStyle;
@@ -53,26 +52,19 @@ export type PreviewView = "dm" | "tap" | "reminder";
 
 interface Props extends ComponentProps<"button"> {
   holler: PreviewHoller;
-  /** Who sends it, as the DM names them. */
   sender: string;
-  /** Someone it goes to, for the title: "What Jonas sees". */
   recipient?: string | undefined;
-  /** When it closes, as the context line says. */
   closesAt: Date;
-  /** When it reaches them, for the time beside the message. Now by default. */
   sendsAt?: Date | null | undefined;
   open?: boolean | undefined;
   defaultOpen?: boolean | undefined;
   onOpenChange?: ((open: boolean) => void) | undefined;
-  /** Which message shows. Leave undefined to let the preview keep its own, starting at `defaultView`. */
   view?: PreviewView | undefined;
   defaultView?: PreviewView | undefined;
   onViewChange?: ((view: PreviewView) => void) | undefined;
-  /** The trigger's words. "Preview" with an eye by default. */
   children?: ReactNode | undefined;
 }
 
-// Slack draws its own messages; this draws their shape in Holler's neutrals, never Slack's brand.
 const slackFont = "[font-family:ui-sans-serif,system-ui,-apple-system,'Segoe_UI',sans-serif]";
 
 function SlackButton({
@@ -111,7 +103,6 @@ function SlackBox({ children, tall = false }: { children: ReactNode; tall?: bool
   );
 }
 
-/** One message from the Holler app, as Slack lays it out: the avatar, the name, the time. */
 function SlackMessage({ time, children }: { time: string; children: ReactNode }) {
   return (
     <div className="flex gap-2.5">
@@ -156,7 +147,6 @@ function Context({ children }: { children: ReactNode }) {
   return <p className="text-muted text-xs">{children}</p>;
 }
 
-/** A question as a Slack form draws it: radios or checkboxes up to 10, a menu above that. */
 function FormQuestion({ q, index }: { q: PreviewQuestion; index: number }) {
   const prompt = q.prompt.trim() || `Question ${index + 1}`;
   const options = [
@@ -189,7 +179,7 @@ function FormQuestion({ q, index }: { q: PreviewQuestion; index: number }) {
     control = (
       <span className="grid gap-1.5">
         {options.map((label, i) => (
-          // biome-ignore lint/suspicious/noArrayIndexKey: a drawing of the draft, redrawn whole on every edit.
+          // oxlint-disable-next-line react/no-array-index-key -- a preview of words that can repeat, redrawn whole on every change
           <span key={`${i}-${label}`} className="flex items-center gap-2 text-ink">
             <span
               aria-hidden
@@ -236,10 +226,6 @@ function FormQuestion({ q, index }: { q: PreviewQuestion; index: number }) {
   );
 }
 
-/**
- * How a message lets them answer, the same on the invite and every reminder, as delivery's
- * `controls` builds it: the options as buttons, a text box, the chase's two buttons, or one button.
- */
 function AnswerControls({ holler, label }: { holler: PreviewHoller; label: string }) {
   const surface = answerSurface(holler);
   const only = holler.questions[0];
@@ -257,7 +243,7 @@ function AnswerControls({ holler, label }: { holler: PreviewHoller; label: strin
     return (
       <span className="flex flex-wrap gap-1.5">
         {only.options.map((o, i) => (
-          // biome-ignore lint/suspicious/noArrayIndexKey: a drawing of the draft, redrawn whole on every edit.
+          // oxlint-disable-next-line react/no-array-index-key -- a preview of words that can repeat, redrawn whole on every change
           <SlackButton key={`${i}-${o.label}`}>{o.label || "Option"}</SlackButton>
         ))}
       </span>
@@ -315,7 +301,6 @@ function AfterTap({ holler, title, time }: { holler: PreviewHoller; title: strin
   const surface = answerSurface(holler);
   const only = holler.questions[0];
   if (surface.where === "dm" && only) {
-    // The first option that brings the follow-up note, so the preview shows it when there is one.
     const pick = only.followUp?.onlyAfter?.[0] ?? 0;
     const given = only.type === "text" ? "What you wrote" : only.options[pick]?.label || "Option";
     const note =
@@ -369,7 +354,7 @@ function AfterTap({ holler, title, time }: { holler: PreviewHoller; title: strin
           )}
           <div className="grid gap-4 text-sm">
             {holler.questions.slice(0, 3).map((q, i) => (
-              // biome-ignore lint/suspicious/noArrayIndexKey: a drawing of the draft, redrawn whole on every edit.
+              // oxlint-disable-next-line react/no-array-index-key -- a preview of words that can repeat, redrawn whole on every change
               <FormQuestion key={`${i}-${q.prompt}`} q={q} index={i} />
             ))}
             {holler.questions.length > 3 && (
@@ -400,7 +385,7 @@ function AfterTap({ holler, title, time }: { holler: PreviewHoller; title: strin
           <p className="whitespace-pre-line text-ink-2">{holler.description}</p>
         )}
         {holler.questions.map((q, i) => (
-          // biome-ignore lint/suspicious/noArrayIndexKey: a drawing of the draft, redrawn whole on every edit.
+          // oxlint-disable-next-line react/no-array-index-key -- a preview of words that can repeat, redrawn whole on every change
           <FormQuestion key={`${i}-${q.prompt}`} q={q} index={i} />
         ))}
       </div>
@@ -444,18 +429,12 @@ function Reminder({
   );
 }
 
-/** The views, named for what the recipient just did. */
 function viewLabel(view: PreviewView, holler: PreviewHoller): string {
   if (view === "dm") return "The DM";
   if (view === "reminder") return "A reminder";
   return holler.mode === "chase" ? "After I submitted it" : "After a tap";
 }
 
-/**
- * What a recipient sees in Slack for this draft, opened from a Preview button: the DM, what
- * follows a tap, and a reminder. The shape follows where it is answered, as Slack delivery
- * builds it. A Dialog on a desktop, a sheet on a phone.
- */
 function SlackPreview({
   holler,
   sender,

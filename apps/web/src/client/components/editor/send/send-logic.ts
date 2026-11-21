@@ -10,14 +10,8 @@ import {
 } from "@holler/core";
 import { count, peopleLabel, questionsLabel } from "../../../lib/format";
 
-/*
- * What the Send stage says, worked out from the draft. Pure, so every line a sender reads is
- * tested: the reach, when it lands in each time zone, when it closes, and the reminder rhythm.
- */
-
 const HOUR = 60 * 60 * 1000;
 
-/** The draft fields the Send stage edits. */
 export type SendFields = Pick<
   HollerDraft,
   | "sendAt"
@@ -30,14 +24,11 @@ export type SendFields = Pick<
   | "tags"
 >;
 
-/** A line in a settings row: the fact, the words after it, and whether something is wrong. */
 export interface RowSummary {
   value: string;
   description: string;
   tone?: "warning" | "danger" | undefined;
 }
-
-// ─── Time zones ──────────────────────────────────────────────────────────────────────────────
 
 export interface WallClock {
   year: number;
@@ -57,7 +48,6 @@ export function isTimeZone(zone: string | null | undefined): zone is string {
   }
 }
 
-/** The time on the clocks in `zone` at the instant `at`. */
 export function wallClock(at: Date, zone: string): WallClock {
   const parts = new Intl.DateTimeFormat("en-GB", {
     timeZone: zone,
@@ -83,10 +73,6 @@ function asUtc(wall: WallClock): number {
   return Date.UTC(wall.year, wall.month - 1, wall.day, wall.hour, wall.minute);
 }
 
-/**
- * The instant the clocks in `zone` read `wall`. Corrected twice, so a wall time either side of a
- * daylight-saving change lands on the right hour; a time skipped by the change moves forward.
- */
 export function atWallClock(wall: WallClock, zone: string): Date {
   const target = asUtc(wall);
   let at = target;
@@ -97,17 +83,14 @@ export function atWallClock(wall: WallClock, zone: string): Date {
   return new Date(at);
 }
 
-/** How far `zone`'s clocks are ahead of UTC at `at`, in milliseconds. */
 function zoneOffset(at: Date, zone: string): number {
   return asUtc(wallClock(at, zone)) - Math.floor(at.getTime() / 60_000) * 60_000;
 }
 
-/** "Europe/Lisbon" → "Lisbon", "America/Argentina/Buenos_Aires" → "Buenos Aires". */
 export function zoneName(zone: string): string {
   return (zone.split("/").pop() ?? zone).replaceAll("_", " ");
 }
 
-/** How many of the chosen people are in each time zone. Null is a person with none in Slack. */
 export interface ZoneCount {
   zone: string | null;
   people: number;
@@ -116,22 +99,12 @@ export interface ZoneCount {
 export interface Landing {
   zone: string;
   people: number;
-  /** The instant it reaches them. */
   at: Date;
-  /** The sender's own zone. */
   yours: boolean;
-  /** Your time: it lands before 09:00 or after 18:00 on their clock. */
   outsideWorkday: boolean;
-  /** Each person's time: their moment has passed, so it reaches them as soon as it sends. */
   passed: boolean;
 }
 
-/**
- * When a scheduled Holler reaches each time zone. In your time everyone gets it at once; in each
- * person's time `sendAt` is read as a wall-clock time on the sender's clock, and each zone gets it
- * at that time on theirs. A person with no time zone in Slack counts as UTC, as delivery does.
- * Earliest first.
- */
 export function landingTimes({
   sendAt,
   inRecipientTimeZone,
@@ -150,33 +123,27 @@ export function landingTimes({
     const key = isTimeZone(zone) ? zone : "UTC";
     merged.set(key, (merged.get(key) ?? 0) + people);
   }
-  return (
-    [...merged.entries()]
-      .map(([zone, people]) => {
-        // The same conversion delivery makes, so the preview and the send agree.
-        const at = inRecipientTimeZone ? sameWallClockIn(sendAt, senderZone, zone) : sendAt;
-        const hour = wallClock(at, zone).hour;
-        return {
-          zone,
-          people,
-          at,
-          yours: zone === senderZone,
-          outsideWorkday:
-            !inRecipientTimeZone && (hour < workdayStartHour || hour >= workdayEndHour),
-          passed: inRecipientTimeZone && at.getTime() <= now.getTime(),
-        };
-      })
-      // Earliest first; at one moment, west to east, so the local times read in clock order.
-      .sort(
-        (a, b) =>
-          a.at.getTime() - b.at.getTime() ||
-          zoneOffset(a.at, a.zone) - zoneOffset(b.at, b.zone) ||
-          a.zone.localeCompare(b.zone),
-      )
-  );
+  return [...merged.entries()]
+    .map(([zone, people]) => {
+      const at = inRecipientTimeZone ? sameWallClockIn(sendAt, senderZone, zone) : sendAt;
+      const hour = wallClock(at, zone).hour;
+      return {
+        zone,
+        people,
+        at,
+        yours: zone === senderZone,
+        outsideWorkday: !inRecipientTimeZone && (hour < workdayStartHour || hour >= workdayEndHour),
+        passed: inRecipientTimeZone && at.getTime() <= now.getTime(),
+      };
+    })
+    .sort(
+      (a, b) =>
+        a.at.getTime() - b.at.getTime() ||
+        zoneOffset(a.at, a.zone) - zoneOffset(b.at, b.zone) ||
+        a.zone.localeCompare(b.zone),
+    );
 }
 
-/** The first and last moment a send reaches someone. Sending now, both are now. */
 export function sendWindow({
   sendAt,
   inRecipientTimeZone,
@@ -197,14 +164,11 @@ export function sendWindow({
   return { first: new Date(Math.min(...times)), last: new Date(Math.max(...times)) };
 }
 
-// ─── Words for dates ─────────────────────────────────────────────────────────────────────────
-
 export interface FormatOptions {
   locale?: string | undefined;
   timeZone?: string | undefined;
 }
 
-/** "Mon 24 Nov, 17:00". */
 export function dayTime(at: Date, { locale, timeZone }: FormatOptions = {}): string {
   return new Intl.DateTimeFormat(locale, {
     weekday: "short",
@@ -217,7 +181,6 @@ export function dayTime(at: Date, { locale, timeZone }: FormatOptions = {}): str
   }).format(at);
 }
 
-/** "17:00". */
 export function clockTime(at: Date, { locale, timeZone }: FormatOptions = {}): string {
   return new Intl.DateTimeFormat(locale, {
     hour: "2-digit",
@@ -227,21 +190,16 @@ export function clockTime(at: Date, { locale, timeZone }: FormatOptions = {}): s
   }).format(at);
 }
 
-/** "Mon". */
 export function weekday(at: Date, { locale, timeZone }: FormatOptions = {}): string {
   return new Intl.DateTimeFormat(locale, { weekday: "short", timeZone }).format(at);
 }
 
-// ─── Closing ─────────────────────────────────────────────────────────────────────────────────
-
-/** The close times the row offers. Any other `closeAfterHours`, from the API, still reads well. */
 export const closePresets = [
   { hours: 24, label: "1 day" },
   { hours: 72, label: "3 days" },
   { hours: 168, label: "1 week" },
 ] as const;
 
-/** "1 day", "3 days", "1 week", "2 weeks", "12 hours". */
 export function durationLabel(hours: number): string {
   if (hours % 168 === 0) {
     const weeks = hours / 168;
@@ -254,15 +212,12 @@ export function durationLabel(hours: number): string {
   return hours === 1 ? "1 hour" : `${count(hours)} hours`;
 }
 
-/** When it closes: the fixed time, or `closeAfterHours` after the last person gets it. */
 export function closeTime(
   fields: Pick<SendFields, "closesAt" | "closeAfterHours">,
   window: { last: Date },
 ): Date {
   return fields.closesAt ?? new Date(window.last.getTime() + fields.closeAfterHours * HOUR);
 }
-
-// ─── Row summaries ───────────────────────────────────────────────────────────────────────────
 
 interface SummaryContext {
   now: Date;
@@ -356,10 +311,6 @@ export function answersSummary(anonymous: boolean): RowSummary {
     : { value: "Named", description: "you see who said what" };
 }
 
-/**
- * Said under Answers when an anonymous Holler reaches fewer people than it needs before its
- * results open. Nothing when nobody is chosen yet: the audience says so itself.
- */
 export function anonymousWarning(anonymous: boolean, reach: Reach): string | null {
   if (
     !anonymous ||
@@ -376,11 +327,6 @@ export function anonymousWarning(anonymous: boolean, reach: Reach): string | nul
   return `Results open at ${anonymousThreshold} answers, and only ${count(reach.count)} people get this. Add people or make it named.`;
 }
 
-/**
- * The reminders that fit before it closes. A reminder never lands in the last two hours, so a
- * Holler open for a day gets none. Working hours can move one a little later; this counts the
- * rhythm, which is what the sender chooses.
- */
 export function remindersBeforeClose(openHours: number): number {
   return reminderTiers.filter((tier) => tier.afterHours <= openHours - quietBeforeCloseHours)
     .length;
@@ -403,7 +349,6 @@ export function remindersSummary(enabled: boolean, openHours: number): RowSummar
   }
 }
 
-/** How long it stays open, in hours, for the reminder rhythm. */
 export function openHours(
   fields: Pick<SendFields, "sendAt" | "sendInRecipientTimeZone" | "closesAt" | "closeAfterHours">,
   context: SummaryContext,
@@ -418,15 +363,10 @@ export function openHours(
   return (closeTime(fields, window).getTime() - window.first.getTime()) / HOUR;
 }
 
-// ─── Reach ───────────────────────────────────────────────────────────────────────────────────
-
-/** About how many people an audience reaches. */
 export interface Reach {
   count: number;
-  /** False when groups may overlap or a size is unknown, so the count is a ceiling. */
   exact: boolean;
   everyone: boolean;
-  /** True when a chosen group's size is not known, so the count says nothing about the reach. */
   unknown: boolean;
 }
 
@@ -453,7 +393,6 @@ export function audienceReach(
   };
 }
 
-/** "14 people", "About 40 people"; everyone reads as the workspace's size when it is known. */
 export function reachLabel(reach: Reach): string {
   if (reach.everyone) return reach.exact ? peopleLabel(reach.count) : "Everyone in the workspace";
   if (reach.unknown) return "Size not known yet";
@@ -464,17 +403,12 @@ export function reachLabel(reach: Reach): string {
   return peopleLabel(reach.count);
 }
 
-/**
- * Sending to everyone or to more than 50 people asks once more. DECISIONS.md, Sending. A group of
- * unknown size could be any size, so it asks too.
- */
 export const bigSendAbove = 50;
 
 export function isBigSend(reach: Reach): boolean {
   return reach.everyone || reach.unknown || reach.count > bigSendAbove;
 }
 
-/** The plum button names the reach: "Send to 14 people", "Schedule for everyone". */
 export function sendActionLabel(reach: Reach, scheduled: boolean): string {
   if (reach.everyone) return scheduled ? "Schedule for everyone" : "Send to everyone";
   if (reach.count === 0 || reach.unknown) return scheduled ? "Schedule" : "Send";
@@ -482,8 +416,6 @@ export function sendActionLabel(reach: Reach, scheduled: boolean): string {
   const n = count(reach.count);
   return scheduled ? `Schedule for ${n} people` : `Send to ${n} people`;
 }
-
-// ─── The bar ─────────────────────────────────────────────────────────────────────────────────
 
 export function answeredInLabel(surface: AnswerSurface): string {
   switch (surface.where) {
@@ -498,7 +430,6 @@ export function answeredInLabel(surface: AnswerSurface): string {
   }
 }
 
-/** Why a Holler goes to the web page, in a sentence the sender can act on. */
 export function webReason(surface: AnswerSurface): string | null {
   if (surface.where !== "web") return null;
   if (surface.why === "too_long") return "It has more than a Slack form can hold.";
@@ -509,7 +440,6 @@ export function webReason(surface: AnswerSurface): string | null {
   return `Question ${count(n)} has more options than a Slack form can show.`;
 }
 
-/** The bar on Compose: where it is answered and how many questions, or the one thing to fix. */
 export function composeBarSummary(
   surface: AnswerSurface,
   questionCount: number,
@@ -523,7 +453,6 @@ export function composeBarSummary(
   };
 }
 
-/** The bar on Send: "14 people, now" over "Closes Mon 24 Nov, 17:00". */
 export function sendBarSummary(
   reach: Reach,
   fields: Pick<SendFields, "sendAt" | "sendInRecipientTimeZone" | "closesAt" | "closeAfterHours">,

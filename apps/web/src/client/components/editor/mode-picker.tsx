@@ -14,14 +14,9 @@ import { cn } from "@/lib/cn";
 interface Props extends Omit<ComponentProps<"button">, "onChange"> {
   mode: Mode;
   onChange: (mode: Mode) => void;
-  /** How many questions the draft has, so a pulse is offered only when they fit. */
   questionCount: number;
 }
 
-/**
- * The mode, named in the page's title: "New survey", where "survey" opens the three modes with
- * a line on each. It stays changeable until the Holler is sent.
- */
 function ModePicker({ mode, onChange, questionCount, className, ...props }: Props) {
   const Icon = modeIcons[mode];
   return (

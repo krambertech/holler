@@ -23,7 +23,6 @@ import type { Group } from "./types";
 
 const noop = () => {};
 
-/** A server that saves into memory, so the editor on this page saves, flags and refuses like the real one. */
 function fakeIo(): EditorIo {
   let n = 0;
   const id = `hol_design${String(++n).padStart(6, "0")}`;

@@ -6,24 +6,16 @@ export type SaveState = "idle" | "saving" | "saved" | "error";
 
 interface Options {
   draft: EditorDraft;
-  /** Null until the first save makes the draft. */
   id: string | null;
-  /** False while the Holler is scheduled: its edits wait for Update schedule. */
   enabled: boolean;
   save: (payload: HollerDraftInput, id: string | null) => Promise<HollerOut>;
   onSaved: (saved: HollerOut, sent: EditorDraft) => void;
-  /** The last save, read when the tab closes. */
   beacon?: ((payload: HollerDraftInput, id: string) => void) | undefined;
 }
 
 const WAIT_MS = 700;
 const RETRY_MS = 4000;
 
-/**
- * Saves the draft as the sender types: a moment after the last change, one save at a time, and
- * once more when the tab is hidden. An untouched new Holler makes no draft. A failed save tries
- * again on its own and says so.
- */
 export function useAutosave({ draft, id, enabled, save, onSaved, beacon }: Options) {
   const json = JSON.stringify(toPayload(draft));
   const [state, setState] = useState<SaveState>(id ? "saved" : "idle");
@@ -46,7 +38,6 @@ export function useAutosave({ draft, id, enabled, save, onSaved, beacon }: Optio
       try {
         const out = await doSave(toPayload(sent), currentId);
         savedJson.current = sentJson;
-        // Gone already: the save still lands, but the page it would update is not there.
         if (!mounted.current) return out;
         latest.current.onSaved(out, sent);
         setState(latest.current.json === sentJson ? "saved" : "saving");
@@ -65,7 +56,6 @@ export function useAutosave({ draft, id, enabled, save, onSaved, beacon }: Optio
   }, []);
 
   const dirty = json !== savedJson.current;
-  // Every change restarts the wait, so a save goes a moment after the typing stops.
   useEffect(() => {
     if (!enabled || json === savedJson.current) return;
     const wait = state === "error" ? RETRY_MS : WAIT_MS;
@@ -75,7 +65,6 @@ export function useAutosave({ draft, id, enabled, save, onSaved, beacon }: Optio
     return () => clearTimeout(timer);
   }, [enabled, json, state, run]);
 
-  // Closing the tab mid-edit: one last save that does not wait for an answer.
   useEffect(() => {
     if (!enabled) return;
     const flush = () => {
@@ -88,15 +77,11 @@ export function useAutosave({ draft, id, enabled, save, onSaved, beacon }: Optio
     return () => document.removeEventListener("visibilitychange", flush);
   }, [enabled]);
 
-  // Leaving the editor inside the wait, by a link in the app: save what is left on the way out.
-  // A client-side navigation keeps the page visible, so the visibility save above never fires.
   useEffect(() => {
     mounted.current = true;
     return () => {
       mounted.current = false;
-      // A scheduled Holler's edits wait for Update schedule, so leaving drops them on purpose.
       if (!latest.current.enabled) return;
-      // React's development double mount runs this and mounts again at once: that is no leaving.
       queueMicrotask(() => {
         if (mounted.current) return;
         leave();
@@ -122,7 +107,6 @@ export function useAutosave({ draft, id, enabled, save, onSaved, beacon }: Optio
     }
   }, []);
 
-  /** Saves now, whatever the wait, and resolves with the saved Holler or null if nothing changed. */
   const flush = useCallback(() => run(), [run]);
 
   return { state: dirty && state === "saved" ? ("saving" as const) : state, dirty, flush };

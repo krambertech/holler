@@ -22,7 +22,6 @@ import {
 
 const locale = "en-GB";
 const senderZone = "Europe/Berlin";
-// Friday 21 November 2025, 10:00 in Berlin.
 const now = new Date("2025-11-21T09:00:00Z");
 const ctx = { now, senderZone, zones: [], locale };
 
@@ -48,7 +47,6 @@ describe("time zones", () => {
   });
 
   it("lands on the right hour either side of a daylight-saving change", () => {
-    // Berlin moves to summer time on 30 March 2025 at 02:00.
     const before = { year: 2025, month: 3, day: 29, hour: 9, minute: 0 };
     const after = { year: 2025, month: 3, day: 31, hour: 9, minute: 0 };
     expect(atWallClock(before, senderZone).toISOString()).toBe("2025-03-29T08:00:00.000Z");
@@ -62,7 +60,7 @@ describe("time zones", () => {
 });
 
 describe("landingTimes", () => {
-  const sendAt = new Date("2025-11-24T08:00:00Z"); // Monday 09:00 in Berlin.
+  const sendAt = new Date("2025-11-24T08:00:00Z");
   const zones = [
     { zone: "America/New_York", people: 3 },
     { zone: "Europe/Berlin", people: 8 },
@@ -74,13 +72,10 @@ describe("landingTimes", () => {
     const rows = landingTimes({ sendAt, inRecipientTimeZone: false, senderZone, zones, now });
     expect(rows.every((r) => r.at.getTime() === sendAt.getTime())).toBe(true);
     const byZone = Object.fromEntries(rows.map((r) => [r.zone, r]));
-    // 03:00 in New York, 17:00 in Tokyo, 09:00 in Berlin.
     expect(byZone["America/New_York"]?.outsideWorkday).toBe(true);
     expect(byZone["Asia/Tokyo"]?.outsideWorkday).toBe(false);
-    // The person with no zone counts as UTC, as delivery does.
     expect(byZone["Europe/Berlin"]).toMatchObject({ people: 8, yours: true });
     expect(byZone.UTC).toMatchObject({ people: 1, yours: false });
-    // At one moment, west to east, so the local times read in clock order.
     expect(rows.map((r) => r.zone)).toEqual([
       "America/New_York",
       "UTC",
@@ -94,7 +89,6 @@ describe("landingTimes", () => {
     expect(rows.map((r) => [r.zone, r.at.toISOString()])).toEqual([
       ["Asia/Tokyo", "2025-11-24T00:00:00.000Z"],
       ["Europe/Berlin", "2025-11-24T08:00:00.000Z"],
-      // No zone in Slack: 09:00 UTC, the instant delivery's sameWallClockIn picks.
       ["UTC", "2025-11-24T09:00:00.000Z"],
       ["America/New_York", "2025-11-24T14:00:00.000Z"],
     ]);
@@ -102,7 +96,7 @@ describe("landingTimes", () => {
   });
 
   it("marks a zone whose moment has passed", () => {
-    const soon = new Date("2025-11-21T09:30:00Z"); // 10:30 today in Berlin.
+    const soon = new Date("2025-11-21T09:30:00Z");
     const rows = landingTimes({ sendAt: soon, inRecipientTimeZone: true, senderZone, zones, now });
     expect(rows.find((r) => r.zone === "Asia/Tokyo")?.passed).toBe(true);
     expect(rows.find((r) => r.zone === "America/New_York")?.passed).toBe(false);
@@ -243,7 +237,6 @@ describe("reach", () => {
       200,
     );
     expect(groups).toEqual({ count: 14, exact: false, everyone: false, unknown: false });
-    // A channel Holler has no size for yet: the count says nothing, so it asks before sending.
     const unsized = audienceReach(
       { people: ["U1"], groups: ["C_GENERAL"], everyone: false },
       sizeOf,
@@ -265,7 +258,6 @@ describe("reach", () => {
 
   it("asks once more before everyone or more than 50 people", () => {
     expect(isBigSend({ count: 50, exact: true, everyone: false, unknown: false })).toBe(false);
-    // A group of unknown size could be any size, so it asks.
     expect(isBigSend({ count: 2, exact: false, everyone: false, unknown: true })).toBe(true);
     expect(isBigSend({ count: 51, exact: false, everyone: false, unknown: false })).toBe(true);
     expect(isBigSend({ count: 3, exact: true, everyone: true, unknown: false })).toBe(true);

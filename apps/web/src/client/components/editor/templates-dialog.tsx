@@ -25,9 +25,7 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onUse: (template: HollerTemplate) => void;
-  /** The template to show first, such as the one picked on the start screen. */
   initial?: string | undefined;
-  /** The words on the plum button. */
   useLabel?: string | undefined;
 }
 
@@ -54,7 +52,6 @@ function answersLine(q: QuestionInput): string | null {
   return null;
 }
 
-/** One template's questions, as the sender will start with them. */
 function TemplatePreview({ template }: { template: HollerTemplate }) {
   const Icon = modeIcons[template.mode];
   return (
@@ -77,11 +74,8 @@ function TemplatePreview({ template }: { template: HollerTemplate }) {
       ) : (
         <ol className="flex flex-col gap-2">
           {template.questions.map((q, index) => (
-            <li
-              // biome-ignore lint/suspicious/noArrayIndexKey: a template's questions never move.
-              key={index}
-              className="flex gap-3 rounded-control bg-plate px-3.5 py-3 edge"
-            >
+            // oxlint-disable-next-line react/no-array-index-key -- a template is fixed, never reordered
+            <li key={index} className="flex gap-3 rounded-control bg-plate px-3.5 py-3 edge">
               <span className="mt-0.5 text-muted text-sm tabular">{index + 1}</span>
               <span className="flex min-w-0 flex-col gap-0.5">
                 <span className="text-muted text-sm">{questionLine(q)}</span>
@@ -99,10 +93,6 @@ function TemplatePreview({ template }: { template: HollerTemplate }) {
   );
 }
 
-/**
- * Every template, grouped by what it is for, with the chosen one's questions beside the list.
- * Picking one fills the editor; from then on it is an ordinary draft.
- */
 function TemplatesDialog({
   open,
   onOpenChange,

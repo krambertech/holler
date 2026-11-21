@@ -72,7 +72,9 @@ Sending is the moment a Holler counts against the monthly limit (`hollers.sent_a
 
 **Mode.** The mode may change while a Holler is a draft or scheduled. A chase has no questions, so saving a draft as a chase deletes its questions.
 
-**Case folding.** SQLite's `lower()` folds ASCII only, so Дієслова and дієслова would differ. Text that is searched is stored folded with `toLocaleLowerCase()` in a `search_*` column. Oxlint (`holler/no-sql-lower`) refuses `lower(` in server SQL.
+**Case folding.** SQLite's `lower()` folds ASCII only, so Дієслова and дієслова would differ. Text that is searched is stored folded with `toLocaleLowerCase()` in a `search_*` column. Oxlint (`holler/no-sql-lower`) refuses `lower(` in server SQL. `foldText` in `packages/core/src/search.ts` also takes accents off: NFKD splits é into e and its accent and full-width letters into plain ones, the `PLAIN` map spells the letters NFKD leaves whole (ß, æ, ø, ł and the like), and NFC puts Hangul syllables and kana with their voicing marks back together so Korean and Japanese still match.
+
+**Directory search ranks twice.** SQL cannot fold, so `searchDirectory` in `services/directory.ts` reads up to `CANDIDATES` rows of each kind in a coarse SQL order, and `rankMatches` in `packages/core/src/search.ts` ranks them exactly before the list is cut. The picker ranks with the same function, so the server and the client agree. `lookupDirectory` returns deleted people too, so a chip can still say who it was. `resolveDirectory` sends `CHUNK` terms per D1 batch, two statements each.
 
 **D1 binds at most 100 values in one statement.** Insert rows one per statement inside a batch, never a multi-row `values([...])` that can grow with input. `runBatch` in `apps/web/src/server/batch.ts` takes a list.
 

@@ -14,10 +14,8 @@ test("a lead types who to send to, adds by keyboard, and takes one out with Back
   const status = page.locator('[data-slot="audience-picker"] [role="status"].sr-only');
   await field.click();
 
-  // Typing lists matches at once, accents or not; Enter adds the first.
   await field.pressSequentially("tomas");
   await expect(page.getByRole("option", { name: /Tomás Ruiz/ })).toBeVisible();
-  // Axe reads colours mid-fade as low contrast, so it waits for the list to settle.
   await page
     .locator('[data-slot="audience-results"]')
     .evaluate((list) => Promise.all(list.getAnimations({ subtree: true }).map((a) => a.finished)));
@@ -28,7 +26,6 @@ test("a lead types who to send to, adds by keyboard, and takes one out with Back
   await expect(field).toHaveValue("");
   await expect(status).toHaveText("Added Tomás Ruiz. 1 person.");
 
-  // A group by its handle, added with Tab.
   await field.pressSequentially("@des");
   await expect(page.getByRole("option", { name: /@design/ })).toBeVisible();
   await page.keyboard.press("Tab");
@@ -36,22 +33,18 @@ test("a lead types who to send to, adds by keyboard, and takes one out with Back
   await expect(field).toBeFocused();
   await expect(page.locator('[data-slot="audience-reach"]')).toHaveText("About 7 people");
 
-  // Backspace on the empty field reaches the last chip; a second one removes it.
   await page.keyboard.press("Backspace");
   await expect(page.getByRole("button", { name: "Remove Tomás Ruiz" })).toBeFocused();
   await expect(chips).toHaveCount(2);
-  // Before the Undo toast: Base UI hides its close button from screen readers until the toasts expand.
   await expectAccessible(page);
   await page.keyboard.press("Backspace");
   await expect(chips).toHaveText([/@design/]);
   await expect(field).toBeFocused();
   await expect(status).toHaveText("Removed Tomás Ruiz. About 6 people.");
 
-  // Undo brings it back.
   await page.getByRole("button", { name: "Undo" }).click();
   await expect(chips).toHaveText([/@design/, /Tomás Ruiz/]);
 
-  // Escape closes the list and never clears who is chosen, however often it is pressed.
   await field.click();
   await field.pressSequentially("ka");
   await expect(page.getByRole("listbox", { name: "Matches" })).toBeVisible();

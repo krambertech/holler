@@ -86,7 +86,6 @@ export const hollerQuery = (id: string) =>
     queryFn: () => api<HollerOut>(`/hollers/${id}`),
   });
 
-/** The people and groups a saved audience names, so its chips have names. */
 export const directoryLookupQuery = (ids: readonly string[]) =>
   queryOptions({
     queryKey: ["directory", "lookup", [...ids].sort().join(",")],
