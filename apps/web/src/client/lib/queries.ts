@@ -2,6 +2,8 @@ import type {
   HollerSummary,
   HomeCounts,
   InstallStatus,
+  OwnAnswer,
+  OwnHoller,
   RecipientsOut,
   Results,
   SettingsMember,
@@ -82,4 +84,15 @@ export const hollerPeopleQuery = (id: string) =>
   queryOptions({
     queryKey: ["hollers", id, "people"],
     queryFn: () => api<RecipientsOut>(`/hollers/${id}/people`),
+  });
+
+export const ownAnswersQuery = queryOptions({
+  queryKey: ["answers", "list"],
+  queryFn: () => api<{ hollers: OwnHoller[] }>("/answers").then((r) => r.hollers),
+});
+
+export const ownAnswerQuery = (id: string) =>
+  queryOptions({
+    queryKey: ["answers", id],
+    queryFn: () => api<OwnAnswer>(`/answers/${id}`),
   });
