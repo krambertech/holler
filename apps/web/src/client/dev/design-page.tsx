@@ -1,6 +1,8 @@
-import type { HollerSummary, SettingsMember } from "@holler/core";
+import type { BillingOverview, HollerSummary, SettingsMember } from "@holler/core";
 import { Download, MoreHorizontal } from "lucide-react";
 import { useState } from "react";
+import { LimitReachedMessage } from "@/components/billing/limit-reached";
+import { PlanPlate } from "@/components/billing/plan-plate";
 import { EmptyState } from "@/components/empty-state";
 import { HollerRow } from "@/components/holler-row";
 import { Logo, Mark } from "@/components/logo";
@@ -232,6 +234,35 @@ export default function DesignPage() {
               <UninstalledNotice canReinstall={false} />
             </Specimen>
 
+            <Specimen title="Limit reached, for an owner and for a sender">
+              <LimitReachedMessage overview={limitSample} />
+              <LimitReachedMessage
+                overview={{ ...limitSample, canManage: false, owners: [{ name: "Mira Lind" }] }}
+              />
+            </Specimen>
+
+            <Specimen title="Plan: Free at the limit, Team ending, and a sender's view">
+              <PlanPlate overview={{ ...limitSample, sentThisMonth: 5 }} />
+              <PlanPlate
+                overview={{
+                  ...limitSample,
+                  plan: "team",
+                  planEndsAt: "2026-12-20T10:00:00.000Z",
+                  sentThisMonth: 14,
+                  monthlyLimit: null,
+                  hasBillingAccount: true,
+                }}
+              />
+              <PlanPlate
+                overview={{
+                  ...limitSample,
+                  sentThisMonth: 2,
+                  canManage: false,
+                  owners: [{ name: "Mira Lind" }],
+                }}
+              />
+            </Specimen>
+
             <Specimen title="Chart ramp">
               <div className="flex h-8 gap-1">
                 {[1, 2, 3, 4, 5].map((n) => (
@@ -249,6 +280,17 @@ export default function DesignPage() {
     </main>
   );
 }
+
+const limitSample: BillingOverview = {
+  plan: "free",
+  planEndsAt: null,
+  sentThisMonth: 5,
+  monthlyLimit: 5,
+  resetsAt: "2026-12-01T00:00:00.000Z",
+  canManage: true,
+  hasBillingAccount: false,
+  owners: [],
+};
 
 function Specimen({ title, children }: { title: string; children: React.ReactNode }) {
   return (

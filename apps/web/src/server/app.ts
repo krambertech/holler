@@ -4,6 +4,7 @@ import { type Auth, createAuth } from "./auth";
 import { createDb, type Db } from "./db";
 import { type Bindings, devRoutesEnabled } from "./env";
 import { type Principal, principalFor } from "./principal";
+import { billingRoutes } from "./routes/billing";
 import { devRoutes } from "./routes/dev";
 import { directoryRoutes } from "./routes/directory";
 import { healthRoutes } from "./routes/health";
@@ -54,6 +55,7 @@ app.route("/api/hollers", hollerRoutes);
 app.route("/api/directory", directoryRoutes);
 app.route("/api/settings", settingsRoutes);
 app.route("/api/install", installRoutes);
+app.route("/api/billing", billingRoutes);
 app.use("/api/dev/*", async (c, next) => {
   if (!devRoutesEnabled(c.env)) return c.notFound();
   await next();

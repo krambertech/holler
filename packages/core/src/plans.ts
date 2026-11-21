@@ -1,14 +1,13 @@
 /**
  * What each plan allows. The server enforces these and the web app shows them, from this one
- * file. The Free number and the Team price are not final; DECISIONS.md, Still open.
+ * file. Neither plan limits recipients. Team's price lives in Polar ($12 a month or $120 a year
+ * per workspace); DECISIONS.md, Plans.
  */
 export const plans = {
   free: {
     label: "Free",
     /** Hollers a workspace may send in one calendar month (UTC). Drafts never count. */
-    monthlyHollers: 3,
-    /** Most recipients one Holler may go to. */
-    maxRecipients: 50,
+    monthlyHollers: 5,
     exports: true,
     api: true,
     mcp: true,
@@ -16,7 +15,6 @@ export const plans = {
   team: {
     label: "Team",
     monthlyHollers: Number.POSITIVE_INFINITY,
-    maxRecipients: 2000,
     exports: true,
     api: true,
     mcp: true,

@@ -126,6 +126,7 @@ Numbers in tables and counts use `tabular`.
 | `UninstalledNotice`               | `components/uninstalled-notice.tsx` | Top of every page while Holler is out of Slack; owners get Add to Slack again          |
 | `MemberRow`, `RoleSelect`         | `components/settings/`        | A member in Settings; owners pick Owner or Sender in a native select                          |
 | `WorkspaceIcon`                   | `components/settings/workspace-icon.tsx` | The Slack workspace's icon, or its initials on a tint tile                        |
+| `LimitReached`                    | `components/billing/limit-reached.tsx` | Beside Send when a send returns `402`: upgrade for owners, whom to ask for senders |
 
 Every interactive component has default, hover, focus, active, disabled and pending states. Loading is a skeleton in the shape of what loads, never a spinner in the middle of a page. Errors say what happened and what to do, beside the thing at fault.
 

@@ -178,3 +178,26 @@ export const installStatusSchema = z.object({
   enterprise: z.boolean(),
 });
 export type InstallStatus = z.infer<typeof installStatusSchema>;
+
+/** Settings › Billing and the limit message. Any member reads it; only owners act on it. */
+export const billingOverviewSchema = z.object({
+  plan: z.enum(["free", "team"]),
+  /** When Team ends after a cancellation, as ISO; null while it renews or on Free. */
+  planEndsAt: z.iso.datetime().nullable(),
+  sentThisMonth: z.number().int().nonnegative(),
+  /** Null on Team, which has no monthly limit. */
+  monthlyLimit: z.number().int().positive().nullable(),
+  /** When the monthly count starts again: the first of next month, UTC. */
+  resetsAt: z.iso.datetime(),
+  /** Whether the reader is an owner, who may upgrade and manage billing. */
+  canManage: z.boolean(),
+  /** Whether Polar knows this workspace, so the customer portal has something to show. */
+  hasBillingAccount: z.boolean(),
+  /** The owners other than the reader, oldest first, so a sender knows whom to ask. */
+  owners: z.array(z.object({ name: z.string() })),
+});
+export type BillingOverview = z.infer<typeof billingOverviewSchema>;
+
+/** Where to send the browser next: a Polar checkout or the customer portal. */
+export const billingRedirectSchema = z.object({ url: z.url() });
+export type BillingRedirect = z.infer<typeof billingRedirectSchema>;
