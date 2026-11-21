@@ -122,7 +122,10 @@ Numbers in tables and counts use `tabular`.
 | `Mark`, `Logo`                    | `components/logo.tsx`         | Geometry from `packages/design/src/index.ts`                                                 |
 | `HollerRow`                       | `components/holler-row.tsx`   | Four columns wide, folded on a phone; the whole row is one link                              |
 | `EmptyState`                      | `components/empty-state.tsx`  | Says what goes here and the one thing to do                                                  |
-| `AppHeader`                       | `components/app-header.tsx`   | The logo home and the member                                                                 |
+| `AppHeader`                       | `components/app-header.tsx`   | The logo home and the member, who opens Settings                                             |
+| `UninstalledNotice`               | `components/uninstalled-notice.tsx` | Top of every page while Holler is out of Slack; owners get Add to Slack again          |
+| `MemberRow`, `RoleSelect`         | `components/settings/`        | A member in Settings; owners pick Owner or Sender in a native select                          |
+| `WorkspaceIcon`                   | `components/settings/workspace-icon.tsx` | The Slack workspace's icon, or its initials on a tint tile                        |
 
 Every interactive component has default, hover, focus, active, disabled and pending states. Loading is a skeleton in the shape of what loads, never a spinner in the middle of a page. Errors say what happened and what to do, beside the thing at fault.
 

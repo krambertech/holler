@@ -11,8 +11,10 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as DesignRouteImport } from './routes/design'
+import { Route as InstallRouteImport } from './routes/install'
 import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
+import { Route as AppSettingsRouteImport } from './routes/_app/settings'
 import { Route as AppHollersIdRouteImport } from './routes/_app/hollers.$id'
 
 const AppRoute = AppRouteImport.update({
@@ -22,6 +24,11 @@ const AppRoute = AppRouteImport.update({
 const DesignRoute = DesignRouteImport.update({
   id: '/design',
   path: '/design',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InstallRoute = InstallRouteImport.update({
+  id: '/install',
+  path: '/install',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SignInRoute = SignInRouteImport.update({
@@ -34,6 +41,11 @@ const AppIndexRoute = AppIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AppRoute,
 } as any)
+const AppSettingsRoute = AppSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppHollersIdRoute = AppHollersIdRouteImport.update({
   id: '/hollers/$id',
   path: '/hollers/$id',
@@ -43,12 +55,16 @@ const AppHollersIdRoute = AppHollersIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
   '/design': typeof DesignRoute
+  '/install': typeof InstallRoute
   '/sign-in': typeof SignInRoute
+  '/settings': typeof AppSettingsRoute
   '/hollers/$id': typeof AppHollersIdRoute
 }
 export interface FileRoutesByTo {
   '/design': typeof DesignRoute
+  '/install': typeof InstallRoute
   '/sign-in': typeof SignInRoute
+  '/settings': typeof AppSettingsRoute
   '/': typeof AppIndexRoute
   '/hollers/$id': typeof AppHollersIdRoute
 }
@@ -56,20 +72,25 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_app': typeof AppRouteWithChildren
   '/design': typeof DesignRoute
+  '/install': typeof InstallRoute
   '/sign-in': typeof SignInRoute
+  '/_app/settings': typeof AppSettingsRoute
   '/_app/': typeof AppIndexRoute
   '/_app/hollers/$id': typeof AppHollersIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/design' | '/sign-in' | '/hollers/$id'
+  fullPaths:
+    '/' | '/design' | '/install' | '/sign-in' | '/settings' | '/hollers/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/design' | '/sign-in' | '/' | '/hollers/$id'
+  to: '/design' | '/install' | '/sign-in' | '/settings' | '/' | '/hollers/$id'
   id:
     | '__root__'
     | '/_app'
     | '/design'
+    | '/install'
     | '/sign-in'
+    | '/_app/settings'
     | '/_app/'
     | '/_app/hollers/$id'
   fileRoutesById: FileRoutesById
@@ -77,6 +98,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren
   DesignRoute: typeof DesignRoute
+  InstallRoute: typeof InstallRoute
   SignInRoute: typeof SignInRoute
 }
 
@@ -96,6 +118,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DesignRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/install': {
+      id: '/install'
+      path: '/install'
+      fullPath: '/install'
+      preLoaderRoute: typeof InstallRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/sign-in': {
       id: '/sign-in'
       path: '/sign-in'
@@ -110,6 +139,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppIndexRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/settings': {
+      id: '/_app/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof AppSettingsRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/hollers/$id': {
       id: '/_app/hollers/$id'
       path: '/hollers/$id'
@@ -121,11 +157,13 @@ declare module '@tanstack/react-router' {
 }
 
 interface AppRouteChildren {
+  AppSettingsRoute: typeof AppSettingsRoute
   AppIndexRoute: typeof AppIndexRoute
   AppHollersIdRoute: typeof AppHollersIdRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppSettingsRoute: AppSettingsRoute,
   AppIndexRoute: AppIndexRoute,
   AppHollersIdRoute: AppHollersIdRoute,
 }
@@ -135,6 +173,7 @@ const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
   DesignRoute: DesignRoute,
+  InstallRoute: InstallRoute,
   SignInRoute: SignInRoute,
 }
 export const routeTree = rootRouteImport

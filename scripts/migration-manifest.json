@@ -1,3 +1,4 @@
 {
-  "0000_foundations.sql": "f039501f2704a2ffd670e71e1ba7b558b46e51f2a805b1d37d0c828c4d66dc37"
+  "0000_foundations.sql": "f039501f2704a2ffd670e71e1ba7b558b46e51f2a805b1d37d0c828c4d66dc37",
+  "0001_directory_syncs.sql": "e02ec3c6dbd9a50812efad88bd79a46cff3685147409bbb445c7d86aa07e5c33"
 }

@@ -1,0 +1,64 @@
+{
+  "_metadata": { "major_version": 2, "minor_version": 1 },
+  "display_information": {
+    "name": "Holler",
+    "description": "Ask your team in Slack. Holler reminds the quiet ones and shows the results.",
+    "background_color": "#7a2a68",
+    "long_description": "Holler sends a question to each person on your team in a direct message, reminds the people who have not answered, and shows you the results. Ask a quick pulse, run a short survey, or chase a form that lives somewhere else. People answer in Slack in one tap where the question allows it and never need an account."
+  },
+  "features": {
+    "app_home": {
+      "home_tab_enabled": true,
+      "messages_tab_enabled": true,
+      "messages_tab_read_only_enabled": false
+    },
+    "bot_user": { "display_name": "Holler", "always_online": true },
+    "slash_commands": [
+      {
+        "command": "/holler",
+        "url": "https://app.holler.team/slack/commands",
+        "description": "See your hollers and who still has to answer",
+        "should_escape": false
+      }
+    ]
+  },
+  "oauth_config": {
+    "redirect_urls": [
+      "https://app.holler.team/slack/oauth/callback",
+      "https://app.holler.team/api/auth/callback/slack"
+    ],
+    "scopes": {
+      "bot": [
+        "chat:write",
+        "im:write",
+        "users:read",
+        "users:read.email",
+        "usergroups:read",
+        "channels:read",
+        "groups:read",
+        "team:read",
+        "commands"
+      ],
+      "user": ["openid", "profile", "email"]
+    }
+  },
+  "settings": {
+    "event_subscriptions": {
+      "request_url": "https://app.holler.team/slack/events",
+      "bot_events": [
+        "app_home_opened",
+        "app_uninstalled",
+        "tokens_revoked",
+        "user_change",
+        "team_join"
+      ]
+    },
+    "interactivity": {
+      "is_enabled": true,
+      "request_url": "https://app.holler.team/slack/interactions"
+    },
+    "org_deploy_enabled": false,
+    "socket_mode_enabled": false,
+    "token_rotation_enabled": false
+  }
+}

@@ -1,4 +1,12 @@
-import type { PostMessage, SlackClient, SlackUser, SlackUserGroup, SlackView } from "./client";
+import type {
+  PostMessage,
+  SlackChannel,
+  SlackClient,
+  SlackTeam,
+  SlackUser,
+  SlackUserGroup,
+  SlackView,
+} from "./client";
 
 /**
  * An in-memory Slack for tests and local development. It records every call, so a test asserts
@@ -9,11 +17,16 @@ export class FakeSlack implements SlackClient {
   readonly updated: (PostMessage & { ts: string })[] = [];
   readonly views: { triggerId: string; view: SlackView }[] = [];
   readonly homes: { userId: string; view: SlackView }[] = [];
+  revoked = false;
+  /** Slack paginates users.list; a test sets this to see Holler follow the cursor. */
+  pageSize = Number.POSITIVE_INFINITY;
   private counter = 0;
 
   constructor(
     readonly people: SlackUser[] = [],
     readonly groups: (SlackUserGroup & { members: string[] })[] = [],
+    readonly channels: SlackChannel[] = [],
+    readonly team: SlackTeam = { id: "T0FAKE", name: "Fake workspace", domain: "fake" },
   ) {}
 
   async postMessage(input: PostMessage) {
@@ -37,8 +50,13 @@ export class FakeSlack implements SlackClient {
     this.homes.push(input);
   }
 
-  async listUsers() {
-    return { members: this.people, nextCursor: "" };
+  async listUsers(cursor?: string) {
+    const start = Number(cursor ?? 0);
+    const end = start + this.pageSize;
+    return {
+      members: this.people.slice(start, end),
+      nextCursor: end < this.people.length ? String(end) : "",
+    };
   }
 
   async listUserGroups() {
@@ -51,5 +69,17 @@ export class FakeSlack implements SlackClient {
 
   async channelMembers() {
     return { members: this.people.map((p) => p.id), nextCursor: "" };
+  }
+
+  async listChannels() {
+    return { channels: this.channels, nextCursor: "" };
+  }
+
+  async teamInfo() {
+    return this.team;
+  }
+
+  async revokeToken() {
+    this.revoked = true;
   }
 }

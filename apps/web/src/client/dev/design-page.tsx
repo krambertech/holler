@@ -1,16 +1,19 @@
-import type { HollerSummary } from "@holler/core";
+import type { HollerSummary, SettingsMember } from "@holler/core";
 import { Download, MoreHorizontal } from "lucide-react";
 import { useState } from "react";
 import { EmptyState } from "@/components/empty-state";
 import { HollerRow } from "@/components/holler-row";
 import { Logo, Mark } from "@/components/logo";
 import { ModeGlyph } from "@/components/mode-glyph";
+import { MemberRow } from "@/components/settings/member-row";
+import { WorkspaceIcon } from "@/components/settings/workspace-icon";
 import { Avatar, AvatarStack } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Chip, StatusChip } from "@/components/ui/chip";
 import { Plate, PlateStrip } from "@/components/ui/plate";
 import { ProgressBar } from "@/components/ui/progress";
 import { Segmented } from "@/components/ui/segmented";
+import { UninstalledNotice } from "@/components/uninstalled-notice";
 
 /**
  * Every component in every state, in both themes side by side. Local development only: the route
@@ -58,6 +61,29 @@ const sample: HollerSummary[] = [
     closedAt: null,
     creator: { id: "mem_x", name: "Mira Kask", avatarUrl: null },
     people: [],
+  },
+];
+
+const sampleMembers: SettingsMember[] = [
+  {
+    id: "mem_sample00000001",
+    role: "owner",
+    slackUserId: "U1",
+    name: "Mira Kask",
+    displayName: null,
+    avatarUrl: null,
+    joinedAt: inHours(-24 * 30),
+    isYou: true,
+  },
+  {
+    id: "mem_sample00000002",
+    role: "sender",
+    slackUserId: "U2",
+    name: "Jun Watanabe",
+    displayName: null,
+    avatarUrl: null,
+    joinedAt: inHours(-24 * 3),
+    isYou: false,
   },
 ];
 
@@ -177,6 +203,33 @@ export default function DesignPage() {
                 body="Holler sends your question to each person in Slack, reminds the ones who have not answered, and shows you the results here."
                 action={<Button variant="primary">New holler</Button>}
               />
+            </Specimen>
+
+            <Specimen title="Settings">
+              <div className="flex items-center gap-3">
+                <WorkspaceIcon name="Northwind" src={null} />
+                <WorkspaceIcon name="Acme Labs" src={null} size={32} />
+              </div>
+              <Plate>
+                <MemberRow
+                  member={sampleMembers[0] as SettingsMember}
+                  canChangeRole
+                  onRoleChange={() => {}}
+                />
+                <MemberRow
+                  member={sampleMembers[1] as SettingsMember}
+                  canChangeRole
+                  onRoleChange={() => {}}
+                  error="A workspace needs at least one owner. Make someone else an owner first."
+                />
+                <MemberRow
+                  member={sampleMembers[1] as SettingsMember}
+                  canChangeRole={false}
+                  pending
+                />
+              </Plate>
+              <UninstalledNotice canReinstall />
+              <UninstalledNotice canReinstall={false} />
             </Specimen>
 
             <Specimen title="Chart ramp">

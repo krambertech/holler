@@ -17,6 +17,12 @@ export interface SlackClient {
     channelId: string,
     cursor?: string,
   ): Promise<{ members: string[]; nextCursor: string }>;
+  /** One page of public channels, and of private channels the bot was added to. */
+  listChannels(cursor?: string): Promise<{ channels: SlackChannel[]; nextCursor: string }>;
+  /** The workspace's name, subdomain and icon. Needs `team:read`. */
+  teamInfo(): Promise<SlackTeam>;
+  /** Revokes the token this client holds, for an install Holler refuses. */
+  revokeToken(): Promise<void>;
 }
 
 export interface PostMessage {
@@ -46,6 +52,35 @@ export interface SlackUserGroup {
   name: string;
   handle: string;
   user_count?: number;
+}
+
+export interface SlackChannel {
+  id: string;
+  name: string;
+  is_private?: boolean;
+  is_archived?: boolean;
+  num_members?: number;
+}
+
+export interface SlackTeam {
+  id: string;
+  name: string;
+  domain?: string;
+  icon?: { image_132?: string; image_default?: boolean };
+}
+
+/** What `oauth.v2.access` returns for an "Add to Slack" install. */
+export interface SlackInstallGrant {
+  appId: string;
+  botUserId: string;
+  botToken: string;
+  scopes: string;
+  teamId: string;
+  teamName: string;
+  /** Set when the workspace belongs to an Enterprise Grid organisation. */
+  enterpriseId: string | null;
+  isEnterpriseInstall: boolean;
+  installerSlackUserId: string;
 }
 
 /** A Slack API answer with `ok: false`. `retryAfter` is set when Slack rate-limited the call. */
@@ -136,5 +171,72 @@ export function createSlackClient(token: string, fetcher: Fetch = fetch): SlackC
       );
       return { members: data.members, nextCursor: data.response_metadata?.next_cursor ?? "" };
     },
+    async listChannels(cursor) {
+      const data = await call<{
+        channels: SlackChannel[];
+        response_metadata?: { next_cursor?: string };
+      }>("conversations.list", {
+        types: "public_channel,private_channel",
+        exclude_archived: true,
+        limit: 200,
+        ...(cursor ? { cursor } : {}),
+      });
+      return { channels: data.channels, nextCursor: data.response_metadata?.next_cursor ?? "" };
+    },
+    async teamInfo() {
+      const data = await call<{ team: SlackTeam }>("team.info", {});
+      return data.team;
+    },
+    async revokeToken() {
+      await call("auth.revoke", {});
+    },
+  };
+}
+
+/**
+ * Trades the code from Slack's install redirect for the bot token. This is the one Slack call made
+ * without a token, so it lives beside the client rather than on it.
+ * https://docs.slack.dev/reference/methods/oauth.v2.access
+ */
+export async function exchangeInstallCode(
+  input: { code: string; redirectUri: string; clientId: string; clientSecret: string },
+  fetcher: Fetch = fetch,
+): Promise<SlackInstallGrant> {
+  const response = await fetcher("https://slack.com/api/oauth.v2.access", {
+    method: "POST",
+    headers: { "content-type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      code: input.code,
+      redirect_uri: input.redirectUri,
+      client_id: input.clientId,
+      client_secret: input.clientSecret,
+    }),
+  });
+  const data = (await response.json()) as {
+    ok: boolean;
+    error?: string;
+    access_token?: string;
+    scope?: string;
+    bot_user_id?: string;
+    app_id?: string;
+    team?: { id: string; name: string } | null;
+    enterprise?: { id: string; name: string } | null;
+    is_enterprise_install?: boolean;
+    authed_user?: { id: string };
+  };
+  if (!data.ok) throw new SlackApiError("oauth.v2.access", data.error ?? "unknown_error");
+  if (!data.access_token || !data.bot_user_id || !data.app_id || !data.authed_user) {
+    throw new SlackApiError("oauth.v2.access", "missing_bot_token");
+  }
+  return {
+    appId: data.app_id,
+    botUserId: data.bot_user_id,
+    botToken: data.access_token,
+    scopes: data.scope ?? "",
+    teamId: data.team?.id ?? "",
+    teamName: data.team?.name ?? "",
+    enterpriseId: data.enterprise?.id ?? null,
+    isEnterpriseInstall: data.is_enterprise_install === true,
+    installerSlackUserId: data.authed_user.id,
   };
 }

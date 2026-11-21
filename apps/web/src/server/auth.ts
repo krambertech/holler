@@ -6,6 +6,7 @@ import { jwt } from "better-auth/plugins/jwt";
 import type { Db } from "./db";
 import { schema } from "./db";
 import { type Bindings, devRoutesEnabled } from "./env";
+import { linkSlackAccount } from "./services/members";
 
 /**
  * Better Auth is created per request on Workers, because D1 and KV exist only inside one.
@@ -13,7 +14,9 @@ import { type Bindings, devRoutesEnabled } from "./env";
  *
  * Members sign in with Slack and nothing else. Email and password exist only when DEV_ROUTES is
  * true, so local development and tests sign in as a persona without a Slack round trip.
- * Linking the Slack identity to a workspace and a member happens in services/members.ts.
+ * Linking the Slack identity to a workspace and a member happens in services/members.ts, from the
+ * account hooks below: they run on the first sign-in and on every later one, because Better Auth
+ * stores the fresh ID token each time.
  */
 export function createAuth(env: Bindings, db: Db) {
   return betterAuth({
@@ -52,6 +55,12 @@ export function createAuth(env: Bindings, db: Db) {
             },
           }
         : {},
+    databaseHooks: {
+      account: {
+        create: { after: (account) => linkAccount(db, account) },
+        update: { after: (account) => linkAccount(db, account) },
+      },
+    },
     session: {
       storeSessionInDatabase: true,
       cookieCache: { enabled: true, maxAge: 5 * 60 },
@@ -81,3 +90,15 @@ export function createAuth(env: Bindings, db: Db) {
 }
 
 export type Auth = ReturnType<typeof createAuth>;
+
+async function linkAccount(
+  db: Db,
+  account: { userId?: string; providerId?: string; idToken?: string | null | undefined } | null,
+) {
+  if (!account?.userId || !account.providerId) return;
+  await linkSlackAccount(
+    db,
+    { userId: account.userId, providerId: account.providerId, idToken: account.idToken },
+    new Date(),
+  );
+}

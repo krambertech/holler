@@ -1,7 +1,9 @@
 import { app } from "./app";
 import { createDb } from "./db";
 import type { Bindings } from "./env";
+import { runDirectorySyncs } from "./services/directory-sync";
 import { closeDueHollers } from "./services/lifecycle";
+import { pruneSlackDeliveries } from "./services/slack-deliveries";
 
 export type { AppEnv } from "./app";
 
@@ -16,5 +18,8 @@ export default {
     const at = new Date(controller.scheduledTime);
     const db = createDb(env.DB);
     executionCtx.waitUntil(closeDueHollers(db, at));
+    executionCtx.waitUntil(
+      Promise.all([runDirectorySyncs(env, db, at), pruneSlackDeliveries(db, at)]),
+    );
   },
 } satisfies ExportedHandler<Bindings>;

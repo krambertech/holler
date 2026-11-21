@@ -8,8 +8,12 @@ import { devRoutes } from "./routes/dev";
 import { directoryRoutes } from "./routes/directory";
 import { healthRoutes } from "./routes/health";
 import { hollerRoutes } from "./routes/hollers";
+import { installRoutes } from "./routes/install";
 import { meRoutes } from "./routes/me";
+import { settingsRoutes } from "./routes/settings";
 import { ServiceError } from "./services/context";
+import { slackEventRoutes } from "./slack/events";
+import { slackOAuthRoutes } from "./slack/oauth";
 
 export type AppEnv = {
   Bindings: Bindings;
@@ -48,11 +52,16 @@ app.route("/api/health", healthRoutes);
 app.route("/api/me", meRoutes);
 app.route("/api/hollers", hollerRoutes);
 app.route("/api/directory", directoryRoutes);
+app.route("/api/settings", settingsRoutes);
+app.route("/api/install", installRoutes);
 app.use("/api/dev/*", async (c, next) => {
   if (!devRoutesEnabled(c.env)) return c.notFound();
   await next();
 });
 app.route("/api/dev", devRoutes);
+
+app.route("/slack/oauth", slackOAuthRoutes);
+app.route("/slack/events", slackEventRoutes);
 
 app.all("/api/*", (c) =>
   c.json({ error: { code: "not_found", message: "There is no API route here." } }, 404),

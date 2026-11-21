@@ -1,6 +1,6 @@
 # Holler: decisions so far
 
-Last updated: 2026-11-20. The stack is in docs/stack.md.
+Last updated: 2026-11-21. The stack is in docs/stack.md.
 
 Holler is a public product based on Tally, the internal Buffer tool. You ask your team
 something in Slack, Holler reminds the people who have not answered, and you read the
@@ -25,6 +25,8 @@ private until it is shared from its Share menu.
 | Voice       | Plain words. "Holler" is only a noun                               |
 | Sign-in     | Sign in with Slack only. Recipients never sign in                  |
 | Billing     | Polar, as merchant of record, on the Estonian OÜ                   |
+| Plans       | Free: 5 hollers a month. Team: $12 a month or $120 a year          |
+| Access      | Open sign-in for everyone in an installed workspace                |
 | Licence     | Public source, all rights reserved                                 |
 | Node        | 24                                                                 |
 
@@ -162,6 +164,38 @@ Holler talks like a helpful colleague in Slack. The name is the only playful wor
 - Capital H for the product and in Slack. Lowercase in the wordmark.
 - No exclamation marks. No emoji in the product.
 
+## Plans: Free and Team
+
+Decided on 2026-11-21. Running Holler costs about $5 a month on Cloudflare plus roughly
+$0.02 per 1,000 recipients, so the limit only decides when a workspace has a reason to
+pay. Polar takes 4% + 40¢ per payment, which is why the yearly price exists.
+
+- **Free.** 5 hollers a month, to any number of recipients.
+- **Team.** $12 a month or $120 a year per workspace. No monthly limit.
+- **Later.** A tier for bigger companies, holding access controls and whatever else they
+  ask for. Not in the first version.
+- Rejected: tiers by workspace size, by recipients per Holler, and by people reached in a
+  month. Each priced bigger companies higher, and none was worth the complexity at $12.
+
+## Access: open sign-in, two roles
+
+Decided on 2026-11-21.
+
+- Anyone in a workspace that installed Holler can sign in and send. There is no approval
+  and no removing a member in the first version; both belong to the later tier.
+- Two roles: owner and sender. The installer is an owner. Owners can make another member
+  an owner or a sender. The last owner cannot stop being one.
+- A reinstall replaces the bot. The person who reinstalls becomes an owner only when the
+  workspace has no owner left.
+- Someone whose workspace has not installed Holler sees **Add to Slack**, with one line on
+  what to do if Slack asks for an admin's approval.
+- Enterprise Grid installs are refused for now.
+- When Slack reports an uninstall, sending pauses and every page says so. Owners see
+  **Reinstall**. Drafts and results stay.
+- The audience picker offers people, user groups, public channels, and private channels
+  Holler's bot was added to.
+- Settings is one scrolling page. Billing and API keys are sections on it.
+
 ## Still open
 
 - **Trademark.** No search is done. A US company named Holler made stickers and GIFs
@@ -173,6 +207,3 @@ Holler talks like a helpful colleague in Slack. The name is the only playful wor
 - **Teams.** Teams needs a separate bot. The suggestion was to leave it out of the first
   version. This is not decided.
 - **Copyright holder.** LICENSE names Kateryna Porshnieva. Swap in the OÜ's legal name.
-- **Price.** The gap in the market is a low price. Polly charges per sender, from $19 a
-  month. Simple Poll is about $49 a workspace. No Holler price is set. Free is 3 hollers a
-  month for now, in `packages/core/src/plans.ts`.
