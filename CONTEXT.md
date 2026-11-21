@@ -54,6 +54,8 @@ Holler asks a team something in Slack, reminds the people who have not answered,
 
 **Close time**: When a Holler closes by itself. "Closes Friday at 18:00". _Avoid_: Deadline, due date, expiry
 
+**Repeating pulse**: A pulse that goes out again every week or every fortnight, on the day and time of its first round. Each time it goes out is a **round**, its own Holler with its own results. _Avoid_: Recurring survey, series (in copy), schedule (for the rule)
+
 **Send in their time zone**: A scheduled Holler that reaches each recipient at the same local time, so Monday 09:00 is Monday 09:00 for everyone. _Avoid_: Localized send
 
 ### Answering
