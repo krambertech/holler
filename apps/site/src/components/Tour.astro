@@ -1,0 +1,513 @@
+---
+import Mark from "./Mark.astro";
+
+const tabs = [
+  { id: "answer", label: "Answers in one tap", body: "Each person gets a direct message, not a post in a busy channel. Buttons right in Slack, nothing to sign up for." },
+  { id: "remind", label: "Reminders that stop", body: "A gentle reminder, a nudge and a last one, each in the person's working hours. They stop the moment someone answers." },
+  { id: "ask", label: "Any kind of question", body: "A quick pulse, a longer survey, or a chase for a form you already use. Scales, choices, people and free text." },
+  { id: "results", label: "Results, live", body: "See answers arrive, who is still waiting, and share a read-only report. Export to CSV or Markdown." },
+] as const;
+
+const people = [
+  { name: "Ana Ruiz", place: "Lisbon", time: "10:02", status: "answered" },
+  { name: "Ben Okafor", place: "London", time: "10:02", status: "answered" },
+  { name: "Kai Tanaka", place: "Tokyo", time: "18:02", status: "snoozed" },
+  { name: "Lena Novak", place: "Kyiv", time: "12:02", status: "waiting" },
+  { name: "Dev Patel", place: "New York", time: "05:02", status: "waiting" },
+  { name: "Ella Berg", place: "Stockholm", time: "11:02", status: "answered" },
+] as const;
+
+const types = [
+  { label: "Single choice", preview: "options" },
+  { label: "Rating 1 to 5", preview: "scale" },
+  { label: "Agreement", preview: "agree" },
+  { label: "Yes or no", preview: "binary" },
+  { label: "Free text", preview: "text" },
+  { label: "Person", preview: "person" },
+] as const;
+---
+
+<section id="features" class="border-t border-divider py-20 sm:py-28" aria-labelledby="tour-title">
+  <div class="mx-auto max-w-[1160px] px-4 sm:px-8">
+    <div class="mb-12 flex max-w-[720px] flex-col gap-4">
+      <span class="text-base text-primary">How it works</span>
+      <h2 id="tour-title" class="text-6xl tracking-[-0.04em] sm:text-7xl">Small tool. Every detail handled.</h2>
+    </div>
+
+    <div class="grid gap-6 lg:grid-cols-[minmax(0,0.78fr)_minmax(0,1.22fr)]" data-tour>
+      <div class="flex flex-col gap-1">
+      <div class="flex flex-col gap-1" role="tablist" aria-label="What Holler does" aria-orientation="vertical">
+        {
+          tabs.map((tab, i) => (
+            <button
+              type="button"
+              role="tab"
+              id={`tab-${tab.id}`}
+              aria-controls={`panel-${tab.id}`}
+              aria-selected={i === 0 ? "true" : "false"}
+              tabindex={i === 0 ? 0 : -1}
+              class="tour-tab relative flex flex-col gap-1 overflow-hidden rounded-[14px] px-5 py-4 text-start"
+            >
+              <span class="text-xl">{tab.label}</span>
+              <span class="tour-body text-base text-ink-2">{tab.body}</span>
+              <span class="tour-progress absolute inset-x-5 bottom-0 h-0.5 overflow-hidden rounded-full bg-track" aria-hidden="true"><i class="block h-full bg-primary" /></span>
+            </button>
+          ))
+        }
+        </div>
+        <button type="button" class="mt-2 self-start rounded-full px-3 py-1.5 text-sm text-muted edge-2 hoverable:text-ink" data-tour-pause aria-pressed="false">Pause</button>
+      </div>
+
+      <div class="relative min-h-[520px] overflow-hidden rounded-[22px] bg-well">
+        <!-- 1. Answer in one tap -->
+        <div role="tabpanel" id="panel-answer" aria-labelledby="tab-answer" class="tour-panel" data-panel="answer">
+          <div class="grid w-full max-w-[640px] gap-4 sm:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)] sm:items-start">
+            <div class="floating flex min-h-[300px] flex-col gap-3 rounded-[14px] p-4">
+              <div class="flex items-center justify-between border-b border-divider pb-3 text-sm text-muted">
+                <span class="flex items-center gap-2 text-ink"><Mark size={20} /> Holler</span><span>Direct message</span>
+              </div>
+              <div class="flex gap-3">
+                <Mark size={36} />
+                <div class="flex min-w-0 flex-col gap-1.5">
+                  <span class="text-base"><span class="font-medium">Holler</span> <span class="text-xs text-muted">Mon 09:00</span></span>
+                  <span class="text-base">Mira sent you a Holler.</span>
+                  <span class="text-lg">How was your week?</span>
+                  <span class="text-sm text-muted">One tap. Closes Friday at 18:00.</span>
+                  <div class="mt-1 flex flex-wrap gap-1.5" data-answer-options>
+                    {["Great", "Good", "Okay", "Rough"].map((o) => (
+                      <button type="button" class="min-h-9 rounded-sm bg-plate px-3 text-sm edge-2 hoverable:text-primary" data-option={o}>{o}</button>
+                    ))}
+                  </div>
+                  <p class="text-sm text-ink-2" data-answer-thanks hidden>Thanks. Your answer is in. Anything to add? You can write a note here.</p>
+                </div>
+              </div>
+            </div>
+            <div class="floating flex flex-col gap-3 rounded-[14px] p-4">
+              <div class="flex items-center justify-between"><span class="text-base">Weekly pulse</span><span class="flex items-center gap-1.5 rounded-full bg-live px-2 py-0.5 text-xs text-live-ink"><span class="size-1.5 rounded-full bg-live-dot"></span>Live</span></div>
+              <p class="text-base tabular"><span class="text-4xl" data-answer-count>7</span> of 12 answered</p>
+              <div class="h-1.5 overflow-hidden rounded-full bg-track"><i class="block h-full rounded-full bg-primary transition-[width] duration-500" style="width:58%" data-answer-bar></i></div>
+              <div class="flex flex-wrap gap-1" data-answer-faces aria-hidden="true">
+                {Array.from({ length: 12 }, (_, i) => <span class="face" style="--face:22px" data-state={i < 7 ? "answered" : "waiting"} />)}
+              </div>
+              <p class="text-sm text-muted">Tap an answer to be the eighth.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. Reminders -->
+        <div role="tabpanel" id="panel-remind" aria-labelledby="tab-remind" class="tour-panel" data-panel="remind" hidden>
+          <div class="relative w-full max-w-[600px]">
+            <div class="floating overflow-hidden rounded-[14px]">
+              <div class="flex items-center justify-between gap-3 border-b border-divider px-4 py-3">
+                <span class="text-base">People</span>
+                <span class="text-sm text-muted tabular" data-remind-summary>Waiting on 2 people</span>
+              </div>
+              <ul class="flex flex-col">
+                {
+                  people.map((p, i) => (
+                    <li class="grid grid-cols-[28px_minmax(0,1fr)_auto] items-center gap-3 border-b border-divider px-4 py-2.5 last:border-b-0" data-person={i}>
+                      <span class="face" style="--face:24px" data-state={p.status === "answered" ? "answered" : "waiting"} aria-hidden="true" />
+                      <span class="flex min-w-0 flex-col">
+                        <span class="truncate text-base">{p.name}</span>
+                        <span class="text-xs text-muted tabular">{p.place} · {p.time}</span>
+                      </span>
+                      <span
+                        class:list={[
+                          "rounded-full px-2.5 py-0.5 text-xs whitespace-nowrap",
+                          p.status === "answered" ? "bg-answered text-answered-ink" : p.status === "snoozed" ? "bg-away text-away-ink" : "bg-waiting text-waiting-ink",
+                        ]}
+                        data-person-chip
+                      >
+                        {p.status === "answered" ? "Answered" : p.status === "snoozed" ? "Reminds at 15:00 their time" : "Next reminder Thu 10:00"}
+                      </span>
+                    </li>
+                  ))
+                }
+              </ul>
+            </div>
+            <div class="floating remind-pop mt-4 flex max-w-[380px] gap-3 rounded-[14px] p-4 sm:absolute sm:-end-4 sm:-top-10 sm:mt-0" data-remind-pop>
+              <Mark size={32} />
+              <div class="flex min-w-0 flex-col gap-1.5 text-sm">
+                <span><span class="font-medium">Holler</span> <span class="text-xs text-muted">Thu 10:00</span></span>
+                <span class="text-base">A reminder: Mira still needs your answer to <span class="text-ink">How was your week?</span></span>
+                <div class="flex flex-wrap gap-1.5"><span class="rounded-sm bg-plate px-3 py-1 edge-2">Answer now</span><span class="rounded-sm bg-plate px-3 py-1 edge-2">Remind me later</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. Any kind of question -->
+        <div role="tabpanel" id="panel-ask" aria-labelledby="tab-ask" class="tour-panel" data-panel="ask" hidden>
+          <div class="grid w-full max-w-[600px] gap-4">
+            <div class="floating flex flex-col gap-4 rounded-[14px] p-4">
+              <div class="flex items-center justify-between gap-3">
+                <span class="text-lg">New pulse</span>
+                <div class="flex rounded-control bg-track p-[3px] text-sm" aria-hidden="true">
+                  <span class="rounded-sm bg-plate px-3 py-1 edge">Pulse</span><span class="px-3 py-1 text-ink-2">Survey</span><span class="px-3 py-1 text-ink-2">Chase</span>
+                </div>
+              </div>
+              <div class="flex flex-col gap-3 rounded-md bg-canvas p-3 edge">
+                <span class="text-sm text-muted">Question 1</span>
+                <span class="text-lg" data-ask-prompt>How was your week?</span>
+                <div class="flex flex-wrap gap-1.5" data-ask-types>
+                  {types.map((t, i) => (
+                    <button type="button" class="rounded-full px-3 py-1 text-sm edge-2" aria-pressed={i === 0 ? "true" : "false"} data-type={t.preview}>{t.label}</button>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div class="floating flex gap-3 rounded-[14px] p-4">
+              <Mark size={32} />
+              <div class="flex min-w-0 flex-1 flex-col gap-2">
+                <span class="text-sm"><span class="font-medium">Holler</span> <span class="text-xs text-muted">Preview in Slack</span></span>
+                <span class="text-base" data-ask-preview-prompt>How was your week?</span>
+                <div class="flex flex-wrap gap-1.5 text-sm" data-ask-preview></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4. Results -->
+        <div role="tabpanel" id="panel-results" aria-labelledby="tab-results" class="tour-panel" data-panel="results" hidden>
+          <div class="floating flex w-full max-w-[600px] flex-col gap-4 rounded-[14px] p-5">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <div class="flex flex-col"><span class="text-xl">Sprint retro</span><span class="text-sm text-muted">Anonymous · closes Friday at 18:00</span></div>
+              <p class="text-base tabular"><span class="text-4xl" data-results-count>18</span> of 24 answered</p>
+            </div>
+            <div class="flex flex-col gap-2.5">
+              <span class="text-base">How did the sprint feel?</span>
+              {
+                [
+                  ["Calm", 7],
+                  ["Busy but fine", 8],
+                  ["Stretched", 2],
+                  ["Too much", 1],
+                ].map(([label, n]) => (
+                  <div class="grid grid-cols-[110px_minmax(0,1fr)_24px] items-center gap-3 text-sm">
+                    <span>{label}</span>
+                    <span class="h-2 overflow-hidden rounded-full bg-track"><i class="results-bar block h-full rounded-full bg-chart-2" style={`--w:${(Number(n) / 18) * 100}%`} /></span>
+                    <span class="text-end text-ink-2 tabular">{n}</span>
+                  </div>
+                ))
+              }
+            </div>
+            <div class="flex flex-col gap-2">
+              <span class="text-base">What should we change?</span>
+              <p class="rounded-md bg-canvas px-3 py-2 text-sm text-ink-2">Fewer meetings on Thursdays, they break the whole afternoon.</p>
+              <p class="rounded-md bg-canvas px-3 py-2 text-sm text-ink-2">Agree the scope before planning, not during it.</p>
+            </div>
+            <div class="flex flex-wrap items-center gap-2 border-t border-divider pt-4 text-sm">
+              <span class="rounded-control bg-plate px-3 py-1.5 font-medium edge-2">Share report</span>
+              <span class="rounded-control bg-plate px-3 py-1.5 font-medium edge-2">Export CSV</span>
+              <span class="rounded-control bg-plate px-3 py-1.5 font-medium edge-2">Export Markdown</span>
+              <span class="ms-auto text-muted">No names, ever. Opened at 5 answers.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .tour-tab {
+    transition: background-color 200ms var(--ease-out);
+  }
+  .tour-tab[aria-selected="true"] {
+    background: var(--plate);
+    box-shadow: 0 0 0 1px var(--edge);
+  }
+  .tour-tab[aria-selected="false"] .tour-body {
+    display: none;
+  }
+  .tour-tab[aria-selected="false"] {
+    color: var(--ink-2);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .tour-tab[aria-selected="false"]:hover {
+      background: var(--hover);
+    }
+  }
+  .tour-progress {
+    opacity: 0;
+  }
+  [data-tour][data-auto] .tour-tab[aria-selected="true"] .tour-progress {
+    opacity: 1;
+  }
+  .tour-progress i {
+    width: 0;
+  }
+  [data-tour][data-auto] .tour-tab[aria-selected="true"] .tour-progress i {
+    animation: tour-fill var(--tour-ms, 8000ms) linear forwards;
+  }
+  [data-tour][data-paused] .tour-tab[aria-selected="true"] .tour-progress i {
+    animation-play-state: paused;
+  }
+  @keyframes tour-fill {
+    to {
+      width: 100%;
+    }
+  }
+  .tour-panel {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 56px 20px 28px;
+    animation: tour-in 360ms var(--ease-out);
+  }
+  .tour-panel[hidden] {
+    display: none;
+  }
+  @keyframes tour-in {
+    from {
+      opacity: 0;
+      translate: 0 10px;
+    }
+  }
+  .results-bar {
+    width: 0;
+    transition: width 900ms var(--ease-out);
+  }
+  [data-panel="results"]:not([hidden]) .results-bar {
+    width: var(--w);
+  }
+  [data-ask-types] button[aria-pressed="true"] {
+    background: var(--tint);
+    color: var(--tint-ink);
+    box-shadow: none;
+  }
+  .remind-pop {
+    animation: remind-in 600ms 400ms var(--ease-out) backwards;
+  }
+  @keyframes remind-in {
+    from {
+      opacity: 0;
+      translate: 0 -10px;
+      scale: 0.96;
+    }
+  }
+  @media (max-width: 1023px) {
+    .tour-panel {
+      position: static;
+      min-height: 520px;
+    }
+  }
+</style>
+
+<script>
+  import { prefersReducedMotion } from "../scripts/faces";
+
+  const root = document.querySelector<HTMLElement>("[data-tour]");
+  if (root) {
+    const tabs = [...root.querySelectorAll<HTMLButtonElement>('[role="tab"]')];
+    const panels = [...root.querySelectorAll<HTMLElement>('[role="tabpanel"]')];
+    const pause = root.querySelector<HTMLButtonElement>("[data-tour-pause]");
+    const duration = 8000;
+    root.style.setProperty("--tour-ms", `${duration}ms`);
+    let current = 0;
+    let timer = 0;
+    let inView = false;
+    let hovered = false;
+    let stopped = prefersReducedMotion();
+
+    const show = (index: number, focus = false) => {
+      current = (index + tabs.length) % tabs.length;
+      tabs.forEach((tab, i) => {
+        tab.setAttribute("aria-selected", String(i === current));
+        tab.tabIndex = i === current ? 0 : -1;
+      });
+      panels.forEach((panel, i) => {
+        panel.hidden = i !== current;
+      });
+      if (focus) tabs[current]?.focus();
+      panels[current]?.dispatchEvent(new CustomEvent("tour:show"));
+      schedule();
+    };
+    const running = () => !stopped && inView && !hovered;
+    const schedule = () => {
+      window.clearTimeout(timer);
+      // Restart the progress bar's animation.
+      delete root.dataset.auto;
+      void root.offsetWidth;
+      if (!stopped) root.dataset.auto = "";
+      if (running()) timer = window.setTimeout(() => show(current + 1), duration);
+    };
+    const stop = () => {
+      stopped = true;
+      delete root.dataset.auto;
+      window.clearTimeout(timer);
+      if (pause) {
+        pause.textContent = "Play";
+        pause.setAttribute("aria-pressed", "true");
+      }
+    };
+
+    tabs.forEach((tab, i) => {
+      tab.addEventListener("click", () => {
+        stop();
+        show(i);
+      });
+      tab.addEventListener("keydown", (event) => {
+        const keys: Record<string, number> = { ArrowDown: 1, ArrowRight: 1, ArrowUp: -1, ArrowLeft: -1 };
+        const step = keys[event.key];
+        if (step !== undefined) {
+          event.preventDefault();
+          stop();
+          show(current + step, true);
+        } else if (event.key === "Home" || event.key === "End") {
+          event.preventDefault();
+          stop();
+          show(event.key === "Home" ? 0 : tabs.length - 1, true);
+        }
+      });
+    });
+    pause?.addEventListener("click", () => {
+      if (stopped) {
+        stopped = false;
+        pause.textContent = "Pause";
+        pause.setAttribute("aria-pressed", "false");
+        schedule();
+      } else stop();
+    });
+    root.addEventListener("pointerenter", () => {
+      hovered = true;
+      root.dataset.paused = "";
+      window.clearTimeout(timer);
+    });
+    root.addEventListener("pointerleave", () => {
+      hovered = false;
+      delete root.dataset.paused;
+      schedule();
+    });
+    new IntersectionObserver(([entry]) => {
+      inView = entry?.isIntersecting ?? false;
+      if (inView) schedule();
+      else window.clearTimeout(timer);
+    }, { threshold: 0.4 }).observe(root);
+    if (stopped && pause) {
+      pause.textContent = "Play";
+      pause.setAttribute("aria-pressed", "true");
+    }
+
+    // 1. One tap: answer as the eighth person.
+    const options = root.querySelector<HTMLElement>("[data-answer-options]");
+    const thanks = root.querySelector<HTMLElement>("[data-answer-thanks]");
+    const count = root.querySelector<HTMLElement>("[data-answer-count]");
+    const bar = root.querySelector<HTMLElement>("[data-answer-bar]");
+    const faces = [...root.querySelectorAll<HTMLElement>("[data-answer-faces] .face")];
+    const resetAnswer = () => {
+      options?.querySelectorAll("button").forEach((b) => {
+        b.disabled = false;
+        b.classList.remove("text-primary");
+      });
+      if (thanks) thanks.hidden = true;
+      if (count) count.textContent = "7";
+      if (bar) bar.style.width = "58%";
+      faces.forEach((f, i) => {
+        f.dataset.state = i < 7 ? "answered" : "waiting";
+      });
+    };
+    options?.querySelectorAll("button").forEach((button) => {
+      button.addEventListener("click", () => {
+        stop();
+        options.querySelectorAll("button").forEach((b) => {
+          b.disabled = true;
+        });
+        button.classList.add("text-primary");
+        if (thanks) thanks.hidden = false;
+        if (count) count.textContent = "8";
+        if (bar) bar.style.width = "66.7%";
+        const face = faces[7];
+        if (face) {
+          face.dataset.state = "answered";
+          face.dataset.pop = "";
+          window.setTimeout(() => delete face.dataset.pop, 320);
+        }
+      });
+    });
+    root.querySelector('[data-panel="answer"]')?.addEventListener("tour:show", resetAnswer);
+
+    // 2. Reminders: the two waiting people answer while you watch.
+    const remindPanel = root.querySelector<HTMLElement>('[data-panel="remind"]');
+    const summary = root.querySelector<HTMLElement>("[data-remind-summary]");
+    let remindTimers: number[] = [];
+    const setPerson = (i: number, answered: boolean) => {
+      const row = remindPanel?.querySelector<HTMLElement>(`[data-person="${i}"]`);
+      const face = row?.querySelector<HTMLElement>(".face");
+      const chip = row?.querySelector<HTMLElement>("[data-person-chip]");
+      if (!face || !chip) return;
+      face.dataset.state = answered ? "answered" : "waiting";
+      chip.className = `rounded-full px-2.5 py-0.5 text-xs whitespace-nowrap ${answered ? "bg-answered text-answered-ink" : "bg-waiting text-waiting-ink"}`;
+      chip.textContent = answered ? "Answered" : "Next reminder Thu 10:00";
+    };
+    remindPanel?.addEventListener("tour:show", () => {
+      for (const t of remindTimers) window.clearTimeout(t);
+      setPerson(3, false);
+      setPerson(4, false);
+      if (summary) summary.textContent = "Waiting on 2 people";
+      if (prefersReducedMotion()) return;
+      remindTimers = [
+        window.setTimeout(() => {
+          setPerson(3, true);
+          if (summary) summary.textContent = "Waiting on 1 person";
+        }, 2600),
+        window.setTimeout(() => {
+          setPerson(4, true);
+          if (summary) summary.textContent = "Waiting on Kai, who asked for later";
+        }, 4800),
+      ];
+    });
+
+    // 3. Question types: the Slack preview follows the type.
+    const typeButtons = [...root.querySelectorAll<HTMLButtonElement>("[data-ask-types] button")];
+    const prompt = root.querySelector<HTMLElement>("[data-ask-prompt]");
+    const previewPrompt = root.querySelector<HTMLElement>("[data-ask-preview-prompt]");
+    const preview = root.querySelector<HTMLElement>("[data-ask-preview]");
+    const chips = (labels: string[]) =>
+      labels.map((l) => `<span class="rounded-sm bg-plate px-3 py-1 edge-2">${l}</span>`).join("");
+    const previews: Record<string, { prompt: string; html: string }> = {
+      options: { prompt: "How was your week?", html: chips(["Great", "Good", "Okay", "Rough"]) },
+      scale: { prompt: "How clear were this sprint's goals?", html: chips(["1", "2", "3", "4", "5"]) },
+      agree: { prompt: "I have what I need to do my job well.", html: chips(["Disagree", "Somewhat", "Neutral", "Mostly", "Agree"]) },
+      binary: { prompt: "Are you coming to the offsite?", html: chips(["Yes", "No"]) },
+      text: { prompt: "What should we change next sprint?", html: `<span class="w-full rounded-sm bg-canvas px-3 py-2 text-muted edge">Write your answer</span>` },
+      person: { prompt: "Who helped you most this month?", html: chips(["Pick a person"]) },
+    };
+    const pick = (button: HTMLButtonElement) => {
+      typeButtons.forEach((b) => {
+        b.setAttribute("aria-pressed", String(b === button));
+      });
+      const p = previews[button.dataset.type ?? "options"];
+      if (!p) return;
+      if (prompt) prompt.textContent = p.prompt;
+      if (previewPrompt) previewPrompt.textContent = p.prompt;
+      if (preview) preview.innerHTML = p.html;
+    };
+    let askTimer = 0;
+    typeButtons.forEach((b) => {
+      b.addEventListener("click", () => {
+        stop();
+        window.clearInterval(askTimer);
+        pick(b);
+      });
+    });
+    root.querySelector('[data-panel="ask"]')?.addEventListener("tour:show", () => {
+      window.clearInterval(askTimer);
+      const first = typeButtons[0];
+      if (first) pick(first);
+      if (prefersReducedMotion() || stopped) return;
+      let i = 0;
+      askTimer = window.setInterval(() => {
+        i = (i + 1) % typeButtons.length;
+        const next = typeButtons[i];
+        if (next && !root.querySelector<HTMLElement>('[data-panel="ask"]')?.hidden) pick(next);
+      }, 1300);
+    });
+    const firstType = typeButtons[0];
+    if (firstType) pick(firstType);
+
+    show(0);
+  }
+</script>

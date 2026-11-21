@@ -1,0 +1,148 @@
+---
+import { plans } from "@holler/core";
+import { PRODUCT_URL } from "../urls";
+---
+
+<section class="relative overflow-hidden border-t border-divider" aria-labelledby="closer-title" data-closer>
+  <canvas class="absolute inset-0 size-full" aria-hidden="true"></canvas>
+  <div class="pointer-events-none relative z-10 mx-auto flex min-h-[560px] max-w-[760px] flex-col items-center justify-center gap-6 px-4 py-24 text-center sm:min-h-[640px]">
+    <h2 id="closer-title" class="text-6xl tracking-[-0.045em] sm:text-8xl" data-closer-title>What do you want to ask your team?</h2>
+    <p class="max-w-[40ch] text-lg text-ink-2">Add Holler to Slack and send your first question in about two minutes.</p>
+    <div class="pointer-events-auto flex flex-col items-center gap-3">
+      <a href={`${PRODUCT_URL}/sign-in`} class="inline-flex h-11 items-center rounded-control bg-primary px-5 text-base font-medium text-on-primary hoverable:bg-primary-hover">Add Holler to Slack</a>
+      <span class="text-sm text-muted">Free for {plans.free.monthlyHollers} hollers a month. No card needed.</span>
+    </div>
+  </div>
+</section>
+
+<script>
+  import { canvasScene, drawFace, easeOut, faceColours, lookAt, prefersReducedMotion, type FaceState } from "../scripts/faces";
+
+  interface Body {
+    hx: number;
+    hy: number;
+    x: number;
+    y: number;
+    vx: number;
+    vy: number;
+    size: number;
+    delay: number;
+    drop: number;
+    phase: number;
+    rotate: number;
+    state: FaceState;
+    popAt: number;
+    blinkAt: number;
+  }
+
+  const root = document.querySelector<HTMLElement>("[data-closer]");
+  const canvas = root?.querySelector("canvas");
+  const title = root?.querySelector<HTMLElement>("[data-closer-title]");
+
+  if (root && canvas && title) {
+    let bodies: Body[] = [];
+    let startedAt = -1;
+    let arrived = false;
+    let last = 0;
+    let now = 0;
+    const pointer = { x: -1e4, y: -1e4, active: false };
+
+    canvasScene(canvas, {
+      setup(w, h) {
+        const box = root.getBoundingClientRect();
+        const t = title.getBoundingClientRect();
+        // Keep the words and the button clear: faces live around them, never on them.
+        const clear = { x0: t.left - box.left - 24, x1: t.right - box.left + 24, y0: t.top - box.top - 24, y1: h * 0.82 };
+        const n = Math.round(Math.min(46, Math.max(18, (w * h) / 15000)));
+        bodies = [];
+        let tries = 0;
+        while (bodies.length < n && tries < n * 40) {
+          tries++;
+          const size = 18 + Math.random() * (w < 640 ? 14 : 26);
+          const hx = size + Math.random() * (w - size * 2);
+          const hy = size + Math.random() * (h - size * 2);
+          if (hx > clear.x0 && hx < clear.x1 && hy > clear.y0 && hy < clear.y1) continue;
+          if (bodies.some((b) => Math.hypot(b.hx - hx, b.hy - hy) < (b.size + size) * 0.9)) continue;
+          bodies.push({ hx, hy, x: hx, y: hy, vx: 0, vy: 0, size, delay: Math.random() * 900, drop: hy + size + Math.random() * 160, phase: Math.random() * Math.PI * 2, rotate: (Math.random() - 0.5) * 0.3, state: Math.random() < 0.3 ? "answered" : "waiting", popAt: -1e4, blinkAt: Math.random() * 5000 });
+        }
+      },
+      draw(ctx, raw) {
+        const reduce = !Number.isFinite(raw);
+        now = reduce ? 0 : raw;
+        if (arrived && startedAt < 0) startedAt = now;
+        const dt = Math.min(0.05, (now - last) / 1000 || 0);
+        last = now;
+        const colours = faceColours();
+        for (const b of bodies) {
+          let y = b.hy;
+          if (!reduce) {
+            // Fall in once, when the section first comes into view, then float.
+            const since = startedAt < 0 ? -1 : now - startedAt - b.delay;
+            const fall = since < 0 ? 0 : easeOut(since / 1100);
+            const bob = Math.sin(now / 1400 + b.phase) * 4;
+            y = b.hy - b.drop * (1 - fall) + bob * fall;
+            // Shy of the cursor: pushed aside, and springing back home.
+            if (pointer.active) {
+              const dx = b.x - pointer.x;
+              const dy = b.y - pointer.y;
+              const d = Math.hypot(dx, dy) || 1;
+              if (d < 110) {
+                const push = (1 - d / 110) * 900;
+                b.vx += (dx / d) * push * dt;
+                b.vy += (dy / d) * push * dt;
+              }
+            }
+            b.vx += (b.hx - b.x) * 18 * dt;
+            b.vy += (y - b.y) * 18 * dt;
+            b.vx *= 0.86;
+            b.vy *= 0.86;
+            b.x += b.vx * dt * 10;
+            b.y += b.vy * dt * 10;
+            if (since < 1100) b.y = y;
+          } else {
+            b.x = b.hx;
+            b.y = b.hy;
+          }
+          const awake = pointer.active || b.state === "answered";
+          const look = pointer.active ? lookAt(b.x, b.y, pointer.x, pointer.y, 140) : ([0, 0.5] as [number, number]);
+          const sincePop = now - b.popAt;
+          const pop = sincePop < 420 ? 1 + 0.25 * Math.sin((Math.PI * sincePop) / 420) : 1;
+          drawFace(
+            ctx,
+            { x: b.x, y: b.y, size: b.size, state: b.state === "answered" ? "answered" : awake ? "awake" : "waiting", look, rotate: b.rotate + b.vx * 0.002, scale: pop, blink: (now + b.blinkAt) % 5200 < 130 },
+            colours,
+          );
+        }
+      },
+    });
+
+    root.addEventListener("pointermove", (event) => {
+      const box = canvas.getBoundingClientRect();
+      pointer.x = event.clientX - box.left;
+      pointer.y = event.clientY - box.top;
+      pointer.active = true;
+    });
+    root.addEventListener("pointerleave", () => {
+      pointer.active = false;
+    });
+    // Tap a face and it answers.
+    root.addEventListener("click", (event) => {
+      const box = canvas.getBoundingClientRect();
+      const x = event.clientX - box.left;
+      const y = event.clientY - box.top;
+      const hit = bodies.find((b) => Math.abs(b.x - x) < b.size * 0.7 && Math.abs(b.y - y) < b.size * 0.7);
+      if (hit) {
+        hit.state = hit.state === "answered" ? "waiting" : "answered";
+        hit.popAt = now;
+      }
+    });
+    if (!prefersReducedMotion()) {
+      new IntersectionObserver(
+        ([entry]) => {
+          if (entry?.isIntersecting) arrived = true;
+        },
+        { threshold: 0.3 },
+      ).observe(root);
+    }
+  }
+</script>

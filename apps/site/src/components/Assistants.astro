@@ -1,0 +1,214 @@
+---
+import Mark from "./Mark.astro";
+import { assistantLogos } from "./logos";
+
+const scenes = [
+  { id: "create", label: "Ask it to send a poll" },
+  { id: "report", label: "Ask it for a report" },
+] as const;
+---
+
+<section id="ai" class="border-t border-divider py-20 sm:py-28" aria-labelledby="ai-title">
+  <div class="mx-auto grid max-w-[1160px] items-center gap-12 px-4 sm:px-8 lg:grid-cols-[0.8fr_1.2fr]">
+    <div class="flex flex-col gap-4">
+      <span class="text-base text-primary">Works with your AI assistant</span>
+      <h2 id="ai-title" class="text-6xl tracking-[-0.04em] sm:text-7xl">Ask Claude to ask your team.</h2>
+      <p class="max-w-[44ch] text-lg text-ink-2">
+        Holler has an MCP server. Connect it once and your assistant can send a poll, check who answered, and turn the results into a report or an artifact you can share.
+      </p>
+      <ul class="mt-2 flex flex-wrap items-center gap-2" aria-label="Works with">
+        {
+          Object.values(assistantLogos).map((logo) => (
+            <li class="flex items-center gap-2 rounded-full bg-plate py-1.5 ps-2 pe-3.5 text-sm edge">
+              <svg viewBox="0 0 24 24" class="size-4 fill-current" aria-hidden="true"><path d={logo.path} /></svg>
+              {logo.name}
+            </li>
+          ))
+        }
+        <li class="rounded-full bg-plate px-3.5 py-1.5 text-sm text-ink-2 edge">Any MCP client</li>
+      </ul>
+      <div class="mt-4 flex gap-1" role="tablist" aria-label="What you can ask" data-ai-tabs>
+        {
+          scenes.map((scene, i) => (
+            <button type="button" role="tab" aria-selected={i === 0 ? "true" : "false"} aria-controls="ai-chat" class="ai-tab min-h-11 rounded-full px-4 text-sm" data-scene={scene.id}>
+              {scene.label}
+            </button>
+          ))
+        }
+      </div>
+    </div>
+
+    <div class="rounded-[22px] bg-well p-4 sm:p-7">
+      <div id="ai-chat" class="floating flex min-h-[500px] flex-col gap-4 rounded-plate p-4 sm:p-5" role="tabpanel" aria-live="polite" data-ai-chat>
+        <div class="flex items-center gap-2 border-b border-divider pb-3 text-sm text-muted">
+          <svg viewBox="0 0 24 24" class="size-4 fill-current text-ink" aria-hidden="true"><path d={assistantLogos.claude.path} /></svg>
+          <span class="text-ink">Claude</span>
+          <span class="ms-auto flex items-center gap-1.5"><Mark size={14} /> Holler connected</span>
+        </div>
+        <p class="ai-step max-w-[85%] self-end rounded-[14px] bg-tint px-4 py-2.5 text-base text-tint-ink" data-ai-prompt></p>
+        <ul class="ai-step flex flex-col gap-1.5" data-ai-tools></ul>
+        <p class="ai-step text-base" data-ai-reply></p>
+        <div class="ai-step" data-ai-card></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<template id="ai-card-create">
+  <div class="flex gap-3 rounded-md bg-canvas p-3 edge">
+    <Mark size={28} />
+    <div class="flex min-w-0 flex-col gap-1.5 text-sm">
+      <span class="text-base">Where should the offsite be?</span>
+      <span class="text-muted">Design · 9 people · closes Friday at 18:00</span>
+      <div class="flex flex-wrap gap-1.5"><span class="rounded-sm bg-plate px-3 py-1 edge-2">Lisbon</span><span class="rounded-sm bg-plate px-3 py-1 edge-2">Porto</span></div>
+    </div>
+  </div>
+</template>
+
+<template id="ai-card-report">
+  <div class="flex flex-col gap-3 rounded-md bg-canvas p-4 edge">
+    <div class="flex items-center justify-between gap-3">
+      <span class="text-base">November pulse: summary</span>
+      <span class="rounded-full bg-plate px-2.5 py-0.5 text-xs text-muted edge">Artifact</span>
+    </div>
+    <div class="grid grid-cols-3 gap-3 text-sm">
+      <div><span class="block text-3xl tabular">41</span><span class="text-muted">of 46 answered</span></div>
+      <div><span class="block text-3xl tabular">4.1</span><span class="text-muted">average week</span></div>
+      <div><span class="block text-3xl tabular">6</span><span class="text-muted">notes on workload</span></div>
+    </div>
+    <div class="flex h-16 items-end gap-1.5" aria-hidden="true">
+      {[48, 62, 55, 70, 66, 78, 74, 82].map((h) => <span class="flex-1 rounded-t-[4px] bg-chart-2" style={`height:${h}%`} />)}
+    </div>
+    <span class="text-xs text-muted">From get_results, by week. Names left out: this Holler is anonymous.</span>
+  </div>
+</template>
+
+<style>
+  .ai-tab {
+    color: var(--ink-2);
+    box-shadow: inset 0 0 0 1px var(--edge-2);
+  }
+  .ai-tab[aria-selected="true"] {
+    background: var(--tint);
+    color: var(--tint-ink);
+    box-shadow: none;
+  }
+  .ai-step {
+    transition:
+      opacity 400ms var(--ease-out),
+      translate 400ms var(--ease-out);
+  }
+  .ai-step:not([data-shown]) {
+    opacity: 0;
+    translate: 0 6px;
+  }
+  .ai-step:empty {
+    display: none;
+  }
+</style>
+
+<script>
+  import { prefersReducedMotion } from "../scripts/faces";
+
+  interface Scene {
+    prompt: string;
+    tools: string[];
+    reply: string;
+  }
+  const scenes: Record<string, Scene> = {
+    create: {
+      prompt: "Ask the design team where they want the offsite, Lisbon or Porto. Close it Friday.",
+      tools: ["find_people", "create_holler", "send_holler"],
+      reply: "Sent to the 9 people in Design. It closes Friday at 18:00, and Holler will remind anyone who has not answered.",
+    },
+    report: {
+      prompt: "Turn this month's pulse results into a short report for the leads.",
+      tools: ["list_hollers", "get_results", "export_results"],
+      reply: "Here is the report. Most people had a good month, and workload came up in 6 of the notes.",
+    },
+  };
+
+  const chat = document.querySelector<HTMLElement>("[data-ai-chat]");
+  const tabs = [...document.querySelectorAll<HTMLButtonElement>("[data-ai-tabs] [role=tab]")];
+  const prompt = chat?.querySelector<HTMLElement>("[data-ai-prompt]");
+  const tools = chat?.querySelector<HTMLElement>("[data-ai-tools]");
+  const reply = chat?.querySelector<HTMLElement>("[data-ai-reply]");
+  const card = chat?.querySelector<HTMLElement>("[data-ai-card]");
+
+  if (chat && prompt && tools && reply && card) {
+    const reduce = prefersReducedMotion();
+    let timers: number[] = [];
+    let auto = true;
+    let current = "create";
+
+    const later = (ms: number, fn: () => void) => {
+      timers.push(window.setTimeout(fn, reduce ? 0 : ms));
+    };
+    const play = (id: string) => {
+      const scene = scenes[id];
+      if (!scene) return;
+      current = id;
+      for (const t of timers) window.clearTimeout(t);
+      timers = [];
+      tabs.forEach((tab) => {
+        tab.setAttribute("aria-selected", String(tab.dataset.scene === id));
+      });
+      for (const el of [prompt, tools, reply, card]) delete el.dataset.shown;
+      prompt.textContent = scene.prompt;
+      tools.replaceChildren(
+        ...scene.tools.map((name) => {
+          const li = document.createElement("li");
+          li.className = "flex items-center gap-2 text-sm text-muted";
+          li.innerHTML = `<span class="size-1.5 rounded-full bg-faint"></span>Used Holler <code class="rounded-xs bg-well px-1.5 py-0.5 font-mono text-xs text-ink-2"></code>`;
+          const code = li.querySelector("code");
+          if (code) code.textContent = name;
+          li.hidden = !reduce;
+          return li;
+        }),
+      );
+      reply.textContent = scene.reply;
+      const template = document.querySelector<HTMLTemplateElement>(`#ai-card-${id}`);
+      card.replaceChildren(template ? template.content.cloneNode(true) : "");
+
+      later(200, () => {
+        prompt.dataset.shown = "";
+      });
+      later(1000, () => {
+        tools.dataset.shown = "";
+      });
+      [...tools.children].forEach((li, i) => {
+        later(1100 + i * 650, () => {
+          (li as HTMLElement).hidden = false;
+        });
+      });
+      const after = 1100 + scene.tools.length * 650 + 300;
+      later(after, () => {
+        reply.dataset.shown = "";
+      });
+      later(after + 500, () => {
+        card.dataset.shown = "";
+      });
+      if (auto && !reduce) later(after + 6000, () => play(id === "create" ? "report" : "create"));
+    };
+
+    tabs.forEach((tab) => {
+      tab.addEventListener("click", () => {
+        auto = false;
+        play(tab.dataset.scene ?? "create");
+      });
+    });
+
+    let started = false;
+    new IntersectionObserver(
+      ([entry]) => {
+        if (entry?.isIntersecting && !started) {
+          started = true;
+          play(current);
+        } else if (!entry?.isIntersecting && started) {
+          auto = false;
+        }
+      },
+      { threshold: 0.4 },
+    ).observe(chat);
+  }
+</script>

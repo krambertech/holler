@@ -1,0 +1,84 @@
+---
+import { plans } from "@holler/core";
+import { PRODUCT_URL } from "../urls";
+
+/**
+ * The three plans as Kateryna set them on 2026-11-21. Scale's price and the recipient limits are
+ * not in plans.ts or DECISIONS.md yet: settle them there before this ships.
+ */
+const tiers = [
+  {
+    name: plans.free.label,
+    price: "$0",
+    yearly: "Free for good",
+    lede: "For trying Holler with your team.",
+    features: [`${plans.free.monthlyHollers} hollers a month`, "Up to 100 people per Holler", "Reminders in each person's working hours", "Results, CSV and Markdown export", "MCP server and API"],
+    cta: "Start free",
+    featured: false,
+  },
+  {
+    name: plans.team.label,
+    price: "$12",
+    yearly: "or $120 a year",
+    lede: "For teams that ask every week.",
+    features: ["Unlimited hollers", "Up to 100 people per Holler", "Pulses, surveys and chases", "Anonymous Hollers and shared reports", "Everything in Free"],
+    cta: "Get Team",
+    featured: true,
+  },
+  {
+    name: "Scale",
+    price: "$49",
+    yearly: "or $490 a year",
+    lede: "For the whole company.",
+    features: ["Unlimited people per Holler", "Permission controls: who can send to whom", "Admin view of every Holler", "Priority support", "Everything in Team"],
+    cta: "Get Scale",
+    featured: false,
+  },
+] as const;
+---
+
+<section id="pricing" class="border-t border-divider py-20 sm:py-28" aria-labelledby="pricing-title">
+  <div class="mx-auto max-w-[1160px] px-4 sm:px-8">
+    <div class="mb-12 flex max-w-[720px] flex-col gap-4">
+      <span class="text-base text-primary">Pricing</span>
+      <h2 id="pricing-title" class="text-6xl tracking-[-0.04em] sm:text-7xl">One flat price per workspace.</h2>
+      <p class="max-w-[52ch] text-lg text-ink-2">Not per seat, not per answer. Everyone in your Slack can be asked, and everyone who sends pays nothing extra.</p>
+    </div>
+    <ul class="grid gap-4 md:grid-cols-3">
+      {
+        tiers.map((tier) => (
+          <li class:list={["flex flex-col gap-6 rounded-[22px] p-6", tier.featured ? "bg-plate shadow-float edge" : "bg-well"]}>
+            <div class="flex flex-col gap-1">
+              <span class="flex items-center gap-2 text-xl">
+                {tier.name}
+                {tier.featured && <span class="rounded-full bg-tint px-2.5 py-0.5 text-xs text-tint-ink">Most teams</span>}
+              </span>
+              <span class="text-base text-ink-2">{tier.lede}</span>
+            </div>
+            <p class="flex items-baseline gap-2">
+              <span class="text-7xl tracking-[-0.04em] tabular">{tier.price}</span>
+              <span class="text-sm text-muted">a month<br />{tier.yearly}</span>
+            </p>
+            <a
+              href={`${PRODUCT_URL}/sign-in`}
+              class:list={[
+                "inline-flex h-11 items-center justify-center rounded-control px-5 text-base font-medium",
+                tier.featured ? "bg-primary text-on-primary hoverable:bg-primary-hover" : "bg-plate text-ink edge-2 hoverable:bg-hover",
+              ]}
+            >
+              {tier.cta}
+            </a>
+            <ul class="flex flex-col gap-2.5 text-base">
+              {tier.features.map((f) => (
+                <li class="flex gap-2.5">
+                  <span class="face mt-[5px] shrink-0" style="--face:14px" aria-hidden="true" />
+                  {f}
+                </li>
+              ))}
+            </ul>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+</section>
