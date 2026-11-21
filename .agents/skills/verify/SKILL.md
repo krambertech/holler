@@ -18,6 +18,7 @@ A change is verified when every feature it reaches has been driven in a running 
 | An answer reaches the results | [answer.md](features/answer.md) |
 | A holler closes at its close time | [close-time.md](features/close-time.md) |
 | Make an API key | [api-keys.md](features/api-keys.md) |
+| Make a Holler | [editor.md](features/editor.md) |
 
 ## Launch
 

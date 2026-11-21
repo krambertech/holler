@@ -6,7 +6,7 @@ colors:
   plate: "#ffffff"
   well: "#f2f0ec"
   track: "#eeebe6"
-  hover: "#7a2a680f"
+  hover: "#1a15120e"
   edge: "#2013081a"
   edge-2: "#20130824"
   edge-3: "#20130842"

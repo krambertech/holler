@@ -1,11 +1,12 @@
 import type { QuestionResult } from "@holler/core";
 import { anonymousThreshold, modeLabels } from "@holler/core";
-import { useQuery } from "@tanstack/react-query";
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { createFileRoute, Link, Navigate, useNavigate } from "@tanstack/react-router";
+import { ArrowLeft, Copy } from "lucide-react";
 import { ErrorState } from "@/components/error-state";
 import { ModeGlyph } from "@/components/mode-glyph";
 import { Skeleton } from "@/components/skeleton";
+import { Button } from "@/components/ui/button";
 import { Chip, StatusChip } from "@/components/ui/chip";
 import { Plate, PlateRow } from "@/components/ui/plate";
 import { ProgressBar } from "@/components/ui/progress";
@@ -29,6 +30,7 @@ interface Holler {
   anonymous: boolean;
   closesAt: string | null;
   tags: string[];
+  isCreator: boolean;
 }
 
 function HollerPage() {
@@ -38,6 +40,15 @@ function HollerPage() {
     queryFn: () => api<Holler>(`/hollers/${id}`),
   });
   const results = useQuery({ ...resultsQuery(id), enabled: holler.data?.status !== "draft" });
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const copy = useMutation({
+    mutationFn: () => api<{ id: string }>(`/hollers/${id}/copy`, { method: "POST" }),
+    onSuccess: (draft) => {
+      void queryClient.invalidateQueries({ queryKey: ["hollers"], refetchType: "none" });
+      void navigate({ to: "/new", search: { draft: draft.id } });
+    },
+  });
 
   if (holler.isPending) return <HollerSkeleton />;
   if (holler.isError) {
@@ -51,6 +62,10 @@ function HollerPage() {
     );
   }
   const h = holler.data;
+  // A draft, or a scheduled Holler, opens where it is written.
+  if (h.isCreator && (h.status === "draft" || h.status === "scheduled")) {
+    return <Navigate to="/new" search={{ draft: h.id }} replace />;
+  }
 
   return (
     <>
@@ -81,6 +96,10 @@ function HollerPage() {
             {h.status === "live" && h.closesAt && <span>Closes {closesLabel(h.closesAt)}</span>}
           </div>
         </div>
+        <Button size="sm" pending={copy.isPending} onClick={() => copy.mutate()}>
+          <Copy aria-hidden />
+          Copy into a new draft
+        </Button>
       </header>
 
       {results.data?.state === "gated" && (

@@ -93,6 +93,8 @@ const sizes = {
   sm: "w-[min(92vw,420px)]",
   md: "w-[min(92vw,480px)]",
   lg: "w-[min(92vw,560px)]",
+  /** Two panes side by side, such as a list and a preview of the chosen row. */
+  xl: "w-[min(92vw,800px)]",
 };
 
 interface ContentProps extends React.ComponentProps<"div"> {

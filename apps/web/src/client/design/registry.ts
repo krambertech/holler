@@ -7,6 +7,7 @@ import { actions } from "./parts/actions";
 import { apiAccess } from "./parts/api-access";
 import { billing } from "./parts/billing";
 import { choosing } from "./parts/choosing";
+import { editor } from "./parts/editor";
 import { feedback } from "./parts/feedback";
 import { forms } from "./parts/forms";
 import { labels } from "./parts/labels";
@@ -15,6 +16,8 @@ import { menus } from "./parts/menus";
 import { navigation } from "./parts/navigation";
 import { overlays } from "./parts/overlays";
 import { people } from "./parts/people";
+import { questions } from "./parts/questions";
+import { sending } from "./parts/sending";
 import { settings } from "./parts/settings";
 import { states } from "./parts/states";
 import { surfaces } from "./parts/surfaces";
@@ -64,6 +67,8 @@ export const GROUPS: Group[] = [
   actions,
   forms,
   choosing,
+  questions,
+  editor,
   menus,
   overlays,
   states,
@@ -73,6 +78,7 @@ export const GROUPS: Group[] = [
   people,
   feedback,
   navigation,
+  sending,
   settings,
   billing,
   apiAccess,

@@ -1,4 +1,6 @@
 import type {
+  directoryOutSchema,
+  HollerOut,
   HollerSummary,
   HomeCounts,
   InstallStatus,
@@ -7,6 +9,7 @@ import type {
   SettingsWorkspace,
 } from "@holler/core";
 import { queryOptions } from "@tanstack/react-query";
+import type { z } from "zod";
 import { api } from "./api";
 
 export interface Me {
@@ -76,3 +79,22 @@ export const installStatusQuery = queryOptions({
   queryKey: ["install", "status"],
   queryFn: () => api<InstallStatus>("/install/status"),
 });
+
+export const hollerQuery = (id: string) =>
+  queryOptions({
+    queryKey: ["hollers", id],
+    queryFn: () => api<HollerOut>(`/hollers/${id}`),
+  });
+
+/** The people and groups a saved audience names, so its chips have names. */
+export const directoryLookupQuery = (ids: readonly string[]) =>
+  queryOptions({
+    queryKey: ["directory", "lookup", [...ids].sort().join(",")],
+    queryFn: () =>
+      ids.length === 0
+        ? Promise.resolve({ people: [], groups: [] })
+        : api<z.infer<typeof directoryOutSchema>>(
+            `/directory/lookup?ids=${encodeURIComponent(ids.join(","))}`,
+          ),
+    staleTime: 5 * 60_000,
+  });

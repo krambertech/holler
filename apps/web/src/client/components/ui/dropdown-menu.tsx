@@ -460,6 +460,8 @@ function DropdownMenuRadioGroup({
 
 interface RadioItemProps extends RowProps {
   value: string;
+  /** Shown but not choosable; say why in the row. */
+  disabled?: boolean | undefined;
   /** False when the menu holds more to choose, such as a filter menu. */
   closeOnClick?: boolean | undefined;
 }
@@ -468,6 +470,7 @@ interface RadioItemProps extends RowProps {
 function DropdownMenuRadioItem({
   ref,
   value,
+  disabled = false,
   closeOnClick = true,
   className,
   children,
@@ -485,6 +488,7 @@ function DropdownMenuRadioItem({
         {...props}
         ref={ref as React.Ref<HTMLDivElement> | undefined}
         value={value}
+        disabled={disabled}
         closeOnClick={closeOnClick}
         className={cn(itemClassName, "ps-9", className)}
       >
@@ -498,6 +502,7 @@ function DropdownMenuRadioItem({
       type="button"
       role="menuitemradio"
       aria-checked={checked}
+      disabled={disabled}
       tabIndex={-1}
       {...mergeProps<"button">(
         {
