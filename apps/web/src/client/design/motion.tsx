@@ -26,7 +26,7 @@ export function Motion() {
       </Sub>
       <Sub
         title="Reduced motion"
-        note="styles.css cuts every animation and transition to 1 ms under prefers-reduced-motion. Components that animate with motion/react ask useReduceMotion(), which Biome enforces."
+        note="styles.css cuts every animation and transition to 1 ms under prefers-reduced-motion. Components that animate with motion/react ask useReduceMotion(), which Oxlint enforces."
       />
       <Sub title="Rules">
         <DoDont

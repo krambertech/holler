@@ -2,11 +2,10 @@ import { Tabs } from "@base-ui/react/tabs";
 import type { ComponentProps, ReactNode } from "react";
 import { cn } from "@/lib/cn";
 
-interface SegmentedProps<T extends string>
-  extends Omit<
-    ComponentProps<typeof Tabs.Root>,
-    "value" | "defaultValue" | "onValueChange" | "className"
-  > {
+interface SegmentedProps<T extends string> extends Omit<
+  ComponentProps<typeof Tabs.Root>,
+  "value" | "defaultValue" | "onValueChange" | "className"
+> {
   value?: T | undefined;
   defaultValue?: T | undefined;
   onValueChange?: ((value: T) => void) | undefined;

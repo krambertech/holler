@@ -2,7 +2,7 @@ import { useReducedMotion } from "motion/react";
 
 /**
  * Whether to skip motion: the OS setting, or the design page's switch. Use this, never motion's
- * hook directly; Biome enforces it.
+ * hook directly; Oxlint enforces it.
  */
 export function useReduceMotion(): boolean {
   const os = useReducedMotion() ?? false;

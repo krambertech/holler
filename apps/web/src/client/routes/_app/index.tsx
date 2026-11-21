@@ -66,7 +66,6 @@ function Home() {
         <InputGroup icon={<Search />}>
           <Input
             aria-label="Search hollers by title"
-            // biome-ignore lint/a11y/noAutofocus: the search field opens because the member asked for it.
             autoFocus
             defaultValue={q}
             placeholder="Search by title"

@@ -301,7 +301,7 @@ function PresetOptions({ question, number }: PresetProps) {
     <div data-slot="preset-options">
       <ul aria-label={`Options for question ${number}`} className="flex flex-wrap gap-1.5">
         {q.options.map((option, at) => (
-          // biome-ignore lint/suspicious/noArrayIndexKey: preset answers are fixed by the type
+          // oxlint-disable-next-line react/no-array-index-key -- preset answers are fixed by the type
           <li key={at} className={previewChipClassName}>
             <OptionMark shape="radio" />
             {option.label}
