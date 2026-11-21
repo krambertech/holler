@@ -68,6 +68,7 @@ Project skills live in `.agents/skills/`; `.claude/skills` links to it so every 
 | Every Slack message and view fits Block Kit's limits | `FakeSlack` refuses what Slack would; `slack/blocks/messages.test.ts` sends the largest Holler |
 | Work claimed for the queue is given back when the queue refuses it | `queueClaimed`; `services/delivery.test.ts`, "no claimed work is lost" |
 | A send, close, reminder or answer happens once when callers race | `services/delivery.test.ts`, "exactly once under concurrency" |
+| Every queued send that posts to Slack posts once, however often it arrives | `sendEffects` and `postKey` in `services/delivery.ts`; `services/delivery.test.ts`, "every send that posts, posts once" |
 | One cron step failing never stops another | `runSteps`; `cron.test.ts` |
 | Reminders land in working hours, clear of the close, in every zone | `packages/core/src/reminders.test.ts` sweep |
 | The dev seed leaves room to send on every day of a month | `services/dev-seed.test.ts` |

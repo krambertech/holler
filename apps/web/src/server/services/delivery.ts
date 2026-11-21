@@ -27,6 +27,7 @@ import { type ServiceContext, ServiceError } from "./context";
 import { getHoller, presentQuestion, sendProblems } from "./hollers";
 import { respondUrl } from "./respond-links";
 import { slackFor } from "./slack-connection";
+import { claimSlackDelivery, releaseSlackDelivery } from "./slack-deliveries";
 import { assertCanSend } from "./usage";
 
 /**
@@ -41,7 +42,14 @@ const { hollers, recipients, slackPeople, members, workspaces, questions, option
 /** One message on SLACK_SENDS. Small, so a retry reloads the current state before it posts. */
 export type SlackSend =
   | { kind: "invite"; hollerId: string; slackUserId: string }
-  | { kind: "reminder"; hollerId: string; slackUserId: string; tone: ReminderTone }
+  | {
+      kind: "reminder";
+      hollerId: string;
+      slackUserId: string;
+      tone: ReminderTone;
+      /** When it was claimed: with the person, the reminder's identity for posting once. */
+      queuedAt: string;
+    }
   | {
       kind: "answered";
       hollerId: string;
@@ -54,7 +62,44 @@ export type SlackSend =
   | { kind: "snoozed"; hollerId: string; slackUserId: string; reminder: DmRef }
   | { kind: "announce"; hollerId: string }
   | { kind: "close_notice"; hollerId: string }
-  | { kind: "send_failed"; hollerId: string; reason: string };
+  | { kind: "send_failed"; hollerId: string; reason: string; queuedAt: string };
+
+/**
+ * What each send does in Slack. A post makes a new message, so the consumer claims it in
+ * `slack_deliveries` under `postKey` before posting and a send delivered twice posts once. An
+ * edit rewrites a message to the current state, so doing it twice is harmless. A new kind of
+ * send must say which it is here.
+ */
+export const sendEffects = {
+  invite: "posts",
+  reminder: "posts",
+  announce: "posts",
+  close_notice: "posts",
+  send_failed: "posts",
+  answered: "edits",
+  closed: "edits",
+  snoozed: "edits",
+} as const satisfies Record<SlackSend["kind"], "posts" | "edits">;
+
+/** The once-only identity of a send that posts. */
+export function postKey(send: Extract<SlackSend, { kind: keyof PostingKinds }>): string {
+  switch (send.kind) {
+    case "invite":
+      return `post:invite:${send.hollerId}:${send.slackUserId}`;
+    case "reminder":
+      return `post:reminder:${send.hollerId}:${send.slackUserId}:${send.queuedAt}`;
+    case "announce":
+      return `post:announce:${send.hollerId}`;
+    case "close_notice":
+      return `post:close_notice:${send.hollerId}`;
+    case "send_failed":
+      return `post:send_failed:${send.hollerId}:${send.queuedAt}`;
+  }
+}
+
+type PostingKinds = {
+  [K in keyof typeof sendEffects as (typeof sendEffects)[K] extends "posts" ? K : never]: true;
+};
 
 /** A message in someone's DM. `also` names the one they tapped when it is not the latest. */
 export interface DmRef {
@@ -360,8 +405,8 @@ async function goLive(
   try {
     await queueClaimed(env, sends, (unqueued) => releaseInvites(ctx.db, unqueued));
   } catch (error) {
-    // The send happened; the invites it could not queue are unclaimed again, and the cron's
-    // invite pass sends them within a minute.
+    // The send happened. The invites it could not queue are unclaimed again, so the cron's
+    // invite pass sends them within a minute, and its announcement pass posts the announcement.
     console.error("invites not queued; the cron will retry", holler.id, error);
   }
 }
@@ -419,9 +464,9 @@ export async function queueCloseWork(
   now: Date,
   hollerIds?: string[],
 ): Promise<string[]> {
-  const claimed = await db
-    .update(hollers)
-    .set({ closeQueuedAt: now })
+  const candidates = await db
+    .select({ id: hollers.id })
+    .from(hollers)
     .where(
       and(
         eq(hollers.status, "closed"),
@@ -430,9 +475,17 @@ export async function queueCloseWork(
           ? inArray(hollers.id, hollerIds)
           : gte(hollers.closedAt, new Date(now.getTime() - closeCatchUpHours * HOUR)),
       ),
-    )
-    .returning({ id: hollers.id, announceTs: hollers.announceTs });
-  for (const holler of claimed) {
+    );
+  const queued: string[] = [];
+  // One claim per Holler, just before its work is queued: if the queue fails, the ones after it
+  // were never claimed and the next pass takes them.
+  for (const candidate of candidates) {
+    const [holler] = await db
+      .update(hollers)
+      .set({ closeQueuedAt: now })
+      .where(and(eq(hollers.id, candidate.id), isNull(hollers.closeQueuedAt)))
+      .returning({ id: hollers.id, announceTs: hollers.announceTs });
+    if (!holler) continue;
     const waiting = await db
       .select({ slackUserId: recipients.slackUserId })
       .from(recipients)
@@ -457,8 +510,9 @@ export async function queueCloseWork(
     await queueClaimed(env, sends, () =>
       db.update(hollers).set({ closeQueuedAt: null }).where(eq(hollers.id, holler.id)),
     );
+    queued.push(holler.id);
   }
-  return claimed.map((holler) => holler.id);
+  return queued;
 }
 
 /**
@@ -531,6 +585,7 @@ export async function remindWaiting(
     hollerId: id,
     slackUserId: row.slackUserId,
     tone: toneFor(row.remindersSent),
+    queuedAt: now.toISOString(),
   }));
   // Nothing went out, so everything goes back as it was and the creator can try again.
   await queueClaimed(env, sends, async (unqueued) => {
@@ -613,7 +668,14 @@ export async function sendDueHollers(env: Bindings, db: Db, now: Date): Promise<
           data: { code: error.code },
         }),
       ]);
-      await enqueue(env, [{ kind: "send_failed", hollerId: holler.id, reason: error.message }]);
+      await enqueue(env, [
+        {
+          kind: "send_failed",
+          hollerId: holler.id,
+          reason: error.message,
+          queuedAt: now.toISOString(),
+        },
+      ]);
     }
   }
   return sent;
@@ -641,6 +703,34 @@ export async function queueDueInvites(env: Bindings, db: Db, now: Date): Promise
     (unqueued) => releaseInvites(db, unqueued),
   );
   return claimed.length;
+}
+
+/** How long after a send the cron starts retrying an announcement that never posted. */
+const announceGraceMinutes = 2;
+
+/**
+ * The cron's pass for channel announcements that never posted, because the queue refused them
+ * or Slack failed. Queues one for each Holler sent in the last day that has a channel and no
+ * announcement yet; the consumer's post key keeps a slow first try from posting twice.
+ */
+export async function queueMissingAnnouncements(env: Bindings, db: Db, now: Date): Promise<number> {
+  const missing = await db
+    .select({ id: hollers.id })
+    .from(hollers)
+    .where(
+      and(
+        inArray(hollers.status, ["live", "closed"]),
+        isNotNull(hollers.announceChannelId),
+        isNull(hollers.announceTs),
+        lte(hollers.sentAt, new Date(now.getTime() - announceGraceMinutes * 60_000)),
+        gte(hollers.sentAt, new Date(now.getTime() - 24 * HOUR)),
+      ),
+    );
+  await enqueue(
+    env,
+    missing.map((row) => ({ kind: "announce" as const, hollerId: row.id })),
+  );
+  return missing.length;
 }
 
 /** After a response from any door: the thank-you in their DM and the announcement's count. */
@@ -746,28 +836,34 @@ export async function deliver(env: Bindings, db: Db, send: SlackSend, now: Date)
         });
         return;
       }
-      const posted = await slack.postMessage({ channel: row.announceChannelId, ...message });
+      const channel = row.announceChannelId;
+      const posted = await postOnce(db, postKey(send), now, () =>
+        slack.postMessage({ channel, ...message }),
+      );
+      if (!posted) return;
       await db
         .update(hollers)
         .set({ announceTs: posted.ts })
         .where(and(eq(hollers.id, row.id), isNull(hollers.announceTs)));
       return;
     }
-    case "close_notice":
-      await slack.postMessage({
-        channel: loaded.creatorSlackUserId,
-        ...closeNoticeMessage(
-          holler,
-          await countsFor(db, row.id),
-          `${env.PRODUCT_URL}/hollers/${row.id}`,
-        ),
-      });
+    case "close_notice": {
+      const counts = await countsFor(db, row.id);
+      await postOnce(db, postKey(send), now, () =>
+        slack.postMessage({
+          channel: loaded.creatorSlackUserId,
+          ...closeNoticeMessage(holler, counts, `${env.PRODUCT_URL}/hollers/${row.id}`),
+        }),
+      );
       return;
+    }
     case "send_failed":
-      await slack.postMessage({
-        channel: loaded.creatorSlackUserId,
-        ...sendFailedMessage(holler, send.reason, `${env.PRODUCT_URL}/hollers/${row.id}/edit`),
-      });
+      await postOnce(db, postKey(send), now, () =>
+        slack.postMessage({
+          channel: loaded.creatorSlackUserId,
+          ...sendFailedMessage(holler, send.reason, `${env.PRODUCT_URL}/hollers/${row.id}/edit`),
+        }),
+      );
       return;
   }
 }
@@ -812,7 +908,9 @@ async function postToRecipient(
     send.kind === "invite"
       ? inviteMessage(holler, reader)
       : reminderMessage(holler, send.tone, reader);
-  const posted = await postDm(slack, db, where, { channel: send.slackUserId, ...message });
+  const posted = await postOnce(db, postKey(send), now, () =>
+    postDm(slack, db, where, { channel: send.slackUserId, ...message }),
+  );
   if (!posted) return;
   const next =
     row.remindersEnabled && row.closesAt
@@ -886,6 +984,22 @@ async function showSnoozed(
       recipient.snoozedUntil,
     ),
   });
+}
+
+/**
+ * Posts once per key: claims the key in `slack_deliveries`, then posts. Null when another
+ * delivery of the same send already claimed it. When the post throws, the claim is given back so
+ * the consumer's retry can post. A permanent failure that `post` handles itself returns null and
+ * keeps the claim.
+ */
+async function postOnce<T>(db: Db, key: string, now: Date, post: () => Promise<T | null>) {
+  if (!(await claimSlackDelivery(db, key, now))) return null;
+  try {
+    return await post();
+  } catch (error) {
+    await releaseSlackDelivery(db, key);
+    throw error;
+  }
 }
 
 /** Posts a DM. A permanent failure is stored on the recipient, which stops their reminders. */

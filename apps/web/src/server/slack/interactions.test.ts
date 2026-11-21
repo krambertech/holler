@@ -333,6 +333,13 @@ describe("/slack/interactions", () => {
         where: (row, { eq }) => eq(row.responseId, response?.id ?? ""),
       });
       expect(notes.map((n) => [n.kind, n.text])).toEqual([["note", "Cheap flights"]]);
+      const noted = await db.query.activity.findMany({
+        where: (row, { eq }) => eq(row.action, "response.noted"),
+      });
+      // Activity says a note was added, never whose or what it says.
+      expect(noted).toEqual([
+        expect.objectContaining({ via: "slack", memberId: null, data: null }),
+      ]);
       // The DM drops the box once the note is in.
       expect(JSON.stringify(slack.updated.at(-1)?.blocks)).not.toContain("note:");
     });

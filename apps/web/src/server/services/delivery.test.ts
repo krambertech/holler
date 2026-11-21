@@ -12,9 +12,13 @@ import {
   closeHoller,
   deliver,
   queueAfterResponse,
+  queueCloseWork,
   queueDueInvites,
+  queueMissingAnnouncements,
   remindWaiting,
+  type SlackSend,
   sendDueHollers,
+  sendEffects,
   sendHoller,
   toneFor,
 } from "./delivery";
@@ -321,7 +325,18 @@ describe("delivering a queued send", () => {
     const { ctx, env, slack, holler, answer } = await live();
     await answer("UA");
     const reminder = (slackUserId: string) =>
-      deliver(env, db, { kind: "reminder", hollerId: holler.id, slackUserId, tone: "gentle" }, NOW);
+      deliver(
+        env,
+        db,
+        {
+          kind: "reminder",
+          hollerId: holler.id,
+          slackUserId,
+          tone: "gentle",
+          queuedAt: NOW.toISOString(),
+        },
+        NOW,
+      );
     await reminder("UA");
     await closeHoller(ctx, env, holler.id);
     await reminder("UB");
@@ -757,6 +772,119 @@ describe("no claimed work is lost when the queue refuses it", () => {
     await runCronPass(env, db, at(120_000));
     expect(queued.filter((s) => s.kind === "close_notice")).toEqual([
       { kind: "close_notice", hollerId: holler.id },
+    ]);
+  });
+});
+
+describe("no claimed close work is stranded", () => {
+  it("queues every closed Holler once when the queue fails partway through a pass", async () => {
+    const s = await setup();
+    const ids = [s.holler.id];
+    for (const title of ["Second", "Third"]) {
+      ids.push((await createDraft(s.ctx, { ...weekly, title })).id);
+    }
+    for (const id of ids) await sendHoller(s.ctx, s.env, id);
+    await s.drain(NOW);
+    const closesAt = at(72 * HOUR);
+    expect((await closeDueHollers(db, closesAt)).sort()).toEqual([...ids].sort());
+
+    // The queue takes the first Holler's close work, then goes down.
+    s.outage.batchesLeft = 1;
+    await expect(queueCloseWork(db, s.env, closesAt)).rejects.toThrow("Queue is down");
+    s.outage.batchesLeft = Number.POSITIVE_INFINITY;
+    await queueCloseWork(db, s.env, at(72 * HOUR + 60_000));
+    await queueCloseWork(db, s.env, at(72 * HOUR + 120_000));
+    const notices = s.queued.flatMap((q) => (q.kind === "close_notice" ? [q.hollerId] : []));
+    expect(notices.sort()).toEqual([...ids].sort());
+  });
+});
+
+describe("every send that posts, posts once", () => {
+  /** A queued send of each kind that posts, ready to deliver. */
+  async function fixtures() {
+    const s = await live({ announceChannelId: "CTEAM" });
+    const { holler } = s;
+    // Start from the state just before each post: no announcement, no invite to UA yet.
+    await raw.prepare("update hollers set announce_ts = null where id = ?").bind(holler.id).run();
+    await raw.prepare("delete from slack_deliveries").run();
+    await raw
+      .prepare("update recipients set dm_ts = null where holler_id = ? and slack_user_id = 'UA'")
+      .bind(holler.id)
+      .run();
+    const queuedAt = NOW.toISOString();
+    const sends: Record<keyof typeof posting, SlackSend> = {
+      invite: { kind: "invite", hollerId: holler.id, slackUserId: "UA" },
+      reminder: {
+        kind: "reminder",
+        hollerId: holler.id,
+        slackUserId: "UB",
+        tone: "gentle",
+        queuedAt,
+      },
+      announce: { kind: "announce", hollerId: holler.id },
+      close_notice: { kind: "close_notice", hollerId: holler.id },
+      send_failed: { kind: "send_failed", hollerId: holler.id, reason: "It broke.", queuedAt },
+    };
+    return { ...s, sends };
+  }
+  const posting = Object.fromEntries(
+    Object.entries(sendEffects).filter(([, effect]) => effect === "posts"),
+  ) as { [K in "invite" | "reminder" | "announce" | "close_notice" | "send_failed"]: "posts" };
+
+  it("has a case for every kind sendEffects says posts", async () => {
+    const { sends } = await fixtures();
+    expect(Object.keys(sends).sort()).toEqual(Object.keys(posting).sort());
+  });
+
+  for (const kind of Object.keys(posting) as (keyof typeof posting)[]) {
+    it(`${kind}: twice at once, then again, is one post`, async () => {
+      const { env, slack, sends } = await fixtures();
+      const before = slack.posted.length;
+      await Promise.all([deliver(env, db, sends[kind], NOW), deliver(env, db, sends[kind], NOW)]);
+      await deliver(env, db, sends[kind], NOW);
+      expect(slack.posted.length - before).toBe(1);
+    });
+  }
+
+  it("posts on the retry after Slack failed the first try", async () => {
+    const { env, slack, sends } = await fixtures();
+    slack.failures.set("ULEAD", new SlackApiError("chat.postMessage", "internal_error"));
+    await expect(deliver(env, db, sends.close_notice, NOW)).rejects.toThrow();
+    slack.failures.delete("ULEAD");
+    await deliver(env, db, sends.close_notice, NOW);
+    expect(slack.posted.filter((m) => m.channel === "ULEAD")).toHaveLength(1);
+  });
+});
+
+describe("announcements the queue never took", () => {
+  it("post from the cron once the send is two minutes old, and only once", async () => {
+    const { ctx, env, refuse, holler, slack, drain } = await setup({ announceChannelId: "CTEAM" });
+    refuse.add("announce");
+    expect((await sendHoller(ctx, env, holler.id)).status).toBe("live");
+    refuse.clear();
+    await drain(NOW);
+    expect(await queueMissingAnnouncements(env, db, at(60_000))).toBe(0);
+    for (const minute of [2, 3]) {
+      await queueMissingAnnouncements(env, db, at(minute * 60_000));
+      await drain(at(minute * 60_000));
+    }
+    expect(slack.posted.filter((m) => m.channel === "CTEAM")).toHaveLength(1);
+  });
+});
+
+describe("every write a recipient makes in Slack is in Activity", () => {
+  it("records a snooze, without who snoozed", async () => {
+    const { ctx, holler } = await live({ closeAfterHours: 7 * 24 });
+    const recipientCtx: ServiceContext = {
+      ...ctx,
+      actor: { via: "slack", recipientSlackUserId: "UA" },
+    };
+    await snoozeReminder(recipientCtx, holler.id, "UA");
+    const rows = await db.query.activity.findMany({
+      where: eq(schema.activity.action, "reminder.snoozed"),
+    });
+    expect(rows).toEqual([
+      expect.objectContaining({ via: "slack", memberId: null, subjectId: holler.id, data: null }),
     ]);
   });
 });

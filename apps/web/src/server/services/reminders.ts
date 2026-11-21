@@ -3,6 +3,7 @@ import { and, eq, inArray, isNotNull, isNull, lte, sql } from "@holler/core/db";
 import { runBatch } from "../batch";
 import { type Db, schema } from "../db";
 import type { Bindings } from "../env";
+import { auditStatement } from "./audit";
 import type { ServiceContext } from "./context";
 import { queueClaimed, toneFor } from "./delivery";
 
@@ -44,6 +45,7 @@ export async function queueDueReminders(env: Bindings, db: Db, now: Date): Promi
       hollerId: row.hollerId,
       slackUserId: row.slackUserId,
       tone: toneFor(row.remindersSent),
+      queuedAt: now.toISOString(),
     })),
     async (unqueued) => {
       // Due again now, one reminder fewer, so the next run claims them again.
@@ -109,9 +111,13 @@ export async function snoozeReminder(
           now,
         )
       : null;
-  await ctx.db
-    .update(recipients)
-    .set({ snoozedUntil: until, nextReminderAt: next?.dueAt ?? null })
-    .where(where);
+  await runBatch(ctx.db, [
+    ctx.db
+      .update(recipients)
+      .set({ snoozedUntil: until, nextReminderAt: next?.dueAt ?? null })
+      .where(where),
+    // A recipient actor carries no member, so Activity says a snooze happened, not whose.
+    auditStatement(ctx, { action: "reminder.snoozed", subjectType: "holler", subjectId: hollerId }),
+  ]);
   return true;
 }

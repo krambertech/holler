@@ -4,6 +4,7 @@ import { schema } from "../db";
 import type { Bindings } from "../env";
 import { answerModal } from "../slack/blocks/modal";
 import type { SlackView } from "../slack/client";
+import { auditStatement } from "./audit";
 import { type ServiceContext, ServiceError } from "./context";
 import { type DmRef, enqueue, loadSlackHoller, type SlackSend } from "./delivery";
 import { snoozeReminder } from "./reminders";
@@ -174,10 +175,19 @@ export async function addNoteFromSlack(
     throw new ServiceError("invalid", "This question does not ask for a note.");
   }
   if (note) {
-    await ctx.db
+    const [added] = await ctx.db
       .insert(schema.answerNotes)
       .values({ responseId: response.id, questionId: question.id, kind: "note", text: note })
-      .onConflictDoNothing();
+      .onConflictDoNothing()
+      .returning({ responseId: schema.answerNotes.responseId });
+    // Never the note's words or its writer: Activity says only that a note was added.
+    if (added) {
+      await auditStatement(ctx, {
+        action: "response.noted",
+        subjectType: "holler",
+        subjectId: holler.id,
+      });
+    }
   }
   await queueOutcome(env, ctx, holler.id, { status: "already" }, tapped);
 }

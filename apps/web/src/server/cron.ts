@@ -1,6 +1,11 @@
 import type { Db } from "./db";
 import type { Bindings } from "./env";
-import { queueCloseWork, queueDueInvites, sendDueHollers } from "./services/delivery";
+import {
+  queueCloseWork,
+  queueDueInvites,
+  queueMissingAnnouncements,
+  sendDueHollers,
+} from "./services/delivery";
 import { runDirectorySyncs } from "./services/directory-sync";
 import { closeDueHollers } from "./services/lifecycle";
 import { queueDueReminders } from "./services/reminders";
@@ -36,6 +41,7 @@ export async function runCronPass(env: Bindings, db: Db, at: Date): Promise<Cron
     },
     invited: () => queueDueInvites(env, db, at),
     reminded: () => queueDueReminders(env, db, at),
+    announced: () => queueMissingAnnouncements(env, db, at),
     synced: () => runDirectorySyncs(env, db, at),
     pruned: () => pruneSlackDeliveries(db, at),
   });
