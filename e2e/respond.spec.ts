@@ -27,6 +27,20 @@ test("a recipient answers every question type, with a follow-up after some answe
   page,
 }) => {
   const { url } = await webSurvey();
+  // A failed call is a bug even when the screen recovers, such as a search landing after the send.
+  const failures: string[] = [];
+  page.on("console", (message) => {
+    if (message.type() === "error") failures.push(message.text());
+  });
+  page.on("response", (response) => {
+    if (response.status() >= 400 && response.url().includes("/api/")) {
+      failures.push(`${response.status()} ${response.url()}`);
+    }
+  });
+  const searches: string[] = [];
+  page.on("request", (sent) => {
+    if (sent.url().includes("/people")) searches.push(sent.url());
+  });
   await page.goto(url);
   await expect(page.getByRole("heading", { name: "Offsite planning" })).toBeVisible();
   await expect(page.getByText("Mira sent you a Holler")).toBeVisible();
@@ -66,6 +80,8 @@ test("a recipient answers every question type, with a follow-up after some answe
     .click();
   await question(page, "How many nights can you stay?").getByRole("textbox").fill("3");
 
+  // The directory is searched only once someone opens the picker.
+  expect(searches).toEqual([]);
   await question(page, "Who should plan it?").getByRole("combobox").click();
   await page.getByRole("combobox", { name: "Search people" }).fill("Marta");
   await page.getByRole("option", { name: "Marta Kowalska" }).click();
@@ -82,6 +98,7 @@ test("a recipient answers every question type, with a follow-up after some answe
   // Coming back to the link says they answered; it never shows the form again.
   await page.reload();
   await expect(page.getByRole("heading", { name: "Thank you, your answers are in" })).toBeVisible();
+  expect(failures).toEqual([]);
 });
 
 test("an anonymous Holler says what the sender will and will not see", async ({ page }) => {

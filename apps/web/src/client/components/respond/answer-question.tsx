@@ -433,7 +433,9 @@ function PeoplePicker({
   searchPeople,
 }: ControlProps) {
   const [query, setQuery] = useState("");
-  const found = usePeopleSearch(searchPeople, query.trim());
+  const [open, setOpen] = useState(false);
+  // Searches only while the list is open, so no search can land after the answers are sent.
+  const found = usePeopleSearch(searchPeople, query.trim(), open);
   const toItem = (p: RespondPerson): Item => ({
     value: p.slackUserId,
     label: p.name,
@@ -477,6 +479,7 @@ function PeoplePicker({
   );
   const shared = {
     items,
+    onOpenChange: setOpen,
     filter: null,
     inputValue: query,
     onInputValueChange: (next: string) => setQuery(next),
@@ -508,14 +511,19 @@ function PeoplePicker({
 }
 
 /**
- * The people matching what is typed, a moment after typing stops. A late answer to an older search
- * never replaces a newer one. Null while the first search runs.
+ * The people matching what is typed, a moment after typing stops, while `enabled`. A late answer
+ * to an older search never replaces a newer one. Null until the first search answers.
  */
-function usePeopleSearch(search: (query: string) => Promise<RespondPerson[]>, query: string) {
+function usePeopleSearch(
+  search: (query: string) => Promise<RespondPerson[]>,
+  query: string,
+  enabled: boolean,
+) {
   const [people, setPeople] = useState<RespondPerson[] | null>(null);
   const latest = useRef(search);
   latest.current = search;
   useEffect(() => {
+    if (!enabled) return;
     let current = true;
     const timer = setTimeout(() => {
       latest.current(query).then(
@@ -531,7 +539,7 @@ function usePeopleSearch(search: (query: string) => Promise<RespondPerson[]>, qu
       current = false;
       clearTimeout(timer);
     };
-  }, [query]);
+  }, [query, enabled]);
   return { people };
 }
 

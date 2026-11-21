@@ -79,6 +79,7 @@ Project skills live in `.agents/skills/`; `.claude/skills` links to it so every 
 | The web form and `recordResponse` refuse the same answers in the same words | `answerProblem` in `packages/core/src/answers.ts`; `services/respond.test.ts` |
 | The web form shows a follow-up for exactly the answers the server keeps a note for | `noteAsked`; `services/respond.test.ts`, "shows a follow-up for exactly the answers" |
 | No effect returns a value that is not its cleanup | `biome-plugins/no-effect-expression-body.grit` |
+| The web form searches the directory only while the people picker is open, and makes no failed call | `e2e/respond.spec.ts`, "a recipient answers every question type" |
 
 ## Generated files
 
