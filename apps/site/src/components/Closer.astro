@@ -51,7 +51,6 @@ import { PRODUCT_URL } from "../urls";
       setup(w, h) {
         const box = root.getBoundingClientRect();
         const t = title.getBoundingClientRect();
-        // Keep the words and the button clear: faces live around them, never on them.
         const clear = { x0: t.left - box.left - 24, x1: t.right - box.left + 24, y0: t.top - box.top - 24, y1: h * 0.82 };
         const n = Math.round(Math.min(46, Math.max(18, (w * h) / 15000)));
         bodies = [];
@@ -76,12 +75,10 @@ import { PRODUCT_URL } from "../urls";
         for (const b of bodies) {
           let y = b.hy;
           if (!reduce) {
-            // Fall in once, when the section first comes into view, then float.
             const since = startedAt < 0 ? -1 : now - startedAt - b.delay;
             const fall = since < 0 ? 0 : easeOut(since / 1100);
             const bob = Math.sin(now / 1400 + b.phase) * 4;
             y = b.hy - b.drop * (1 - fall) + bob * fall;
-            // Shy of the cursor: pushed aside, and springing back home.
             if (pointer.active) {
               const dx = b.x - pointer.x;
               const dy = b.y - pointer.y;
@@ -125,7 +122,6 @@ import { PRODUCT_URL } from "../urls";
     root.addEventListener("pointerleave", () => {
       pointer.active = false;
     });
-    // Tap a face and it answers.
     root.addEventListener("click", (event) => {
       const box = canvas.getBoundingClientRect();
       const x = event.clientX - box.left;

@@ -1,8 +1,3 @@
-/**
- * The faces: small rounded squares, the logo's own shape, with two eyes. They are the site's one
- * illustration. A face is shut-eyed while it waits, opens its eyes when a call reaches it, and
- * turns plum once it has answered. Canvas helpers shared by the hero and the closing section.
- */
 import { mark } from "@holler/design";
 
 export type FaceState = "waiting" | "awake" | "answered";
@@ -20,7 +15,6 @@ export interface FaceDraw {
   y: number;
   size: number;
   state: FaceState;
-  /** Where the eyes look, as a vector of length 0 to 1. */
   look: [number, number];
   blink?: boolean | undefined;
   rotate?: number | undefined;
@@ -32,9 +26,7 @@ export interface FaceDraw {
 const LETTER = new Path2D(mark.letter);
 const SOUND = new Path2D(mark.sound);
 
-/** Where the logo's sound lines are centred on its 48-unit grid, and their radii. */
 export const SOUND_CENTRE = { x: 31, y: 19, inner: 8, outer: 15 } as const;
-/** The sound lines' angles around that centre, in radians. */
 export const SOUND_ARC = { start: -1.29, end: -0.12 } as const;
 
 export function roundRect(
@@ -49,7 +41,6 @@ export function roundRect(
   ctx.roundRect(x, y, w, h, r);
 }
 
-/** Reads a token from the page, so canvas drawings follow day and night. */
 export function token(name: string): string {
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 }
@@ -104,7 +95,6 @@ export function drawFace(ctx: CanvasRenderingContext2D, face: FaceDraw, colours:
   ctx.restore();
 }
 
-/** The calling h, drawn with its sound lines at the given strength (0 hides them). */
 export function drawMark(
   ctx: CanvasRenderingContext2D,
   cx: number,
@@ -130,7 +120,6 @@ export function drawMark(
   ctx.restore();
 }
 
-/** Unit vector from (x, y) towards (tx, ty), shortened when the target is close. */
 export function lookAt(x: number, y: number, tx: number, ty: number, reach = 60): [number, number] {
   const dx = tx - x;
   const dy = ty - y;
@@ -144,10 +133,6 @@ export const easeOut = (t: number) => 1 - (1 - Math.min(1, Math.max(0, t))) ** 3
 export const prefersReducedMotion = () =>
   window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-/**
- * A canvas that fills its parent at the device's pixel ratio, draws only while on screen, and
- * draws one still frame when motion is reduced.
- */
 export function canvasScene(
   canvas: HTMLCanvasElement,
   hooks: {

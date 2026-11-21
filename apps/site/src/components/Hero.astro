@@ -156,7 +156,6 @@ import { PRODUCT_URL } from "../urls";
           drawFace(ctx, { x: tile.x, y: tile.y, size, state, look, rotate: tile.rotate, scale: pop * lean, blink: done && (t + tile.blinkAt) % 4200 < 130 }, colours);
         }
 
-        // The mark's own sound lines leave with each wave and come back after it.
         let strength = 1;
         for (const start of waves) {
           const k = (t - start) / 700;

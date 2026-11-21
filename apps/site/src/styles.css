@@ -40,7 +40,6 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* One hairline edge as a shadow, so it never changes layout. Forced colours get an outline instead. */
 @utility edge {
   box-shadow: 0 0 0 1px var(--edge);
   @media (forced-colors: active) {
@@ -64,8 +63,6 @@
   }
 }
 
-/* A face in the page itself, outside a canvas: the logo's square with two eyes. Waiting faces are
-   white with shut eyes; answered ones are plum with open eyes. */
 @layer components {
   .face {
     --face: 24px;
@@ -122,11 +119,8 @@
   *,
   *::before,
   *::after {
-    /* biome-ignore lint/complexity/noImportantStyles: reduced motion must override component timing. */
     animation-duration: 1ms !important;
-    /* biome-ignore lint/complexity/noImportantStyles: reduced motion must override component timing. */
     animation-iteration-count: 1 !important;
-    /* biome-ignore lint/complexity/noImportantStyles: reduced motion must override component timing. */
     transition-duration: 1ms !important;
   }
 }

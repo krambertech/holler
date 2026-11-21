@@ -59,7 +59,6 @@ const types = [
       </div>
 
       <div class="relative min-h-[520px] overflow-hidden rounded-[22px] bg-well">
-        <!-- 1. Answer in one tap -->
         <div role="tabpanel" id="panel-answer" aria-labelledby="tab-answer" class="tour-panel" data-panel="answer">
           <div class="grid w-full max-w-[640px] gap-4 sm:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)] sm:items-start">
             <div class="floating flex min-h-[300px] flex-col gap-3 rounded-[14px] p-4">
@@ -94,7 +93,6 @@ const types = [
           </div>
         </div>
 
-        <!-- 2. Reminders -->
         <div role="tabpanel" id="panel-remind" aria-labelledby="tab-remind" class="tour-panel" data-panel="remind" hidden>
           <div class="relative w-full max-w-[600px]">
             <div class="floating overflow-hidden rounded-[14px]">
@@ -136,7 +134,6 @@ const types = [
           </div>
         </div>
 
-        <!-- 3. Any kind of question -->
         <div role="tabpanel" id="panel-ask" aria-labelledby="tab-ask" class="tour-panel" data-panel="ask" hidden>
           <div class="grid w-full max-w-[600px] gap-4">
             <div class="floating flex flex-col gap-4 rounded-[14px] p-4">
@@ -167,7 +164,6 @@ const types = [
           </div>
         </div>
 
-        <!-- 4. Results -->
         <div role="tabpanel" id="panel-results" aria-labelledby="tab-results" class="tour-panel" data-panel="results" hidden>
           <div class="floating flex w-full max-w-[600px] flex-col gap-4 rounded-[14px] p-5">
             <div class="flex flex-wrap items-center justify-between gap-3">
@@ -328,7 +324,6 @@ const types = [
     const running = () => !stopped && inView && !hovered;
     const schedule = () => {
       window.clearTimeout(timer);
-      // Restart the progress bar's animation.
       delete root.dataset.auto;
       void root.offsetWidth;
       if (!stopped) root.dataset.auto = "";
@@ -391,7 +386,6 @@ const types = [
       pause.setAttribute("aria-pressed", "true");
     }
 
-    // 1. One tap: answer as the eighth person.
     const options = root.querySelector<HTMLElement>("[data-answer-options]");
     const thanks = root.querySelector<HTMLElement>("[data-answer-thanks]");
     const count = root.querySelector<HTMLElement>("[data-answer-count]");
@@ -429,7 +423,6 @@ const types = [
     });
     root.querySelector('[data-panel="answer"]')?.addEventListener("tour:show", resetAnswer);
 
-    // 2. Reminders: the two waiting people answer while you watch.
     const remindPanel = root.querySelector<HTMLElement>('[data-panel="remind"]');
     const summary = root.querySelector<HTMLElement>("[data-remind-summary]");
     let remindTimers: number[] = [];
@@ -460,7 +453,6 @@ const types = [
       ];
     });
 
-    // 3. Question types: the Slack preview follows the type.
     const typeButtons = [...root.querySelectorAll<HTMLButtonElement>("[data-ask-types] button")];
     const prompt = root.querySelector<HTMLElement>("[data-ask-prompt]");
     const previewPrompt = root.querySelector<HTMLElement>("[data-ask-preview-prompt]");

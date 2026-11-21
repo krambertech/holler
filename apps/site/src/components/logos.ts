@@ -1,7 +1,3 @@
-/**
- * Marks of the assistants that connect to Holler over MCP, from Simple Icons (CC0). Each mark
- * belongs to its owner and is shown only to say Holler works with that product.
- */
 export const assistantLogos = {
   claude: {
     name: "Claude",
