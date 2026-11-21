@@ -2,6 +2,7 @@ import type {
   HollerSummary,
   HomeCounts,
   InstallStatus,
+  RecipientsOut,
   Results,
   SettingsMember,
   SettingsWorkspace,
@@ -76,3 +77,9 @@ export const installStatusQuery = queryOptions({
   queryKey: ["install", "status"],
   queryFn: () => api<InstallStatus>("/install/status"),
 });
+
+export const hollerPeopleQuery = (id: string) =>
+  queryOptions({
+    queryKey: ["hollers", id, "people"],
+    queryFn: () => api<RecipientsOut>(`/hollers/${id}/people`),
+  });

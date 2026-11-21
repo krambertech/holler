@@ -86,3 +86,20 @@ export function percent(share: number): string {
     share,
   );
 }
+
+/** "today at 14:00", "tomorrow at 09:00", "Tue at 10:00", then "30 Nov at 10:00". For a moment that matters to the minute. */
+export function momentLabel(iso: string, now = new Date()): string {
+  const at = new Date(iso);
+  const days = Math.round((startOfDay(at) - startOfDay(now)) / DAY);
+  const time = new Intl.DateTimeFormat(undefined, {
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).format(at);
+  if (days === 0) return `today at ${time}`;
+  if (days === 1) return `tomorrow at ${time}`;
+  if (days > 1 && days < 7) {
+    return `${new Intl.DateTimeFormat(undefined, { weekday: "short" }).format(at)} at ${time}`;
+  }
+  return `${shortDate(iso)} at ${time}`;
+}

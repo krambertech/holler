@@ -16,6 +16,7 @@ import { navigation } from "./parts/navigation";
 import { overlays } from "./parts/overlays";
 import { people } from "./parts/people";
 import { questions } from "./parts/questions";
+import { results } from "./parts/results";
 import { settings } from "./parts/settings";
 import { states } from "./parts/states";
 import { surfaces } from "./parts/surfaces";
@@ -71,6 +72,7 @@ export const GROUPS: Group[] = [
   states,
   surfaces,
   lists,
+  results,
   labels,
   people,
   feedback,

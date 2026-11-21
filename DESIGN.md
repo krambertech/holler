@@ -143,6 +143,7 @@ Numbers in tables and counts use `tabular`.
 | `Dialog`, `Toast` | `components/ui/dialog.tsx`, `toast.tsx` | Dialog asks before what cannot be undone; anything undoable gets a toast with Undo |
 | `EmptyState`, `EmptySection`, `NoResults` | `components/empty-state.tsx` | First use, an empty group, a search that matched nothing |
 | `ErrorState`, `Notice`, `Skeleton` | `components/error-state.tsx`, `notice.tsx`, `skeleton.tsx` | A failed load, an inline message, the shape of what is loading |
+| `HollerPeople`, `QuestionResult`, `HollerActions` | `components/results/` | A Holler's page: waiting first with when Holler reminds them next, bars on the chart ramp, Export and Close now |
 | `LimitReached`                    | `components/billing/limit-reached.tsx` | Beside Send when a send returns `402`: upgrade for owners, whom to ask for senders |
 
 Every interactive component has default, hover, focus, active, disabled and pending states. Loading is a skeleton in the shape of what loads, never a spinner in the middle of a page. Errors say what happened and what to do, beside the thing at fault.

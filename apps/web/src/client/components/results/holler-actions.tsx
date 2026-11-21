@@ -1,0 +1,139 @@
+import { Copy, Download, Ellipsis, FileText, Lock } from "lucide-react";
+import { type ComponentProps, useState } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLinkItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { count } from "@/lib/format";
+
+interface Props extends ComponentProps<"div"> {
+  hollerId: string;
+  status: "draft" | "scheduled" | "live" | "closed";
+  /** Only the creator closes a Holler or copies it; anyone who can see it can export. */
+  isCreator: boolean;
+  /** False while an anonymous Holler's results are still closed, so there is nothing to export. */
+  canExport: boolean;
+  waitingCount: number;
+  onCopyAsMarkdown: () => void;
+  onCopyIntoDraft: () => void;
+  onClose: () => void;
+  copying?: boolean | undefined;
+  closing?: boolean | undefined;
+}
+
+/**
+ * Getting results out and ending a Holler: Export for everyone who can see it, and for its
+ * creator a menu with Copy into a new draft and Close now. Close asks once, because it cannot be
+ * undone and stops everyone's reminders.
+ */
+function HollerActions({
+  hollerId,
+  status,
+  isCreator,
+  canExport,
+  waitingCount,
+  onCopyAsMarkdown,
+  onCopyIntoDraft,
+  onClose,
+  copying = false,
+  closing = false,
+  ...props
+}: Props) {
+  const [confirming, setConfirming] = useState(false);
+  const exportHref = (format: "csv" | "md") => `/api/hollers/${hollerId}/export?format=${format}`;
+  return (
+    <div data-slot="holler-actions" className="flex flex-wrap items-center gap-2" {...props}>
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          disabled={!canExport}
+          title={canExport ? undefined : "Export opens with the results."}
+          render={<Button size="sm" />}
+        >
+          {canExport ? <Download aria-hidden /> : <Lock aria-hidden />}
+          Export
+        </DropdownMenuTrigger>
+        <DropdownMenuContent aria-label="Export" align="end">
+          <DropdownMenuLinkItem render={<a href={exportHref("csv")} download />}>
+            <Download />
+            Download CSV
+          </DropdownMenuLinkItem>
+          <DropdownMenuLinkItem render={<a href={exportHref("md")} download />}>
+            <FileText />
+            Download Markdown
+          </DropdownMenuLinkItem>
+          <DropdownMenuItem onClick={onCopyAsMarkdown}>
+            <Copy />
+            Copy as Markdown
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      {isCreator && (
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={<Button size="icon-sm" aria-label="More for this Holler" pending={copying} />}
+          >
+            <Ellipsis aria-hidden />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent aria-label="This Holler" align="end">
+            <DropdownMenuItem onClick={onCopyIntoDraft}>
+              <Copy />
+              Copy into a new draft
+            </DropdownMenuItem>
+            {status === "live" && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem tone="danger" onClick={() => setConfirming(true)}>
+                  <Lock />
+                  Close now
+                </DropdownMenuItem>
+              </>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
+      <Dialog open={confirming} onOpenChange={setConfirming}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Close this Holler?</DialogTitle>
+            <DialogDescription>
+              {waitingCount === 0
+                ? "Everyone has answered. Closing it now takes no more answers."
+                : waitingCount === 1
+                  ? "1 person has not answered yet. Closing stops their reminders, and nobody can answer after this."
+                  : `${count(waitingCount)} people have not answered yet. Closing stops their reminders, and nobody can answer after this.`}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <DialogClose render={<Button variant="ghost">Keep it open</Button>} />
+            <Button
+              variant="primary"
+              pending={closing}
+              onClick={() => {
+                onClose();
+                setConfirming(false);
+              }}
+            >
+              Close now
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+export { HollerActions };
