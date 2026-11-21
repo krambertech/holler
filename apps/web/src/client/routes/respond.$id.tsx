@@ -5,7 +5,7 @@ import {
   type RespondQuestion,
 } from "@holler/core";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   Check,
   Clock,
@@ -128,7 +128,7 @@ function Answered({ holler, arrive }: { holler: HollerInfo; arrive: boolean }) {
           : `Thank you. ${holler.senderName} sees them with everyone else's.`
       }
       action={
-        <Button size="lg" render={<a href={`/answers/${holler.id}`} />}>
+        <Button size="lg" render={<Link to="/answers/$id" params={{ id: holler.id }} />}>
           <ListChecks />
           See my answers
         </Button>
