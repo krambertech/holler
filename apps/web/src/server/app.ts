@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { secureHeaders } from "hono/secure-headers";
 import { type Auth, createAuth } from "./auth";
 import { createDb, type Db } from "./db";
-import { type Bindings, devRoutesEnabled } from "./env";
+import { type Bindings, devKeyAccepted, devRoutesEnabled } from "./env";
 import { handleMcpRequest } from "./mcp";
 import { mountOpenApi } from "./openapi";
 import { type Principal, principalFor } from "./principal";
@@ -89,6 +89,9 @@ app.route("/api/billing", billingRoutes);
 app.route("/api/v1", v1Routes);
 app.use("/api/dev/*", async (c, next) => {
   if (!devRoutesEnabled(c.env)) return c.notFound();
+  if (!devKeyAccepted(c.env.DEV_ROUTES_KEY, c.req.header("x-holler-dev-key"))) {
+    return c.notFound();
+  }
   await next();
 });
 app.route("/api/dev", devRoutes);

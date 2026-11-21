@@ -20,9 +20,31 @@ export interface Bindings extends Env {
   POLAR_TEAM_YEARLY_PRODUCT_ID?: string;
   /** `production` in production; anything else, or unset, is Polar's sandbox. */
   POLAR_SERVER?: string;
+  /** Preview only. When set, /api/dev/* answers only requests carrying it in `x-holler-dev-key`. */
+  DEV_ROUTES_KEY?: string;
 }
 
 /** The dev personas and /api/dev/* answer only when this is true, which production never sets. */
 export function devRoutesEnabled(env: { DEV_ROUTES: string }): boolean {
   return String(env.DEV_ROUTES) === "true";
+}
+
+/** Extra origins Better Auth accepts, comma separated, `*` wildcards allowed. Previews list their aliases. */
+export function trustedOrigins(env: { TRUSTED_ORIGINS?: string }): string[] {
+  return (env.TRUSTED_ORIGINS ?? "")
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+}
+
+/** No key configured (local, tests) lets every request through; otherwise the header must match it. */
+export function devKeyAccepted(key: string | undefined, given: string | undefined): boolean {
+  if (!key) return true;
+  if (!given) return false;
+  const a = new TextEncoder().encode(key);
+  const b = new TextEncoder().encode(given);
+  if (a.byteLength !== b.byteLength) return false;
+  let diff = 0;
+  for (let i = 0; i < a.byteLength; i += 1) diff |= (a[i] ?? 0) ^ (b[i] ?? 0);
+  return diff === 0;
 }

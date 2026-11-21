@@ -1,9 +1,10 @@
 ---
+import { PRODUCT_URL } from "../urls";
 import { plans } from "@holler/core";
 import Mark from "../components/Mark.astro";
 import Base from "../layouts/Base.astro";
 
-const app = "https://app.holler.team";
+const app = PRODUCT_URL;
 const steps = [
   { title: "Ask", body: "Write a pulse, a survey or a form chase in about two minutes, and pick who it goes to." },
   { title: "Holler chases", body: "Each person gets it in Slack and answers in one tap. Holler reminds the ones who have not, politely, until it closes." },

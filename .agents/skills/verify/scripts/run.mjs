@@ -22,6 +22,7 @@ Features: ${features.join(", ")}
 
   --url <origin>     Instance to drive (default: http://localhost:5280)
   --sha <commit>     Commit the instance should serve (default: HEAD of this worktree)
+  --key <key>        A preview's DEV_ROUTES_KEY (default: $HOLLER_DEV_KEY)
   --pr <n>           Pull request the evidence belongs to (default: the branch name)
   --out <dir>        Evidence root (default: $HOLLER_EVIDENCE_DIR, else the temp dir)
   --phone            Drive at 375 px with touch instead of 1280 px with a pointer
@@ -34,6 +35,7 @@ const { values, positionals } = parseArgs({
   options: {
     url: { type: "string", default: "http://localhost:5280" },
     sha: { type: "string" },
+    key: { type: "string" },
     pr: { type: "string" },
     out: { type: "string" },
     phone: { type: "boolean", default: false },
@@ -64,6 +66,9 @@ const viewport = values.phone
   : { viewport: { width: 1280, height: 900 } };
 const variant = `${values.phone ? "-phone" : ""}${values.dark ? "-night" : ""}`;
 
+const key = values.key ?? process.env.HOLLER_DEV_KEY;
+const devHeaders = key ? { "x-holler-dev-key": key } : undefined;
+
 const patient = expect.configure({ timeout: 15_000 });
 
 function failure(error) {
@@ -89,6 +94,7 @@ async function driveFeature(browser, name) {
     baseURL: base,
     reducedMotion: "reduce",
     colorScheme: values.dark ? "dark" : "light",
+    extraHTTPHeaders: devHeaders,
   });
   // A dev server compiles each route on first visit, so waits allow for a cold start.
   context.setDefaultTimeout(15_000);
@@ -150,7 +156,7 @@ async function driveFeature(browser, name) {
     // The first load after a cold start waits for Vite to bundle the dependencies.
     await page.getByRole("main").first().waitFor({ timeout: 90_000 });
     const cookie = (await context.cookies(base)).map((c) => `${c.name}=${c.value}`).join("; ");
-    checks = await doctor({ url: base, sha, persona, cookie });
+    checks = await doctor({ url: base, sha, persona, cookie, key });
     if (!report(checks)) throw new Error("the doctor found this instance not worth driving");
     await feature.default({ page, base, step, api, post, expect: patient });
   } catch (error) {

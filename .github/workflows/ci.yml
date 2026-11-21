@@ -5,9 +5,11 @@ on:
   push:
     branches: [main]
 
+# A newer push to a pull request supersedes its run. On main every run finishes, so a deploy is
+# never cut off between its migration and its upload.
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   title:
@@ -30,6 +32,8 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm verify
+      - name: Dry-run both deployments
+        run: pnpm deploy:check
 
   e2e:
     runs-on: ubuntu-latest
@@ -48,3 +52,128 @@ jobs:
         with:
           name: playwright-report
           path: playwright-report
+
+  # Each pull request gets a version of the holler-preview Worker at its own alias, with the dev
+  # personas on and its own database. docs/operations.md.
+  preview:
+    needs: verify
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: preview
+      url: ${{ steps.url.outputs.url }}
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      PR: ${{ github.event.pull_request.number }}
+      SHA: ${{ github.event.pull_request.head.sha }}
+    steps:
+      - name: Check Cloudflare credentials
+        id: credentials
+        run: |
+          if [[ -z "$CLOUDFLARE_API_TOKEN" ]]; then
+            echo "::warning::No CLOUDFLARE_API_TOKEN secret, so this pull request has no preview. docs/operations.md."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/checkout@v4
+        if: steps.credentials.outputs.skip != 'true'
+      - uses: pnpm/action-setup@v4
+        if: steps.credentials.outputs.skip != 'true'
+      - uses: actions/setup-node@v4
+        if: steps.credentials.outputs.skip != 'true'
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - if: steps.credentials.outputs.skip != 'true'
+        run: pnpm install --frozen-lockfile
+      - name: Build for the preview Worker
+        if: steps.credentials.outputs.skip != 'true'
+        run: pnpm --filter @holler/web exec vite build
+        env:
+          CLOUDFLARE_ENV: preview
+      - name: Migrate the preview database
+        if: steps.credentials.outputs.skip != 'true'
+        working-directory: apps/web
+        run: pnpm exec wrangler d1 migrations apply holler-preview --remote --env preview
+      - name: Create the preview Worker if it does not exist yet
+        if: steps.credentials.outputs.skip != 'true'
+        working-directory: apps/web
+        run: |
+          pnpm exec wrangler deployments list -c dist/holler/wrangler.json > /dev/null 2>&1 ||
+            pnpm exec wrangler deploy -c dist/holler/wrangler.json --tag "$SHA" --message "Create holler-preview"
+      - name: Upload this pull request's version
+        if: steps.credentials.outputs.skip != 'true'
+        working-directory: apps/web
+        run: >-
+          pnpm exec wrangler versions upload -c dist/holler/wrangler.json
+          --preview-alias "pr-$PR" --tag "$SHA" --message "PR #$PR at $SHA"
+      - name: Wait for the preview to serve this commit
+        id: url
+        if: steps.credentials.outputs.skip != 'true'
+        run: |
+          url="https://pr-$PR-holler-preview.k-porshnieva.workers.dev"
+          node scripts/check-deployment.mjs "$url" holler "$SHA"
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+          echo "Preview: $url (dev routes need the DEV_ROUTES_KEY header)" >> "$GITHUB_STEP_SUMMARY"
+
+  # Production and the preview Worker's base version follow main. Merging is the deploy.
+  deploy:
+    needs: [verify, e2e]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    concurrency:
+      group: deploy
+      cancel-in-progress: false
+    environment:
+      name: production
+      url: https://holler.k-porshnieva.workers.dev
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+    steps:
+      - name: Check Cloudflare credentials
+        run: |
+          if [[ -z "$CLOUDFLARE_API_TOKEN" ]]; then
+            echo "::error::Add the CLOUDFLARE_API_TOKEN secret to deploy. docs/operations.md."
+            exit 1
+          fi
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      - name: Build the product
+        run: pnpm --filter @holler/web exec vite build
+      - name: Migrate the production database
+        working-directory: apps/web
+        run: pnpm exec wrangler d1 migrations apply holler --remote
+      - name: Deploy the product
+        working-directory: apps/web
+        run: pnpm exec wrangler deploy -c dist/holler/wrangler.json --tag "$GITHUB_SHA" --message "main at $GITHUB_SHA"
+      - name: Build and deploy the site
+        working-directory: apps/site
+        run: |
+          pnpm build
+          pnpm exec wrangler deploy --tag "$GITHUB_SHA" --message "main at $GITHUB_SHA"
+      - name: Check production serves this commit
+        run: |
+          node scripts/check-deployment.mjs https://holler.k-porshnieva.workers.dev holler "$GITHUB_SHA"
+          node scripts/check-deployment.mjs https://holler-site.k-porshnieva.workers.dev holler-site "$GITHUB_SHA"
+
+      - name: Build for the preview Worker
+        run: pnpm --filter @holler/web exec vite build
+        env:
+          CLOUDFLARE_ENV: preview
+      - name: Migrate the preview database
+        working-directory: apps/web
+        run: pnpm exec wrangler d1 migrations apply holler-preview --remote --env preview
+      - name: Deploy the preview Worker's base version
+        working-directory: apps/web
+        run: |
+          pnpm exec wrangler deploy -c dist/holler/wrangler.json --tag "$GITHUB_SHA" --message "main at $GITHUB_SHA"
+          node ../../scripts/check-deployment.mjs https://holler-preview.k-porshnieva.workers.dev holler "$GITHUB_SHA"

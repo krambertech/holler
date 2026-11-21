@@ -24,7 +24,9 @@
     "fix": "biome check --write .",
     "db:generate": "pnpm --filter @holler/web db:generate",
     "db:migrate": "pnpm --filter @holler/web db:migrate",
-    "check:design-coverage": "node scripts/check-design-coverage.mjs"
+    "check:design-coverage": "node scripts/check-design-coverage.mjs",
+    "deploy:check": "pnpm --filter @holler/web deploy:check && pnpm --filter @holler/site deploy:check",
+    "deploy:health": "node scripts/check-deployment.mjs https://holler.k-porshnieva.workers.dev holler && node scripts/check-deployment.mjs https://holler-site.k-porshnieva.workers.dev holler-site"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.11.0",

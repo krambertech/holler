@@ -133,4 +133,13 @@ describe("dev routes", () => {
   it("refuses state without a session", async () => {
     expect((await request("/api/dev/state")).status).toBe(403);
   });
+
+  it("hides every dev route without the key when a preview sets one", async () => {
+    const keyed = { ...env, DEV_ROUTES_KEY: "preview-key" } as Bindings;
+    const signIn = (headers: HeadersInit) =>
+      app.request(`${origin}/api/dev/sign-in?as=lead`, { headers }, keyed);
+    expect((await signIn({})).status).toBe(404);
+    expect((await signIn({ "x-holler-dev-key": "wrong-key!!" })).status).toBe(404);
+    expect((await signIn({ "x-holler-dev-key": "preview-key" })).status).toBe(302);
+  });
 });

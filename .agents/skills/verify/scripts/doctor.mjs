@@ -13,6 +13,7 @@ const HELP = `Usage: node .agents/skills/verify/scripts/doctor.mjs [options]
   --sha <commit>       Commit it should serve (default: HEAD of this worktree)
   --persona <name>     Persona /api/dev/state should report (default: lead)
   --session <file>     Playwright storage state holding the instance's cookies
+  --key <key>          A preview's DEV_ROUTES_KEY (default: $HOLLER_DEV_KEY)
 `;
 
 function git(args, cwd) {
@@ -77,16 +78,17 @@ function cookieFor(url, sessionFile) {
     .join("; ");
 }
 
-async function checkPersona(url, persona, cookie) {
+async function checkPersona(url, persona, cookie, key) {
   if (!cookie) return { ok: true, skipped: true, detail: "not checked without --session" };
   const response = await fetch(`${url}/api/dev/state`, {
-    headers: { cookie, accept: "application/json" },
+    headers: { cookie, accept: "application/json", ...(key ? { "x-holler-dev-key": key } : {}) },
     signal: AbortSignal.timeout(15_000),
   });
   if (response.status === 404) {
     return {
       ok: false,
-      detail: "/api/dev/state is off: set DEV_ROUTES=true in apps/web/.dev.vars",
+      detail:
+        "/api/dev/state is off: set DEV_ROUTES=true in apps/web/.dev.vars, or pass a preview's --key",
     };
   }
   if (!response.ok) return { ok: false, detail: `/api/dev/state answered HTTP ${response.status}` };
@@ -101,7 +103,7 @@ async function checkPersona(url, persona, cookie) {
 }
 
 /** Every check, in order; the instance is worth driving only when all pass. */
-export async function doctor({ url, sha, persona, cookie }) {
+export async function doctor({ url, sha, persona, cookie, key }) {
   const checks = [];
   let health;
   try {
@@ -112,7 +114,7 @@ export async function doctor({ url, sha, persona, cookie }) {
   checks.push({ name: "health", ok: healthy, detail: healthy ? url : `${url} is not Holler` });
   if (!healthy) return checks;
   checks.push({ name: "commit", ...checkCommit(url, health, sha) });
-  checks.push({ name: "persona", ...(await checkPersona(url, persona, cookie)) });
+  checks.push({ name: "persona", ...(await checkPersona(url, persona, cookie, key)) });
   return checks;
 }
 
@@ -131,6 +133,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
       sha: { type: "string" },
       persona: { type: "string", default: "lead" },
       session: { type: "string" },
+      key: { type: "string" },
       help: { type: "boolean", short: "h" },
     },
   });
@@ -143,6 +146,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
       sha: values.sha ?? git(["rev-parse", "HEAD"]),
       persona: values.persona,
       cookie: cookieFor(url, values.session),
+      key: values.key ?? process.env.HOLLER_DEV_KEY,
     });
     if (!report(checks)) process.exitCode = 1;
   }

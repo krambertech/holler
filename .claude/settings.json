@@ -28,10 +28,13 @@
       "Bash(gh pr checks*)",
       "Bash(gh pr diff*)",
       "Bash(gh run view*)",
-      "Bash(gh run list*)"
+      "Bash(gh run list*)",
+      "Bash(pnpm deploy:check)",
+      "Bash(pnpm deploy:health)"
     ],
     "deny": [
-      "Bash(pnpm deploy*)",
+      "Bash(pnpm deploy)",
+      "Bash(pnpm deploy --*)",
       "Bash(pnpm db:migrate:prod*)",
       "Bash(pnpm --filter @holler/web deploy*)",
       "Bash(pnpm --filter @holler/web db:migrate:prod*)",
