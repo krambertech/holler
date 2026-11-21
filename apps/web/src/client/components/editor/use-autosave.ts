@@ -28,9 +28,10 @@ export function useAutosave({ draft, id, enabled, save, onSaved, beacon }: Optio
   const json = JSON.stringify(toPayload(draft));
   const [state, setState] = useState<SaveState>(id ? "saved" : "idle");
   const savedJson = useRef<string | null>(id ? json : null);
-  const latest = useRef({ draft, json, id, save, onSaved, beacon });
-  latest.current = { draft, json, id, save, onSaved, beacon };
+  const latest = useRef({ draft, json, id, enabled, save, onSaved, beacon });
+  latest.current = { draft, json, id, enabled, save, onSaved, beacon };
   const running = useRef<Promise<HollerOut | null> | null>(null);
+  const mounted = useRef(true);
 
   const run = useCallback(async (): Promise<HollerOut | null> => {
     if (running.current) {
@@ -45,11 +46,13 @@ export function useAutosave({ draft, id, enabled, save, onSaved, beacon }: Optio
       try {
         const out = await doSave(toPayload(sent), currentId);
         savedJson.current = sentJson;
+        // Gone already: the save still lands, but the page it would update is not there.
+        if (!mounted.current) return out;
         latest.current.onSaved(out, sent);
         setState(latest.current.json === sentJson ? "saved" : "saving");
         return out;
       } catch (error) {
-        setState("error");
+        if (mounted.current) setState("error");
         throw error;
       }
     })();
@@ -84,6 +87,40 @@ export function useAutosave({ draft, id, enabled, save, onSaved, beacon }: Optio
     document.addEventListener("visibilitychange", flush);
     return () => document.removeEventListener("visibilitychange", flush);
   }, [enabled]);
+
+  // Leaving the editor inside the wait, by a link in the app: save what is left on the way out.
+  // A client-side navigation keeps the page visible, so the visibility save above never fires.
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      // A scheduled Holler's edits wait for Update schedule, so leaving drops them on purpose.
+      if (!latest.current.enabled) return;
+      // React's development double mount runs this and mounts again at once: that is no leaving.
+      queueMicrotask(() => {
+        if (mounted.current) return;
+        leave();
+      });
+    };
+    function leave() {
+      const { draft: current, json: now, id: currentId, save: doSave } = latest.current;
+      const last = (savedId: string | null) => {
+        if (now === savedJson.current) return;
+        if (!savedId && isBlank(current)) return;
+        savedJson.current = now;
+        void doSave(toPayload(current), savedId).catch(() => {});
+      };
+      const pending = running.current;
+      if (pending) {
+        pending.then(
+          (out) => last(out?.id ?? currentId),
+          () => last(currentId),
+        );
+      } else {
+        last(currentId);
+      }
+    }
+  }, []);
 
   /** Saves now, whatever the wait, and resolves with the saved Holler or null if nothing changed. */
   const flush = useCallback(() => run(), [run]);

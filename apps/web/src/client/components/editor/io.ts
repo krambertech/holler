@@ -5,8 +5,13 @@ import type { EditorIo } from "./holler-editor";
 
 /** The editor talking to the real API. Every write refreshes Home's lists and counts. */
 export function apiIo(queryClient: QueryClient): EditorIo {
+  // Home's lists and counts. A save that lands after the editor is gone, such as the one made on
+  // the way out, refetches them if Home is already showing.
   const refresh = () =>
-    queryClient.invalidateQueries({ queryKey: ["hollers"], refetchType: "none" });
+    Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["hollers", "list"] }),
+      queryClient.invalidateQueries({ queryKey: ["hollers", "counts"] }),
+    ]);
   return {
     save: async (payload, id) => {
       const out = id

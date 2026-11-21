@@ -383,16 +383,17 @@ function HollerEditor({
             if (scheduled) autosave.flush().catch(() => {});
             else void send();
           },
-          send:
-            scheduled || problems.length > 0
-              ? undefined
-              : {
-                  title: title || "Untitled",
-                  reach: summary.reach,
-                  chosen: summary.chosen,
-                  when: draft.sendAt ? dayTime(draft.sendAt) : "now",
-                  scheduled: !!draft.sendAt,
-                },
+          // The big-send question follows the audience on screen, never the last save's problems,
+          // which can be stale: an audience picked a moment ago has not been checked yet.
+          send: scheduled
+            ? undefined
+            : {
+                title: title || "Untitled",
+                reach: summary.reach,
+                chosen: summary.chosen,
+                when: draft.sendAt ? dayTime(draft.sendAt) : "now",
+                scheduled: !!draft.sendAt,
+              },
         };
 
   // ─── The page ──────────────────────────────────────────────────────────────────────────────

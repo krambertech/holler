@@ -66,3 +66,23 @@ test("a draft on Home opens in the editor", async ({ page }) => {
     "What is your one focus this week?",
   );
 });
+
+test("leaving the editor straight after typing keeps the draft", async ({ page }) => {
+  await signInAs(page, "lead");
+  await expect(page.getByRole("heading", { name: "Your hollers" })).toBeVisible();
+  await page.goto("/new?mode=survey");
+  await page.getByRole("textbox", { name: "Title" }).fill("Left in a hurry");
+  const saved = page.waitForResponse(
+    (r) => r.url().endsWith("/api/hollers") && r.request().method() === "POST",
+  );
+  // Well inside the save's wait.
+  await page.getByRole("link", { name: "Your hollers" }).click();
+  const response = await saved;
+  expect(response.status()).toBe(201);
+  await expect(page.getByRole("heading", { name: "Your hollers" })).toBeVisible();
+  // Read back by id: tests run in parallel against one dev workspace, and another test's sign-in
+  // can re-seed Home's list while this one runs.
+  const { id } = (await response.json()) as { id: string };
+  const draft = await page.request.get(`/api/hollers/${id}`);
+  expect(((await draft.json()) as { title: string }).title).toBe("Left in a hurry");
+});

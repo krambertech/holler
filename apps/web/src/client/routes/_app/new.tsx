@@ -82,14 +82,20 @@ function NewHoller() {
 
 function SavedDraft({ id, stage }: { id: string; stage: "compose" | "send" }) {
   const holler = useQuery(hollerQuery(id));
-  const audience = holler.data?.audience;
-  const ids = audience ? [...audience.people, ...audience.groups] : [];
-  const known = useQuery({
-    ...directoryLookupQuery(
-      holler.data?.announceChannelId ? [...ids, holler.data.announceChannelId] : ids,
-    ),
-    enabled: Boolean(holler.data),
-  });
+  // The names the draft's audience had when it opened. Saves later change the cached Holler, but
+  // never this lookup, so the editor is never swapped for the skeleton while someone types; the
+  // audience picker keeps the names of anyone picked after that itself.
+  const [ids, setIds] = useState<string[] | null>(null);
+  if (holler.data && ids === null) {
+    const { audience, announceChannelId } = holler.data;
+    setIds([
+      ...audience.people,
+      ...audience.groups,
+      ...(announceChannelId ? [announceChannelId] : []),
+    ]);
+  }
+  const known = useQuery({ ...directoryLookupQuery(ids ?? []), enabled: ids !== null });
+  const opened = useRef(false);
   if (holler.isError) {
     return (
       <>
@@ -103,7 +109,10 @@ function SavedDraft({ id, stage }: { id: string; stage: "compose" | "send" }) {
       </>
     );
   }
-  if (!holler.data || known.isPending) return <EditorSkeleton />;
+  // Only the first load waits; once the editor is up it stays up.
+  if (!opened.current && (!holler.data || known.isPending)) return <EditorSkeleton />;
+  opened.current = true;
+  if (!holler.data) return <EditorSkeleton />;
   return (
     <Editor
       key={id}
