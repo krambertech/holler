@@ -80,6 +80,7 @@ Project skills live in `.agents/skills/`; `.claude/skills` links to it so every 
 | Every modal element reads back into an answer `recordResponse` takes | `services/answering.test.ts` fills each element by type |
 | No cell of a CSV export runs as a formula, whatever anyone typed | `csvCell`; `services/exports.test.ts` writes every formula start into every field |
 | Anonymous results and exports keep no trace of answer order | `packages/core/src/results.test.ts` shuffles every answer; `services/exports.test.ts` |
+| A report names no one, on any Holler | `withoutNames`; `services/sharing.test.ts` searches every report for every answerer; `packages/core/src/results.test.ts` |
 
 ## Generated files
 

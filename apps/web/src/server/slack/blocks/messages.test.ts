@@ -9,6 +9,7 @@ import {
   inviteMessage,
   reminderMessage,
   sendFailedMessage,
+  sharedMessage,
 } from "./messages";
 import { answerModal, readAnswers } from "./modal";
 
@@ -277,6 +278,9 @@ describe("messages", () => {
       sendFailedMessage(pulse, "You have sent 5 hollers this month.", "https://app.test").text,
     ).toBe("How was your week? did not send. You have sent 5 hollers this month.");
   });
+  it("tells someone a Holler's results were shared with them", () => {
+    expect(sharedMessage(pulse, "U0MIRA", "https://app.test/hollers/hol_1")).toMatchSnapshot();
+  });
 });
 
 describe("answer modal", () => {
@@ -438,6 +442,7 @@ describe("every message fits Slack's limits", () => {
         announcementMessage(holler, { answered: 1999, recipients: 2000 }, true),
         closeNoticeMessage(holler, { answered: 1, recipients: 1 }, "https://app.holler.team/x"),
         sendFailedMessage(holler, long(300), "https://app.holler.team/x"),
+        sharedMessage(holler, "U0123456789", "https://app.holler.team/x"),
       ];
       for (const message of messages) expect(valid(message)).toEqual([]);
       if (where === "slack" || where === "dm") {

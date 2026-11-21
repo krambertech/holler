@@ -1,21 +1,22 @@
-import type { HollerOut } from "@holler/core";
+import type { HollerOut, SharingOut } from "@holler/core";
 import { anonymousThreshold, modeLabels } from "@holler/core";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
-import { useMemo } from "react";
+import { useDeferredValue, useMemo, useState } from "react";
 import { ErrorState } from "@/components/error-state";
 import { ModeGlyph } from "@/components/mode-glyph";
 import { HollerActions } from "@/components/results/holler-actions";
 import { HollerPeople } from "@/components/results/holler-people";
 import { type PersonLookup, QuestionResult } from "@/components/results/question-result";
+import { ShareDialog } from "@/components/results/share-dialog";
 import { Skeleton } from "@/components/skeleton";
 import { StatusChip } from "@/components/ui/chip";
 import { Plate } from "@/components/ui/plate";
 import { toast } from "@/components/ui/toast";
 import { api } from "@/lib/api";
 import { closesLabel, count, dayAndTime, momentLabel } from "@/lib/format";
-import { hollerPeopleQuery, resultsQuery } from "@/lib/queries";
+import { directoryQuery, hollerPeopleQuery, resultsQuery, sharingQuery } from "@/lib/queries";
 
 export const Route = createFileRoute("/_app/hollers/$id")({
   component: HollerPage,
@@ -40,6 +41,7 @@ function HollerPage() {
   const results = useQuery({ ...resultsQuery(id), enabled: sent });
   const people = useQuery({ ...hollerPeopleQuery(id), enabled: sent });
   const isCreator = holler.data?.isCreator ?? false;
+  const [sharingOpen, setSharingOpen] = useState(false);
 
   const refresh = () => queryClient.invalidateQueries({ queryKey: ["hollers"] });
   const remind = useMutation({
@@ -130,11 +132,20 @@ function HollerPage() {
             onCopyAsMarkdown={() => void copyAsMarkdown()}
             onCopyIntoDraft={() => copy.mutate()}
             onClose={() => close.mutate()}
+            onShare={() => setSharingOpen(true)}
             copying={copy.isPending}
             closing={close.isPending}
           />
         )}
       </div>
+      {isCreator && sent && (
+        <HollerSharing
+          hollerId={h.id}
+          canMakeLink={sent}
+          open={sharingOpen}
+          onOpenChange={setSharingOpen}
+        />
+      )}
       <header className="flex items-start gap-4">
         <ModeGlyph mode={h.mode} quiet={!live} />
         <div className="min-w-0 flex-1">
@@ -196,6 +207,72 @@ function HollerPage() {
         </section>
       )}
     </>
+  );
+}
+
+function HollerSharing({
+  hollerId,
+  canMakeLink,
+  open,
+  onOpenChange,
+}: {
+  hollerId: string;
+  canMakeLink: boolean;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const queryClient = useQueryClient();
+  const [search, setSearch] = useState("");
+  const query = useDeferredValue(search);
+  const sharing = useQuery({ ...sharingQuery(hollerId), enabled: open });
+  const directory = useQuery({ ...directoryQuery(query), enabled: open });
+  const change = (path: string, method: string, body?: unknown) =>
+    api<SharingOut>(`/hollers/${hollerId}${path}`, { method, json: body });
+  const settle = {
+    onSuccess: (next: SharingOut) => {
+      queryClient.setQueryData(sharingQuery(hollerId).queryKey, next);
+    },
+    onError: (error: Error) => toast.add({ tone: "danger", title: error.message }),
+  };
+  const visibility = useMutation({
+    mutationFn: (value: SharingOut["visibility"]) =>
+      change("/visibility", "PUT", { visibility: value }),
+    ...settle,
+  });
+  const add = useMutation({
+    mutationFn: (slackUserId: string) =>
+      change("/viewers", "POST", { slackUserIds: [slackUserId] }),
+    ...settle,
+  });
+  const remove = useMutation({
+    mutationFn: (slackUserId: string) =>
+      change(`/viewers/${encodeURIComponent(slackUserId)}`, "DELETE"),
+    ...settle,
+  });
+  const link = useMutation({
+    mutationFn: (on: boolean) => change("/report-link", on ? "POST" : "DELETE"),
+    ...settle,
+  });
+  return (
+    <ShareDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      sharing={sharing.data}
+      canMakeLink={canMakeLink}
+      candidates={(directory.data?.people ?? []).map((p) => ({
+        slackUserId: p.slackUserId,
+        name: p.displayName || p.name,
+        avatarUrl: p.avatarUrl,
+      }))}
+      onSearch={setSearch}
+      onVisibility={(value) => visibility.mutate(value)}
+      onAdd={(slackUserId) => add.mutate(slackUserId)}
+      onRemove={(slackUserId) => remove.mutate(slackUserId)}
+      onMakeLink={() => link.mutate(true)}
+      onTurnOffLink={() => link.mutate(false)}
+      adding={add.isPending}
+      linking={link.isPending}
+    />
   );
 }
 

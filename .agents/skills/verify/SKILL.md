@@ -21,6 +21,7 @@ A change is verified when every feature it reaches has been driven in a running 
 | Closing tells the creator in Slack | [slack-close.md](features/slack-close.md) |
 | A holler goes out in Slack and comes back answered | [slack-send.md](features/slack-send.md) |
 | The Holler page chases and closes | [holler-page.md](features/holler-page.md) |
+| Sharing the results | [sharing.md](features/sharing.md) |
 
 ## Launch
 

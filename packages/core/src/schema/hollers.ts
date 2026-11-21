@@ -193,23 +193,24 @@ export const recipients = sqliteTable(
   ],
 );
 
-/** Members a Holler's creator shared its results with. */
 export const viewers = sqliteTable(
   "viewers",
   {
     hollerId: text("holler_id")
       .notNull()
       .references(() => hollers.id, { onDelete: "cascade" }),
-    memberId: text("member_id")
-      .notNull()
-      .references(() => members.id, { onDelete: "cascade" }),
+    slackUserId: text("slack_user_id").notNull(),
     addedById: text("added_by_id")
       .notNull()
       .references(() => members.id),
     addedAt: integer("added_at", { mode: "timestamp_ms" }).notNull().default(now),
     notifiedAt: integer("notified_at", { mode: "timestamp_ms" }),
   },
-  (t) => [primaryKey({ columns: [t.hollerId, t.memberId] })],
+  (t) => [
+    primaryKey({ columns: [t.hollerId, t.slackUserId] }),
+    index("viewers_slack_user").on(t.slackUserId),
+    index("viewers_unnotified").on(t.notifiedAt),
+  ],
 );
 
 export type QuestionRow = typeof questions.$inferSelect;

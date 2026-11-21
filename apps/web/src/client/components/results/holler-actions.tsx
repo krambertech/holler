@@ -1,4 +1,4 @@
-import { Copy, Download, Ellipsis, FileText, Lock } from "lucide-react";
+import { Copy, Download, Ellipsis, FileText, Lock, UserPlus } from "lucide-react";
 import { type ComponentProps, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,6 +29,7 @@ interface Props extends ComponentProps<"div"> {
   onCopyAsMarkdown: () => void;
   onCopyIntoDraft: () => void;
   onClose: () => void;
+  onShare?: (() => void) | undefined;
   copying?: boolean | undefined;
   closing?: boolean | undefined;
 }
@@ -42,6 +43,7 @@ function HollerActions({
   onCopyAsMarkdown,
   onCopyIntoDraft,
   onClose,
+  onShare,
   copying = false,
   closing = false,
   ...props
@@ -50,6 +52,12 @@ function HollerActions({
   const exportHref = (format: "csv" | "md") => `/api/hollers/${hollerId}/export?format=${format}`;
   return (
     <div data-slot="holler-actions" className="flex flex-wrap items-center gap-2" {...props}>
+      {isCreator && onShare && (
+        <Button size="sm" onClick={onShare}>
+          <UserPlus aria-hidden />
+          <span className="max-sm:sr-only">Share</span>
+        </Button>
+      )}
       <DropdownMenu>
         <DropdownMenuTrigger
           disabled={!canExport}
@@ -57,7 +65,7 @@ function HollerActions({
           render={<Button size="sm" />}
         >
           {canExport ? <Download aria-hidden /> : <Lock aria-hidden />}
-          Export
+          <span className="max-sm:sr-only">Export</span>
         </DropdownMenuTrigger>
         <DropdownMenuContent aria-label="Export" align="end">
           <DropdownMenuLinkItem render={<a href={exportHref("csv")} download />}>

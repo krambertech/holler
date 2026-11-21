@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { anonymousThreshold, anonymousTime, type ResultsQuestion, summarize } from "./results";
+import {
+  anonymousThreshold,
+  anonymousTime,
+  type ResultsQuestion,
+  summarize,
+  withoutNames,
+} from "./results";
 
 const mood: ResultsQuestion = {
   id: "q1",
@@ -225,5 +231,63 @@ describe("anonymousTime", () => {
     };
     const first = run(1);
     for (let seed = 2; seed <= 25; seed++) expect(run(seed), `seed ${seed}`).toEqual(first);
+  });
+});
+
+describe("withoutNames", () => {
+  const every: ResultsQuestion[] = [
+    {
+      ...mood,
+      options: [...mood.options, { id: "o4", label: "Other", score: null, isOther: true }],
+    },
+    blockers,
+    { id: "q3", prompt: "Which days?", type: "multi", style: "plain", options: mood.options },
+    { id: "q4", prompt: "How many nights?", type: "number", style: "plain", options: [] },
+    { id: "q5", prompt: "Who should lead?", type: "person", style: "plain", options: [] },
+  ];
+  const named = (order: number[]) =>
+    summarize({
+      anonymous: false,
+      responseCount: 3,
+      questions: every,
+      names: new Map([["UPICKED", "Picked Person"]]),
+      answers: order.flatMap((n) => [
+        answer(`${n}`, "q1", n === 3 ? "o4" : "o1"),
+        answer(`${n}`, "q2", null, `blocked ${n}`),
+        answer(`${n}`, "q3", "o2"),
+        answer(`${n}`, "q4", null, `${n * 2}`),
+        answer(`${n}`, "q5", null, "UPICKED"),
+      ]),
+      notes: order.flatMap((n) => [
+        {
+          responseId: `${n}`,
+          questionId: "q1",
+          kind: "note" as const,
+          text: `note ${n}`,
+          slackUserId: `U${n}`,
+        },
+        ...(n === 3
+          ? [
+              {
+                responseId: "3",
+                questionId: "q1",
+                kind: "other" as const,
+                text: "Riga",
+                slackUserId: "U3",
+              },
+            ]
+          : []),
+      ]),
+    });
+
+  it("leaves no answerer in any question type, and keeps who a person question picked", () => {
+    const report = JSON.stringify(withoutNames(named([1, 2, 3])));
+    expect(report).not.toMatch(/"U\d"/);
+    expect(report).toContain("UPICKED");
+    expect(report).toContain("Riga");
+  });
+
+  it("says nothing about who answered first", () => {
+    expect(withoutNames(named([3, 1, 2]))).toEqual(withoutNames(named([1, 2, 3])));
   });
 });

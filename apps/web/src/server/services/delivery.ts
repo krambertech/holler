@@ -20,6 +20,7 @@ import {
   inviteMessage,
   reminderMessage,
   sendFailedMessage,
+  sharedMessage,
 } from "../slack/blocks/messages";
 import { type PostMessage, SlackApiError, type SlackClient } from "../slack/client";
 import { auditStatement } from "./audit";
@@ -62,7 +63,13 @@ export type SlackSend =
   | { kind: "snoozed"; hollerId: string; slackUserId: string; reminder: DmRef }
   | { kind: "announce"; hollerId: string }
   | { kind: "close_notice"; hollerId: string }
-  | { kind: "send_failed"; hollerId: string; reason: string; queuedAt: string };
+  | { kind: "send_failed"; hollerId: string; reason: string; queuedAt: string }
+  | {
+      kind: "shared";
+      hollerId: string;
+      slackUserId: string;
+      queuedAt: string;
+    };
 
 /**
  * What each send does in Slack. A post makes a new message, so the consumer claims it in
@@ -76,6 +83,7 @@ export const sendEffects = {
   announce: "posts",
   close_notice: "posts",
   send_failed: "posts",
+  shared: "posts",
   answered: "edits",
   closed: "edits",
   snoozed: "edits",
@@ -94,6 +102,8 @@ export function postKey(send: Extract<SlackSend, { kind: keyof PostingKinds }>):
       return `post:close_notice:${send.hollerId}`;
     case "send_failed":
       return `post:send_failed:${send.hollerId}:${send.queuedAt}`;
+    case "shared":
+      return `post:shared:${send.hollerId}:${send.slackUserId}:${send.queuedAt}`;
   }
 }
 
@@ -865,6 +875,26 @@ export async function deliver(env: Bindings, db: Db, send: SlackSend, now: Date)
         }),
       );
       return;
+    case "shared": {
+      const viewer = await db.query.viewers.findFirst({
+        where: and(
+          eq(schema.viewers.hollerId, row.id),
+          eq(schema.viewers.slackUserId, send.slackUserId),
+        ),
+      });
+      if (!viewer || row.status === "draft") return;
+      await postOnce(db, postKey(send), now, () =>
+        slack.postMessage({
+          channel: send.slackUserId,
+          ...sharedMessage(
+            holler,
+            loaded.creatorSlackUserId,
+            `${env.PRODUCT_URL}/hollers/${row.id}`,
+          ),
+        }),
+      );
+      return;
+    }
   }
 }
 

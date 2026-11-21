@@ -620,6 +620,37 @@ exports[`messages > says when a snoozed reminder comes back 1`] = `
 }
 `;
 
+exports[`messages > tells someone a Holler's results were shared with them 1`] = `
+{
+  "blocks": [
+    {
+      "text": {
+        "text": "<@U0MIRA> shared the results of _How was your week?_ with you.",
+        "type": "mrkdwn",
+      },
+      "type": "section",
+    },
+    {
+      "block_id": "shared:hol_1",
+      "elements": [
+        {
+          "action_id": "holler_results",
+          "text": {
+            "emoji": false,
+            "text": "See results",
+            "type": "plain_text",
+          },
+          "type": "button",
+          "url": "https://app.test/hollers/hol_1",
+        },
+      ],
+      "type": "actions",
+    },
+  ],
+  "text": "<@U0MIRA> shared the results of How was your week? with you.",
+}
+`;
+
 exports[`messages > tells the creator it closed, or that it did not send 1`] = `
 {
   "blocks": [

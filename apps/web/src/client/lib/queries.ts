@@ -1,4 +1,5 @@
 import type {
+  DirectoryOut,
   HollerSummary,
   HomeCounts,
   InstallStatus,
@@ -6,6 +7,7 @@ import type {
   Results,
   SettingsMember,
   SettingsWorkspace,
+  SharingOut,
 } from "@holler/core";
 import { queryOptions } from "@tanstack/react-query";
 import { api } from "./api";
@@ -82,4 +84,17 @@ export const hollerPeopleQuery = (id: string) =>
   queryOptions({
     queryKey: ["hollers", id, "people"],
     queryFn: () => api<RecipientsOut>(`/hollers/${id}/people`),
+  });
+
+export const sharingQuery = (id: string) =>
+  queryOptions({
+    queryKey: ["hollers", id, "sharing"],
+    queryFn: () => api<SharingOut>(`/hollers/${id}/sharing`),
+  });
+
+export const directoryQuery = (q: string) =>
+  queryOptions({
+    queryKey: ["directory", q],
+    queryFn: () => api<DirectoryOut>(`/directory?q=${encodeURIComponent(q)}`),
+    staleTime: 60_000,
   });
