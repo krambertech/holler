@@ -6,6 +6,7 @@ import { runCronPass } from "../cron";
 import { queueAfterResponse } from "../services/delivery";
 import { ensurePersona, isPersona } from "../services/dev-personas";
 import { devState, resetDevWorkspace } from "../services/dev-state";
+import { respondUrl } from "../services/respond-links";
 import { recordResponse } from "../services/responses";
 import { requireMember } from "./context";
 
@@ -17,6 +18,8 @@ import { requireMember } from "./context";
  * - `GET /state` is the stored state a recipe compares with the screen.
  * - `POST /tick` runs the cron's pass at `at`, so a close time can pass without waiting.
  * - `POST /answer` answers as a recipient, the way their Slack button would, and updates their DM.
+ * - `GET /respond-link?holler=…&as=U…` is that recipient's signed web form link, the one their DM
+ *   carries, as `{ url }` relative to this server.
  */
 export const devRoutes = new Hono<AppEnv>()
   .get("/sign-in", async (c) => {
@@ -40,6 +43,13 @@ export const devRoutes = new Hono<AppEnv>()
     const when = at ? new Date(at) : c.get("now")();
     const pass = await runCronPass(c.env, c.get("db"), when);
     return c.json({ at: when.toISOString(), ...pass });
+  })
+  .get("/respond-link", async (c) => {
+    requireMember(c);
+    const hollerId = c.req.query("holler") ?? "";
+    const slackUserId = c.req.query("as") ?? "";
+    const url = new URL(await respondUrl(c.env, hollerId, slackUserId));
+    return c.json({ url: `${url.pathname}${url.search}` });
   })
   .post("/answer", sValidator("json", devAnswerInputSchema), async (c) => {
     const { hollerId, slackUserId, response } = c.req.valid("json");

@@ -1,7 +1,12 @@
 import { z } from "zod";
 import { modes, questionStyles, questionTypes } from "./modes";
 import type { Results } from "./results";
-import { audienceSchema, hollerStatusSchema, hollerSummarySchema } from "./types";
+import {
+  audienceSchema,
+  hollerStatusSchema,
+  hollerSummarySchema,
+  responseInputSchema,
+} from "./types";
 
 /**
  * What the public API (`/api/v1`) and the MCP tools return. Inputs live in types.ts; these
@@ -285,3 +290,82 @@ export type ConnectedAppOut = z.infer<typeof connectedAppOutSchema>;
 export const okOutSchema = z.object({ ok: z.literal(true) });
 
 export const exportFormatSchema = z.enum(["csv", "md"]);
+
+/**
+ * The web form at /respond/$id. A recipient has no account: the signed link from their DM,
+ * `u` (their Slack id) and `s` (its signature), is how the page says who is answering.
+ * docs/slack.md, Answering.
+ */
+export const respondLinkSchema = z.object({
+  u: z.string().min(1).max(40),
+  s: z.string().min(1).max(100),
+});
+export type RespondLink = z.infer<typeof respondLinkSchema>;
+
+/** A question as the web form draws and checks it. `options` holds Other too, last. */
+export const respondQuestionSchema = z.object({
+  id: z.string(),
+  type: z.enum(questionTypes),
+  style: z.enum(questionStyles),
+  prompt: z.string(),
+  description: z.string(),
+  required: z.boolean(),
+  options: z.array(
+    z.object({
+      id: z.string(),
+      position: z.number().int(),
+      label: z.string(),
+      isOther: z.boolean(),
+    }),
+  ),
+  maxChoices: z.number().int().nullable(),
+  followUp: z
+    .object({ prompt: z.string(), onlyAfter: z.array(z.number().int()).nullable() })
+    .nullable(),
+  lowLabel: z.string().nullable(),
+  highLabel: z.string().nullable(),
+  numberMin: z.number().int().nullable(),
+  numberMax: z.number().int().nullable(),
+});
+export type RespondQuestion = z.infer<typeof respondQuestionSchema>;
+
+const respondHollerSchema = z.object({
+  id: z.string(),
+  mode: z.enum(modes),
+  title: z.string(),
+  /** Markdown, as the editor stores it. */
+  description: z.string(),
+  senderName: z.string(),
+  anonymous: z.boolean(),
+  closesAt: timestamp.nullable(),
+  /** A chase's form. */
+  externalUrl: z.string().nullable(),
+});
+
+/**
+ * What the web form shows: the questions while it is open to this person, or why not. `answered`
+ * is also what a second visit after answering sees.
+ */
+export const respondFormOutSchema = z.discriminatedUnion("state", [
+  z.object({
+    state: z.literal("open"),
+    holler: respondHollerSchema,
+    questions: z.array(respondQuestionSchema),
+  }),
+  z.object({ state: z.literal("answered"), holler: respondHollerSchema }),
+  z.object({ state: z.literal("closed"), holler: respondHollerSchema }),
+]);
+export type RespondForm = z.infer<typeof respondFormOutSchema>;
+
+/** `POST /api/respond/:id`: the link and the answers. */
+export const respondInputSchema = respondLinkSchema.extend({
+  response: responseInputSchema,
+});
+
+/** A person a person question can pick, from the workspace's Slack directory. */
+export const respondPersonSchema = z.object({
+  slackUserId: z.string(),
+  name: z.string(),
+  avatarUrl: z.string().nullable(),
+});
+export type RespondPerson = z.infer<typeof respondPersonSchema>;

@@ -1,6 +1,7 @@
 import {
   anonymousTime,
-  isChoice,
+  answerProblem,
+  type CheckedQuestion,
   newId,
   type ResponseInput,
   type Results,
@@ -13,6 +14,22 @@ import { type ServiceContext, ServiceError } from "./context";
 
 const { hollers, questions, options, recipients, responses, answers, answerNotes, slackPeople } =
   schema;
+
+/** A stored question and its option rows, in the shape the shared answer checks read. */
+export function checkedQuestion(
+  question: typeof questions.$inferSelect,
+  own: readonly (typeof options.$inferSelect)[],
+): CheckedQuestion {
+  return {
+    type: question.type,
+    required: question.required,
+    maxChoices: question.maxChoices,
+    numberMin: question.numberMin,
+    numberMax: question.numberMax,
+    options: own.map((o) => ({ id: o.id, position: o.position, isOther: o.isOther })),
+    followUp: question.followUpPrompt === null ? null : { onlyAfter: question.followUpWhen },
+  };
+}
 
 export type ResponseVia = "slack_button" | "slack_modal" | "web" | "api";
 
@@ -71,49 +88,37 @@ export async function recordResponse(
   for (const question of qs) {
     const answer = parsed.answers.find((a) => a.questionId === question.id);
     const own = opts.filter((o) => o.questionId === question.id);
-    const refuse = (message: string) => new ServiceError("invalid", message, question.id);
-    const needsAnswer = () => refuse("This question needs an answer.");
+    const checked = checkedQuestion(question, own);
+    // The same rules, in the same words, as the web form checks before it sends.
+    const problem = answerProblem(checked, answer);
+    if (problem) throw new ServiceError("invalid", problem, question.id);
     const note = answer?.note?.trim() || null;
     const otherText = answer?.otherText?.trim() || null;
-    if (!isChoice(question.type)) {
-      if (note) throw refuse("This question does not ask for a note.");
-      if (otherText) throw refuse("This question has no Other option.");
-    }
 
     if (question.type === "text") {
       const text = answer?.text?.trim() ?? "";
-      if (!text && question.required) throw needsAnswer();
       if (text) rows.push({ id: newId("answer"), responseId, questionId: question.id, text });
       continue;
     }
 
     if (question.type === "number") {
       const value = answer?.number ?? null;
-      if (value === null) {
-        if (question.required) throw needsAnswer();
-        continue;
-      }
-      const { numberMin: min, numberMax: max } = question;
-      if ((min !== null && value < min) || (max !== null && value > max)) {
-        throw refuse(rangeMessage(min, max));
-      }
       // Stored as its decimal string: an answers row holds an option or text.
-      rows.push({ id: newId("answer"), responseId, questionId: question.id, text: String(value) });
+      if (value !== null) {
+        rows.push({
+          id: newId("answer"),
+          responseId,
+          questionId: question.id,
+          text: String(value),
+        });
+      }
       continue;
     }
 
     if (question.type === "person") {
       const picked = [...new Set(answer?.slackUserIds ?? [])];
-      if (picked.length === 0 && question.required) throw needsAnswer();
-      if (question.maxChoices !== null && picked.length > question.maxChoices) {
-        throw refuse(
-          question.maxChoices === 1
-            ? "Pick one person."
-            : `Pick up to ${count.format(question.maxChoices)} people.`,
-        );
-      }
       if (picked.some((id) => !known.has(id))) {
-        throw refuse("Pick someone from this Slack workspace.");
+        throw new ServiceError("invalid", "Pick someone from this Slack workspace.", question.id);
       }
       for (const slackUserId of picked) {
         rows.push({ id: newId("answer"), responseId, questionId: question.id, text: slackUserId });
@@ -122,42 +127,10 @@ export async function recordResponse(
     }
 
     const picked = [...new Set(answer?.optionIds ?? [])];
-    if (picked.some((id) => !own.some((o) => o.id === id))) {
-      throw refuse("That choice is not one of this question's options.");
-    }
-    if (question.type === "single" && picked.length > 1) throw refuse("Pick one option.");
-    if (question.maxChoices !== null && picked.length > question.maxChoices) {
-      throw refuse(
-        question.maxChoices === 1
-          ? "Pick one option."
-          : `Pick up to ${count.format(question.maxChoices)} options.`,
-      );
-    }
-    if (picked.length === 0 && question.required) throw needsAnswer();
-
-    const other = own.find((o) => o.isOther);
-    const pickedOther = other !== undefined && picked.includes(other.id);
-    if (otherText && !pickedOther) {
-      throw refuse("Pick Other to add your own answer, or clear what you wrote.");
-    }
-    if (pickedOther && !otherText) throw refuse("Write your answer beside Other.");
-
-    if (note) {
-      if (question.followUpPrompt === null) throw refuse("This question does not ask for a note.");
-      if (picked.length === 0) throw refuse("Pick an answer before adding a note.");
-      // The follow-up names options by position; Other sits last, after the options written.
-      const shows = question.followUpWhen;
-      if (shows && !own.some((o) => picked.includes(o.id) && shows.includes(o.position))) {
-        throw refuse(
-          "That answer does not ask for a note. Clear the note, or pick another answer.",
-        );
-      }
-    }
-
     for (const optionId of picked) {
       rows.push({ id: newId("answer"), responseId, questionId: question.id, optionId });
     }
-    if (pickedOther && otherText) {
+    if (otherText) {
       notes.push({ responseId, questionId: question.id, kind: "other", text: otherText });
     }
     if (note) notes.push({ responseId, questionId: question.id, kind: "note", text: note });
@@ -278,16 +251,6 @@ export async function resultsFor(ctx: ServiceContext, hollerId: string): Promise
     notes,
     names,
   });
-}
-
-const count = new Intl.NumberFormat("en");
-
-function rangeMessage(min: number | null, max: number | null): string {
-  if (min !== null && max !== null) {
-    return `Enter a whole number from ${count.format(min)} to ${count.format(max)}.`;
-  }
-  if (min !== null) return `Enter a whole number of ${count.format(min)} or more.`;
-  return `Enter a whole number of ${count.format(max ?? 0)} or less.`;
 }
 
 /**
