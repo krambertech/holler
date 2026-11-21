@@ -1,4 +1,5 @@
-import { Plate, PlateRow, PlateStrip } from "@/components/ui/plate";
+import { Button } from "@/components/ui/button";
+import { Plate, PlateRow, PlateStrip, Underplate, UnderplateStrip } from "@/components/ui/plate";
 import { Variants } from "../frame";
 import type { Group } from "./types";
 
@@ -28,6 +29,36 @@ export const surfaces: Group = {
                     <span>Remind now</span>
                   </PlateStrip>
                 </Plate>
+              ),
+            },
+          ]}
+        />
+      ),
+    },
+    {
+      slug: "underplate",
+      name: "Underplate, UnderplateStrip",
+      source: "components/ui/plate.tsx",
+      note: "A tinted layer under a plate that shows below it, for what happens next and the action that changes it. The plate keeps its own corners and edge on top.",
+      Demo: () => (
+        <Variants
+          stack
+          items={[
+            {
+              label: "Under the people on a Holler",
+              render: () => (
+                <Underplate className="w-full">
+                  <Plate>
+                    <PlateRow className="px-5 py-3.5">Ben</PlateRow>
+                    <PlateRow className="px-5 py-3.5">Dana</PlateRow>
+                  </Plate>
+                  <UnderplateStrip>
+                    <span>2 people are waiting. Holler reminds them tomorrow at 10:00.</span>
+                    <Button variant="primary" size="sm">
+                      Send reminder
+                    </Button>
+                  </UnderplateStrip>
+                </Underplate>
               ),
             },
           ]}

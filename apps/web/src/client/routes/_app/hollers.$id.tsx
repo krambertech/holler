@@ -10,7 +10,7 @@ import { HollerActions } from "@/components/results/holler-actions";
 import { HollerPeople } from "@/components/results/holler-people";
 import { type PersonLookup, QuestionResult } from "@/components/results/question-result";
 import { Skeleton } from "@/components/skeleton";
-import { Chip, StatusChip } from "@/components/ui/chip";
+import { StatusChip } from "@/components/ui/chip";
 import { Plate } from "@/components/ui/plate";
 import { toast } from "@/components/ui/toast";
 import { api } from "@/lib/api";
@@ -112,26 +112,14 @@ function HollerPage() {
 
   return (
     <>
-      <Link
-        to="/"
-        className="relative inline-flex w-fit items-center gap-1.5 rounded-sm py-1 text-ink-2 hoverable:hover:text-ink pointer-coarse:before:absolute pointer-coarse:before:-inset-2 pointer-coarse:before:content-['']"
-      >
-        <ArrowLeft aria-hidden size={16} strokeWidth={2} />
-        Your hollers
-      </Link>
-      <header className="flex flex-wrap items-start gap-4">
-        <ModeGlyph mode={h.mode} quiet={!live} />
-        <div className="min-w-0 flex-1 basis-64">
-          <h1 className="text-pretty text-4xl tracking-title">{h.displayTitle || "Untitled"}</h1>
-          <div className="mt-2 flex flex-wrap items-center gap-2 text-muted text-sm">
-            {/* Only a live Holler is calling; scheduled, draft and closed are all quiet. */}
-            <StatusChip status={live ? "live" : "closed"}>{statusWord[h.status]}</StatusChip>
-            <span>{modeLabels[h.mode]}</span>
-            {h.anonymous && <Chip variant="tint">Anonymous</Chip>}
-            {live && h.closesAt && <span>Closes {closesLabel(h.closesAt)}</span>}
-            {h.status === "closed" && h.closedAt && <span>Closed {dayAndTime(h.closedAt)}</span>}
-          </div>
-        </div>
+      <div className="flex items-center justify-between gap-3">
+        <Link
+          to="/"
+          className="relative inline-flex w-fit items-center gap-1.5 rounded-sm py-1 text-ink-2 hoverable:hover:text-ink pointer-coarse:before:absolute pointer-coarse:before:-inset-2 pointer-coarse:before:content-['']"
+        >
+          <ArrowLeft aria-hidden size={16} strokeWidth={2} />
+          Your hollers
+        </Link>
         {sent && (
           <HollerActions
             hollerId={h.id}
@@ -146,6 +134,17 @@ function HollerPage() {
             closing={close.isPending}
           />
         )}
+      </div>
+      <header className="flex items-start gap-4">
+        <ModeGlyph mode={h.mode} quiet={!live} />
+        <div className="min-w-0 flex-1">
+          <h1 className="text-pretty text-4xl tracking-title">{h.displayTitle || "Untitled"}</h1>
+          <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-muted text-sm">
+            {/* Only a live Holler is calling; scheduled, draft and closed are all quiet. */}
+            <StatusChip status={live ? "live" : "closed"}>{statusWord[h.status]}</StatusChip>
+            <span>{metaLine(h, live)}</span>
+          </div>
+        </div>
       </header>
 
       {h.status === "scheduled" && h.sendAt && (
@@ -198,6 +197,14 @@ function HollerPage() {
       )}
     </>
   );
+}
+
+function metaLine(h: HollerOut, live: boolean): string {
+  const parts = [modeLabels[h.mode]];
+  if (h.anonymous) parts.push("Anonymous");
+  if (live && h.closesAt) parts.push(`Closes ${closesLabel(h.closesAt)}`);
+  if (h.status === "closed" && h.closedAt) parts.push(`Closed ${dayAndTime(h.closedAt)}`);
+  return parts.join(" · ");
 }
 
 function HollerSkeleton() {

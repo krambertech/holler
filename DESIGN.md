@@ -76,7 +76,7 @@ The colours above are generated from `packages/design/tokens.css` by `node scrip
 ## Rules every screen follows
 
 1. **One column, no sidebar.** A slim header, then the page, at most 880 px wide. Holler is a small tool and looks like one.
-2. **Warm canvas, white plates.** Rows that belong together share one `Plate`, with a hairline between them (`PlateRow`). A tinted `PlateStrip` can close a plate: "9 people still to answer". A plate's depth is one hairline edge: no drop shadows, no gradients. Only what floats over the page (menus, popovers, dialogs, toasts) adds one soft shadow, `shadow-float`.
+2. **Warm canvas, white plates.** Rows that belong together share one `Plate`, with a hairline between them (`PlateRow`). A tinted `PlateStrip` can close a plate: "9 people still to answer". When what comes next has its own action, such as Send reminder under a Holler's people, it sits on an `Underplate`: a tinted layer under the plate that shows below it. A plate's depth is one hairline edge: no drop shadows, no gradients. Only what floats over the page (menus, popovers, dialogs, toasts) adds one soft shadow, `shadow-float`.
 3. **One plum button per screen.** It is the main action: `Button` with `variant="primary"`. Every other button is white with a hairline. At night soft pink takes plum's job, with deep plum text on it.
 4. **Pink means live.** Pink is the voice: the logo's sound lines, and in the interface only what is out and calling right now, the Live chip and its dot (`live`, `live-ink`, `live-dot`). Pink never carries body text, and at night soft pink also takes plum's job.
 5. **Status always has a word.** `StatusChip` and `StatusDot` pair a colour with Live, Answered, Waiting, Away, Closed or Not sent. Colour is never the only signal.
@@ -124,7 +124,7 @@ Numbers in tables and counts use `tabular`.
 | Component                         | File                          | Notes                                                                                        |
 | --------------------------------- | ----------------------------- | -------------------------------------------------------------------------------------------- |
 | `Button` | `components/ui/button.tsx` | `primary`, `secondary`, `ghost`; sizes `sm`, `md`, `icon-sm`, `icon`; `render` for links; `pending` blocks every further press |
-| `Plate`, `PlateRow`, `PlateStrip` | `components/ui/plate.tsx`     | The surface system                                                                           |
+| `Plate`, `PlateRow`, `PlateStrip`, `Underplate`, `UnderplateStrip` | `components/ui/plate.tsx`     | The surface system                                                                           |
 | `Chip`, `StatusChip`, `StatusDot` | `components/ui/chip.tsx`      | Pills; a status always has its word                                                          |
 | `Avatar`, `AvatarStack`           | `components/ui/avatar.tsx`    | Waiting people are greyed in a stack; the stack carries one `aria-label`                     |
 | `ProgressBar`                     | `components/ui/progress.tsx`  | Decorative; the count beside it carries the meaning                                          |

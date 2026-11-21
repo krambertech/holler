@@ -1,8 +1,8 @@
 import type { QuestionResult as Result } from "@holler/core";
 import type { ComponentProps, ReactNode } from "react";
 import { Avatar, AvatarStack } from "@/components/ui/avatar";
-import { Chip } from "@/components/ui/chip";
 import { Plate } from "@/components/ui/plate";
+import { ProgressBar } from "@/components/ui/progress";
 import { cn } from "@/lib/cn";
 import { count, percent } from "@/lib/format";
 
@@ -17,34 +17,32 @@ interface Props extends ComponentProps<"section"> {
   people: ReadonlyMap<string, PersonLookup>;
 }
 
-const ramp = ["bg-chart-5", "bg-chart-4", "bg-chart-3", "bg-chart-2", "bg-chart-1"];
-
-function rampFor(index: number, total: number): string {
-  if (total <= 1) return "bg-chart-2";
-  const step = Math.round((index / (total - 1)) * (ramp.length - 1));
-  return ramp[step] ?? "bg-chart-2";
-}
-
 function QuestionResult({ question, number, people, className, ...props }: Props) {
   const headingId = `question-${question.id}`;
   return (
     <section aria-labelledby={headingId} data-slot="question-result" {...props}>
       <Plate className={cn(className)}>
-        <div className="flex items-baseline gap-3 px-5 pt-4 pb-3">
-          <span aria-hidden className="w-5 shrink-0 text-muted text-sm tabular">
-            {number}
-          </span>
-          <h3 id={headingId} className="min-w-0 flex-1 text-lg">
+        <div className="px-5 pt-4 pb-3">
+          <h3 id={headingId} className="text-pretty text-lg">
+            <span aria-hidden className="me-2 text-muted tabular">
+              {number}
+            </span>
             {question.prompt}
           </h3>
-          <span className="shrink-0 text-muted text-sm tabular">
-            {count(question.answeredCount)} answered
-          </span>
+          <p className="mt-0.5 text-muted text-sm tabular">{summaryLine(question)}</p>
         </div>
         <Body question={question} people={people} />
       </Plate>
     </section>
   );
+}
+
+function summaryLine(question: Result): string {
+  const answered = `${count(question.answeredCount)} answered`;
+  if ((question.type === "single" || question.type === "multi") && question.average !== null) {
+    return `${answered} · Average ${count(question.average)}`;
+  }
+  return answered;
 }
 
 function Body({
@@ -78,7 +76,6 @@ function Body({
   }
   if (question.type === "person") {
     if (question.people.length === 0) return <Empty>No one picked yet.</Empty>;
-    const top = Math.max(...question.people.map((p) => p.count));
     return (
       <ul className="grid gap-3 px-5 pb-5">
         {question.people.map((person) => (
@@ -87,7 +84,6 @@ function Body({
             label={person.name}
             value={person.count}
             share={person.share}
-            colour={person.count === top ? "bg-chart-2" : "bg-chart-4"}
             leading={
               <Avatar
                 name={person.name}
@@ -103,31 +99,15 @@ function Body({
       </ul>
     );
   }
-  const top = Math.max(0, ...question.options.map((o) => o.count));
-  const scale = question.style === "scale";
   return (
     <>
-      {question.average !== null && (
-        <div className="px-5 pb-3">
-          <Chip variant="tint" className="tabular">
-            Average {count(question.average)}
-          </Chip>
-        </div>
-      )}
       <ul className="grid gap-3 px-5 pb-5">
-        {question.options.map((option, index) => (
+        {question.options.map((option) => (
           <Bar
             key={option.id}
             label={option.label}
             value={option.count}
             share={option.share}
-            colour={
-              scale
-                ? rampFor(index, question.options.length)
-                : option.count === top && top > 0
-                  ? "bg-chart-2"
-                  : "bg-chart-4"
-            }
             pickedBy={option.slackUserIds}
             people={people}
           />
@@ -147,7 +127,6 @@ function Bar({
   label,
   value,
   share,
-  colour,
   leading,
   pickedBy,
   people,
@@ -155,7 +134,6 @@ function Bar({
   label: string;
   value: number;
   share: number;
-  colour: string;
   leading?: ReactNode | undefined;
   pickedBy: string[];
   people: ReadonlyMap<string, PersonLookup>;
@@ -186,15 +164,7 @@ function Bar({
           </span>
         </span>
       </div>
-      <span aria-hidden className="mt-1.5 block h-2 overflow-hidden rounded-full bg-track">
-        <span
-          className={cn(
-            "block h-full w-full origin-left rounded-full transition-transform duration-250 rtl:origin-right",
-            colour,
-          )}
-          style={{ transform: `scaleX(${Math.min(1, Math.max(0, share))})` }}
-        />
-      </span>
+      <ProgressBar value={share} className="mt-1.5 h-2" />
     </li>
   );
 }
@@ -226,7 +196,12 @@ function Written({
               <q className="text-pretty text-ink-2 before:content-none after:content-none">
                 {answer.text}
               </q>
-              {by && <span className="text-muted text-sm">{by.name}</span>}
+              {by && answer.slackUserId && (
+                <span className="flex items-center gap-2 text-muted text-sm">
+                  <Avatar name={by.name} seed={answer.slackUserId} src={by.avatarUrl} size="sm" />
+                  {by.name}
+                </span>
+              )}
             </li>
           );
         })}
