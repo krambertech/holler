@@ -5,6 +5,7 @@ import { testDb } from "../test-db";
 import { ACTIVITY_PAGE, listActivity } from "./activity";
 import { audit } from "./audit";
 import type { ServiceContext } from "./context";
+import { createDraft } from "./hollers";
 import { linkSlackAccount, setMemberRole } from "./members";
 import { grantFor, slackUser, TEST_TOKEN_KEY } from "./slack-fixtures";
 import { completeInstall } from "./workspaces";
@@ -98,5 +99,37 @@ describe("listActivity", () => {
       where: (a, { eq }) => eq(a.workspaceId, workspaceId),
     });
     expect(seen.length).toBe(all.length);
+  });
+  it("reads a page where every row names two different people", async () => {
+    const { as } = await team("UACT6");
+    for (let i = 0; i < ACTIVITY_PAGE; i++) {
+      const ctx = as("UACT6", new Date(now.getTime() + 120_000 + i));
+      await audit(
+        { ...ctx, actor: { via: "web", memberId: `mem_actor${i}`, slackUserId: `UX${i}` } },
+        {
+          action: "member.role_changed",
+          subjectType: "member",
+          subjectId: `mem_subject${i}`,
+          data: { from: "sender", to: "owner" },
+        },
+      );
+    }
+    const out = await listActivity(as("UACT6"), {});
+    expect(out.entries).toHaveLength(ACTIVITY_PAGE);
+    expect(out.entries.every((e) => e.subject.name === null && e.actor === null)).toBe(true);
+  });
+
+  it("links a Holler only when the owner reading Activity can open it", async () => {
+    const { as } = await team("UACT7");
+    const draft = { mode: "pulse" as const, title: "", questions: [] };
+    const own = await createDraft(as("UACT7"), { ...draft, title: "Mine" });
+    const theirs = await createDraft(as("UACT7S"), { ...draft, title: "Theirs" });
+    const subjects = new Map(
+      (await listActivity(as("UACT7"), {})).entries
+        .filter((e) => e.subject.type === "holler")
+        .map((e) => [e.subject.id, e.subject]),
+    );
+    expect(subjects.get(own.id)).toMatchObject({ name: "Mine", canOpen: true });
+    expect(subjects.get(theirs.id)).toMatchObject({ name: "Theirs", canOpen: false });
   });
 });

@@ -55,6 +55,9 @@ export const activityEntrySchema = z.object({
     type: z.enum(activitySubjectTypes),
     id: z.string(),
     name: z.string().nullable(),
+    canOpen: z
+      .boolean()
+      .describe("True when the reader may open it: a Holler they made, share or see."),
   }),
   detail: z.object({
     count: z.number().int().optional(),

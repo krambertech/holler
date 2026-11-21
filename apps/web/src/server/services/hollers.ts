@@ -34,7 +34,7 @@ import { memberOf, type ServiceContext, ServiceError } from "./context";
 const { hollers, questions, options, recipients, members, slackPeople } = schema;
 
 /** A Holler the member may see: their own, one shared with the workspace, or one shared with them. */
-function visibleTo(ctx: ServiceContext, memberId: string) {
+export function visibleTo(ctx: ServiceContext, memberId: string) {
   return and(
     eq(hollers.workspaceId, ctx.workspaceId),
     or(

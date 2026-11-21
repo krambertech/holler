@@ -27,6 +27,14 @@ function HollerTitle({
   last?: boolean | undefined;
 }) {
   if (!entry.subject.name) return <Name>a Holler that was deleted{last && "."}</Name>;
+  if (!entry.subject.canOpen) {
+    return (
+      <>
+        <Name>{entry.subject.name}</Name>
+        {last && closingStop(entry.subject.name)}
+      </>
+    );
+  }
   return (
     <>
       <Link

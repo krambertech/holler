@@ -1,7 +1,9 @@
 import type { ActivityEntry, ActivityOut } from "@holler/core";
-import { and, desc, eq, inArray, lt, or } from "@holler/core/db";
+import { and, desc, eq, inArray, lt, or, sql } from "@holler/core/db";
+import { inChunks } from "../batch";
 import { schema } from "../db";
 import { memberOf, type ServiceContext, ServiceError } from "./context";
+import { visibleTo } from "./hollers";
 
 const { activity, members, slackPeople, hollers, oauthClient } = schema;
 
@@ -38,24 +40,28 @@ async function requireOwner(ctx: ServiceContext) {
 }
 
 async function namesOfMembers(ctx: ServiceContext, ids: string[]) {
-  if (ids.length === 0) return new Map<string, NonNullable<ActivityEntry["actor"]>>();
-  const rows = await ctx.db
-    .select({
-      id: members.id,
-      slackUserId: members.slackUserId,
-      name: slackPeople.name,
-      displayName: slackPeople.displayName,
-      avatarUrl: slackPeople.avatarUrl,
-    })
-    .from(members)
-    .leftJoin(
-      slackPeople,
-      and(
-        eq(slackPeople.workspaceId, members.workspaceId),
-        eq(slackPeople.slackUserId, members.slackUserId),
-      ),
-    )
-    .where(and(eq(members.workspaceId, ctx.workspaceId), inArray(members.id, ids)));
+  const rows = [];
+  for (const chunk of inChunks(ids)) {
+    rows.push(
+      ...(await ctx.db
+        .select({
+          id: members.id,
+          slackUserId: members.slackUserId,
+          name: slackPeople.name,
+          displayName: slackPeople.displayName,
+          avatarUrl: slackPeople.avatarUrl,
+        })
+        .from(members)
+        .leftJoin(
+          slackPeople,
+          and(
+            eq(slackPeople.workspaceId, members.workspaceId),
+            eq(slackPeople.slackUserId, members.slackUserId),
+          ),
+        )
+        .where(and(eq(members.workspaceId, ctx.workspaceId), inArray(members.id, chunk)))),
+    );
+  }
   return new Map(
     rows.map((r) => [
       r.id,
@@ -69,20 +75,33 @@ async function namesOfMembers(ctx: ServiceContext, ids: string[]) {
 }
 
 async function titlesOfHollers(ctx: ServiceContext, ids: string[]) {
-  if (ids.length === 0) return new Map<string, string>();
-  const rows = await ctx.db
-    .select({ id: hollers.id, title: hollers.title })
-    .from(hollers)
-    .where(and(eq(hollers.workspaceId, ctx.workspaceId), inArray(hollers.id, ids)));
-  return new Map(rows.map((r) => [r.id, r.title]));
+  const memberId = memberOf(ctx);
+  const rows = [];
+  for (const chunk of inChunks(ids)) {
+    rows.push(
+      ...(await ctx.db
+        .select({
+          id: hollers.id,
+          title: hollers.title,
+          canOpen: sql<number>`case when ${visibleTo(ctx, memberId)} then 1 else 0 end`,
+        })
+        .from(hollers)
+        .where(and(eq(hollers.workspaceId, ctx.workspaceId), inArray(hollers.id, chunk)))),
+    );
+  }
+  return new Map(rows.map((r) => [r.id, { title: r.title, canOpen: r.canOpen === 1 }]));
 }
 
 async function namesOfApps(ctx: ServiceContext, clientIds: string[]) {
-  if (clientIds.length === 0) return new Map<string, string>();
-  const rows = await ctx.db
-    .select({ clientId: oauthClient.clientId, name: oauthClient.name })
-    .from(oauthClient)
-    .where(inArray(oauthClient.clientId, clientIds));
+  const rows = [];
+  for (const chunk of inChunks(clientIds)) {
+    rows.push(
+      ...(await ctx.db
+        .select({ clientId: oauthClient.clientId, name: oauthClient.name })
+        .from(oauthClient)
+        .where(inArray(oauthClient.clientId, chunk))),
+    );
+  }
   return new Map(rows.filter((r) => r.name).map((r) => [r.clientId, r.name as string]));
 }
 
@@ -123,7 +142,7 @@ export async function listActivity(
     const detail = detailOf(row.data);
     const subjectName =
       row.subjectType === "holler"
-        ? (titles.get(row.subjectId) ?? null)
+        ? (titles.get(row.subjectId)?.title ?? null)
         : row.subjectType === "member"
           ? (people.get(row.subjectId)?.name ?? null)
           : row.subjectType === "connected_app"
@@ -141,6 +160,7 @@ export async function listActivity(
         type: row.subjectType,
         id: row.subjectId,
         name: subjectName,
+        canOpen: row.subjectType === "holler" && titles.get(row.subjectId)?.canOpen === true,
       },
       detail,
     };

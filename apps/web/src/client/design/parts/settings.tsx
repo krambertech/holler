@@ -18,7 +18,7 @@ const activity: ActivityEntry[] = [
     via: "web",
     action: "holler.sent",
     actor: mira,
-    subject: { type: "holler", id: "hol_demo", name: "How was your week?" },
+    subject: { type: "holler", id: "hol_demo", name: "How was your week?", canOpen: true },
     detail: { count: 12 },
   },
   {
@@ -27,7 +27,7 @@ const activity: ActivityEntry[] = [
     via: "system",
     action: "holler.reminded",
     actor: null,
-    subject: { type: "holler", id: "hol_demo", name: "How was your week?" },
+    subject: { type: "holler", id: "hol_demo", name: "How was your week?", canOpen: true },
     detail: { count: 1 },
   },
   {
@@ -36,7 +36,7 @@ const activity: ActivityEntry[] = [
     via: "web",
     action: "member.role_changed",
     actor: mira,
-    subject: { type: "member", id: "mem_demo", name: "Jun" },
+    subject: { type: "member", id: "mem_demo", name: "Jun", canOpen: false },
     detail: { from: "sender", to: "owner" },
   },
   {
@@ -45,7 +45,7 @@ const activity: ActivityEntry[] = [
     via: "slack",
     action: "response.noted",
     actor: null,
-    subject: { type: "holler", id: "hol_demo", name: "How was your week?" },
+    subject: { type: "holler", id: "hol_private", name: "Leadership offsite", canOpen: false },
     detail: {},
   },
   {
@@ -54,7 +54,7 @@ const activity: ActivityEntry[] = [
     via: "api",
     action: "holler.deleted",
     actor: mira,
-    subject: { type: "holler", id: "hol_gone", name: null },
+    subject: { type: "holler", id: "hol_gone", name: null, canOpen: false },
     detail: {},
   },
 ];
