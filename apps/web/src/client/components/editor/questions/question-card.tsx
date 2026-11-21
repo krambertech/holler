@@ -49,7 +49,6 @@ const growsItself = typeof CSS !== "undefined" && CSS.supports("field-sizing", "
 
 /** Grows a text box to its words where the browser will not do it. */
 function useAutoGrow(ref: RefObject<HTMLTextAreaElement | null>, content: string) {
-  // biome-ignore lint/correctness/useExhaustiveDependencies: the box is measured again when its words change
   useLayoutEffect(() => {
     const box = ref.current;
     if (!box || growsItself) return;
@@ -145,11 +144,12 @@ function QuestionCard({
   if (sentences.length > 0 && !plate) setPlate(true);
   const idByPath = new Map(sentences.flatMap((s) => s.paths.map((path) => [path, s.id])));
   const describeKey = JSON.stringify([...idByPath]);
-  // biome-ignore lint/correctness/useExhaustiveDependencies: the map is rebuilt each render; its content is the key
+  /* oxlint-disable react-hooks/exhaustive-deps -- the map is rebuilt each render; its content is the key */
   const scope = useMemo(
     () => ({ describe: (path: string) => idByPath.get(path), report }),
     [describeKey, report],
   );
+  // oxlint-enable react-hooks/exhaustive-deps
 
   const promptProblem = problems.prompt;
   const descriptionProblem = problems.description;

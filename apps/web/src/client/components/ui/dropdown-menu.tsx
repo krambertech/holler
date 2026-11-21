@@ -230,7 +230,6 @@ function DropdownMenuGroup(props: React.ComponentProps<"div">) {
     <MenuPrimitive.Group data-slot="dropdown-menu-group" {...props} />
   ) : (
     <DrawerMenuGroupContext.Provider value={group}>
-      {/* biome-ignore lint/a11y/useSemanticElements: a group of menu items, which a fieldset is not */}
       <div
         role="group"
         data-slot="dropdown-menu-group"
@@ -449,7 +448,6 @@ function DropdownMenuRadioGroup({
           {children}
         </MenuPrimitive.RadioGroup>
       ) : (
-        // biome-ignore lint/a11y/useSemanticElements: a group of menu items, which a fieldset is not
         <div role="group" data-slot="dropdown-menu-radio-group">
           {children}
         </div>
@@ -572,7 +570,6 @@ function DropdownMenuSeparator({
       className={listSeparatorClassName("edge", className)}
     />
   ) : (
-    // biome-ignore lint/a11y/useSemanticElements: a rule between menu items, as Base UI draws it
     <div
       role="separator"
       data-slot="dropdown-menu-separator"

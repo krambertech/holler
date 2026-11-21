@@ -12,6 +12,7 @@ export function DocLink({
 }: AnchorHTMLAttributes<HTMLAnchorElement> & { href: string }) {
   const router = useRouter();
   return (
+    // oxlint-disable-next-line jsx-a11y/anchor-has-content -- the content arrives as children in rest
     <a
       href={href}
       onClick={(event) => {

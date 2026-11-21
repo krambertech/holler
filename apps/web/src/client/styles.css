@@ -65,11 +65,8 @@
     *,
     *::before,
     *::after {
-      /* biome-ignore lint/complexity/noImportantStyles: reduced motion must override component timing. */
       animation-duration: 1ms !important;
-      /* biome-ignore lint/complexity/noImportantStyles: reduced motion must override component timing. */
       animation-iteration-count: 1 !important;
-      /* biome-ignore lint/complexity/noImportantStyles: reduced motion must override component timing. */
       transition-duration: 1ms !important;
     }
   }

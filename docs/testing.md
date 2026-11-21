@@ -10,7 +10,7 @@ pnpm verify
 
 | Command                 | What it proves                                                                                                                                                                             |
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `pnpm check`            | Biome lint and format, `check:design` (DESIGN.md matches the tokens, named components exist), `check:styling` (no raw colours, stock Tailwind colours or physical directions in new lines) |
+| `pnpm check`            | oxfmt and Oxlint, with unused suppressions as errors, `check:design` (DESIGN.md matches the tokens, named components exist), `check:styling` (no raw colours, stock Tailwind colours or physical directions in new lines), `check:comments` (no file holds more comment lines than its baseline, and no baseline allows more than its file holds) |
 | `pnpm check:migrations` | Drizzle's snapshot matches the schema, and no applied migration changed                                                                                                                    |
 | `pnpm typecheck`        | Every package and both Workers, strict                                                                                                                                                     |
 | `pnpm test`             | Vitest in every package, plus `node --test` for the repo scripts                                                                                                                           |
@@ -28,7 +28,7 @@ Anything that sends uses `deliveryEnv()` in `test-delivery.ts`: its queue refuse
 
 Test a service, not a route, unless the route itself has logic. A service test names the rule it proves: "refuses an option from another question", not "works".
 
-**A bug gets a check for its class.** When a bug turns up, write the check that fails for every bug of its kind, not only this one: a Grit rule in `biome-plugins/` with a case in `scripts/biome-plugins.test.mjs`, a limit a fake enforces, a sweep over every zone or day, or a concurrency or failure test across every door. Add a row to the Enforced rules table in `CLAUDE.md`.
+**A bug gets a check for its class.** When a bug turns up, write the check that fails for every bug of its kind, not only this one: a rule in `oxlint-plugin-holler/rules/` with its test beside it, a limit a fake enforces, a sweep over every zone or day, or a concurrency or failure test across every door. Add a row to the Enforced rules table in `CLAUDE.md`.
 
 ## Browser journeys
 
