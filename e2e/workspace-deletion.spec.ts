@@ -27,5 +27,7 @@ test("an owner deletes the workspace's data only after typing its name", async (
   await expect(page).toHaveURL(/\/sign-in/);
   expect(sent).toEqual({ confirmName: "Northwind" });
   await expect(page.getByText("Northwind’s data is deleted")).toBeVisible();
+  const session = await page.request.get("/api/auth/get-session");
+  expect(await session.json(), "the browser that deleted is signed out").toBeNull();
   await expectAccessible(page);
 });

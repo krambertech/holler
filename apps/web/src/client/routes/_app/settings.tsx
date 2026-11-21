@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { StatusChip } from "@/components/ui/chip";
 import { Plate, PlateRow, PlateStrip } from "@/components/ui/plate";
 import { ApiError, api } from "@/lib/api";
+import { authClient } from "@/lib/auth-client";
 import { count, dayAndTime, longDate, shortDate } from "@/lib/format";
 import { membersQuery, meQuery, workspaceSettingsQuery } from "@/lib/queries";
 
@@ -232,6 +233,7 @@ function WorkspaceDataSection() {
     setError(undefined);
     try {
       await api("/settings/workspace", { method: "DELETE", json: { confirmName } });
+      await authClient.signOut().catch(() => undefined);
       window.location.assign(`/sign-in?deleted=${encodeURIComponent(name)}`);
     } catch (failure) {
       setError(
