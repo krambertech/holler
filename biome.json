@@ -109,6 +109,10 @@
       }
     },
     {
+      "includes": ["apps/web/src/client/**"],
+      "plugins": ["./biome-plugins/no-effect-expression-body.grit"]
+    },
+    {
       "includes": ["apps/web/src/server/**", "packages/core/src/**"],
       "plugins": ["./biome-plugins/no-sql-lower.grit", "./biome-plugins/no-multi-row-insert.grit"]
     }

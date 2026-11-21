@@ -1,0 +1,367 @@
+import {
+  modeLabels,
+  type RespondForm,
+  type RespondPerson,
+  type RespondQuestion,
+} from "@holler/core";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { createFileRoute } from "@tanstack/react-router";
+import { ExternalLink } from "lucide-react";
+import { type FormEvent, useEffect, useRef, useState } from "react";
+import { z } from "zod";
+import { ErrorState } from "@/components/error-state";
+import { Logo } from "@/components/logo";
+import { AnswerQuestion } from "@/components/respond/answer-question";
+import { RespondState } from "@/components/respond/respond-state";
+import { Skeleton } from "@/components/skeleton";
+import { Button } from "@/components/ui/button";
+import { Chip } from "@/components/ui/chip";
+import { Plate } from "@/components/ui/plate";
+import { ApiError, api } from "@/lib/api";
+import { count, questionsLabel } from "@/lib/format";
+import { markdown } from "@/lib/markdown";
+import { type Drafts, draftOf, problemsOf, toResponse } from "@/lib/respond";
+
+/**
+ * The web form: where someone answers a Holler that Slack cannot show, such as one with a
+ * follow-up only after some answers. There is no sign-in. The signed link from their DM, `u` and
+ * `s`, says who they are, and the server checks it on every call. docs/slack.md, Answering.
+ */
+export const Route = createFileRoute("/respond/$id")({
+  validateSearch: z.object({
+    u: z.string().catch(""),
+    s: z.string().catch(""),
+  }),
+  component: RespondPage,
+});
+
+const formKey = (id: string, u: string) => ["respond", id, u] as const;
+
+function RespondPage() {
+  const { id } = Route.useParams();
+  const { u, s } = Route.useSearch();
+  const form = useQuery({
+    queryKey: formKey(id, u),
+    queryFn: () => api<RespondForm>(`/respond/${id}?${new URLSearchParams({ u, s })}`),
+    // A refused link stays refused; only a failed connection is worth another try.
+    retry: (failures, error) => !(error instanceof ApiError && error.status < 500) && failures < 2,
+    refetchOnWindowFocus: false,
+  });
+
+  return (
+    <main className="mx-auto flex min-h-dvh w-full max-w-[680px] flex-col gap-5 px-4 pt-6 pb-16 sm:px-6 sm:pt-10">
+      <div className="px-1">
+        <Logo size={28} />
+      </div>
+      <Body form={form} id={id} link={{ u, s }} />
+    </main>
+  );
+}
+
+interface BodyProps {
+  form: ReturnType<typeof useQuery<RespondForm, Error>>;
+  id: string;
+  link: { u: string; s: string };
+}
+
+function Body({ form, id, link }: BodyProps) {
+  if (form.isPending) return <FormSkeleton />;
+  if (form.isError) {
+    const error = form.error;
+    if (error instanceof ApiError && (error.status === 403 || error.status === 400)) {
+      return (
+        <RespondState
+          title="This link does not work"
+          description="It may have been changed on the way. Open the Holler again from your message in Slack."
+        />
+      );
+    }
+    if (error instanceof ApiError && error.status === 404) {
+      return (
+        <RespondState
+          title="This Holler is gone"
+          description="Whoever sent it deleted it, so there is nothing to answer."
+        />
+      );
+    }
+    return (
+      <ErrorState
+        title="We could not load this Holler"
+        onRetry={() => form.refetch()}
+        pending={form.isRefetching}
+      />
+    );
+  }
+  const data = form.data;
+  if (data.state === "answered") return <Answered holler={data.holler} />;
+  if (data.state === "closed") return <Closed holler={data.holler} />;
+  return <OpenForm form={data} id={id} link={link} />;
+}
+
+type HollerInfo = RespondForm["holler"];
+
+function Answered({ holler }: { holler: HollerInfo }) {
+  // The thank-you replaces a long form, so start at its top.
+  useEffect(() => {
+    window.scrollTo({ top: 0 });
+  }, []);
+  return (
+    <RespondState
+      title="Thank you, your answers are in"
+      description={
+        <>
+          <p>
+            {holler.anonymous
+              ? `Your name is not kept with your answers. ${holler.senderName} sees how many people answered, never who said what.`
+              : `${holler.senderName} sees them with everyone else's.`}
+          </p>
+          <p className="mt-1">You can close this page.</p>
+        </>
+      }
+    />
+  );
+}
+
+function Closed({ holler }: { holler: HollerInfo }) {
+  return (
+    <RespondState
+      title="This Holler is closed"
+      description={
+        holler.closesAt
+          ? `${holler.title} closed ${closesWhen(holler.closesAt, true)}, so it takes no more answers.`
+          : `${holler.title} takes no more answers.`
+      }
+    />
+  );
+}
+
+/** "Friday at 18:00" within the coming week, "28 November at 18:00" past it, in their own zone. */
+function closesWhen(iso: string, past = false): string {
+  const at = new Date(iso);
+  const time = new Intl.DateTimeFormat(undefined, {
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).format(at);
+  const near = Math.abs(at.getTime() - Date.now()) < 6 * 24 * 3600_000;
+  const day = near
+    ? new Intl.DateTimeFormat(undefined, { weekday: "long" }).format(at)
+    : new Intl.DateTimeFormat(undefined, { day: "numeric", month: "long" }).format(at);
+  return past && near ? `on ${day} at ${time}` : `${day} at ${time}`;
+}
+
+/** Answers in progress survive a reload or a closed tab, on this device only, until they are sent. */
+function useDrafts(key: string) {
+  const [drafts, setDrafts] = useState<Drafts>(() => {
+    try {
+      const saved = localStorage.getItem(key);
+      return saved ? (JSON.parse(saved) as Drafts) : {};
+    } catch {
+      return {};
+    }
+  });
+  useEffect(() => {
+    try {
+      if (Object.keys(drafts).length > 0) localStorage.setItem(key, JSON.stringify(drafts));
+    } catch {}
+  }, [key, drafts]);
+  const forget = () => {
+    try {
+      localStorage.removeItem(key);
+    } catch {}
+  };
+  return [drafts, setDrafts, forget] as const;
+}
+
+interface OpenFormProps {
+  form: Extract<RespondForm, { state: "open" }>;
+  id: string;
+  link: { u: string; s: string };
+}
+
+function OpenForm({ form, id, link }: OpenFormProps) {
+  const { holler, questions } = form;
+  const queryClient = useQueryClient();
+  const [drafts, setDrafts, forgetDrafts] = useDrafts(`holler:respond:${id}:${link.u}`);
+  const [problems, setProblems] = useState<Record<string, string>>({});
+  const [tried, setTried] = useState(false);
+  const refs = useRef(new Map<string, HTMLFieldSetElement>());
+
+  const send = useMutation({
+    mutationFn: () =>
+      api<RespondForm>(`/respond/${id}`, {
+        method: "POST",
+        json: { ...link, response: toResponse(questions, drafts) },
+      }),
+    onSuccess: (next) => {
+      forgetDrafts();
+      queryClient.setQueryData(formKey(id, link.u), next);
+    },
+    onError: (error) => {
+      if (error instanceof ApiError && error.field) {
+        setProblems({ [error.field]: error.message });
+        focusQuestion(error.field);
+      }
+    },
+  });
+
+  // Once someone has tried to send, each problem clears as they fix it, and none appears early.
+  useEffect(() => {
+    if (tried) setProblems(problemsOf(questions, drafts));
+  }, [tried, questions, drafts]);
+
+  function focusQuestion(questionId: string) {
+    const el = refs.current.get(questionId);
+    if (!el) return;
+    el.scrollIntoView({ block: "center", behavior: "smooth" });
+    el.focus({ preventScroll: true });
+  }
+
+  function submit(event: FormEvent) {
+    event.preventDefault();
+    setTried(true);
+    const found = problemsOf(questions, drafts);
+    setProblems(found);
+    const first = questions.find((q) => found[q.id]);
+    if (first) {
+      focusQuestion(first.id);
+      return;
+    }
+    send.mutate();
+  }
+
+  const searchPeople = (q: string) =>
+    api<{ people: RespondPerson[] }>(
+      `/respond/${id}/people?${new URLSearchParams({ ...link, q })}`,
+    ).then((r) => r.people);
+
+  const waiting = Object.keys(problems).length;
+  const failed =
+    send.isError && !(send.error instanceof ApiError && send.error.field)
+      ? send.error.message
+      : null;
+
+  return (
+    <>
+      <Plate className="flex flex-col gap-3 px-6 py-6 sm:px-8 sm:py-7">
+        <p className="text-muted text-sm">{holler.senderName} sent you a Holler</p>
+        <h1 className="text-balance text-4xl tracking-title">{holler.title}</h1>
+        {holler.description.trim() && (
+          <div className="flex flex-col gap-3 text-pretty text-ink-2">
+            {markdown(holler.description)}
+          </div>
+        )}
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-muted text-sm">
+          <span>{modeLabels[holler.mode]}</span>
+          {questions.length > 0 && (
+            <>
+              <span aria-hidden="true">·</span>
+              <span>{questionsLabel(questions.length)}</span>
+            </>
+          )}
+          {holler.closesAt && (
+            <>
+              <span aria-hidden="true">·</span>
+              <span>Closes {closesWhen(holler.closesAt)}</span>
+            </>
+          )}
+          {holler.anonymous && (
+            <Chip variant="tint" className="ms-1">
+              Anonymous
+            </Chip>
+          )}
+        </div>
+        {holler.anonymous && (
+          <p className="text-muted text-sm">
+            Your name is not kept with your answers. {holler.senderName} sees how many people
+            answered, never who said what.
+          </p>
+        )}
+      </Plate>
+
+      <form noValidate onSubmit={submit} className="flex flex-col gap-3">
+        {holler.mode === "chase" && holler.externalUrl && (
+          <Plate className="flex flex-col items-start gap-3 px-6 py-6 sm:px-8">
+            <p className="text-ink-2">
+              The form lives somewhere else. Fill it in there, then come back and say you did.
+            </p>
+            <Button render={<a href={holler.externalUrl} target="_blank" rel="noreferrer" />}>
+              Open the form
+              <ExternalLink aria-hidden size={16} strokeWidth={2} />
+            </Button>
+          </Plate>
+        )}
+        {questions.map((question) => (
+          <Plate key={question.id} className="px-6 py-6 sm:px-8">
+            <AnswerQuestion
+              ref={(el) => {
+                if (el) refs.current.set(question.id, el);
+                else refs.current.delete(question.id);
+              }}
+              tabIndex={-1}
+              className="outline-none"
+              question={question}
+              value={draftOf(drafts, question.id)}
+              onValueChange={(next) => setDrafts((all) => ({ ...all, [question.id]: next }))}
+              error={problems[question.id]}
+              searchPeople={searchPeople}
+            />
+          </Plate>
+        ))}
+        <SendBar
+          pending={send.isPending}
+          chase={holler.mode === "chase"}
+          message={failed ?? (waiting > 0 ? problemsLine(waiting, questions) : null)}
+        />
+      </form>
+    </>
+  );
+}
+
+/** "1 question needs another look." Both sentences written out. */
+function problemsLine(n: number, questions: readonly RespondQuestion[]): string {
+  if (questions.length === 1 || n === 1) return "One answer needs another look.";
+  return `${count(n)} answers need another look.`;
+}
+
+function SendBar({
+  pending,
+  chase,
+  message,
+}: {
+  pending: boolean;
+  chase: boolean;
+  message: string | null;
+}) {
+  return (
+    <div className="mt-2 flex flex-col-reverse items-stretch gap-3 px-1 sm:flex-row sm:items-center sm:justify-end">
+      {message && (
+        <p role="alert" className="text-danger-ink text-sm sm:me-auto">
+          {message}
+        </p>
+      )}
+      <Button type="submit" variant="primary" pending={pending} className="sm:min-w-40">
+        {chase ? "I submitted it" : "Send answers"}
+      </Button>
+    </div>
+  );
+}
+
+function FormSkeleton() {
+  return (
+    <>
+      <Plate className="flex flex-col gap-3 px-6 py-7 sm:px-8">
+        <Skeleton className="h-4 w-40" />
+        <Skeleton className="h-8 w-3/4" />
+        <Skeleton className="h-4 w-56" />
+      </Plate>
+      {[0, 1].map((n) => (
+        <Plate key={n} className="flex flex-col gap-3 px-6 py-6 sm:px-8">
+          <Skeleton className="h-5 w-1/2" />
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
+        </Plate>
+      ))}
+    </>
+  );
+}

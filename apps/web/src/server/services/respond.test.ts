@@ -304,7 +304,9 @@ describe("people for a person question", () => {
   });
 
   it("gives the directory to nobody on a Holler that asks for no one", async () => {
-    const plain = await live({ questions: [webOnly.questions[0]] });
+    const [where] = webOnly.questions;
+    if (!where) throw new Error("expected the first question");
+    const plain = await live({ questions: [where] });
     await expect(respondPeople(await plain.as("UA"), plain.holler.id, "")).rejects.toMatchObject({
       code: "forbidden",
     });

@@ -1,10 +1,11 @@
-import { devAnswerInputSchema, devTickInputSchema } from "@holler/core";
+import { devAnswerInputSchema, devTickInputSchema, devWebSurveyInputSchema } from "@holler/core";
 import { sValidator } from "@hono/standard-validator";
 import { Hono } from "hono";
 import type { AppEnv } from "../app";
 import { runCronPass } from "../cron";
 import { queueAfterResponse } from "../services/delivery";
 import { ensurePersona, isPersona } from "../services/dev-personas";
+import { makeWebSurvey } from "../services/dev-respond";
 import { devState, resetDevWorkspace } from "../services/dev-state";
 import { respondUrl } from "../services/respond-links";
 import { recordResponse } from "../services/responses";
@@ -20,6 +21,9 @@ import { requireMember } from "./context";
  * - `POST /answer` answers as a recipient, the way their Slack button would, and updates their DM.
  * - `GET /respond-link?holler=…&as=U…` is that recipient's signed web form link, the one their DM
  *   carries, as `{ url }` relative to this server.
+ * - `POST /web-survey` makes a live survey answered on the web form, every question type in it,
+ *   sent to the lead and Marta without counting against the monthly limit. `{ id, url }`, the
+ *   lead's link. `{ "anonymous": true }` makes it anonymous.
  */
 export const devRoutes = new Hono<AppEnv>()
   .get("/sign-in", async (c) => {
@@ -50,6 +54,12 @@ export const devRoutes = new Hono<AppEnv>()
     const slackUserId = c.req.query("as") ?? "";
     const url = new URL(await respondUrl(c.env, hollerId, slackUserId));
     return c.json({ url: `${url.pathname}${url.search}` });
+  })
+  .post("/web-survey", sValidator("json", devWebSurveyInputSchema), async (c) => {
+    const ctx = requireMember(c);
+    const { id } = await makeWebSurvey(ctx, c.req.valid("json"));
+    const url = new URL(await respondUrl(c.env, id, "U0LEAD"));
+    return c.json({ id, url: `${url.pathname}${url.search}` }, 201);
   })
   .post("/answer", sValidator("json", devAnswerInputSchema), async (c) => {
     const { hollerId, slackUserId, response } = c.req.valid("json");

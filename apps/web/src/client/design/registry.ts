@@ -4,6 +4,7 @@ import { Brand } from "./brand";
 import { Colour } from "./colour";
 import { Motion } from "./motion";
 import { actions } from "./parts/actions";
+import { answering } from "./parts/answering";
 import { apiAccess } from "./parts/api-access";
 import { billing } from "./parts/billing";
 import { choosing } from "./parts/choosing";
@@ -66,6 +67,7 @@ export const GROUPS: Group[] = [
   forms,
   choosing,
   questions,
+  answering,
   menus,
   overlays,
   states,
