@@ -2,6 +2,8 @@ import type {
   HollerSummary,
   HomeCounts,
   InstallStatus,
+  OwnAnswer,
+  OwnHoller,
   Results,
   SettingsMember,
   SettingsWorkspace,
@@ -76,3 +78,14 @@ export const installStatusQuery = queryOptions({
   queryKey: ["install", "status"],
   queryFn: () => api<InstallStatus>("/install/status"),
 });
+
+export const ownAnswersQuery = queryOptions({
+  queryKey: ["answers", "list"],
+  queryFn: () => api<{ hollers: OwnHoller[] }>("/answers").then((r) => r.hollers),
+});
+
+export const ownAnswerQuery = (id: string) =>
+  queryOptions({
+    queryKey: ["answers", id],
+    queryFn: () => api<OwnAnswer>(`/answers/${id}`),
+  });

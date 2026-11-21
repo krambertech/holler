@@ -142,6 +142,7 @@ Numbers in tables and counts use `tabular`.
 | `ModeGlyph`                       | `components/mode-glyph.tsx`   | The mode's icon on a tint tile; quiet once not live                                          |
 | `Mark`, `Logo`                    | `components/logo.tsx`         | Geometry from `packages/design/src/index.ts`                                                 |
 | `HollerRow`                       | `components/holler-row.tsx`   | Four columns wide, folded on a phone; the whole row is one link                              |
+| `OwnHollerRow`, `GivenAnswers` | `components/answers/` | A Holler on Your answers, and what the person answered, question by question |
 | `AppHeader`                       | `components/app-header.tsx`   | The logo home and the member, who opens Settings                                             |
 | `UninstalledNotice`               | `components/uninstalled-notice.tsx` | Top of every page while Holler is out of Slack; owners get Add to Slack again          |
 | `MemberRow`, `RoleSelect`         | `components/settings/`        | A member in Settings; owners pick Owner or Sender                                            |
