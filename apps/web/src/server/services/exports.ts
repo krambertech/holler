@@ -75,6 +75,7 @@ async function exportData(ctx: ServiceContext, hollerId: string): Promise<Export
           .where(
             inArray(
               options.questionId,
+              // oxlint-disable-next-line holler/bounded-in-array -- a Holler has at most 30 questions
               qs.map((q) => q.id),
             ),
           )
