@@ -6,6 +6,9 @@ SLACK_TOKEN_KEY=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
 SLACK_CLIENT_ID=
 SLACK_CLIENT_SECRET=
 SLACK_SIGNING_SECRET=
-# Polar, sandbox. Leave empty until billing is wired.
+# Polar, sandbox (sandbox.polar.sh). Leave empty to run without billing. docs/billing.md has the setup.
+POLAR_SERVER=sandbox
 POLAR_ACCESS_TOKEN=
 POLAR_WEBHOOK_SECRET=
+POLAR_TEAM_MONTHLY_PRODUCT_ID=
+POLAR_TEAM_YEARLY_PRODUCT_ID=

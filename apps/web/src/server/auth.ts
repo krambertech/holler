@@ -1,11 +1,13 @@
 import { apiKey } from "@better-auth/api-key";
 import { mcp } from "@better-auth/mcp";
+import { polar, webhooks } from "@polar-sh/better-auth";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { jwt } from "better-auth/plugins/jwt";
 import type { Db } from "./db";
 import { schema } from "./db";
 import { type Bindings, devRoutesEnabled } from "./env";
+import { applyPolarEvent, polarClient, polarConfigured } from "./services/billing";
 import { linkSlackAccount } from "./services/members";
 
 /**
@@ -85,6 +87,24 @@ export function createAuth(env: Bindings, db: Db) {
         resource: `${env.PRODUCT_URL}/mcp`,
         scopes: ["read", "write", "offline_access"],
       }),
+      // Polar's webhooks, at /api/auth/polar/webhooks. The plugin checks the signature; billing.ts
+      // is the only thing that changes the plan. Checkout and the portal are Holler routes in
+      // routes/billing.ts, because the Polar customer is the workspace, not the signed-in person.
+      ...(polarConfigured(env)
+        ? [
+            polar({
+              client: polarClient(env),
+              use: [
+                webhooks({
+                  secret: env.POLAR_WEBHOOK_SECRET,
+                  onPayload: async (payload) => {
+                    await applyPolarEvent({ db, now: () => new Date() }, payload);
+                  },
+                }),
+              ],
+            }),
+          ]
+        : []),
     ],
   });
 }

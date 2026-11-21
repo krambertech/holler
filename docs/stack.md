@@ -113,7 +113,7 @@ The cron trigger runs every minute and does four passes, each claiming its rows 
 
 Polar sells the subscription and files VAT and sales tax as merchant of record, which suits an Estonian OÜ selling to teams worldwide. `@polar-sh/better-auth` adds checkout, the customer portal and webhooks to the auth server, keyed by the workspace. The plan lives on the workspace row; the Polar webhook is the only thing that changes it. Plan limits live in `packages/core/src/plans.ts`, so the web app shows the same limit the server enforces.
 
-Alternatives considered: Paddle, which is the flattest fee at scale but needs more hand-written integration; Stripe Managed Payments, the dearest once Billing fees stack up; Stripe alone, which leaves VAT filing to us. Billing sits behind `services/billing.ts`, so a later switch to Paddle is one module and one webhook.
+Alternatives considered: Paddle, which is the flattest fee at scale but needs more hand-written integration; Stripe Managed Payments, the dearest once Billing fees stack up; Stripe alone, which leaves VAT filing to us. Billing sits behind `services/billing.ts`, so a later switch to Paddle is one module and one webhook. [billing.md](billing.md) has the Polar setup and how a plan changes.
 
 ### API: REST with generated docs
 

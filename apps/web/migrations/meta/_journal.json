@@ -15,6 +15,13 @@
       "when": 1795217902529,
       "tag": "0001_directory_syncs",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1795226207466,
+      "tag": "0002_polar_events",
+      "breakpoints": true
     }
   ]
 }

@@ -2,6 +2,7 @@ import type { MemberRole, SettingsWorkspace } from "@holler/core";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
+import { PlanSection } from "@/components/billing/plan-section";
 import { MemberRow } from "@/components/settings/member-row";
 import { WorkspaceIcon } from "@/components/settings/workspace-icon";
 import { buttonClasses } from "@/components/ui/button";
@@ -28,6 +29,7 @@ function Settings() {
       <h1 className="text-3xl tracking-title">Settings</h1>
       <WorkspaceSection isOwner={isOwner} />
       <MembersSection isOwner={isOwner} />
+      <PlanSection />
     </>
   );
 }
