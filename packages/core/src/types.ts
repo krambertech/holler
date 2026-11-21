@@ -234,11 +234,6 @@ export const devAnswerInputSchema = z.object({
   response: responseInputSchema,
 });
 
-/**
- * Local development only: a request as Slack would send it, signed for the dev workspace. `as` is
- * the Slack user it comes from; the dev route adds the team. A command's fields, an
- * interaction's payload, or an event.
- */
 export const devSlackInputSchema = z.discriminatedUnion("path", [
   z.object({
     path: z.literal("commands"),

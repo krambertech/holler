@@ -22,7 +22,6 @@ export class FakeSlack implements SlackClient {
   readonly posted: (PostMessage & { ts: string })[] = [];
   readonly updated: (PostMessage & { ts: string })[] = [];
   readonly views: { triggerId: string; view: SlackView; viewId: string }[] = [];
-  /** Every rewrite of an open modal, in order. */
   readonly viewUpdates: { viewId: string; view: SlackView }[] = [];
   readonly homes: { userId: string; view: SlackView }[] = [];
   revoked = false;

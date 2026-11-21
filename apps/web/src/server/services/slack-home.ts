@@ -10,27 +10,13 @@ import { homeCounts, listHollers } from "./hollers";
 import { respondUrl } from "./respond-links";
 import { slackFor } from "./slack-connection";
 
-/**
- * App Home: what is waiting on a person and, for a member, what they sent. Every publish builds
- * the Home from the current state, so publishing late or twice is never wrong. A change queues a
- * publish for the people it affects, claimed in `slack_homes` so a burst of answers publishes
- * once, and only for people who opened their Home before. docs/slack.md, App Home.
- */
-
 const { slackHomes, members, recipients, hollers, slackPeople } = schema;
 
 const HOUR = 60 * 60 * 1000;
-/** A publish waits this long, so the changes that follow it ride along. */
 export const homeDebounceSeconds = 5;
-/** A claim older than this is taken again, in case its publish was lost. */
 export const homeClaimStaleMs = 60_000;
-/** Slack user ids per claim statement, inside D1's 100 bound values. */
 const CLAIM_CHUNK = 90;
 
-/**
- * The member a Slack user is, as a service context for sending from Slack, or null when they have
- * not signed in to Holler. Every door calls the same services, so the rules hold from Slack too.
- */
 export async function slackSenderContext(
   base: Omit<ServiceContext, "actor">,
   slackUserId: string,
@@ -51,7 +37,6 @@ export async function timeZoneFor(db: Db, workspaceId: string, slackUserId: stri
   return person?.timeZone ?? null;
 }
 
-/** Everything one person's Home shows, read fresh. */
 export async function homeState(
   env: Bindings,
   db: Db,
@@ -75,13 +60,11 @@ export async function homeState(
   };
 }
 
-/** A member's three numbers and live hollers, for App Home and `/holler results`. */
 export async function senderState(ctx: ServiceContext, now: Date) {
   const [counts, live] = await Promise.all([
     homeCounts(ctx),
     listHollers(ctx, { scope: "mine", status: "live" }),
   ]);
-  // Soonest to close first: that is the one to chase.
   live.sort((a, b) => (a.closesAt ?? "").localeCompare(b.closesAt ?? ""));
   const shown = live.slice(0, homeRowLimit);
   const ids = shown.map((row) => row.id);
@@ -93,7 +76,6 @@ export async function senderState(ctx: ServiceContext, now: Date) {
             .select({ id: hollers.id, remindedAt: hollers.remindedAt })
             .from(hollers)
             .where(inArray(hollers.id, ids)),
-          // Who Send reminder would reach: the same people remindWaiting reminds.
           ctx.db
             .select({ hollerId: recipients.hollerId, count: sql<number>`count(*)` })
             .from(recipients)
@@ -129,7 +111,6 @@ export async function senderState(ctx: ServiceContext, now: Date) {
   return { counts, live: rows, moreLive: live.length - shown.length };
 }
 
-/** Live hollers this person got and has not answered, soonest to close first. */
 async function waitingOn(env: Bindings, db: Db, workspaceId: string, slackUserId: string) {
   const rows = await db
     .select({ hollerId: recipients.hollerId })
@@ -160,7 +141,6 @@ async function waitingOn(env: Bindings, db: Db, workspaceId: string, slackUserId
   return { rows: waiting, more: rows.length - shown.length };
 }
 
-/** app_home_opened: remembers that this person has a Home, so later changes publish to it. */
 export async function markHomeOpened(
   db: Db,
   workspaceId: string,
@@ -176,12 +156,6 @@ export async function markHomeOpened(
     });
 }
 
-/**
- * Queues a fresh Home for each of these people who has one. A person whose publish is already on
- * its way is skipped, so ten answers in a row publish once; a claim older than a minute is taken
- * again, in case that publish was lost. `soon` skips the wait and the skip, for a Home the person
- * is looking at right now. When the queue refuses, the claims go back.
- */
 export async function queueHomes(
   env: Bindings,
   db: Db,
@@ -237,10 +211,6 @@ export async function queueHomes(
   return claimed.length;
 }
 
-/**
- * Best effort: a Home that misses a change is put right the next time it opens, so a failure
- * here never fails the send, answer or close that caused it.
- */
 export async function refreshHomes(
   env: Bindings,
   db: Db,
@@ -256,10 +226,6 @@ export async function refreshHomes(
   }
 }
 
-/**
- * Publishes one person's Home: the claim is cleared first, so any change from here on queues
- * another publish, then the Home is built from the state as it is now.
- */
 export async function publishHome(
   env: Bindings,
   db: Db,
@@ -276,7 +242,6 @@ export async function publishHome(
     where: eq(schema.workspaces.id, workspaceId),
     columns: { uninstalledAt: true },
   });
-  // Deleted, or out of Slack: there is no Home to publish to.
   if (!workspace || workspace.uninstalledAt) return;
   const slack = await slackFor(env, db, workspaceId);
   const view = homeView(await homeState(env, db, workspaceId, slackUserId, now));

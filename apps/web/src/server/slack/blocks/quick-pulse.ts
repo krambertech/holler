@@ -3,13 +3,6 @@ import type { SlackView } from "../client";
 import { actionIds, context, escapeMrkdwn, plain, quickPulseViewId, section, when } from "./format";
 import type { StateValue } from "./modal";
 
-/**
- * The quick pulse: one question, who gets it and when it closes, written and sent without leaving
- * Slack. /holler, New holler on App Home and the message shortcut open it. Anything longer goes
- * to the web editor through Open in Holler. docs/slack.md, `/holler`.
- */
-
-/** How the question is answered. Each is a question template, except options the sender writes. */
 export const quickKinds = [
   { id: "options", label: "Options you write" },
   { id: "binary", label: "Yes or no" },
@@ -19,14 +12,12 @@ export const quickKinds = [
 ] as const;
 export type QuickKind = (typeof quickKinds)[number]["id"];
 
-/** When it closes, counted from the send, as the editor offers it. */
 export const quickCloses = [
   { hours: 24, label: "In 1 day" },
   { hours: 72, label: "In 3 days" },
   { hours: 168, label: "In 1 week" },
 ] as const;
 
-/** Block ids, so a submit's errors land beside the field at fault. */
 export const quickBlocks = {
   prompt: "quick:prompt",
   kind: "quick:kind",
@@ -38,13 +29,10 @@ export const quickBlocks = {
 } as const;
 const valueAction = "value";
 
-/** What the modal carries between opening and submitting. */
 export interface QuickPulseOrigin {
-  /** The message the shortcut was used on, linked in the description. */
   about: { url: string } | null;
 }
 
-/** What the sender has filled in so far, so a redraw keeps it. */
 export interface QuickPulseValues {
   prompt: string;
   kind: QuickKind;
@@ -214,7 +202,6 @@ export function readQuickOrigin(privateMetadata: string | undefined): QuickPulse
   }
 }
 
-/** The modal's state as values, whatever is filled in so far. */
 export function readQuickValues(
   values: Record<string, Record<string, StateValue>> | undefined,
 ): QuickPulseValues {
@@ -255,10 +242,6 @@ function questionFor(values: QuickPulseValues): QuestionInput {
   };
 }
 
-/**
- * The quick pulse as a draft, or the problems Slack can show beside each field before anything
- * is saved. The service checks the draft again with sendProblems, like every other door.
- */
 export function quickPulseDraft(
   origin: QuickPulseOrigin,
   values: QuickPulseValues,
@@ -291,7 +274,6 @@ export function quickPulseDraft(
   };
 }
 
-/** Where each send problem's field is shown in the modal. */
 export function quickBlockFor(field: string | null | undefined): string {
   if (!field) return quickBlocks.prompt;
   if (field === "audience") return quickBlocks.people;
@@ -307,7 +289,6 @@ const resultView = (title: string, blocks: unknown[]): SlackView => ({
   blocks,
 });
 
-/** Shown at once after Send, while the send runs. */
 export function quickSendingView(prompt: string): SlackView {
   return resultView("New pulse", [section(`Sending *${escapeMrkdwn(prompt)}*…`)]);
 }
@@ -350,7 +331,6 @@ export function quickSentView(
   ]);
 }
 
-/** The send was refused after the draft was saved: the reason, and the draft to finish on the web. */
 export function quickFailedView(
   failed: { hollerId: string; message: string },
   productUrl: string,
@@ -373,7 +353,6 @@ export function quickFailedView(
   ]);
 }
 
-/** A message shortcut from someone who has not signed in: sending needs a member. */
 export function signInView(productUrl: string): SlackView {
   return resultView("Holler", [
     section("To send hollers from Slack, sign in to Holler once with Slack."),

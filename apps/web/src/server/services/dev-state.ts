@@ -84,7 +84,6 @@ function slackRecord(workspaceId: string) {
     posted: fake?.posted.map(summary) ?? [],
     updated: fake?.updated.map(summary) ?? [],
     modals: fake?.views.length ?? 0,
-    /** Each modal opened and each rewrite of one, with its id, so a recipe can submit it. */
     views:
       fake?.views.map((opened) => ({
         viewId: opened.viewId,
@@ -98,7 +97,6 @@ function slackRecord(workspaceId: string) {
         callbackId: update.view.callback_id ?? null,
         text: homeText(update.view.blocks),
       })) ?? [],
-    /** Each App Home publish: who it was for and its text, so a recipe can read what it showed. */
     homes:
       fake?.homes.map((home) => ({
         userId: home.userId,
@@ -107,7 +105,6 @@ function slackRecord(workspaceId: string) {
   };
 }
 
-/** The words a Home or modal shows, block by block, for a recipe to read back. */
 function homeText(blocks: unknown[]): string[] {
   return blocks.flatMap((raw) => {
     const block = raw as {

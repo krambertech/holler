@@ -14,18 +14,12 @@ import { quickBlocks } from "./blocks/quick-pulse";
 import type { SlackView } from "./client";
 import { sign } from "./verify";
 
-/**
- * Holler for senders inside Slack: /holler, the quick pulse, the message shortcut, App Home's
- * buttons and app_home_opened, each through the signed route Slack calls.
- */
-
 let db: Db;
 let raw: D1Database;
 let dispose: () => Promise<void>;
 beforeAll(async () => ({ db, raw, dispose } = await testDb()));
 afterAll(() => dispose());
 
-/** Friday 20 November 2026, 10:00 UTC. The routes read the clock, so the clock is fixed. */
 const NOW = new Date("2026-11-20T10:00:00Z");
 beforeEach(async () => {
   vi.useFakeTimers({ toFake: ["Date"] });
@@ -46,7 +40,6 @@ async function setup() {
     props: {},
   } as unknown as ExecutionContext;
 
-  /** Sends a signed request, waits for the work after the reply, then runs what it queued. */
   async function request(path: string, body: string, contentType: string) {
     const timestamp = String(Math.floor(NOW.getTime() / 1000));
     const response = await app.request(
@@ -102,7 +95,6 @@ async function setup() {
   return { ...fixture, ...harness, slack, command, interact, event };
 }
 
-/** What a filled-in quick pulse sends back, as Slack's view.state.values. */
 function filled(
   over: { prompt?: string; kind?: string; options?: string; people?: string[] } = {},
 ) {
@@ -422,7 +414,6 @@ describe("App Home", () => {
       },
     });
     expect(JSON.stringify(slack.homes.at(-1)?.view.blocks)).toContain("Nothing is waiting on you.");
-    // The DM it came in is put right too.
     expect(slack.updated.some((m) => m.channel === "DA" && m.text.startsWith("Thanks."))).toBe(
       true,
     );

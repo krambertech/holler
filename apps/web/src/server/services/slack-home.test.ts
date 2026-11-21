@@ -26,7 +26,6 @@ beforeAll(async () => ({ db, raw, dispose } = await testDb()));
 afterAll(() => dispose());
 beforeEach(() => emptyDatabase(raw));
 
-/** Friday 20 November 2026, 10:00 UTC. */
 const NOW = new Date("2026-11-20T10:00:00Z");
 const later = (seconds: number) => new Date(NOW.getTime() + seconds * 1000);
 
@@ -162,7 +161,7 @@ describe("publishing App Home", () => {
     expect((await homeRow(workspaceId, "UA"))?.queuedAt).toBeNull();
 
     await queueHomes(env, db, workspaceId, ["UA"], later(6));
-    homeKinds().splice(0); // The queue loses it.
+    homeKinds().splice(0);
     const lost = await queueHomes(env, db, workspaceId, ["UA"], later(7));
     expect(lost).toBe(0);
     const retaken = await queueHomes(

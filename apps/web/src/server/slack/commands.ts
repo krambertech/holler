@@ -7,15 +7,6 @@ import { helpMessage, resultsMessage, signInMessage } from "./blocks/commands";
 import { emptyQuickPulse, quickPulseModal } from "./blocks/quick-pulse";
 import { verifySlackRequest } from "./verify";
 
-/**
- * `/holler`. Signature-checked before the body is read, and answered within Slack's three
- * seconds: the quick pulse opens before anything else runs, because its trigger id lasts three
- * seconds. docs/slack.md, `/holler`.
- *
- * - `/holler` opens the quick pulse; `/holler <question>` opens it with the question filled in.
- * - `/holler results` lists your live hollers with their counts, only to you.
- * - `/holler help` says what it does.
- */
 export const slackCommandRoutes = new Hono<AppEnv>().post("/", async (c) => {
   const now = c.get("now");
   const verified = await verifySlackRequest(c.req.raw, c.env.SLACK_SIGNING_SECRET, now());

@@ -232,7 +232,6 @@ export function viewProblems(view: {
   const problems = blockKitProblems(surface, view.blocks);
   if (surface !== "modal") return problems;
   const limits = blockKitLimits;
-  // Slack wants a submit button only on a modal with inputs to submit.
   const hasInputs = view.blocks.some((block) => (block as Block).type === "input");
   for (const [what, value] of [
     ["title", view.title],

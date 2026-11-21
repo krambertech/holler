@@ -19,11 +19,8 @@ import { requireMember } from "./context";
  * - `GET /state` is the stored state a recipe compares with the screen.
  * - `POST /tick` runs the cron's pass at `at`, so a close time can pass without waiting.
  * - `POST /answer` answers as a recipient, the way their Slack button would, and updates their DM.
- * - `POST /slack` sends `/holler`, an interaction or an event as Slack would, signed, from `as`,
- *   so a recipe drives App Home and the quick pulse through the same routes Slack calls.
  */
 
-/** Signs dev requests when the local Slack app has no signing secret of its own. */
 const devSigningSecret = "dev-signing-secret";
 export const devRoutes = new Hono<AppEnv>()
   .get("/sign-in", async (c) => {
@@ -100,14 +97,11 @@ export const devRoutes = new Hono<AppEnv>()
         "x-slack-signature": await sign(secret, `v0:${timestamp}:${body}`),
       },
     });
-    // Through the whole app, so the route Slack calls runs exactly as it would for Slack.
     const { app } = await import("../app");
     let executionCtx: typeof c.executionCtx | undefined;
     try {
       executionCtx = c.executionCtx;
-    } catch {
-      // A test calls the app without one; the route then has nothing to finish after its reply.
-    }
+    } catch {}
     const response = await app.fetch(
       request,
       { ...c.env, SLACK_SIGNING_SECRET: secret },

@@ -12,13 +12,6 @@ import {
   when,
 } from "./format";
 
-/**
- * The App Home tab, as a pure function of what the person has waiting and what they sent. It is
- * rebuilt from the current state on every publish, so a late or repeated publish is never wrong.
- * docs/slack.md, App Home.
- */
-
-/** Rows past this go to the web app, so the Home stays well inside Slack's 100 blocks. */
 export const homeRowLimit = 10;
 
 export interface HomeLive {
@@ -27,18 +20,15 @@ export interface HomeLive {
   answered: number;
   recipients: number;
   closesAt: Date | null;
-  /** Whether Send reminder can go now, or when it can, or that nobody is left to remind. */
   remind: { status: "ready" } | { status: "wait"; last: Date; next: Date } | { status: "nobody" };
 }
 
 export interface HomeWaiting {
   holler: SlackHoller;
-  /** Their signed link to the web form, for a Holler answered on the web. */
   respondUrl: string | null;
 }
 
 export interface HomeState {
-  /** Null for someone who has not signed in to Holler: they see only what is waiting on them. */
   sender: { counts: HomeCounts; live: HomeLive[]; moreLive: number } | null;
   waiting: HomeWaiting[];
   moreWaiting: number;
@@ -60,14 +50,12 @@ const link = (text: string, url: string, actionId: string = actionIds.productLin
   url,
 });
 
-/** The web Home's three numbers, on one line. Each count has its own words for one and many. */
 function numbers({ live, waiting, scheduled }: HomeCounts) {
   const people =
     waiting === 1 ? "*1* person still to answer" : `*${n(waiting)}* people still to answer`;
   return section(`*${n(live)}* live now   ·   ${people}   ·   *${n(scheduled)}* scheduled`);
 }
 
-/** A title as a link to its page. Slack splits a link at its first `|`, so the title may hold one. */
 const titleLink = (title: string, url: string) => `*<${url}|${escapeMrkdwn(title)}>*`;
 
 function liveRow(row: HomeLive, state: HomeState): unknown[] {
@@ -138,7 +126,6 @@ function senderBlocks(sender: NonNullable<HomeState["sender"]>, state: HomeState
   return blocks;
 }
 
-/** One thing waiting on them, with the control that answers it from the Home. */
 function waitingRow({ holler, respondUrl }: HomeWaiting, state: HomeState): unknown[] {
   const parts = [`From ${escapeMrkdwn(holler.senderName)}`];
   if (holler.closesAt) parts.push(`Closes ${when(holler.closesAt, state.timeZone, state.now)}`);

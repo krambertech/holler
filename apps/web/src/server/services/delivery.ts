@@ -64,7 +64,6 @@ export type SlackSend =
   | { kind: "announce"; hollerId: string }
   | { kind: "close_notice"; hollerId: string }
   | { kind: "send_failed"; hollerId: string; reason: string; queuedAt: string }
-  /** A fresh App Home for one person, built from the state when it runs. */
   | { kind: "home"; workspaceId: string; slackUserId: string };
 
 /**
@@ -832,14 +831,12 @@ export async function deliver(env: Bindings, db: Db, send: SlackSend, now: Date)
     case "invite":
     case "reminder":
       await postToRecipient(env, db, slack, loaded, send, now);
-      // A new invite is something waiting on them; a reminder changes nothing on a Home.
       if (send.kind === "invite")
         await refreshHomes(env, db, row.workspaceId, [send.slackUserId], now);
       return;
     case "answered":
     case "closed":
       await updateRecipient(db, slack, loaded, send, now);
-      // Their Home loses the question; the creator's count moves.
       await refreshHomes(
         env,
         db,

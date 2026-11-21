@@ -77,7 +77,6 @@ export const slackInteractionRoutes = new Hono<AppEnv>().post("/", async (c) => 
   const ctx = recipientContext({ db, workspaceId, now }, slackUserId);
   const base = { db, workspaceId, now };
 
-  // Send a Holler about this: a quick pulse with the message linked in its description.
   if (payload.type === "message_action" && payload.callback_id === aboutMessageShortcutId) {
     if (!payload.trigger_id) return c.body(null, 200);
     const slack = await slackFor(c.env, db, workspaceId);
@@ -99,7 +98,6 @@ export const slackInteractionRoutes = new Hono<AppEnv>().post("/", async (c) => 
     const values = readQuickValues(payload.view.state?.values);
     const read = quickPulseDraft(origin, values);
     if ("errors" in read) return c.json({ response_action: "errors", errors: read.errors });
-    // The service's own checks, before anything is saved, beside the field at fault.
     const problems = quickPulseProblems(sender, read.draft);
     if (problems.length > 0) {
       const errors: Record<string, string> = {};
@@ -108,8 +106,6 @@ export const slackInteractionRoutes = new Hono<AppEnv>().post("/", async (c) => 
     }
     const viewId = payload.view.id;
     if (!viewId) return c.json({ response_action: "clear" });
-    // Resolving channels can take longer than Slack waits, so the send finishes after the reply
-    // and rewrites the modal with how it went.
     c.executionCtx.waitUntil(
       finishQuickPulse(c.env, db, sender, read.draft, viewId).catch((error) =>
         console.error("quick pulse failed", error),
@@ -135,7 +131,6 @@ export const slackInteractionRoutes = new Hono<AppEnv>().post("/", async (c) => 
     }
     const tapped = origin.channel && origin.ts ? { channel: origin.channel, ts: origin.ts } : null;
     await queueOutcome(c.env, ctx, origin.hollerId, outcome, tapped);
-    // Opened from App Home, where the person is looking: their Home drops it now.
     if (!tapped) await refreshHomes(c.env, db, workspaceId, [slackUserId], now(), { soon: true });
     return c.json({ response_action: "clear" });
   }
@@ -143,7 +138,6 @@ export const slackInteractionRoutes = new Hono<AppEnv>().post("/", async (c) => 
   if (payload.type !== "block_actions") return c.body(null, 200);
   const action = payload.actions?.[0];
   if (action?.action_id === actionIds.quickKind && payload.view?.id) {
-    // The Answers menu changed: redraw with or without the options box, keeping what is typed.
     const slack = await slackFor(c.env, db, workspaceId);
     await slack.updateView({
       viewId: payload.view.id,
@@ -175,7 +169,6 @@ export const slackInteractionRoutes = new Hono<AppEnv>().post("/", async (c) => 
     try {
       await remindWaiting(sender, c.env, action.value);
     } catch (error) {
-      // Too soon, nobody waiting or closed: the Home is redrawn to show which.
       if (!(error instanceof ServiceError)) throw error;
     }
     await refreshHomes(c.env, db, workspaceId, [slackUserId], now(), { soon: true });
@@ -240,10 +233,6 @@ export const slackInteractionRoutes = new Hono<AppEnv>().post("/", async (c) => 
   return c.body(null, 200);
 });
 
-/**
- * A link to the message a shortcut was used on. Slack's permalink shape, built here because the
- * trigger id expires before a chat.getPermalink call could come back.
- */
 export function permalinkOf(payload: InteractionPayload): string | null {
   const domain = payload.team?.domain;
   const channel = payload.channel?.id;
@@ -254,7 +243,6 @@ export function permalinkOf(payload: InteractionPayload): string | null {
   return `https://${domain}.slack.com/archives/${channel}/p${ts.replace(".", "")}`;
 }
 
-/** Sends the quick pulse after Slack has its answer, then rewrites the modal with the outcome. */
 async function finishQuickPulse(
   env: Bindings,
   db: Db,

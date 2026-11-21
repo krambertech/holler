@@ -2,10 +2,6 @@ import type { PostMessage } from "../client";
 import { actionIds, context, escapeMrkdwn, plain, section, when } from "./format";
 import type { HomeLive } from "./home";
 
-/**
- * What /holler answers in the channel, only to the person who typed it. Slack shows these as
- * ephemeral messages, with the same limits as any message. docs/slack.md, `/holler`.
- */
 export type Ephemeral = Omit<PostMessage, "channel"> & { response_type: "ephemeral" };
 
 interface Reader {
@@ -23,7 +19,6 @@ const linkButton = (text: string, url: string, actionId: string = actionIds.prod
   url,
 });
 
-/** `/holler results`: the person's live hollers with their counts. */
 export function resultsMessage(
   sender: { live: HomeLive[]; moreLive: number },
   reader: Reader,
@@ -73,7 +68,6 @@ export function helpMessage(): Ephemeral {
   return { response_type: "ephemeral", text, blocks: [section(text)] };
 }
 
-/** For someone who has not signed in to Holler: they answer hollers, but sending needs a member. */
 export function signInMessage(productUrl: string): Ephemeral {
   const text = "To send hollers and see results from Slack, sign in to Holler once with Slack.";
   return {

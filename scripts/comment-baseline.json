@@ -160,7 +160,7 @@
   "apps/web/src/server/slack/blocks/messages.ts": 33,
   "apps/web/src/server/slack/blocks/modal.ts": 13,
   "apps/web/src/server/slack/client.ts": 20,
-  "apps/web/src/server/slack/events.ts": 7,
+  "apps/web/src/server/slack/events.ts": 6,
   "apps/web/src/server/slack/fake.ts": 8,
   "apps/web/src/server/slack/interactions.test.ts": 5,
   "apps/web/src/server/slack/interactions.ts": 10,

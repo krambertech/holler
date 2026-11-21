@@ -22,7 +22,6 @@ interface EventEnvelope {
   event?: {
     type: string;
     user?: SlackUser | string;
-    /** app_home_opened: which tab they opened. */
     tab?: string;
     tokens?: { oauth?: string[]; bot?: string[] };
   };
@@ -73,7 +72,6 @@ async function handleEvent(
       return;
     }
     case "app_home_opened": {
-      // The Messages tab opens this too; only the Home tab shows a Home.
       if (event.tab !== "home" || typeof event.user !== "string") return;
       const workspaceId = await workspaceIdForTeam(db, teamId);
       if (!workspaceId) return;
@@ -82,7 +80,6 @@ async function handleEvent(
       return;
     }
     default:
-      // Anything newer belongs to nobody yet.
       return;
   }
 }

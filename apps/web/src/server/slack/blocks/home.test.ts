@@ -19,7 +19,6 @@ import {
   signInView,
 } from "./quick-pulse";
 
-/** Friday 20 November 2026, 10:00 UTC. */
 const NOW = new Date("2026-11-20T10:00:00Z");
 const HOUR = 3600_000;
 const productUrl = "https://app.holler.team";

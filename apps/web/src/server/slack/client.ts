@@ -7,9 +7,7 @@ export interface SlackClient {
   /** Posts a message. A user id as `channel` posts to that person's DM with the bot. */
   postMessage(input: PostMessage): Promise<{ channel: string; ts: string }>;
   updateMessage(input: PostMessage & { ts: string }): Promise<void>;
-  /** Opens a modal and answers its id, so a later `updateView` can rewrite it. */
   openView(input: { triggerId: string; view: SlackView }): Promise<{ viewId: string }>;
-  /** Rewrites an open modal in place, such as after a submit that finishes later. */
   updateView(input: { viewId: string; view: SlackView }): Promise<void>;
   publishHome(input: { userId: string; view: SlackView }): Promise<void>;
   /** One page of the workspace's people. Pass the returned cursor until it is empty. */
