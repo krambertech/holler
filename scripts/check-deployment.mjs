@@ -39,7 +39,9 @@ export async function checkDeployment(origin, worker, tag, attempts = 20, wait =
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const [origin, worker, tag, attempts] = process.argv.slice(2);
   if (!origin || !worker) {
-    console.error("Usage: node scripts/check-deployment.mjs <origin> <worker> [tag-or-version-id] [attempts]");
+    console.error(
+      "Usage: node scripts/check-deployment.mjs <origin> <worker> [tag-or-version-id] [attempts]",
+    );
     process.exit(1);
   }
   const health = await checkDeployment(
