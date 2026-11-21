@@ -2,6 +2,7 @@ import { hollerDraftSchema, listHollersQuerySchema } from "@holler/core";
 import { sValidator } from "@hono/standard-validator";
 import { Hono } from "hono";
 import type { AppEnv } from "../app";
+import { closeHoller, remindWaiting, sendHoller } from "../services/delivery";
 import { createDraft, getHoller, homeCounts, listHollers, updateDraft } from "../services/hollers";
 import { resultsFor } from "../services/responses";
 import { requireMember } from "./context";
@@ -21,6 +22,15 @@ export const hollerRoutes = new Hono<AppEnv>()
   .get("/:id", async (c) => c.json(await getHoller(requireMember(c), c.req.param("id"))))
   .put("/:id", sValidator("json", hollerDraftSchema), async (c) =>
     c.json(await updateDraft(requireMember(c), c.req.param("id"), c.req.valid("json"))),
+  )
+  .post("/:id/send", async (c) =>
+    c.json(await sendHoller(requireMember(c), c.env, c.req.param("id"))),
+  )
+  .post("/:id/close", async (c) =>
+    c.json(await closeHoller(requireMember(c), c.env, c.req.param("id"))),
+  )
+  .post("/:id/remind", async (c) =>
+    c.json(await remindWaiting(requireMember(c), c.env, c.req.param("id"))),
   )
   .get("/:id/results", async (c) => {
     const ctx = requireMember(c);

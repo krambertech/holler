@@ -90,6 +90,38 @@ The app is defined in [`slack-app-manifest.json`](../slack-app-manifest.json) at
 
 **Keep the bot scopes in the manifest and `BOT_SCOPES` in `apps/web/src/server/slack/oauth.ts` the same.** A scope added to one and not the other means a reinstall asks for something the code does not request, or the other way round.
 
+## Sending
+
+`sendHoller` in `services/delivery.ts` is the one way a Holler goes out, from every door. It refuses a draft with every problem from `sendProblems` at once, checks the monthly limit, and with a send time in the future only marks the Holler scheduled. Sending now resolves the audience into `recipients`, sets `sent_at` and `closes_at`, and puts one invite per person on the `SLACK_SENDS` queue.
+
+```mermaid
+sequenceDiagram
+  participant D as A door (web, API, MCP, cron)
+  participant S as sendHoller
+  participant Q as SLACK_SENDS
+  participant C as Queue consumer
+  participant K as Slack
+  D->>S: send
+  S->>S: sendProblems, assertCanSend, resolve audience
+  S->>S: recipients, status live, Activity, in one batch
+  S->>Q: one invite per person due now
+  Q->>C: batch
+  C->>K: chat.postMessage to the person
+  C->>C: store dm_channel_id, dm_ts, next_reminder_at
+```
+
+- **Who gets it.** People picked by name, members of the picked user groups and channels, and everyone in the directory for the whole workspace. Bots and people who left are skipped. The sender gets it too when the audience includes them, like anyone else.
+- **Send in their time zone.** The send time is a wall-clock time in the sender's zone, and each person gets it at that time in theirs. The Holler goes live when the earliest zone on Earth reaches it, and the cron invites each person as their time arrives. Someone whose time had already passed gets it at once. It closes `close_after_hours` after the last person's send.
+- **At most once.** A recipient is claimed (`invited_at`) before their invite is queued, and the consumer posts only while `dm_ts` is empty, so a queue retry never sends twice.
+- **Failures.** A permanent Slack error (`SlackApiError.permanent`) is stored in `recipients.failure` and not retried. A rate limit waits for `Retry-After`; any other error retries with backoff.
+- **Claims and the queue.** Every pass claims its rows (`invited_at`, `reminders_sent`, `reminded_at`, `close_queued_at`) with a guarded update, then queues through `queueClaimed`. When the queue refuses a batch, the claims for it and every later batch are given back, so the next cron run retries them and nothing is lost or sent twice. A send or close the person asked for still succeeds; its Slack work follows within a minute.
+- **Every DM edit goes through the queue**, so a rate limit retries it: thank-yous, closed lines, snoozed reminders.
+- **Block Kit.** `FakeSlack` refuses any payload that breaks a limit in `slack/blocks/limits.ts`, the way Slack would. A description longer than one section is split across several; a label over 75 characters is cut with an ellipsis.
+
+**Closing.** The close time passing, or **Close now**, closes the Holler. Each unanswered DM is edited in place to say it closed, with its buttons gone, the announcement shows its final count, and the sender gets the close notice.
+
+**Send reminder.** A sender's reminder goes at once to everyone waiting, outside working hours too, and counts as each person's next reminder in the rhythm. It can be sent once every four hours; a second try inside that window is refused with when the next one is possible.
+
 ## Answering: as few taps as the question allows
 
 The invite DM adapts to the Holler, so answering costs the least the question allows.

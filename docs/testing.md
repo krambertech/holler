@@ -24,7 +24,11 @@ pnpm verify
 - `packages/design`: every text pair in `src/pairs.ts` meets its WCAG floor in both themes, and the OS dark block matches the `[data-theme="dark"]` block token for token.
 - `apps/web/src/server`: services against a real local D1 with every migration applied (`testDb()` in `test-db.ts`). Each file boots its own. Use `workspaceFixture()` for a workspace and a member, and `FakeSlack` instead of slack.com.
 
+Anything that sends uses `deliveryEnv()` in `test-delivery.ts`: its queue refuses what Cloudflare Queues would (over 100 messages or 256 KB a batch), can refuse a kind of send or fail midway, and `drain(at)` runs the consumer by hand. Tests run shuffled, in the same order every run (`apps/web/vitest.config.ts`), so each test sets up what it reads: a file whose tests run the cron's passes calls `emptyDatabase()` before each test, because a pass reads every workspace, and a dev route test signs in with `reset=1`. Try another order with `--sequence.seed=<n>`. Fix the clock: pass a `now` to `workspaceFixture()`, and `vi.setSystemTime` for a route that reads it.
+
 Test a service, not a route, unless the route itself has logic. A service test names the rule it proves: "refuses an option from another question", not "works".
+
+**A bug gets a check for its class.** When a bug turns up, write the check that fails for every bug of its kind, not only this one: a Grit rule in `biome-plugins/` with a case in `scripts/biome-plugins.test.mjs`, a limit a fake enforces, a sweep over every zone or day, or a concurrency or failure test across every door. Add a row to the Enforced rules table in `CLAUDE.md`.
 
 ## Browser journeys
 

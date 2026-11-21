@@ -1,5 +1,7 @@
 {
   "0000_foundations.sql": "f039501f2704a2ffd670e71e1ba7b558b46e51f2a805b1d37d0c828c4d66dc37",
   "0001_directory_syncs.sql": "e02ec3c6dbd9a50812efad88bd79a46cff3685147409bbb445c7d86aa07e5c33",
-  "0002_polar_events.sql": "0ee2f3f6d2f0d244768d067ee8265d1336fc48adf323e7f096b3b2e9a8a6db64"
+  "0002_polar_events.sql": "0ee2f3f6d2f0d244768d067ee8265d1336fc48adf323e7f096b3b2e9a8a6db64",
+  "0003_next_reminder.sql": "6b8bbd4aa86dab5605e7120247ac4d6f8dac2cdbdd9b3df81eace6a2555b2054",
+  "0004_slack_claims.sql": "021c2832a4842aaa05662541d7ab5fb3469cba744dfc945252d797cf5fd35d48"
 }

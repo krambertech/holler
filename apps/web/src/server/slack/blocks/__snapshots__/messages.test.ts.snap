@@ -1,0 +1,547 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`answer modal > uses radio buttons, a select above ten options, and a text box 1`] = `
+{
+  "blocks": [
+    {
+      "text": {
+        "text": "*Offsite*",
+        "type": "mrkdwn",
+      },
+      "type": "section",
+    },
+    {
+      "text": {
+        "text": "Two things to *decide*. See <https://example.com/plan|the plan>.",
+        "type": "mrkdwn",
+      },
+      "type": "section",
+    },
+    {
+      "elements": [
+        {
+          "text": "Anonymous. Your name is not kept with your answers.",
+          "type": "mrkdwn",
+        },
+      ],
+      "type": "context",
+    },
+    {
+      "block_id": "q:q_1",
+      "element": {
+        "action_id": "value",
+        "options": [
+          {
+            "text": {
+              "emoji": false,
+              "text": "Good",
+              "type": "plain_text",
+            },
+            "value": "o_1",
+          },
+          {
+            "text": {
+              "emoji": false,
+              "text": "Fine",
+              "type": "plain_text",
+            },
+            "value": "o_2",
+          },
+          {
+            "text": {
+              "emoji": false,
+              "text": "Rough",
+              "type": "plain_text",
+            },
+            "value": "o_3",
+          },
+        ],
+        "type": "radio_buttons",
+      },
+      "label": {
+        "emoji": false,
+        "text": "Where?",
+        "type": "plain_text",
+      },
+      "optional": false,
+      "type": "input",
+    },
+    {
+      "block_id": "q:q_2",
+      "element": {
+        "action_id": "value",
+        "options": [
+          {
+            "text": {
+              "emoji": false,
+              "text": "Day 1",
+              "type": "plain_text",
+            },
+            "value": "d_0",
+          },
+          {
+            "text": {
+              "emoji": false,
+              "text": "Day 2",
+              "type": "plain_text",
+            },
+            "value": "d_1",
+          },
+          {
+            "text": {
+              "emoji": false,
+              "text": "Day 3",
+              "type": "plain_text",
+            },
+            "value": "d_2",
+          },
+          {
+            "text": {
+              "emoji": false,
+              "text": "Day 4",
+              "type": "plain_text",
+            },
+            "value": "d_3",
+          },
+          {
+            "text": {
+              "emoji": false,
+              "text": "Day 5",
+              "type": "plain_text",
+            },
+            "value": "d_4",
+          },
+          {
+            "text": {
+              "emoji": false,
+              "text": "Day 6",
+              "type": "plain_text",
+            },
+            "value": "d_5",
+          },
+          {
+            "text": {
+              "emoji": false,
+              "text": "Day 7",
+              "type": "plain_text",
+            },
+            "value": "d_6",
+          },
+          {
+            "text": {
+              "emoji": false,
+              "text": "Day 8",
+              "type": "plain_text",
+            },
+            "value": "d_7",
+          },
+          {
+            "text": {
+              "emoji": false,
+              "text": "Day 9",
+              "type": "plain_text",
+            },
+            "value": "d_8",
+          },
+          {
+            "text": {
+              "emoji": false,
+              "text": "Day 10",
+              "type": "plain_text",
+            },
+            "value": "d_9",
+          },
+          {
+            "text": {
+              "emoji": false,
+              "text": "Day 11",
+              "type": "plain_text",
+            },
+            "value": "d_10",
+          },
+          {
+            "text": {
+              "emoji": false,
+              "text": "Day 12",
+              "type": "plain_text",
+            },
+            "value": "d_11",
+          },
+        ],
+        "placeholder": {
+          "emoji": false,
+          "text": "Choose any",
+          "type": "plain_text",
+        },
+        "type": "multi_static_select",
+      },
+      "label": {
+        "emoji": false,
+        "text": "Which days?",
+        "type": "plain_text",
+      },
+      "optional": true,
+      "type": "input",
+    },
+    {
+      "block_id": "q:q_3",
+      "element": {
+        "action_id": "value",
+        "max_length": 3000,
+        "multiline": true,
+        "type": "plain_text_input",
+      },
+      "label": {
+        "emoji": false,
+        "text": "Anything else?",
+        "type": "plain_text",
+      },
+      "optional": true,
+      "type": "input",
+    },
+  ],
+  "callback_id": "holler_answer",
+  "close": {
+    "emoji": false,
+    "text": "Cancel",
+    "type": "plain_text",
+  },
+  "private_metadata": "{"hollerId":"hol_2","channel":"DA","ts":"1.1"}",
+  "submit": {
+    "emoji": false,
+    "text": "Send",
+    "type": "plain_text",
+  },
+  "title": {
+    "emoji": false,
+    "text": "Answer",
+    "type": "plain_text",
+  },
+  "type": "modal",
+}
+`;
+
+exports[`messages > announces in a channel without naming who answered 1`] = `
+{
+  "blocks": [
+    {
+      "text": {
+        "text": "Mira sent a Holler to 12 people: _How was your week?_",
+        "type": "mrkdwn",
+      },
+      "type": "section",
+    },
+    {
+      "elements": [
+        {
+          "text": "7 of 12 answered",
+          "type": "mrkdwn",
+        },
+      ],
+      "type": "context",
+    },
+  ],
+  "text": "Mira sent a Holler to 12 people: How was your week?",
+}
+`;
+
+exports[`messages > invites to a form chase 1`] = `
+{
+  "blocks": [
+    {
+      "text": {
+        "text": "_Mira_ sent you a Holler.",
+        "type": "mrkdwn",
+      },
+      "type": "section",
+    },
+    {
+      "text": {
+        "text": "*Benefits enrolment*",
+        "type": "mrkdwn",
+      },
+      "type": "section",
+    },
+    {
+      "elements": [
+        {
+          "text": "Form chase · Closes Friday at 18:00",
+          "type": "mrkdwn",
+        },
+      ],
+      "type": "context",
+    },
+    {
+      "block_id": "answer:hol_3",
+      "elements": [
+        {
+          "action_id": "holler_form",
+          "text": {
+            "emoji": false,
+            "text": "Open the form",
+            "type": "plain_text",
+          },
+          "type": "button",
+          "url": "https://forms.example.com/benefits",
+        },
+        {
+          "action_id": "holler_done",
+          "style": "primary",
+          "text": {
+            "emoji": false,
+            "text": "I submitted it",
+            "type": "plain_text",
+          },
+          "type": "button",
+          "value": "hol_3",
+        },
+      ],
+      "type": "actions",
+    },
+  ],
+  "text": "Mira sent you a Holler: Benefits enrolment",
+}
+`;
+
+exports[`messages > invites to a one-tap pulse 1`] = `
+{
+  "blocks": [
+    {
+      "text": {
+        "text": "_Mira_ sent you a Holler.",
+        "type": "mrkdwn",
+      },
+      "type": "section",
+    },
+    {
+      "text": {
+        "text": "*How was your week?*",
+        "type": "mrkdwn",
+      },
+      "type": "section",
+    },
+    {
+      "elements": [
+        {
+          "text": "Pulse · 1 question · Closes Friday at 18:00",
+          "type": "mrkdwn",
+        },
+      ],
+      "type": "context",
+    },
+    {
+      "block_id": "answer:hol_1",
+      "elements": [
+        {
+          "action_id": "holler_option_0",
+          "text": {
+            "emoji": false,
+            "text": "Good",
+            "type": "plain_text",
+          },
+          "type": "button",
+          "value": "hol_1|q_1|o_1",
+        },
+        {
+          "action_id": "holler_option_1",
+          "text": {
+            "emoji": false,
+            "text": "Fine",
+            "type": "plain_text",
+          },
+          "type": "button",
+          "value": "hol_1|q_1|o_2",
+        },
+        {
+          "action_id": "holler_option_2",
+          "text": {
+            "emoji": false,
+            "text": "Rough",
+            "type": "plain_text",
+          },
+          "type": "button",
+          "value": "hol_1|q_1|o_3",
+        },
+      ],
+      "type": "actions",
+    },
+  ],
+  "text": "Mira sent you a Holler: How was your week?",
+}
+`;
+
+exports[`messages > invites to a survey with Answer 1`] = `
+{
+  "blocks": [
+    {
+      "text": {
+        "text": "_Mira_ sent you a Holler.",
+        "type": "mrkdwn",
+      },
+      "type": "section",
+    },
+    {
+      "text": {
+        "text": "*Offsite*",
+        "type": "mrkdwn",
+      },
+      "type": "section",
+    },
+    {
+      "text": {
+        "text": "Two things to *decide*. See <https://example.com/plan|the plan>.",
+        "type": "mrkdwn",
+      },
+      "type": "section",
+    },
+    {
+      "elements": [
+        {
+          "text": "Survey · 3 questions · Closes Friday at 18:00 · Anonymous",
+          "type": "mrkdwn",
+        },
+      ],
+      "type": "context",
+    },
+    {
+      "block_id": "answer:hol_2",
+      "elements": [
+        {
+          "action_id": "holler_open",
+          "style": "primary",
+          "text": {
+            "emoji": false,
+            "text": "Answer",
+            "type": "plain_text",
+          },
+          "type": "button",
+          "value": "hol_2",
+        },
+      ],
+      "type": "actions",
+    },
+  ],
+  "text": "Mira sent you a Holler: Offsite",
+}
+`;
+
+exports[`messages > marks a closed Holler 1`] = `
+{
+  "blocks": [
+    {
+      "text": {
+        "text": "_How was your week?_ closed on Friday at 18:00. It takes no more answers.",
+        "type": "mrkdwn",
+      },
+      "type": "section",
+    },
+    {
+      "elements": [
+        {
+          "text": "From Mira",
+          "type": "mrkdwn",
+        },
+      ],
+      "type": "context",
+    },
+  ],
+  "text": "How was your week? closed. It takes no more answers.",
+}
+`;
+
+exports[`messages > says when a snoozed reminder comes back 1`] = `
+{
+  "blocks": [
+    {
+      "text": {
+        "text": "A reminder: Mira still needs your answer to _Offsite_",
+        "type": "mrkdwn",
+      },
+      "type": "section",
+    },
+    {
+      "block_id": "answer:hol_2",
+      "elements": [
+        {
+          "action_id": "holler_open",
+          "style": "primary",
+          "text": {
+            "emoji": false,
+            "text": "Answer now",
+            "type": "plain_text",
+          },
+          "type": "button",
+          "value": "hol_2",
+        },
+      ],
+      "type": "actions",
+    },
+    {
+      "elements": [
+        {
+          "text": "I'll remind you again at 15:00.",
+          "type": "mrkdwn",
+        },
+      ],
+      "type": "context",
+    },
+  ],
+  "text": "A reminder: Mira still needs your answer to Offsite",
+}
+`;
+
+exports[`messages > tells the creator it closed, or that it did not send 1`] = `
+{
+  "blocks": [
+    {
+      "text": {
+        "text": "_How was your week?_ closed. 11 of 12 answered.",
+        "type": "mrkdwn",
+      },
+      "type": "section",
+    },
+    {
+      "block_id": "results:hol_1",
+      "elements": [
+        {
+          "action_id": "holler_results",
+          "text": {
+            "emoji": false,
+            "text": "See results",
+            "type": "plain_text",
+          },
+          "type": "button",
+          "url": "https://app.test/hollers/hol_1",
+        },
+      ],
+      "type": "actions",
+    },
+  ],
+  "text": "How was your week? closed. 11 of 12 answered.",
+}
+`;
+
+exports[`messages > thanks with what they picked, or only that they answered anonymously 1`] = `
+{
+  "blocks": [
+    {
+      "text": {
+        "text": "Thanks. Your answer to _How was your week?_ is in.",
+        "type": "mrkdwn",
+      },
+      "type": "section",
+    },
+    {
+      "elements": [
+        {
+          "text": "*Where?*
+Good",
+          "type": "mrkdwn",
+        },
+      ],
+      "type": "context",
+    },
+  ],
+  "text": "Thanks. Your answer to How was your week? is in.",
+}
+`;

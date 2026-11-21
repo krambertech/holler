@@ -61,8 +61,12 @@ export const hollers = sqliteTable(
     closeAfterHours: integer("close_after_hours").notNull().default(72),
     closesAt: integer("closes_at", { mode: "timestamp_ms" }),
     closedAt: integer("closed_at", { mode: "timestamp_ms" }),
+    /** When the close work (DM edits, the notice, the announcement) was queued. Claimed once. */
+    closeQueuedAt: integer("close_queued_at", { mode: "timestamp_ms" }),
     /** Reminders on or off. Their rhythm is fixed in packages/core/src/reminders.ts. */
     remindersEnabled: integer("reminders_enabled", { mode: "boolean" }).notNull().default(true),
+    /** When the creator last sent a reminder to everyone waiting. Claimed to keep four hours between them. */
+    remindedAt: integer("reminded_at", { mode: "timestamp_ms" }),
     /** The unguessable part of the report link. Null until the creator makes one. */
     reportToken: text("report_token"),
     createdVia: text("created_via", { enum: ["web", "slack", "api", "mcp"] }).notNull(),
@@ -154,6 +158,8 @@ export const recipients = sqliteTable(
     remindersSent: integer("reminders_sent").notNull().default(0),
     lastRemindedAt: integer("last_reminded_at", { mode: "timestamp_ms" }),
     snoozedUntil: integer("snoozed_until", { mode: "timestamp_ms" }),
+    /** When the next rhythm reminder is due, from nextReminder. Null when none is due. */
+    nextReminderAt: integer("next_reminder_at", { mode: "timestamp_ms" }),
     /** Why a send failed for good, such as `user_not_found`. Null while things are fine. */
     failure: text("failure"),
   },
@@ -161,6 +167,7 @@ export const recipients = sqliteTable(
     primaryKey({ columns: [t.hollerId, t.slackUserId] }),
     index("recipients_due").on(t.invitedAt, t.sendAt),
     index("recipients_waiting").on(t.hollerId, t.answeredAt),
+    index("recipients_next_reminder").on(t.nextReminderAt),
   ],
 );
 

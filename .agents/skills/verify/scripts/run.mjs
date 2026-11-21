@@ -115,6 +115,19 @@ async function driveFeature(browser, name) {
     if (!response.ok()) throw new Error(`GET ${path} answered HTTP ${response.status()}`);
     return response.json();
   };
+  /**
+   * Reads `/api/dev/state` until `check` holds, for work the SLACK_SENDS consumer does a moment
+   * after the request. Fails with the last state after five seconds, never passes on a timeout.
+   */
+  const slackState = async (check, what) => {
+    let state;
+    for (let tries = 0; tries < 50; tries++) {
+      state = await api("/api/dev/state");
+      if (check(state)) return state;
+      await page.waitForTimeout(100);
+    }
+    throw new Error(`Slack never showed ${what}: ${JSON.stringify(state?.slack)}`);
+  };
   const post = async (path, data) => {
     const response = await page.request.post(`${base}${path}`, { data });
     if (!response.ok()) {
@@ -160,7 +173,7 @@ async function driveFeature(browser, name) {
     const cookie = (await context.cookies(base)).map((c) => `${c.name}=${c.value}`).join("; ");
     checks = await doctor({ url: base, sha, version: values.version, persona, cookie, key });
     if (!report(checks)) throw new Error("the doctor found this instance not worth driving");
-    await feature.default({ page, base, step, api, post, expect: patient });
+    await feature.default({ page, base, step, api, post, slackState, expect: patient });
   } catch (error) {
     if (!error.recorded)
       steps.push({ action: "set up", ok: false, error: failure(error), files: [] });

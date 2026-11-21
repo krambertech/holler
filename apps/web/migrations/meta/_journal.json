@@ -22,6 +22,20 @@
       "when": 1795226207466,
       "tag": "0002_polar_events",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1795266132419,
+      "tag": "0003_next_reminder",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1795269308815,
+      "tag": "0004_slack_claims",
+      "breakpoints": true
     }
   ]
 }

@@ -59,6 +59,8 @@ export class ServiceError extends Error {
     readonly code: ServiceErrorCode,
     message: string,
     readonly field?: string,
+    /** Every problem at once, when there are several, such as a send with three fields to fix. */
+    readonly problems?: { message: string; field: string | null }[],
   ) {
     super(message);
     this.name = "ServiceError";
