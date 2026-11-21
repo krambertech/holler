@@ -100,7 +100,9 @@ export function changeTemplate(question: EditorQuestion, id: string): EditorQues
   const t = template(id);
   if (templateFor(q).id === id) return question;
   const keepsOptions = isPlainChoice(q) && isChoice(t.type) && t.style === "plain";
-  const options = keepsOptions ? q.options : templateOptions(t);
+  // A numbered scale made custom keeps its steps and starts with no words at its ends.
+  const keepsSteps = t.id === "scale" && scaleRange(question) !== null;
+  const options = keepsOptions || keepsSteps ? q.options : templateOptions(t);
   const allowOther = keepsOptions && q.allowOther;
   const choices = options.length + (allowOther ? 1 : 0);
   const maxChoices =
@@ -109,7 +111,10 @@ export function changeTemplate(question: EditorQuestion, id: string): EditorQues
       : null;
   const followUp =
     q.followUp && isChoice(t.type)
-      ? { prompt: q.followUp.prompt, onlyAfter: keepsOptions ? q.followUp.onlyAfter : null }
+      ? {
+          prompt: q.followUp.prompt,
+          onlyAfter: keepsOptions || keepsSteps ? q.followUp.onlyAfter : null,
+        }
       : null;
   return {
     ...q,
@@ -240,8 +245,13 @@ export function setScaleRange(question: EditorQuestion, from: number, to: number
   const low = (scaleBounds.lowest as readonly number[]).includes(from) ? from : 1;
   const high = Math.min(scaleBounds.highest.max, Math.max(scaleBounds.highest.min, to));
   const options = numberedScale(low, high);
-  // A follow-up that named a step the scale no longer has falls back to after any answer.
-  return withPositions({ ...q, options }, (pos) => (pos < options.length ? pos : null));
+  // A follow-up stays with the same numbers; one that named a step the scale no longer has goes,
+  // and with none left it falls back to after any answer.
+  const before = q.options.map((o) => o.label);
+  return withPositions({ ...q, options }, (pos) => {
+    const at = options.findIndex((o) => o.label === before[pos]);
+    return at === -1 ? null : at;
+  });
 }
 
 /** The highest steps a scale can end on, for the To control. */

@@ -75,6 +75,14 @@ const everyType: QuestionInput[] = [
   {
     type: "single",
     style: "scale",
+    prompt: "How clear is our roadmap for next quarter?",
+    options: numberedScale(1, 7),
+    lowLabel: "Not clear at all",
+    highLabel: "Completely clear",
+  },
+  {
+    type: "single",
+    style: "scale",
     prompt: "How likely are you to recommend working here?",
     options: numberedScale(0, 10),
     lowLabel: "Not at all likely",
@@ -189,6 +197,7 @@ function DragDemo() {
               onChange={noop}
               onDelete={noop}
               lifted={lifted}
+              className={lifted ? "outline-2 outline-primary" : undefined}
               grip={
                 <ReorderGrip
                   number={index + 1}
@@ -226,7 +235,7 @@ export const questions: Group = {
       name: "QuestionList",
       source: "components/editor/questions/question-list.tsx",
       covers: ["FirstQuestion", "ReorderGrip"],
-      note: "Drag a grip to move a card, or focus it and press Space, then the arrows, then Space again. Escape puts it back. A pulse stops at two questions and offers to become a survey.",
+      note: "Drag a grip to move a card: it floats under the pointer while the others fold to one line, then they open again around it. Or focus the grip and press Space, then the arrows, then Space again. Escape puts it back. A pulse stops at two questions and offers to become a survey.",
       Demo: () => (
         <Variants
           stack
@@ -251,7 +260,7 @@ export const questions: Group = {
             },
             {
               label: "Send problems",
-              note: "Each field at fault has a red edge and a mark; the words gather in one line at the card's foot. Editing the field clears it.",
+              note: "The card sits on a red plate that shows below it with what to fix, and each field at fault is tinted. Fixing the field clears it.",
               render: () => (
                 <ListDemo mode="survey" initial={withProblems} problems={sendProblems} />
               ),
@@ -275,20 +284,20 @@ export const questions: Group = {
         "OptionMark",
         "ProblemLine",
         "ProblemFoot",
-        "ProblemMark",
         "ProblemScopeProvider",
+        "ScaleKindSelect",
         "ScaleRange",
         "SettingLine",
         "SettingPair",
       ],
-      note: "Always open. Description, Duplicate and Delete live in the menu. Settings are short sentences at the foot with small controls in them. Answers the type sets are a quiet preview. On a narrow card Required moves to the foot.",
+      note: "Always open. Description, the follow-up note, Duplicate and Delete live in the menu. Settings are short sentences at the foot with small controls in them. Answers the type sets are a quiet preview. On a narrow card Required moves to the foot.",
       Demo: () => (
         <Variants
           stack
           items={[
             {
               label: "Description and a follow-up after chosen answers",
-              note: "Any answer and chosen answers exclude each other. After chosen answers sends people to a web page, and the panel says so.",
+              note: "Any answer and chosen answers exclude each other. After chosen answers sends people to a web page; the editor's bar says so.",
               render: () => <CardDemo initial={bets} number={2} />,
             },
             {
@@ -310,7 +319,7 @@ export const questions: Group = {
             },
             {
               label: "A new number question",
-              note: "It starts at 0 or more. Change opens the two boxes in the same sentence; an empty box is no bound.",
+              note: "It starts at 0 with no largest number. An empty box is no bound.",
               render: () => (
                 <CardDemo
                   initial={{
@@ -324,15 +333,15 @@ export const questions: Group = {
             },
             {
               label: "Number with both bounds",
-              render: () => <CardDemo initial={everyType[8] as QuestionInput} number={9} />,
+              render: () => <CardDemo initial={everyType[9] as QuestionInput} number={9} />,
             },
             {
               label: "Person",
-              render: () => <CardDemo initial={everyType[9] as QuestionInput} number={10} />,
+              render: () => <CardDemo initial={everyType[10] as QuestionInput} number={10} />,
             },
             {
               label: "With problems",
-              note: "One line at the foot; each field at fault has a red edge and a mark.",
+              note: "A red plate under the card says what to fix; each field at fault is tinted red.",
               render: () => (
                 <CardDemo
                   initial={{ type: "single", prompt: "", options: options("Lisbon", "", "Online") }}
@@ -360,7 +369,7 @@ export const questions: Group = {
             },
             {
               label: "A drag in progress",
-              note: "The lifted card floats on the plate's one shadow; the others make room.",
+              note: "A still of the card in hand: it floats on the plate's one shadow with a plum outline. Drag a grip in the long survey above to see the rest: the other cards fold to one line and a plum slot the card's size shows where it lands.",
               render: () => <DragDemo />,
             },
           ]}
@@ -392,7 +401,7 @@ export const questions: Group = {
               label: "Icons",
               render: () =>
                 ["single", "multi", "binary", "person", "rating", "text", "number"].map((id) => (
-                  <TypeIcon key={id} id={id} className="text-ink-2" />
+                  <TypeIcon key={id} kind={id} className="text-ink-2" />
                 )),
             },
           ]}

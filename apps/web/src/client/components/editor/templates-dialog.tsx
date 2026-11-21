@@ -37,6 +37,7 @@ function questionLine(q: QuestionInput): string {
     style: q.style ?? "plain",
     options: q.options ?? [],
     lowLabel: q.lowLabel ?? null,
+    highLabel: q.highLabel ?? null,
   };
   return templateFor(filled).label;
 }

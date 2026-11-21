@@ -1,14 +1,7 @@
-import { type Mode, questionLimits, questionTemplates, templateFor } from "@holler/core";
+import { type Mode, questionLimits, templateFor } from "@holler/core";
 import { EASE_OUT, INSTANT } from "@holler/design";
 import { GripVertical, Plus } from "lucide-react";
-import {
-  cancelFrame,
-  type DragControls,
-  frame,
-  motion,
-  Reorder,
-  useDragControls,
-} from "motion/react";
+import { cancelFrame, frame, motion } from "motion/react";
 import {
   type KeyboardEvent,
   type PointerEvent,
@@ -34,7 +27,7 @@ import {
 } from "./model";
 import { ProblemLine } from "./parts";
 import { QuestionCard } from "./question-card";
-import { AddQuestion, QuestionTypeMenu, TypeIcon } from "./question-types";
+import { AddQuestion, kindLabel, QuestionTypeMenu, TypeIcon } from "./question-types";
 
 interface Props {
   mode: Mode;
@@ -107,20 +100,11 @@ function QuestionList({ mode, questions, onChange, problems, onTemplates, onMake
     if (focus?.key === END) end.current?.querySelector<HTMLElement>("button")?.focus();
   }, [focus]);
 
-  // A drag folds every card to one line, so a question travels a short way. The fold is animated,
-  // and while it runs the page scrolls under the grabbed row so it stays where it was, under the
-  // pointer. The drag itself starts once the fold has settled. After the drop the cards open the
-  // same way, with the dropped one held still.
-  const controls = useRef(new Map<string, DragControls>());
-  const grab = useRef<{
-    key: string;
-    pointerId: number;
-    x: number;
-    y: number;
-    released: boolean;
-  } | null>(null);
-  // How many cards are folding or opening right now. The row is held still until that is none,
-  // in motion's own frame, after it has drawn the new heights and before the browser paints.
+  // While a question moves every other card folds to one line, so it travels a short way. The fold
+  // is animated, and while it runs the page scrolls under the moving question's place so that place
+  // stays where it was. After the drop the cards open the same way, with the dropped one held still.
+  // How many cards are folding or opening right now: the place is held until that is none, in
+  // motion's own frame, after it has drawn the new heights and before the browser paints.
   const moving = useRef(0);
   const held = useRef<{ key: string; top: number; frames: number; seen: boolean } | null>(null);
   const hold = (key: string) => {
@@ -148,15 +132,13 @@ function QuestionList({ mode, questions, onChange, problems, onTemplates, onMake
     };
     frame.postRender(step, true);
   };
-  // With reduced motion the cards fold in one frame, so the row is put back before that frame paints.
+  // With reduced motion the cards fold in one frame, so the place is put back before that frame paints.
   const [holdNow, setHoldNow] = useState<{ key: string; top: number } | null>(null);
   useLayoutEffect(() => {
     if (!holdNow) return;
     const row = rowIn(list.current, holdNow.key);
     if (row) window.scrollBy({ top: layoutTop(row) - holdNow.top, behavior: "instant" });
     setHoldNow(null);
-    const pending = grab.current;
-    if (pending && lift?.key === pending.key) startDrag();
   });
   const keepStill = (key: string) => {
     const row = rowIn(list.current, key);
@@ -165,38 +147,192 @@ function QuestionList({ mode, questions, onChange, problems, onTemplates, onMake
     else hold(key);
   };
 
-  /** Hands a pointer grab to the drag, from where the pointer is now. */
-  const startDrag = () => {
-    const pending = grab.current;
-    if (!pending) return;
-    grab.current = null;
-    // From here the drag moves the row; the page stays where it is.
-    held.current = null;
-    if (pending.released) {
-      finish(false);
-      return;
-    }
-    controls.current.get(pending.key)?.start(
-      new PointerEvent("pointerdown", {
-        pointerId: pending.pointerId,
-        isPrimary: true,
-        pointerType: "mouse",
-        button: 0,
-        buttons: 1,
-        clientX: pending.x,
-        clientY: pending.y,
-      }),
-    );
+  // A pointer drag carries a floating copy of the whole card, drawn by the list and moved straight
+  // from the pointer each frame, so nothing the page does can pull it away from the hand. Its place
+  // in the list is an empty slot that the other rows make room for.
+  const shell = useRef<HTMLDivElement>(null);
+  const ghost = useRef<HTMLDivElement>(null);
+  const [carried, setCarried] = useState<{
+    key: string;
+    left: number;
+    width: number;
+    top: number;
+  } | null>(null);
+  const drag = useRef<{
+    key: string;
+    x: number;
+    y: number;
+    startX: number;
+    startY: number;
+    /** From the pointer to the card's top edge. */
+    grabY: number;
+    /** The gap between rows, read once when the drag starts. */
+    gap: number;
+    started: boolean;
+    /** Let go while the cards were still folding. */
+    released: boolean;
+    stop: (commit?: boolean) => void;
+  } | null>(null);
+  useEffect(() => () => drag.current?.stop(), []);
+
+  /** Puts the copy under the pointer, from the pointer event itself and again after any scroll. */
+  const follow = () => {
+    const d = drag.current;
+    const box = shell.current;
+    if (!d?.started || !box || !ghost.current) return;
+    ghost.current.style.transform = `translateY(${d.y - d.grabY - box.getBoundingClientRect().top}px)`;
   };
 
-  // Once the fold settles, one more render lets the list measure the folded rows, which is what
-  // it reorders by. The drag starts after that.
-  const [folded, setFolded] = useState(false);
-  useEffect(() => {
-    if (!folded) return;
-    setFolded(false);
-    startDrag();
-  });
+  // Each frame of a drag: the copy follows the pointer, the page scrolls near the window's edges,
+  // and the slot moves to where the copy's top row would land.
+  const carry = () => {
+    const d = drag.current;
+    const box = shell.current;
+    if (!d?.started || !box) return cancelFrame(carry);
+    if (held.current === null) {
+      const edge = 72;
+      const push =
+        d.y < edge
+          ? -(edge - d.y) / 4
+          : d.y > window.innerHeight - edge
+            ? (d.y - window.innerHeight + edge) / 4
+            : 0;
+      if (push !== 0) window.scrollBy({ top: Math.round(push), behavior: "instant" });
+    }
+    follow();
+    place();
+    // Let go while the cards were still folding: it lands once they have.
+    if (d.released && held.current === null) d.stop(true);
+  };
+
+  /**
+   * Moves the slot to where the copy's top row would land, judged by the rows' layout, not their
+   * slide. Not while the cards are still folding: the page is holding the slot still then.
+   */
+  const place = () => {
+    const d = drag.current;
+    const ol = list.current;
+    if (!d?.started || !ol || held.current !== null) return;
+    const current = orderRef.current;
+    if (!current) return;
+    // The slot is as tall as the card in hand. Try it in every gap between the other rows and keep
+    // the gap where its top would sit nearest the card's top, so the slot lines up under the card.
+    const want = d.y - d.grabY;
+    const gap = d.gap;
+    const others = current.filter((k) => k !== d.key);
+    let top = layoutTop(ol);
+    let at = 0;
+    let nearest = Number.POSITIVE_INFINITY;
+    others.forEach((k, i) => {
+      if (Math.abs(top - want) < nearest) {
+        nearest = Math.abs(top - want);
+        at = i;
+      }
+      top += (rowIn(ol, k)?.offsetHeight ?? ROW) + gap;
+    });
+    if (Math.abs(top - want) < nearest) at = others.length;
+    const index = current.indexOf(d.key);
+    if (at !== index) reorder(moveQuestion(current, index, at));
+  };
+
+  const grabWithPointer = (event: PointerEvent, key: string) => {
+    if (questions.length < 2 || lift || drag.current) return;
+    const move = (e: globalThis.PointerEvent) => {
+      const d = drag.current;
+      if (!d) return;
+      d.x = e.clientX;
+      d.y = e.clientY;
+      // A press that does not move is a click on the grip, and folds nothing.
+      if (!d.started && Math.hypot(d.x - d.startX, d.y - d.startY) > 4) begin();
+      else follow();
+    };
+    const up = () => {
+      const d = drag.current;
+      if (!d?.started) return stop();
+      d.released = true;
+      if (held.current === null) stop(true);
+    };
+    const cancel = () => stop(false);
+    const onEscape = (e: globalThis.KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        cancel();
+      }
+    };
+    /** Ends the drag; with `commit` given it also drops, true where the slot is, false back home. */
+    const stop = (commit?: boolean) => {
+      const d = drag.current;
+      if (commit === true) place();
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+      window.removeEventListener("pointercancel", cancel);
+      window.removeEventListener("keydown", onEscape);
+      cancelFrame(carry);
+      drag.current = null;
+      if (commit !== undefined && d?.started) drop(d.key, commit);
+    };
+    drag.current = {
+      key,
+      x: event.clientX,
+      y: event.clientY,
+      startX: event.clientX,
+      startY: event.clientY,
+      grabY: 0,
+      gap: 0,
+      started: false,
+      released: false,
+      stop,
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+    window.addEventListener("pointercancel", cancel);
+    window.addEventListener("keydown", onEscape);
+  };
+
+  const begin = () => {
+    const d = drag.current;
+    const row = d && rowIn(list.current, d.key);
+    const box = shell.current;
+    if (!d || !row || !box) return;
+    const card = row.getBoundingClientRect();
+    const outer = box.getBoundingClientRect();
+    d.started = true;
+    d.grabY = d.startY - card.top;
+    d.gap = Number.parseFloat(getComputedStyle(list.current ?? row).rowGap) || 0;
+    setCarried({
+      key: d.key,
+      left: card.left - outer.left,
+      width: card.width,
+      top: card.top - outer.top,
+    });
+    pickUp(d.key, "pointer");
+    frame.postRender(carry, true);
+  };
+
+  /** Lets go: the copy settles onto its slot, then the cards open around it. */
+  const drop = (key: string, commit: boolean) => {
+    const end = () => {
+      setCarried(null);
+      finish(commit);
+    };
+    if (reduce || !commit) return end();
+    // A frame later the slot has taken its last place; measured by layout, not mid-slide.
+    frame.postRender(() => {
+      const copy = ghost.current;
+      const row = rowIn(list.current, key);
+      const box = shell.current;
+      if (!copy || !row || !box) return end();
+      const from = copy.style.transform;
+      const to = `translateY(${layoutTop(row) - box.getBoundingClientRect().top}px)`;
+      copy.style.transform = to;
+      copy
+        .animate([{ transform: from }, { transform: to }], {
+          duration: 160,
+          easing: `cubic-bezier(${EASE_OUT.join(", ")})`,
+        })
+        .finished.then(end, end);
+    });
+  };
 
   // A keyboard move keeps the question in view.
   useEffect(() => {
@@ -221,9 +357,14 @@ function QuestionList({ mode, questions, onChange, problems, onTemplates, onMake
     setOrder(next);
   };
 
+  // A pointer drop runs from the listeners set when the grip was pressed, so it reads the latest state.
+  const liftRef = useRef(lift);
+  liftRef.current = lift;
+
   const finish = (commit: boolean) => {
     const final = orderRef.current;
-    const lifted = lift;
+    const lifted = liftRef.current;
+    const { questions, onChange } = latest.current;
     orderRef.current = null;
     setOrder(null);
     setLift(null);
@@ -244,6 +385,7 @@ function QuestionList({ mode, questions, onChange, problems, onTemplates, onMake
     if (lift) return;
     const from = questions.map((q) => q.key);
     keepStill(key);
+    liftRef.current = { key, by, from };
     setLift({ key, by, from });
     reorder(from);
     if (by === "keyboard") {
@@ -290,38 +432,6 @@ function QuestionList({ mode, questions, onChange, problems, onTemplates, onMake
     }
   };
 
-  const grabWithPointer = (event: PointerEvent, key: string) => {
-    if (questions.length < 2 || lift) return;
-    const pending = {
-      key,
-      pointerId: event.pointerId,
-      x: event.clientX,
-      y: event.clientY,
-      released: false,
-    };
-    grab.current = pending;
-    // Until the drag takes over, follow the pointer, and notice if it lets go during the fold.
-    const move = (e: globalThis.PointerEvent) => {
-      pending.x = e.clientX;
-      pending.y = e.clientY;
-    };
-    const release = () => {
-      pending.released = true;
-      stop();
-    };
-    const stop = () => {
-      window.removeEventListener("pointermove", move);
-      window.removeEventListener("pointerup", release);
-      window.removeEventListener("pointercancel", release);
-    };
-    window.addEventListener("pointermove", move);
-    window.addEventListener("pointerup", release);
-    window.addEventListener("pointercancel", release);
-    // The drag owns the pointer from here; these listeners only bridge the fold.
-    setTimeout(stop, FOLD_MS * 4);
-    pickUp(key, "pointer");
-  };
-
   const add = (id: string) => {
     const question = questionFromTemplate(id);
     onChange([...questions, question]);
@@ -357,6 +467,29 @@ function QuestionList({ mode, questions, onChange, problems, onTemplates, onMake
     });
   };
 
+  // One set of handlers per question that never changes, so typing in one card re-renders only
+  // that card: each handler calls the latest render's action when it runs.
+  const actions = useRef({
+    change: (_key: string, _next: EditorQuestion) => {},
+    duplicate: (_key: string) => {},
+    remove: (_key: string) => {},
+    fixed: (_key: string, _paths: string[]) => {},
+  });
+  const handlers = useRef(new Map<string, CardHandlers>());
+  const handlersFor = (key: string) => {
+    let found = handlers.current.get(key);
+    if (!found) {
+      found = {
+        onChange: (next) => actions.current.change(key, next),
+        onDuplicate: () => actions.current.duplicate(key),
+        onDelete: () => actions.current.remove(key),
+        onFixed: (paths) => actions.current.fixed(key, paths),
+      };
+      handlers.current.set(key, found);
+    }
+    return found;
+  };
+
   const fixed = (key: string, paths: string[]) => {
     const card = pinned.byKey.get(key);
     if (!card) return;
@@ -368,27 +501,33 @@ function QuestionList({ mode, questions, onChange, problems, onTemplates, onMake
     setPinned({ ...pinned, byKey });
   };
 
+  actions.current = {
+    change: (key, next) => onChange(questions.map((q) => (q.key === key ? next : q))),
+    duplicate: (key) => duplicate(questions.findIndex((q) => q.key === key)),
+    remove: (key) => remove(questions.findIndex((q) => q.key === key)),
+    fixed,
+  };
+
   if (mode === "chase") return null;
 
   if (questions.length === 0) {
-    return <FirstQuestion onPick={add} onTemplates={onTemplates} problem={pinned.list} />;
+    return (
+      <FirstQuestion
+        onPick={add}
+        onTemplates={onTemplates}
+        problem={pinned.list}
+        focusOnMount={focus?.key === END}
+      />
+    );
   }
 
   return (
-    <div data-slot="question-list" className="flex flex-col gap-2.5">
+    <div ref={shell} data-slot="question-list" className="relative flex flex-col gap-2.5">
       <p id={instructions} className="sr-only">
         To move a question, press Space or Enter on its handle, use the up and down arrow keys, then
         press Space or Enter to drop it, or Escape to cancel.
       </p>
-      <Reorder.Group
-        ref={list}
-        as="ol"
-        axis="y"
-        values={keys}
-        onReorder={reorder}
-        aria-label="Questions"
-        className="flex flex-col gap-2.5"
-      >
+      <ol ref={list} aria-label="Questions" className="flex flex-col gap-2.5">
         {keys.map((key, index) => {
           const question = byKey.get(key);
           if (!question) return null;
@@ -408,31 +547,32 @@ function QuestionList({ mode, questions, onChange, problems, onTemplates, onMake
             />
           );
           return (
-            <QuestionItem
-              key={key}
-              value={key}
-              reduce={reduce}
-              register={(c) => controls.current.set(key, c)}
-              onDragEnd={() => finish(true)}
-            >
-              {grip}
+            <QuestionItem key={key} value={key} index={index} reduce={reduce}>
+              {/* The card in hand carries its own grip; its slot shows none. */}
+              {carried?.key === key ? null : grip}
               <FoldFrame
-                folded={lift !== null}
+                folded={lift !== null && carried?.key !== key}
+                vacant={carried?.key === key}
                 reduce={reduce}
-                onFolded={lifted && lift?.by === "pointer" ? () => setFolded(true) : undefined}
                 onMove={(started) => {
                   moving.current = Math.max(0, moving.current + (started ? 1 : -1));
                 }}
-                folding={<FoldedQuestion question={question} number={index + 1} lifted={lifted} />}
+                folding={
+                  <FoldedQuestion
+                    question={question}
+                    number={index + 1}
+                    shape={lifted ? "lifted" : "rest"}
+                  />
+                }
               >
                 <QuestionCard
                   question={question}
                   number={index + 1}
-                  onChange={(next) => onChange(questions.map((q) => (q.key === key ? next : q)))}
-                  onDuplicate={full ? undefined : () => duplicate(questions.indexOf(question))}
-                  onDelete={() => remove(questions.indexOf(question))}
+                  onChange={handlersFor(key).onChange}
+                  onDuplicate={full ? undefined : handlersFor(key).onDuplicate}
+                  onDelete={handlersFor(key).onDelete}
                   problems={pinned.byKey.get(key)}
-                  onFixed={(paths) => fixed(key, paths)}
+                  onFixed={handlersFor(key).onFixed}
                   lifted={false}
                   focusPrompt={focus?.key === key ? focus.n : undefined}
                 />
@@ -440,7 +580,47 @@ function QuestionList({ mode, questions, onChange, problems, onTemplates, onMake
             </QuestionItem>
           );
         })}
-      </Reorder.Group>
+      </ol>
+      {carried &&
+        (() => {
+          const question = byKey.get(carried.key);
+          if (!question) return null;
+          return (
+            <div
+              ref={ghost}
+              data-slot="carried-question"
+              aria-hidden
+              inert
+              className="group/card pointer-events-none absolute top-0 z-(--z-dropdown) will-change-transform"
+              style={{
+                left: carried.left,
+                width: carried.width,
+                transform: `translateY(${carried.top}px)`,
+              }}
+            >
+              <ReorderGrip
+                number={keys.indexOf(carried.key) + 1}
+                describedBy=""
+                lifted
+                folded={false}
+                disabled={false}
+                onPointerDown={() => {}}
+                onKeyDown={() => {}}
+                onBlur={() => {}}
+              />
+              <QuestionCard
+                question={question}
+                number={keys.indexOf(carried.key) + 1}
+                onChange={() => {}}
+                onDelete={() => {}}
+                problems={pinned.byKey.get(carried.key)}
+                lifted
+                // An outline, not a ring, so the floating shadow stays under it.
+                className="outline-2 outline-primary"
+              />
+            </div>
+          );
+        })()}
       <div ref={end} className="contents">
         {full ? (
           <div className="flex min-h-[52px] flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-plate border border-edge-3 border-dashed py-2 ps-4 pe-2 text-ink-2">
@@ -467,43 +647,44 @@ function QuestionList({ mode, questions, onChange, problems, onTemplates, onMake
   );
 }
 
+type CardHandlers = {
+  onChange: (next: EditorQuestion) => void;
+  onDuplicate: () => void;
+  onDelete: () => void;
+  onFixed: (paths: string[]) => void;
+};
+
 interface ItemProps {
   value: string;
+  /** Its place in the list: the item measures its layout only when this changes. */
+  index: number;
   reduce: boolean;
-  register: (controls: DragControls) => void;
-  onDragEnd: () => void;
   children: ReactNode;
 }
 
-/** One place in the list. Only the grip starts a drag, so text in the card stays selectable. */
-function QuestionItem({ value, reduce, register, onDragEnd, children }: ItemProps) {
-  const controls = useDragControls();
-  register(controls);
+/** One place in the list. It slides to its new place when the order changes. */
+function QuestionItem({ value, index, reduce, children }: ItemProps) {
   return (
-    <Reorder.Item
-      value={value}
+    <motion.li
       data-question={value}
-      dragListener={false}
-      dragControls={controls}
       layout="position"
-      // The grip carries the keyboard model, so the item itself is not a tab stop.
-      tabIndex={undefined}
+      // Measured on a move, not on every keystroke in any card.
+      layoutDependency={index}
       transition={reduce ? INSTANT : { duration: 0.22, ease: EASE_OUT }}
-      onDragEnd={onDragEnd}
       className="group/card relative list-none"
     >
       {children}
-    </Reorder.Item>
+    </motion.li>
   );
 }
 
 interface FoldProps {
   folded: boolean;
+  /** The card is in the hand: its place stays its full size, empty, to show where it will land. */
+  vacant?: boolean | undefined;
   reduce: boolean;
   /** The one-line row shown while folded. */
   folding: ReactNode;
-  /** Called once the fold has settled at one line. */
-  onFolded?: (() => void) | undefined;
   /** Called as the fold or the opening starts (true) and ends (false). */
   onMove?: ((started: boolean) => void) | undefined;
   children: ReactNode;
@@ -515,7 +696,7 @@ interface FoldProps {
  * over it. Folded and still, the hidden card is out of reach of the pointer, the keyboard and
  * screen readers.
  */
-function FoldFrame({ folded, reduce, folding, onFolded, onMove, children }: FoldProps) {
+function FoldFrame({ folded, vacant = false, reduce, folding, onMove, children }: FoldProps) {
   const [moving, setMoving] = useState(false);
   // Reported once per stretch of movement, even when a fold is cut short by the opening.
   const reported = useRef(false);
@@ -527,13 +708,25 @@ function FoldFrame({ folded, reduce, folding, onFolded, onMove, children }: Fold
   const latest = useRef(report);
   latest.current = report;
   useEffect(() => () => latest.current(false), []);
+  const slot = vacant && (
+    <div
+      aria-hidden
+      className="absolute inset-0 rounded-plate border-2 border-primary border-dashed bg-tint"
+    />
+  );
   if (reduce) {
     return (
       <div className="relative" style={folded ? { height: ROW } : undefined}>
-        <div inert={folded} aria-hidden={folded || undefined} hidden={folded}>
+        <div
+          inert={folded || vacant}
+          aria-hidden={folded || vacant || undefined}
+          hidden={folded}
+          className={cn(vacant && "invisible")}
+        >
           {children}
         </div>
         {folded && <div className="absolute inset-x-0 top-0">{folding}</div>}
+        {slot}
       </div>
     );
   }
@@ -549,7 +742,6 @@ function FoldFrame({ folded, reduce, folding, onFolded, onMove, children }: Fold
       onAnimationComplete={() => {
         setMoving(false);
         report(false);
-        if (folded) onFolded?.();
       }}
       className="relative"
       // Clipped only while it moves, so the lifted row's ring and shadow show once it settles.
@@ -559,12 +751,17 @@ function FoldFrame({ folded, reduce, folding, onFolded, onMove, children }: Fold
         initial={false}
         animate={{ opacity: folded ? 0 : 1 }}
         transition={FOLD}
-        inert={folded}
-        aria-hidden={folded || undefined}
-        style={{ visibility: folded && !moving ? "hidden" : undefined }}
+        inert={folded || vacant}
+        aria-hidden={folded || vacant || undefined}
+        // Folded and still, the hidden card is skipped for layout and paint, and keeps its state.
+        style={{
+          visibility: (folded && !moving) || vacant ? "hidden" : undefined,
+          contentVisibility: folded && !moving ? "hidden" : undefined,
+        }}
       >
         {children}
       </motion.div>
+      {slot}
       <motion.div
         initial={false}
         animate={{ opacity: folded ? 1 : 0 }}
@@ -579,16 +776,17 @@ function FoldFrame({ folded, reduce, folding, onFolded, onMove, children }: Fold
 
 /**
  * A question folded to one line while one is moving: the list gets short enough that a question
- * travels a little way. The one in hand floats; the others are the places it can land.
+ * travels a little way. Moved from the keyboard, the moving question's row floats with the ring;
+ * under a pointer drag the card itself is in the hand and its place is a card-sized empty slot.
  */
 function FoldedQuestion({
   question,
   number,
-  lifted,
+  shape,
 }: {
   question: EditorQuestion;
   number: number;
-  lifted: boolean;
+  shape: "rest" | "lifted";
 }) {
   const q = filled(question);
   const template = templateFor(q);
@@ -596,16 +794,16 @@ function FoldedQuestion({
     <div
       aria-hidden
       className={cn(
-        "flex h-12 min-w-0 items-center gap-2.5 rounded-plate ps-5 pe-4 sm:ps-6",
-        lifted
-          ? "floating bg-plate ring-2 ring-primary"
+        "flex h-12 min-w-0 items-center gap-2.5 rounded-plate ps-4 pe-4 sm:ps-5",
+        shape === "lifted"
+          ? "floating bg-plate outline-2 outline-primary"
           : "border border-edge-3 border-dashed bg-plate/60",
       )}
     >
       <span className="grid size-7 shrink-0 place-items-center rounded-sm bg-well text-ink-2 text-sm tabular">
         {number}
       </span>
-      <TypeIcon id={template.id} className="text-muted" />
+      <TypeIcon kind={template.id} className="text-muted" />
       <span className={cn("min-w-0 truncate", q.prompt.trim() ? "text-ink" : "text-muted")}>
         {q.prompt.trim() || "A question without words yet"}
       </span>
@@ -645,7 +843,7 @@ function ReorderGrip({
     <button
       type="button"
       aria-label={`Move question ${number}`}
-      aria-describedby={describedBy}
+      aria-describedby={describedBy || undefined}
       aria-pressed={lifted}
       data-lifted={lifted || undefined}
       onPointerDown={(event) => {
@@ -658,11 +856,12 @@ function ReorderGrip({
       onBlur={onBlur}
       className={cn(
         "absolute start-0.5 z-1 grid h-7 w-4 cursor-grab touch-none select-none place-items-center rounded-sm text-faint sm:w-5",
-        folded ? "top-2.5 opacity-100" : "top-4 sm:top-[18px]",
+        // Level with the number: the head row is 32 px tall under the card's 16 or 18 px top.
+        folded ? "top-2.5 opacity-100" : "top-[18px] sm:top-5",
         "opacity-0 transition-[color,opacity] duration-150 group-hover/card:opacity-100 focus-visible:opacity-100 pointer-coarse:opacity-100",
         "hoverable:hover:text-ink active:cursor-grabbing data-lifted:text-ink data-lifted:opacity-100",
         // A target wider than the dots, reaching the card's edge and the number, without moving them.
-        "after:absolute after:-inset-y-2 after:-start-1 after:-end-2 after:content-['']",
+        "after:absolute after:-inset-y-2 after:-start-1 after:-end-2 after:content-[''] pointer-coarse:after:-inset-x-4",
       )}
     >
       <GripVertical aria-hidden className="size-4" strokeWidth={2} />
@@ -676,13 +875,20 @@ interface FirstProps {
   onPick: (id: string) => void;
   onTemplates: () => void;
   problem?: string | undefined;
+  /** The last question was just deleted: focus lands here instead of being lost. */
+  focusOnMount?: boolean | undefined;
 }
 
 /** No questions yet: pick the kind of answer for the first one. A template is a quiet second way in. */
-function FirstQuestion({ onPick, onTemplates, problem }: FirstProps) {
+function FirstQuestion({ onPick, onTemplates, problem, focusOnMount = false }: FirstProps) {
   const chip = "rounded-full ps-2.5 pe-3 [&_svg]:text-ink-2";
+  const root = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (focusOnMount) root.current?.querySelector<HTMLElement>("button")?.focus();
+  }, [focusOnMount]);
   return (
     <div
+      ref={root}
       data-slot="first-question"
       className="flex flex-col gap-4 rounded-plate border border-edge-3 border-dashed p-4 sm:p-5"
     >
@@ -702,13 +908,13 @@ function FirstQuestion({ onPick, onTemplates, problem }: FirstProps) {
         <div className="flex flex-wrap gap-2">
           {firstTypes.map((id) => (
             <Button key={id} size="sm" className={chip} onClick={() => onPick(id)}>
-              <TypeIcon id={id} />
-              {questionTemplates.find((t) => t.id === id)?.label}
+              <TypeIcon kind={id} />
+              {kindLabel(id)}
             </Button>
           ))}
           <QuestionTypeMenu
             onPick={onPick}
-            trigger={
+            render={
               <Button size="sm" className={chip}>
                 <Plus aria-hidden />
                 More types

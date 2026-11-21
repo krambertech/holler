@@ -1,12 +1,17 @@
 import { Hash, Type, UserRound } from "lucide-react";
-import { type FocusEvent, type Ref, useEffect, useRef, useState } from "react";
+import { type Ref, useEffect, useRef, useState } from "react";
 import { TriggerChevron } from "@/components/ui/overlay-list";
-import { Select, SelectContent, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/cn";
 import { type CardProblems, type EditorQuestion, filled, mostPicks } from "./model";
 import {
   inlineControlClassName,
-  ProblemMark,
   SettingLine,
   SettingPair,
   useProblemId,
@@ -59,50 +64,110 @@ interface PickProps {
   problems?: CardProblems | undefined;
 }
 
-/** "People can pick [up to 2]": how many people or options someone may pick. */
+/** Picks a number the sender types, for a person question. */
+const CUSTOM = "custom";
+
+/** The most a pick limit can be, from `questionInputSchema`. */
+const MOST = 100;
+
+/**
+ * "People can pick [up to 2]": how many people or options someone may pick. A person question can
+ * also take a number of the sender's own: "People can pick [up to] [7]".
+ */
 function PickLimit({ question, onEdit, problems = {} }: PickProps) {
   const q = filled(question);
   const problemId = useProblemId("maxChoices");
-  const items =
-    q.type === "person"
-      ? personItems
-      : [
-          { value: ANY, label: "any number" },
-          ...Array.from({ length: Math.max(0, mostPicks(question) - 1) }, (_, i) => ({
-            value: String(i + 2),
-            label: `up to ${i + 2}`,
-          })),
-        ];
-  const value = q.maxChoices === null ? ANY : String(q.maxChoices);
+  const person = q.type === "person";
+  const presets = person
+    ? [...personItems, { value: CUSTOM, label: "up to" }]
+    : [
+        { value: ANY, label: "any number" },
+        ...Array.from({ length: Math.max(0, mostPicks(question) - 1) }, (_, i) => ({
+          value: String(i + 2),
+          label: `up to ${i + 2}`,
+        })),
+      ];
+  const stored = q.maxChoices === null ? ANY : String(q.maxChoices);
+  const isPreset = presets.some((item) => item.value === stored && item.value !== CUSTOM);
+  const [ownNumber, setOwnNumber] = useState(person && !isPreset);
+  const [text, setText] = useState(q.maxChoices === null || isPreset ? "" : String(q.maxChoices));
+  const own = person && (ownNumber || !isPreset);
+  // Picking Custom puts the cursor in the box, once the list has closed and handed focus back.
+  const box = useRef<HTMLInputElement>(null);
+  const [focusBox, setFocusBox] = useState(0);
+  useEffect(() => {
+    if (!focusBox) return;
+    const frame = requestAnimationFrame(() => box.current?.select());
+    return () => cancelAnimationFrame(frame);
+  }, [focusBox]);
+  const value = own ? CUSTOM : stored;
   // A limit set elsewhere, such as over the API, still shows as it is.
-  const shown = items.some((item) => item.value === value)
-    ? items
-    : [...items, { value, label: `up to ${value}` }];
-  const invalid = Boolean(problems.maxChoices);
+  const items =
+    own || presets.some((item) => item.value === value)
+      ? presets
+      : [...presets, { value, label: `up to ${value}` }];
+
+  const typed = text.trim() === "" ? null : Number(text.trim());
+  const typedProblem =
+    own && (typed === null || !Number.isInteger(typed) || typed < 1 || typed > MOST)
+      ? `Use a whole number from 1 to ${MOST}.`
+      : undefined;
+  useReportProblems("pick-limit", typedProblem ? { maxChoices: typedProblem } : {});
+  const invalid = Boolean(typedProblem ?? problems.maxChoices);
+
   return (
     <SettingLine data-slot="pick-limit">
       <span>People can pick</span>
       <Select
         value={value}
-        items={shown}
-        onValueChange={(next) =>
-          next !== null &&
-          onEdit({ ...q, maxChoices: next === ANY ? null : Number(next) }, ["maxChoices"])
-        }
+        items={items}
+        onValueChange={(next) => {
+          if (next === null) return;
+          if (next === CUSTOM) {
+            setOwnNumber(true);
+            if (q.maxChoices !== null) setText(String(q.maxChoices));
+            setFocusBox(Date.now());
+            return;
+          }
+          setOwnNumber(false);
+          onEdit({ ...q, maxChoices: next === ANY ? null : Number(next) }, ["maxChoices"]);
+        }}
       >
         <SelectTrigger
           variant="chip"
           aria-label="How many people can pick"
-          aria-invalid={invalid || undefined}
-          aria-describedby={problemId}
+          aria-invalid={(invalid && !own) || undefined}
+          aria-describedby={own ? undefined : problemId}
           className={inlineControlClassName}
         >
           <SelectValue />
-          {invalid && <ProblemMark />}
           <TriggerChevron />
         </SelectTrigger>
-        <SelectContent aria-label="People can pick" />
+        <SelectContent aria-label="People can pick">
+          {items.map((item) => (
+            <SelectItem key={item.value} value={item.value} indicator="end">
+              {item.value === CUSTOM ? "Custom" : item.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
       </Select>
+      {own && (
+        <Bound
+          inputRef={box}
+          aria-label="Most people someone can pick"
+          value={text}
+          placeholder="5"
+          problem={typedProblem ?? problems.maxChoices}
+          describedBy={problemId}
+          onChange={(next) => {
+            setText(next);
+            const n = Number(next.trim());
+            if (next.trim() !== "" && Number.isInteger(n) && n >= 1 && n <= MOST) {
+              onEdit({ ...q, maxChoices: n }, ["maxChoices"]);
+            }
+          }}
+        />
+      )}
     </SettingLine>
   );
 }
@@ -116,7 +181,8 @@ function parse(text: string): Parsed {
   if (trimmed === "") return { ok: true, value: null };
   if (!/^-?\d+$/.test(trimmed)) return { ok: false, message: "Use a whole number." };
   const value = Number(trimmed);
-  if (Math.abs(value) > LIMIT) return { ok: false, message: "Use a number under a billion." };
+  if (Math.abs(value) > LIMIT)
+    return { ok: false, message: "Use a number no bigger than a billion." };
   return { ok: true, value };
 }
 
@@ -124,7 +190,9 @@ const shownNumber = (value: number | null) => (value === null ? "" : String(valu
 
 interface BoundProps {
   inputRef?: Ref<HTMLInputElement> | undefined;
-  label: string;
+  "aria-label": string;
+  /** What an empty box means; "any" for a bound. */
+  placeholder?: string | undefined;
   value: string;
   problem: string | undefined;
   describedBy: string | undefined;
@@ -132,7 +200,15 @@ interface BoundProps {
 }
 
 /** One bound's box. Its label wraps it, so a finger near the box still lands in it. */
-function Bound({ inputRef, label, value, problem, describedBy, onChange }: BoundProps) {
+function Bound({
+  inputRef,
+  "aria-label": label,
+  placeholder = "any",
+  value,
+  problem,
+  describedBy,
+  onChange,
+}: BoundProps) {
   return (
     <label className="relative inline-flex pointer-coarse:before:absolute pointer-coarse:before:-inset-y-2 pointer-coarse:before:inset-x-0 pointer-coarse:before:content-['']">
       <input
@@ -140,40 +216,23 @@ function Bound({ inputRef, label, value, problem, describedBy, onChange }: Bound
         aria-label={label}
         inputMode="numeric"
         value={value}
-        placeholder="any"
+        placeholder={placeholder}
         aria-invalid={problem ? true : undefined}
         aria-describedby={problem ? describedBy : undefined}
         onChange={(event) => onChange(event.target.value)}
         className={cn(
           inlineControlClassName,
-          "w-[4.5rem] pe-6 text-[1rem] tabular placeholder:text-muted focus-visible:outline-2 focus-visible:outline-focus focus-visible:outline-offset-2 md:hoverable:text-sm",
+          "w-[4.5rem] pe-2 text-[1rem] tabular placeholder:text-muted focus-visible:outline-2 focus-visible:outline-focus focus-visible:outline-offset-2 md:hoverable:text-sm",
         )}
       />
-      {problem && <ProblemMark className="absolute end-1.5 top-1.5" />}
     </label>
   );
 }
 
-const numberFormat = new Intl.NumberFormat();
-
-/** The rule in words, the way the card's foot states it. */
-function ruleWords(min: number | null, max: number | null) {
-  const n = (value: number) => numberFormat.format(value);
-  if (min !== null && max !== null) return `A whole number from ${n(min)} to ${n(max)}`;
-  if (min !== null) return `A whole number, ${n(min)} or more`;
-  if (max !== null) return `A whole number, ${n(max)} or less`;
-  return "Any whole number";
-}
-
-/** A quiet text button inside a settings sentence, with a finger-sized target. */
-const linkButtonClassName =
-  "relative rounded-xs text-ink-2 underline decoration-edge-3 underline-offset-4 transition-colors hoverable:hover:text-ink hoverable:hover:decoration-current pointer-coarse:before:absolute pointer-coarse:before:-inset-x-2 pointer-coarse:before:-inset-y-3 pointer-coarse:before:content-['']";
-
 /**
- * The numbers a number question takes, said in words at the card's foot: "A whole number, 0 or
- * more". Change opens the same sentence with its two boxes, "from [ ] to [ ]"; an empty box is no
- * bound. What is typed stays in its box while it is not yet a number, and reaches the question once
- * it is one. The boxes stay open while what they hold has a problem.
+ * "A whole number from [0] to [any]": the numbers a number question takes, a settings sentence like
+ * every other at the card's foot. An empty box is no bound. What is typed stays in its box while it
+ * is not yet a number, and reaches the question once it is one.
  */
 function NumberBounds({ question, onEdit, problems = {} }: PickProps) {
   const q = filled(question);
@@ -211,7 +270,11 @@ function NumberBounds({ question, onEdit, problems = {} }: PickProps) {
   // What is typed but not yet a number is this part's own problem; the card shows it at its foot.
   const own: CardProblems = {};
   if (!min.ok) own.numberMin = min.message;
-  else if (crossed) own.numberMin = "The smallest number is more than the largest.";
+  else if (crossed) {
+    // Crossed bounds are both at fault: the one message is said once, and both boxes are marked.
+    own.numberMin = "The smallest number is more than the largest.";
+    own.numberMax = own.numberMin;
+  }
   if (!max.ok) own.numberMax = max.message;
   useReportProblems("number-bounds", own);
 
@@ -220,47 +283,13 @@ function NumberBounds({ question, onEdit, problems = {} }: PickProps) {
   const minId = useProblemId("numberMin");
   const maxId = useProblemId("numberMax");
 
-  const [changing, setChanging] = useState(false);
-  const first = useRef<HTMLInputElement>(null);
-  const [focusFirst, setFocusFirst] = useState(false);
-  useEffect(() => {
-    if (focusFirst) first.current?.focus();
-  }, [focusFirst]);
-  const open = changing || Boolean(minProblem || maxProblem);
-
-  if (!open) {
-    return (
-      <SettingLine data-slot="number-bounds">
-        <span>{ruleWords(q.numberMin, q.numberMax)}</span>
-        <button
-          type="button"
-          aria-label="Change the numbers people can give"
-          className={linkButtonClassName}
-          onClick={() => {
-            setChanging(true);
-            setFocusFirst(true);
-          }}
-        >
-          Change
-        </button>
-      </SettingLine>
-    );
-  }
-
-  // Once focus leaves the sentence and the boxes hold good numbers, it folds back into words.
-  const onBlur = (event: FocusEvent<HTMLDivElement>) => {
-    if (event.currentTarget.contains(event.relatedTarget)) return;
-    setFocusFirst(false);
-    setChanging(false);
-  };
   return (
-    <SettingLine data-slot="number-bounds" onBlur={onBlur}>
+    <SettingLine data-slot="number-bounds">
       <span>A whole number</span>
       <SettingPair>
         from
         <Bound
-          inputRef={first}
-          label="Smallest number"
+          aria-label="Smallest number"
           value={text.min}
           problem={minProblem}
           describedBy={minId}
@@ -270,7 +299,7 @@ function NumberBounds({ question, onEdit, problems = {} }: PickProps) {
       <SettingPair>
         to
         <Bound
-          label="Largest number"
+          aria-label="Largest number"
           value={text.max}
           problem={maxProblem}
           describedBy={maxId}

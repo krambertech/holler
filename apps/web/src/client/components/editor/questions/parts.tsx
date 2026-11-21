@@ -42,7 +42,7 @@ export const optionRowClassName =
 
 /** A dashed row that adds something, such as an option. */
 export const addRowClassName =
-  "flex min-h-11 w-full items-center gap-2.5 rounded-control border border-edge-3 border-dashed ps-3 pe-3 text-muted transition-[color,background-color] duration-150 hoverable:hover:bg-hover hoverable:hover:text-ink md:min-h-10 [&_svg]:size-4 [&_svg]:shrink-0";
+  "flex min-h-11 w-full items-center gap-2.5 rounded-control border border-edge-3 border-dashed ps-3 pe-3 text-muted transition-[color,background-color] duration-150 hoverable:hover:bg-hover hoverable:hover:text-ink active:bg-track md:min-h-10 [&_svg]:size-4 [&_svg]:shrink-0";
 
 /** A step of an answer the type sets, such as Yes or 4: quiet text on the well, with no control's edge. */
 export const previewChipClassName =
@@ -54,7 +54,7 @@ export const previewChipClassName =
  */
 export const inlineControlClassName = cn(
   "relative inline-flex h-7 max-w-full min-w-0 items-center gap-1 rounded-sm bg-plate ps-2 pe-1.5 text-ink text-sm edge-2",
-  "transition-[box-shadow] duration-150 hoverable:hover:not-aria-invalid:edge-3 data-popup-open:not-aria-invalid:edge-3 data-open:not-aria-invalid:edge-3 aria-invalid:edge-danger",
+  "transition-[box-shadow] duration-150 hoverable:hover:not-aria-invalid:edge-3 data-popup-open:not-aria-invalid:edge-3 data-open:not-aria-invalid:edge-3 active:bg-well aria-invalid:bg-danger aria-invalid:edge-danger",
   "pointer-coarse:before:absolute pointer-coarse:before:-inset-y-2 pointer-coarse:before:inset-x-0 pointer-coarse:before:content-['']",
 );
 
@@ -76,20 +76,8 @@ function SettingLine({ className, ...props }: ComponentProps<"div">) {
 function SettingPair({ className, ...props }: ComponentProps<"span">) {
   return (
     <span
+      data-slot="setting-pair"
       className={cn("inline-flex min-w-0 items-center gap-1.5 whitespace-nowrap", className)}
-      {...props}
-    />
-  );
-}
-
-/** The small alert drawn inside a field at fault, so the eye finds which input the foot line means. */
-function ProblemMark({ className, ...props }: ComponentProps<"svg">) {
-  return (
-    <AlertCircle
-      aria-hidden
-      data-slot="problem-mark"
-      strokeWidth={2}
-      className={cn("pointer-events-none size-4 shrink-0 text-danger-dot", className)}
       {...props}
     />
   );
@@ -114,7 +102,7 @@ function ProblemLine({ className, children, ...props }: ProblemProps) {
 }
 
 /*
- * A card's problems. Every field at fault gets a red edge and a mark; the words gather in one line
+ * A card's problems. Every field at fault is tinted red with a red edge; the words gather in one line
  * at the card's foot, one sentence per problem, and each field points at its sentence with
  * `aria-describedby`. A part that checks what is typed, such as the number bounds, reports its own.
  */
@@ -155,23 +143,33 @@ function useReportProblems(source: string, problems: CardProblems) {
   useEffect(() => () => latest.current(source, {}), [source]);
 }
 
-interface FootProps extends ComponentProps<"p"> {
+interface FootProps extends ComponentProps<"div"> {
   /** One sentence each, in the order of the fields, with the id their fields point at. */
   sentences: { id: string; message: string }[];
 }
 
-/** The card's one problem line. */
-function ProblemFoot({ sentences, ...props }: FootProps) {
+/** The card's one problem line, on the red plate under the card. */
+function ProblemFoot({ sentences, className, ...props }: FootProps) {
   if (sentences.length === 0) return null;
   return (
-    <ProblemLine {...props}>
-      {sentences.map((sentence, i) => (
-        <span key={sentence.id} id={sentence.id}>
-          {i > 0 && " "}
-          {sentence.message}
-        </span>
-      ))}
-    </ProblemLine>
+    <div
+      data-slot="problem-foot"
+      className={cn(
+        "flex items-start gap-2 px-4 pt-2.5 pb-3 text-danger-ink text-sm sm:px-5",
+        className,
+      )}
+      {...props}
+    >
+      <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+      <p className="min-w-0 flex-1">
+        {sentences.map((sentence, i) => (
+          <span key={sentence.id} id={sentence.id}>
+            {i > 0 && " "}
+            {sentence.message}
+          </span>
+        ))}
+      </p>
+    </div>
   );
 }
 
@@ -179,7 +177,6 @@ export {
   OptionMark,
   ProblemFoot,
   ProblemLine,
-  ProblemMark,
   ProblemScopeProvider,
   SettingLine,
   SettingPair,

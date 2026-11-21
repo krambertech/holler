@@ -1,4 +1,5 @@
 import { otherLabel, slackLimits } from "@holler/core";
+import { EASE_OUT } from "@holler/design";
 import { Plus, X } from "lucide-react";
 import { motion } from "motion/react";
 import { type ClipboardEvent, type KeyboardEvent, useLayoutEffect, useRef } from "react";
@@ -20,7 +21,6 @@ import {
   addRowClassName,
   OptionMark,
   optionRowClassName,
-  ProblemMark,
   previewChipClassName,
   useProblemDescriber,
 } from "./parts";
@@ -76,6 +76,10 @@ function ChoiceOptions({ question, number, onEdit, problems = {} }: Props) {
   const inputs = useRef(new Map<string, HTMLInputElement>());
   const focusNext = useRef<{ key: string; at: "start" | "end" } | null>(null);
   const settled = useRef(new Set(rows.keys));
+  const addButton = useRef<HTMLButtonElement>(null);
+  useLayoutEffect(() => {
+    for (const key of rows.keys) settled.current.add(key);
+  });
   const shape = q.type === "multi" ? "check" : "radio";
   const canRemove = q.options.length > 2;
   const full = q.options.length >= MOST_OPTIONS;
@@ -150,20 +154,20 @@ function ChoiceOptions({ question, number, onEdit, problems = {} }: Props) {
           const key = rows.keys[index] ?? String(index);
           const problem = problems[`options.${index}`];
           const problemId = describe(`options.${index}`);
+          // Read during render, written after commit: a render React throws away marks nothing.
           const fresh = !settled.current.has(key);
-          settled.current.add(key);
           return (
             <motion.li
               key={key}
               initial={fresh && !reduce ? { opacity: 0, y: -4 } : false}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+              transition={{ duration: 0.18, ease: EASE_OUT }}
             >
               <div
                 className={cn(
                   optionRowClassName,
                   "group/option has-[input:focus-visible]:outline-2 has-[input:focus-visible]:outline-focus has-[input:focus-visible]:outline-offset-2",
-                  problem && "edge-danger",
+                  problem && "bg-danger edge-danger",
                 )}
               >
                 <OptionMark shape={shape} />
@@ -192,13 +196,13 @@ function ChoiceOptions({ question, number, onEdit, problems = {} }: Props) {
                     "min-w-0 flex-1 self-stretch bg-transparent text-ink outline-none placeholder:text-muted",
                   )}
                 />
-                {problem && <ProblemMark className="me-1" />}
                 {canRemove && (
                   <Button
                     variant="ghost"
                     size="icon-sm"
                     aria-label={`Remove option ${index + 1}`}
-                    onClick={() => remove(index, "none")}
+                    // Focus moves to the row beside it, never out of the card.
+                    onClick={() => remove(index, "previous")}
                     className={cn(revealed, "hoverable:hover:bg-well")}
                   >
                     <X />
@@ -213,13 +217,16 @@ function ChoiceOptions({ question, number, onEdit, problems = {} }: Props) {
             <OptionMark shape={shape} />
             <span className="min-w-0 flex-1 py-2">
               {otherLabel}
-              <span className="text-muted text-sm"> · people write in their own</span>
+              <span className="text-muted text-sm max-sm:hidden"> · people write in their own</span>
             </span>
             <Button
               variant="ghost"
               size="icon-sm"
               aria-label={`Remove ${otherLabel}`}
-              onClick={() => onEdit(setAllowOther(question, false), ["options*", "allowOther"])}
+              onClick={() => {
+                onEdit(setAllowOther(question, false), ["options*", "allowOther"]);
+                requestAnimationFrame(() => addButton.current?.focus());
+              }}
               className={cn(revealed, "hoverable:hover:bg-well")}
             >
               <X />
@@ -229,10 +236,22 @@ function ChoiceOptions({ question, number, onEdit, problems = {} }: Props) {
       </ul>
       {!full && (
         // As in Tally: one dashed row adds an option, and offers Other beside it until it is there.
-        <div className={cn(addRowClassName, "gap-1.5 p-0 pe-3")}>
+        <div
+          className={cn(
+            addRowClassName,
+            "gap-1.5 p-0",
+            // Over "add Other" the row is not what a click adds, so it does not light up.
+            "hoverable:has-[[data-slot=add-other]:hover]:bg-transparent",
+            q.allowOther && "pe-3",
+          )}
+        >
           <button
+            ref={addButton}
             type="button"
-            className="flex min-h-11 flex-1 items-center gap-2.5 self-stretch rounded-control ps-3 text-start outline-none focus-visible:ring-2 focus-visible:ring-focus md:min-h-10"
+            className={cn(
+              "flex min-h-11 items-center gap-2.5 self-stretch rounded-control ps-3 text-start focus-visible:-outline-offset-2 md:min-h-10",
+              q.allowOther ? "flex-1" : "pe-0.5",
+            )}
             onClick={() => insertAfter(q.options.length - 1)}
           >
             <Plus aria-hidden strokeWidth={2} />
@@ -243,11 +262,24 @@ function ChoiceOptions({ question, number, onEdit, problems = {} }: Props) {
               <span aria-hidden>or</span>
               <button
                 type="button"
-                onClick={() => onEdit(setAllowOther(question, true), ["options*"])}
-                className="relative rounded-sm underline decoration-edge-3 underline-offset-4 outline-none transition-colors focus-visible:ring-2 focus-visible:ring-focus hoverable:hover:text-tint-ink hoverable:hover:decoration-current pointer-coarse:before:absolute pointer-coarse:before:-inset-3 pointer-coarse:before:content-['']"
+                data-slot="add-other"
+                onClick={() => {
+                  onEdit(setAllowOther(question, true), ["options*"]);
+                  // This link goes once Other is there; focus stays in the row, on Add option.
+                  requestAnimationFrame(() => addButton.current?.focus());
+                }}
+                className="relative -mx-1 rounded-sm px-1 underline decoration-edge-3 underline-offset-4 transition-colors hoverable:hover:text-tint-ink hoverable:hover:decoration-current pointer-coarse:before:absolute pointer-coarse:before:-inset-3 pointer-coarse:before:content-['']"
               >
                 add &ldquo;{otherLabel}&rdquo;
               </button>
+              {/* The rest of the row adds an option too, without a second tab stop. */}
+              <button
+                type="button"
+                tabIndex={-1}
+                aria-hidden
+                onClick={() => insertAfter(q.options.length - 1)}
+                className="flex-1 self-stretch outline-none"
+              />
             </>
           )}
         </div>
@@ -268,16 +300,16 @@ interface PresetProps {
 function PresetOptions({ question, number }: PresetProps) {
   const q = filled(question);
   return (
-    <div data-slot="preset-options" className="flex flex-col gap-1.5">
+    <div data-slot="preset-options">
       <ul aria-label={`Options for question ${number}`} className="flex flex-wrap gap-1.5">
-        {q.options.map((option) => (
-          <li key={option.label} className={previewChipClassName}>
+        {q.options.map((option, at) => (
+          // biome-ignore lint/suspicious/noArrayIndexKey: preset answers are fixed by the type
+          <li key={at} className={previewChipClassName}>
             <OptionMark shape="radio" />
             {option.label}
           </li>
         ))}
       </ul>
-      <p className="text-muted text-sm">Set by the type. Pick Single choice to write your own.</p>
     </div>
   );
 }

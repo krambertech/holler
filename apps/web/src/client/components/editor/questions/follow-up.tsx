@@ -1,5 +1,5 @@
 import { otherLabel } from "@holler/core";
-import { Info, MessageSquareText, X } from "lucide-react";
+import { MessageSquareText, X } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,13 +11,16 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { TriggerChevron } from "@/components/ui/overlay-list";
+import { cn } from "@/lib/cn";
 import { answerLabels, type CardProblems, type EditorQuestion, filled } from "./model";
-import { inlineControlClassName, ProblemMark, useProblemId } from "./parts";
+import { useProblemId } from "./parts";
 
 interface Props {
   question: EditorQuestion;
   number: number;
   onEdit: (next: EditorQuestion, fixes: string[]) => void;
+  /** After the note is removed, so the card can put focus somewhere that still exists. */
+  onRemoved?: (() => void) | undefined;
   problems?: CardProblems | undefined;
   /** Puts the cursor in the note's prompt once, when the note was just added. */
   autoFocus?: boolean | undefined;
@@ -33,6 +36,16 @@ function afterWords(onlyAfter: number[] | null, labels: string[]) {
   if (names.length === 2) return `${names[0]} or ${names[1]}`;
   return `${count.format(names.length)} answers`;
 }
+
+/**
+ * The picker reads as part of the sentence: ink words and a chevron with no box, a grey fill under
+ * the pointer or while open, and the red edge only when it is at fault.
+ */
+const quietPicker = cn(
+  "relative -mx-1 inline-flex h-7 max-w-full min-w-0 items-center gap-0.5 rounded-sm px-1 text-ink text-sm",
+  "transition-[background-color,box-shadow] duration-150 hoverable:hover:bg-track data-popup-open:bg-track active:bg-track aria-invalid:bg-danger aria-invalid:edge-danger",
+  "pointer-coarse:before:absolute pointer-coarse:before:-inset-y-2 pointer-coarse:before:inset-x-0 pointer-coarse:before:content-['']",
+);
 
 interface AfterProps {
   number: number;
@@ -63,12 +76,11 @@ function ShowAfter({ number, onlyAfter, labels, invalid, describedBy, onChange }
             aria-label={`Show the note after: ${afterWords(onlyAfter, labels)}`}
             aria-invalid={invalid || undefined}
             aria-describedby={describedBy}
-            className={inlineControlClassName}
+            className={quietPicker}
           />
         }
       >
         <span className="min-w-0 truncate">{afterWords(onlyAfter, labels)}</span>
-        {invalid && <ProblemMark />}
         <TriggerChevron />
       </DropdownMenuTrigger>
       <DropdownMenuContent aria-label={`Show the note for question ${number} after`}>
@@ -98,9 +110,9 @@ function ShowAfter({ number, onlyAfter, labels, invalid, describedBy, onChange }
 /**
  * The note asked for after a choice question: its prompt, and the answers that bring it, in the
  * panel's head. Only after chosen answers needs the web page, because a Slack form cannot show or
- * hide a field, so the panel says so in one line.
+ * hide a field; the editor's bar says so, naming the question, so the panel does not repeat it.
  */
-function FollowUpEditor({ question, number, onEdit, problems = {}, autoFocus }: Props) {
+function FollowUpEditor({ question, number, onEdit, onRemoved, problems = {}, autoFocus }: Props) {
   const q = filled(question);
   const prompt = useRef<HTMLInputElement>(null);
   const promptId = useProblemId("followUp.prompt");
@@ -138,7 +150,10 @@ function FollowUpEditor({ question, number, onEdit, problems = {}, autoFocus }: 
           variant="ghost"
           size="icon-sm"
           aria-label={`Remove the follow-up note from question ${number}`}
-          onClick={() => onEdit({ ...q, followUp: null }, ["followUp*"])}
+          onClick={() => {
+            onEdit({ ...q, followUp: null }, ["followUp*"]);
+            onRemoved?.();
+          }}
           className="text-muted hoverable:hover:bg-track"
         >
           <X />
@@ -154,21 +169,14 @@ function FollowUpEditor({ question, number, onEdit, problems = {}, autoFocus }: 
           aria-label={`Follow-up note for question ${number}`}
           aria-invalid={promptProblem ? true : undefined}
           aria-describedby={promptProblem ? promptId : undefined}
-          className={promptProblem ? "pe-9" : undefined}
+          className="aria-invalid:bg-danger"
           onChange={(event) =>
             onEdit({ ...q, followUp: { ...followUp, prompt: event.target.value } }, [
               "followUp.prompt",
             ])
           }
         />
-        {promptProblem && <ProblemMark className="absolute end-3 top-1/2 -translate-y-1/2" />}
       </div>
-      {followUp.onlyAfter !== null && (
-        <p className="flex items-start gap-1.5 text-ink-2 text-sm">
-          <Info aria-hidden className="mt-0.5 size-3.5 shrink-0" strokeWidth={2} />
-          <span>Showing it after chosen answers sends people to a web page to answer.</span>
-        </p>
-      )}
     </div>
   );
 }

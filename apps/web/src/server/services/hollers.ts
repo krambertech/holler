@@ -762,13 +762,11 @@ function questionProblems(
       );
     }
   }
-  // Words at the ends of a scale come in pairs: once either is on, both need writing.
-  if (q.style === "scale" && (q.lowLabel !== null || q.highLabel !== null)) {
-    if (!q.lowLabel?.trim()) {
-      problem("Add words for the low end, or turn the words off.", `${at}.lowLabel`);
-    }
-    if (!q.highLabel?.trim()) {
-      problem("Add words for the high end, or turn the words off.", `${at}.highLabel`);
-    }
+  // Words at the ends of a scale come in pairs: both ends, or neither. Two blank ends are no words.
+  const low = q.lowLabel?.trim() ?? "";
+  const high = q.highLabel?.trim() ?? "";
+  if (q.style === "scale" && (low === "") !== (high === "")) {
+    if (!low) problem("Add words for the low end too, or clear the high end.", `${at}.lowLabel`);
+    if (!high) problem("Add words for the high end too, or clear the low end.", `${at}.highLabel`);
   }
 }

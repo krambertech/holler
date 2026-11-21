@@ -264,6 +264,40 @@ describe("problemsByKey", () => {
   });
 });
 
+describe("scale kinds", () => {
+  const recommend = () => questionFromTemplate("recommend");
+
+  it("reads a ready scale by its steps and end words, and anything else as custom", () => {
+    expect(templateFor(filled(recommend())).id).toBe("recommend");
+    expect(templateFor({ ...filled(recommend()), highLabel: "Very likely" }).id).toBe("scale");
+    expect(templateFor({ ...filled(recommend()), lowLabel: null, highLabel: null }).id).toBe(
+      "scale",
+    );
+    expect(templateFor(filled(questionFromTemplate("rating"))).id).toBe("rating");
+  });
+
+  it("keeps a numbered scale's steps when it is made custom", () => {
+    const custom = filled(changeTemplate(recommend(), "scale"));
+    expect(scaleRange(custom)).toEqual({ from: 0, to: 10 });
+    expect(custom).toMatchObject({ lowLabel: "", highLabel: "" });
+    expect(templateFor(custom).id).toBe("scale");
+    valid(custom);
+  });
+
+  it("keeps a follow-up on the same numbers when the range changes", () => {
+    const scale = {
+      ...setScaleRange(questionFromTemplate("scale"), 1, 5),
+      followUp: { prompt: "Why?", onlyAfter: [3, 4] },
+    };
+    // Steps 4 and 5 stay steps 4 and 5 when the scale starts at 0 instead of 1.
+    expect(filled(setScaleRange(scale, 0, 5)).followUp?.onlyAfter).toEqual([4, 5]);
+    // Cut to 1–4, only step 4 is left.
+    expect(filled(setScaleRange(scale, 1, 4)).followUp?.onlyAfter).toEqual([3]);
+    // Cut to 1–3, neither is: the note follows any answer.
+    expect(filled(setScaleRange(scale, 1, 3)).followUp?.onlyAfter).toBeNull();
+  });
+});
+
 describe("orderProblems", () => {
   it("reads a card's problems from top to bottom, options by their place", () => {
     const ordered = orderProblems({
