@@ -9,6 +9,7 @@ import {
   inOrder,
   moveQuestion,
   orderProblems,
+  pastedLabels,
   problemsByKey,
   questionFromTemplate,
   removeOption,
@@ -295,6 +296,30 @@ describe("scale kinds", () => {
     expect(filled(setScaleRange(scale, 1, 4)).followUp?.onlyAfter).toEqual([3]);
     // Cut to 1–3, neither is: the note follows any answer.
     expect(filled(setScaleRange(scale, 1, 3)).followUp?.onlyAfter).toBeNull();
+  });
+});
+
+describe("pastedLabels", () => {
+  it("makes one option per line, joining the first to the row's own words", () => {
+    expect(pastedLabels("Big", "Lisbon\nPorto\n\nTallinn", 10)).toEqual({
+      first: "Big Lisbon",
+      added: ["Porto", "Tallinn"],
+    });
+  });
+
+  it("leaves a single line to the input", () => {
+    expect(pastedLabels("", "Lisbon", 10)).toBeUndefined();
+  });
+
+  it("cuts every label to what the schema takes", () => {
+    const long = "x".repeat(200);
+    const pasted = pastedLabels("y".repeat(100), `${long}\n${long}`, 10);
+    expect(pasted?.first).toHaveLength(150);
+    expect(pasted?.added[0]).toHaveLength(150);
+  });
+
+  it("adds no more options than there is room for", () => {
+    expect(pastedLabels("", "a\nb\nc\nd", 2)?.added).toEqual(["b", "c"]);
   });
 });
 
