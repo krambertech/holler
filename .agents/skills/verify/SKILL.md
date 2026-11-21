@@ -20,6 +20,7 @@ A change is verified when every feature it reaches has been driven in a running 
 | Make an API key | [api-keys.md](features/api-keys.md) |
 | Closing tells the creator in Slack | [slack-close.md](features/slack-close.md) |
 | A holler goes out in Slack and comes back answered | [slack-send.md](features/slack-send.md) |
+| Your answers, named and anonymous | [answers.md](features/answers.md) |
 
 ## Launch
 

@@ -15,6 +15,8 @@ import { Route as InstallRouteImport } from './routes/install'
 import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
 import { Route as AppSettingsRouteImport } from './routes/_app/settings'
+import { Route as AppAnswersIndexRouteImport } from './routes/_app/answers.index'
+import { Route as AppAnswersIdRouteImport } from './routes/_app/answers.$id'
 import { Route as AppHollersIdRouteImport } from './routes/_app/hollers.$id'
 
 const AppRoute = AppRouteImport.update({
@@ -46,6 +48,16 @@ const AppSettingsRoute = AppSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => AppRoute,
 } as any)
+const AppAnswersIndexRoute = AppAnswersIndexRouteImport.update({
+  id: '/answers/',
+  path: '/answers/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAnswersIdRoute = AppAnswersIdRouteImport.update({
+  id: '/answers/$id',
+  path: '/answers/$id',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppHollersIdRoute = AppHollersIdRouteImport.update({
   id: '/hollers/$id',
   path: '/hollers/$id',
@@ -58,7 +70,9 @@ export interface FileRoutesByFullPath {
   '/install': typeof InstallRoute
   '/sign-in': typeof SignInRoute
   '/settings': typeof AppSettingsRoute
+  '/answers/$id': typeof AppAnswersIdRoute
   '/hollers/$id': typeof AppHollersIdRoute
+  '/answers/': typeof AppAnswersIndexRoute
 }
 export interface FileRoutesByTo {
   '/consent': typeof ConsentRoute
@@ -66,7 +80,9 @@ export interface FileRoutesByTo {
   '/sign-in': typeof SignInRoute
   '/settings': typeof AppSettingsRoute
   '/': typeof AppIndexRoute
+  '/answers/$id': typeof AppAnswersIdRoute
   '/hollers/$id': typeof AppHollersIdRoute
+  '/answers': typeof AppAnswersIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -76,14 +92,31 @@ export interface FileRoutesById {
   '/sign-in': typeof SignInRoute
   '/_app/settings': typeof AppSettingsRoute
   '/_app/': typeof AppIndexRoute
+  '/_app/answers/$id': typeof AppAnswersIdRoute
   '/_app/hollers/$id': typeof AppHollersIdRoute
+  '/_app/answers/': typeof AppAnswersIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/consent' | '/install' | '/sign-in' | '/settings' | '/hollers/$id'
+    | '/'
+    | '/consent'
+    | '/install'
+    | '/sign-in'
+    | '/settings'
+    | '/answers/$id'
+    | '/hollers/$id'
+    | '/answers/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/consent' | '/install' | '/sign-in' | '/settings' | '/' | '/hollers/$id'
+  to:
+    | '/consent'
+    | '/install'
+    | '/sign-in'
+    | '/settings'
+    | '/'
+    | '/answers/$id'
+    | '/hollers/$id'
+    | '/answers'
   id:
     | '__root__'
     | '/_app'
@@ -92,7 +125,9 @@ export interface FileRouteTypes {
     | '/sign-in'
     | '/_app/settings'
     | '/_app/'
+    | '/_app/answers/$id'
     | '/_app/hollers/$id'
+    | '/_app/answers/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -146,6 +181,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSettingsRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/answers/': {
+      id: '/_app/answers/'
+      path: '/answers'
+      fullPath: '/answers/'
+      preLoaderRoute: typeof AppAnswersIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/answers/$id': {
+      id: '/_app/answers/$id'
+      path: '/answers/$id'
+      fullPath: '/answers/$id'
+      preLoaderRoute: typeof AppAnswersIdRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/hollers/$id': {
       id: '/_app/hollers/$id'
       path: '/hollers/$id'
@@ -159,13 +208,17 @@ declare module '@tanstack/react-router' {
 interface AppRouteChildren {
   AppSettingsRoute: typeof AppSettingsRoute
   AppIndexRoute: typeof AppIndexRoute
+  AppAnswersIdRoute: typeof AppAnswersIdRoute
   AppHollersIdRoute: typeof AppHollersIdRoute
+  AppAnswersIndexRoute: typeof AppAnswersIndexRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
   AppSettingsRoute: AppSettingsRoute,
   AppIndexRoute: AppIndexRoute,
+  AppAnswersIdRoute: AppAnswersIdRoute,
   AppHollersIdRoute: AppHollersIdRoute,
+  AppAnswersIndexRoute: AppAnswersIndexRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
