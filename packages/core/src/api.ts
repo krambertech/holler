@@ -40,12 +40,18 @@ export const questionOutSchema = z.object({
   numberMax: z.number().int().nullable(),
 });
 
+/** A reason a Holler cannot be sent yet. `field` is a path such as `questions.0.options.2`. */
+export const sendProblemSchema = z.object({ message: z.string(), field: z.string().nullable() });
+
 /** One Holler with its questions. Send an `id` back on a question or option to keep it on update. */
 export const hollerOutSchema = z.object({
   id: z.string(),
   mode: z.enum(modes),
   status: hollerStatusSchema,
   title: z.string(),
+  displayTitle: z
+    .string()
+    .describe("What lists show: the title, or a pulse's first question when it has none."),
   description: z.string(),
   externalUrl: z.string().nullable(),
   anonymous: z.boolean(),
@@ -67,9 +73,34 @@ export const hollerOutSchema = z.object({
   updatedAt: timestamp,
   /** True when the caller made it, so they may edit, send, close and remind. */
   isCreator: z.boolean(),
+  problems: z
+    .array(sendProblemSchema)
+    .describe("Every reason it cannot be sent yet. Empty when it is ready, and once it is sent."),
   questions: z.array(questionOutSchema),
 });
 export type HollerOut = z.infer<typeof hollerOutSchema>;
+
+/** What a send would do, before it happens: who it reaches, when it closes, what is missing. */
+export const sendPreviewOutSchema = z.object({
+  hollerId: z.string(),
+  title: z.string(),
+  reach: z.number().int().describe("About how many people it reaches."),
+  people: z.array(z.string()).describe("Up to ten of the people chosen by name."),
+  morePeople: z.number().int(),
+  groups: z.array(
+    z.object({
+      name: z.string(),
+      kind: z.enum(["usergroup", "channel"]),
+      memberCount: z.number().int().nullable(),
+    }),
+  ),
+  everyone: z.boolean(),
+  anonymous: z.boolean(),
+  sendAt: timestamp.nullable(),
+  closesAt: timestamp,
+  problems: z.array(sendProblemSchema),
+});
+export type SendPreview = z.infer<typeof sendPreviewOutSchema>;
 
 export const hollerListOutSchema = z.object({ hollers: z.array(hollerSummarySchema) });
 

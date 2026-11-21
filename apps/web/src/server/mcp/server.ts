@@ -5,8 +5,10 @@ import {
   hollerListOutSchema,
   hollerOutSchema,
   listHollersQuerySchema,
+  okOutSchema,
   recipientsOutSchema,
   resultsOutSchema,
+  sendPreviewOutSchema,
 } from "@holler/core";
 import { type CallToolResult, McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
@@ -19,7 +21,14 @@ import { closeHoller, remindWaiting, sendHoller } from "../services/delivery";
 import { searchDirectory } from "../services/directory";
 import { exportCsv, exportMarkdown } from "../services/exports";
 import { hollerPeople } from "../services/holler-people";
-import { createDraft, getHoller, listHollers, updateDraft } from "../services/hollers";
+import {
+  copyHoller,
+  createDraft,
+  deleteDraft,
+  getHoller,
+  listHollers,
+  updateDraft,
+} from "../services/hollers";
 import { resultsFor } from "../services/responses";
 import { checkSendConfirmToken, previewSend, sendConfirmToken } from "../services/send-preview";
 
@@ -34,9 +43,9 @@ export interface McpPrincipal {
 
 const INSTRUCTIONS = `Holler asks a team something in Slack, reminds the people who have not answered, and shows the results. One ask is a Holler. You act as one member of one Slack workspace.
 
-A Holler has a mode, chosen when it is made and never changed: pulse (one or two quick questions), survey (up to 30 questions) or chase (a link to a form somewhere else, with no questions). Each question has a type (single, multi, text) and a style (plain, scale, binary); a choice question has 2 to 100 options, and scale options carry a score.
+A Holler has a mode: pulse (one or two quick questions), survey (up to 30 questions) or chase (a link to a form somewhere else, with no questions). The mode may change until it is sent. Each question has a type (single, multi, text, number, person) and a style (plain, scale, binary); a choice question has 2 to 100 options, and scale options carry a score. A plain choice question may add Other (allowOther), multiple choice and person questions may have a pick limit (maxChoices), and a choice question may ask a follow-up note. get_holler's problems list what still stops a send, each with its field.
 
-To make one: find the audience with find_people, then create_holler, which saves a draft and reaches nobody. Edit it with update_holler, sending back the ids of the questions and options you keep.
+To make one: find the audience with find_people, then create_holler, which saves a draft and reaches nobody. Edit it with update_holler, sending back the ids of the questions and options you keep. copy_holler starts a new draft from an existing Holler; delete_draft removes a draft that was never sent.
 
 Sending reaches real people in Slack and cannot be undone, so it takes two calls. Call send_holler with only the hollerId: it sends nothing, and returns who it would reach and a confirm token. Show that to the person in your own words, and call send_holler again with the token only after they agree. Any edit in between makes the token stale.
 
@@ -142,13 +151,43 @@ export function buildMcpServer(mcp: McpPrincipal): McpServer {
     {
       title: "Update a Holler",
       description:
-        "Replace a draft or scheduled Holler's fields and questions. Send back the id of every question and option you keep; one without an id is new, one left out is removed. The mode never changes. Needs write access.",
+        "Replace a draft or scheduled Holler's fields and questions. Send back the id of every question and option you keep; one without an id is new, one left out is removed. The mode may change until it is sent; a chase keeps no questions. Needs write access.",
       inputSchema: draftInput.extend({ hollerId: z.string().min(1) }),
       outputSchema: hollerOutSchema,
       ...writeTool({ idempotent: true, overwrites: true }),
     },
     ({ hollerId, ...draft }) =>
       write(async () => result(hollerOut(await updateDraft(ctx, hollerId, draft)))),
+  );
+
+  server.registerTool(
+    "copy_holler",
+    {
+      title: "Copy a Holler",
+      description:
+        "Start a new draft with the same questions, audience and settings as a Holler this member can see, with no send or close time. It reaches nobody. Needs write access.",
+      inputSchema: z.object({ hollerId: z.string().min(1) }),
+      outputSchema: hollerOutSchema,
+      ...writeTool({ idempotent: false }),
+    },
+    ({ hollerId }) => write(async () => result(hollerOut(await copyHoller(ctx, hollerId)))),
+  );
+
+  server.registerTool(
+    "delete_draft",
+    {
+      title: "Delete a draft",
+      description:
+        "Delete a draft this member made. A scheduled or sent Holler cannot be deleted. There is no undo, so confirm with the person first. Needs write access.",
+      inputSchema: z.object({ hollerId: z.string().min(1) }),
+      outputSchema: okOutSchema,
+      ...writeTool({ idempotent: true, overwrites: true }),
+    },
+    ({ hollerId }) =>
+      write(async () => {
+        await deleteDraft(ctx, hollerId);
+        return result({ ok: true });
+      }),
   );
 
   server.registerTool(
@@ -254,27 +293,7 @@ const draftInput = hollerDraftSchema.extend({
 
 const sendOut = z.object({
   sent: z.boolean(),
-  preview: z
-    .object({
-      hollerId: z.string(),
-      title: z.string(),
-      reach: z.number().int().describe("About how many people it reaches."),
-      people: z.array(z.string()).describe("Up to ten of the people chosen by name."),
-      morePeople: z.number().int(),
-      groups: z.array(
-        z.object({
-          name: z.string(),
-          kind: z.enum(["usergroup", "channel"]),
-          memberCount: z.number().int().nullable(),
-        }),
-      ),
-      everyone: z.boolean(),
-      anonymous: z.boolean(),
-      sendAt: z.string().nullable(),
-      closesAt: z.string(),
-      problems: z.array(z.object({ message: z.string(), field: z.string().nullable() })),
-    })
-    .optional(),
+  preview: sendPreviewOutSchema.optional(),
   confirm: z.string().nullable().optional(),
   next: z.string().optional(),
   holler: hollerOutSchema.optional(),

@@ -1,10 +1,18 @@
 import {
+  answerSurface,
   type HollerDraft,
   type HollerDraftInput,
+  type HollerOut,
   type HollerSummary,
   type HomeCounts,
   hollerDraftSchema,
+  hollerTitle,
+  isChoice,
+  type Mode,
   newId,
+  otherLabel,
+  type QuestionStyle,
+  type QuestionType,
   questionLimits,
 } from "@holler/core";
 import {
@@ -20,7 +28,7 @@ import {
   sql,
 } from "@holler/core/db";
 import { schema } from "../db";
-import { auditStatement } from "./audit";
+import { type AuditEntry, auditStatement } from "./audit";
 import { memberOf, type ServiceContext, ServiceError } from "./context";
 
 const { hollers, questions, options, recipients, members, slackPeople } = schema;
@@ -104,6 +112,9 @@ export async function listHollers(
       creatorName: slackPeople.name,
       creatorAvatar: slackPeople.avatarUrl,
       questionCount: sql<number>`(select count(*) from ${questions} where ${questions.hollerId} = ${hollers.id})`,
+      firstPrompt: sql<
+        string | null
+      >`(select ${questions.prompt} from ${questions} where ${questions.hollerId} = ${hollers.id} order by ${questions.position} limit 1)`,
       recipientCount: sql<number>`(select count(*) from ${recipients} where ${recipients.hollerId} = ${hollers.id})`,
       answeredCount: sql<number>`(select count(*) from ${recipients} where ${recipients.hollerId} = ${hollers.id} and ${recipients.answeredAt} is not null)`,
     })
@@ -120,7 +131,8 @@ export async function listHollers(
     .orderBy(desc(hollers.updatedAt))
     .limit(200);
 
-  const ids = rows.map((row) => row.holler.id);
+  // An anonymous Holler's sender sees how many answered, never who, so its row has no avatars.
+  const ids = rows.filter((row) => !row.holler.anonymous).map((row) => row.holler.id);
   const people =
     ids.length === 0 ? new Map<string, HollerSummary["people"]>() : await peopleFor(ctx, ids);
 
@@ -128,7 +140,12 @@ export async function listHollers(
     id: holler.id,
     mode: holler.mode,
     status: holler.status,
-    title: holler.title,
+    // What the row shows: a pulse without a title shows its first question.
+    title: hollerTitle({
+      mode: holler.mode,
+      title: holler.title,
+      questions: row.firstPrompt === null ? [] : [{ prompt: row.firstPrompt }],
+    }),
     anonymous: holler.anonymous,
     tags: holler.tags,
     questionCount: Number(row.questionCount),
@@ -182,7 +199,57 @@ async function peopleFor(ctx: ServiceContext, hollerIds: string[]) {
   return byHoller;
 }
 
-/** One Holler with its questions and options, if the member may see it. */
+type QuestionRow = typeof questions.$inferSelect;
+type OptionRow = typeof options.$inferSelect;
+type StoredQuestion = QuestionRow & { options: OptionRow[] };
+export type QuestionOut = HollerOut["questions"][number];
+
+/**
+ * A stored question in the shape the editor and the API send it: the Other option becomes
+ * `allowOther`, and the follow-up columns become `followUp`. Sent back with its ids, it saves
+ * as it was.
+ */
+export function presentQuestion(q: StoredQuestion): QuestionOut {
+  return {
+    id: q.id,
+    position: q.position,
+    type: q.type,
+    style: q.style,
+    prompt: q.prompt,
+    description: q.description,
+    required: q.required,
+    options: q.options
+      .filter((o) => !o.isOther)
+      .map((o) => ({
+        id: o.id,
+        position: o.position,
+        label: o.label,
+        score: o.score,
+        isOther: o.isOther,
+      })),
+    allowOther: q.options.some((o) => o.isOther),
+    maxChoices: q.maxChoices,
+    followUp:
+      q.followUpPrompt === null ? null : { prompt: q.followUpPrompt, onlyAfter: q.followUpWhen },
+    lowLabel: q.lowLabel,
+    highLabel: q.highLabel,
+    numberMin: q.numberMin,
+    numberMax: q.numberMax,
+  };
+}
+
+/** A send problem as the editor and the API read it. */
+export interface SendProblem {
+  message: string;
+  field: string | null;
+}
+
+/**
+ * One Holler with its questions and options, if the member may see it. `questions` holds the
+ * stored rows, the Other option included, for Slack delivery and results. The rest is what the
+ * editor shows: the title a row displays, where it is answered, and every reason it cannot be
+ * sent yet (empty once it is sent).
+ */
 export async function getHoller(ctx: ServiceContext, id: string) {
   const memberId = memberOf(ctx);
   const holler = await ctx.db.query.hollers.findFirst({
@@ -208,12 +275,28 @@ export async function getHoller(ctx: ServiceContext, id: string) {
             ),
           )
           .orderBy(options.position);
+  const stored = qs.map((q) => ({ ...q, options: opts.filter((o) => o.questionId === q.id) }));
+  const presented = stored.map(presentQuestion);
+  const unsent = holler.status === "draft" || holler.status === "scheduled";
   return {
     ...holler,
     isCreator: holler.creatorId === memberId,
-    questions: qs.map((q) => ({ ...q, options: opts.filter((o) => o.questionId === q.id) })),
+    displayTitle: hollerTitle({ mode: holler.mode, title: holler.title, questions: presented }),
+    answeredIn: answerSurface({
+      mode: holler.mode,
+      description: holler.description,
+      questions: presented,
+    }).where,
+    problems: unsent
+      ? sendProblems({ ...holler, questions: presented }, ctx.now()).map(
+          (p): SendProblem => ({ message: p.message, field: p.field ?? null }),
+        )
+      : [],
+    questions: stored,
   };
 }
+
+export type HollerDetail = Awaited<ReturnType<typeof getHoller>>;
 
 /**
  * Creates a draft. Nothing is sent until sendHoller.
@@ -239,7 +322,11 @@ export async function createDraft(
   const id = newId("holler");
   const now = ctx.now();
   try {
-    await insertDraft(ctx, memberId, id, draft, now, idempotencyKey);
+    await insertDraft(ctx, memberId, id, draft, now, idempotencyKey, {
+      action: "holler.created",
+      subjectType: "holler",
+      subjectId: id,
+    });
   } catch (error) {
     // Two retries raced; the unique index let one through. Answer as the winner did.
     const earlier = opts.idempotencyKey ? await earlierCreate(ctx, opts.idempotencyKey) : null;
@@ -283,6 +370,17 @@ async function fingerprintOf(draft: HollerDraft): Promise<string> {
   return [...digest].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
+/** A chase has no questions, so a draft switched to chase saves none. */
+const questionsOf = (draft: HollerDraft) => (draft.mode === "chase" ? [] : draft.questions);
+
+/** The title folded for search. A pulse without a title is found by its first question. */
+const searchTitleOf = (draft: HollerDraft) =>
+  hollerTitle({
+    mode: draft.mode,
+    title: draft.title,
+    questions: questionsOf(draft),
+  }).toLocaleLowerCase();
+
 async function insertDraft(
   ctx: ServiceContext,
   memberId: string,
@@ -290,6 +388,7 @@ async function insertDraft(
   draft: HollerDraft,
   now: Date,
   idempotencyKey: string | null,
+  entry: AuditEntry,
 ) {
   await ctx.db.batch([
     ctx.db.insert(hollers).values({
@@ -299,7 +398,7 @@ async function insertDraft(
       mode: draft.mode,
       status: "draft",
       title: draft.title,
-      searchTitle: draft.title.toLocaleLowerCase(),
+      searchTitle: searchTitleOf(draft),
       description: draft.description,
       externalUrl: draft.externalUrl,
       anonymous: draft.anonymous,
@@ -309,6 +408,7 @@ async function insertDraft(
       announceChannelId: draft.announceChannelId,
       sendAt: draft.sendAt,
       sendInRecipientTimeZone: draft.sendInRecipientTimeZone,
+      closesAt: draft.closesAt,
       closeAfterHours: draft.closeAfterHours,
       remindersEnabled: draft.remindersEnabled,
       createdVia: ctx.actor.via === "system" ? "web" : ctx.actor.via,
@@ -316,8 +416,8 @@ async function insertDraft(
       createdAt: now,
       updatedAt: now,
     }),
-    ...questionStatements(ctx, id, draft.questions, new Map()),
-    auditStatement(ctx, { action: "holler.created", subjectType: "holler", subjectId: id }),
+    ...questionStatements(ctx, id, questionsOf(draft), new Map()),
+    auditStatement(ctx, entry),
   ]);
 }
 
@@ -325,6 +425,7 @@ async function insertDraft(
  * Saves a draft's fields and questions. Only the creator may, and only while it is a draft or
  * scheduled. A question or option sent back with its id is updated in place, so ids stay
  * stable across autosaves and API edits; one without an id is new; one left out is removed.
+ * The mode may change until it is sent; switching to chase removes the questions.
  */
 export async function updateDraft(ctx: ServiceContext, id: string, input: HollerDraftInput) {
   const memberId = memberOf(ctx);
@@ -341,15 +442,13 @@ export async function updateDraft(ctx: ServiceContext, id: string, input: Holler
     );
   }
   const draft = hollerDraftSchema.parse(input);
-  if (draft.mode !== existing.mode) {
-    throw new ServiceError("invalid", "A Holler keeps the mode it was made with.", "mode");
-  }
   await ctx.db.batch([
     ctx.db
       .update(hollers)
       .set({
+        mode: draft.mode,
         title: draft.title,
-        searchTitle: draft.title.toLocaleLowerCase(),
+        searchTitle: searchTitleOf(draft),
         description: draft.description,
         externalUrl: draft.externalUrl,
         anonymous: draft.anonymous,
@@ -359,14 +458,85 @@ export async function updateDraft(ctx: ServiceContext, id: string, input: Holler
         announceChannelId: draft.announceChannelId,
         sendAt: draft.sendAt,
         sendInRecipientTimeZone: draft.sendInRecipientTimeZone,
+        closesAt: draft.closesAt,
         closeAfterHours: draft.closeAfterHours,
         remindersEnabled: draft.remindersEnabled,
         updatedAt: ctx.now(),
       })
       .where(eq(hollers.id, id)),
-    ...(await syncQuestions(ctx, id, draft.questions)),
+    ...(await syncQuestions(ctx, id, questionsOf(draft))),
   ]);
   return getHoller(ctx, id);
+}
+
+/**
+ * Copies a Holler the member can see into a new draft of theirs: the same mode, title,
+ * questions, audience and settings, with new ids and no send or close time.
+ */
+export async function copyHoller(ctx: ServiceContext, id: string) {
+  const memberId = memberOf(ctx);
+  const source = await getHoller(ctx, id);
+  const draft = hollerDraftSchema.parse({
+    mode: source.mode,
+    title: source.title,
+    description: source.description,
+    externalUrl: source.externalUrl,
+    anonymous: source.anonymous,
+    visibility: source.visibility,
+    tags: source.tags,
+    audience: source.audience,
+    announceChannelId: source.announceChannelId,
+    sendAt: null,
+    sendInRecipientTimeZone: source.sendInRecipientTimeZone,
+    closesAt: null,
+    closeAfterHours: source.closeAfterHours,
+    remindersEnabled: source.remindersEnabled,
+    questions: source.questions.map((q) => {
+      const { id: _id, position: _position, options: opts, ...rest } = presentQuestion(q);
+      return { ...rest, options: opts.map((o) => ({ label: o.label, score: o.score })) };
+    }),
+  } satisfies HollerDraftInput);
+  const copyId = newId("holler");
+  await insertDraft(ctx, memberId, copyId, draft, ctx.now(), null, {
+    action: "holler.copied",
+    subjectType: "holler",
+    subjectId: copyId,
+    data: { from: source.id },
+  });
+  return getHoller(ctx, copyId);
+}
+
+/** Deletes a draft. Only its creator may, and only before it is scheduled or sent. */
+export async function deleteDraft(ctx: ServiceContext, id: string): Promise<void> {
+  const memberId = memberOf(ctx);
+  const existing = await ctx.db.query.hollers.findFirst({
+    where: and(eq(hollers.id, id), eq(hollers.workspaceId, ctx.workspaceId)),
+  });
+  if (!existing || existing.creatorId !== memberId) {
+    throw new ServiceError("not_found", "That Holler does not exist or is not yours to delete.");
+  }
+  if (existing.status === "scheduled") {
+    throw new ServiceError(
+      "conflict",
+      "This Holler is scheduled to send, so it cannot be deleted. Change its send time instead.",
+    );
+  }
+  if (existing.status !== "draft") {
+    throw new ServiceError(
+      "conflict",
+      "This Holler is already sent, so it stays with its results. Close it to stop the answers.",
+    );
+  }
+  await ctx.db.batch([
+    // The status guard keeps a draft that was sent a moment ago.
+    ctx.db.delete(hollers).where(and(eq(hollers.id, id), eq(hollers.status, "draft"))),
+    auditStatement(ctx, {
+      action: "holler.deleted",
+      subjectType: "holler",
+      subjectId: id,
+      data: { mode: existing.mode },
+    }),
+  ]);
 }
 
 /** The statements that turn a Holler's stored questions into `input`, touching only what changed. */
@@ -404,7 +574,7 @@ async function syncQuestions(
   return [...statements, ...questionStatements(ctx, hollerId, input, byId)];
 }
 
-type StoredQuestion = typeof questions.$inferSelect & { options: (typeof options.$inferSelect)[] };
+const differs = (a: unknown, b: unknown) => JSON.stringify(a) !== JSON.stringify(b);
 
 function questionStatements(
   ctx: ServiceContext,
@@ -421,20 +591,31 @@ function questionStatements(
       type: question.type,
       style: question.style,
       prompt: question.prompt,
+      description: question.description,
       required: question.required,
-    };
+      maxChoices: question.maxChoices,
+      followUpPrompt: question.followUp?.prompt ?? null,
+      followUpWhen: question.followUp?.onlyAfter ?? null,
+      lowLabel: question.lowLabel,
+      highLabel: question.highLabel,
+      numberMin: question.numberMin,
+      numberMax: question.numberMax,
+    } satisfies Partial<QuestionRow>;
     if (!existing) {
       statements.push(ctx.db.insert(questions).values({ id: questionId, hollerId, ...fields }));
     } else if (
-      existing.position !== position ||
-      existing.type !== question.type ||
-      existing.style !== question.style ||
-      existing.prompt !== question.prompt ||
-      existing.required !== question.required
+      (Object.keys(fields) as (keyof typeof fields)[]).some((key) =>
+        differs(existing[key], fields[key]),
+      )
     ) {
       statements.push(ctx.db.update(questions).set(fields).where(eq(questions.id, questionId)));
     }
-    const storedOptions = new Map((existing?.options ?? []).map((o) => [o.id, o]));
+
+    // The Other option is not one the editor sends; it is matched apart, so its id never moves.
+    const storedOther = existing?.options.find((o) => o.isOther);
+    const storedOptions = new Map(
+      (existing?.options ?? []).filter((o) => !o.isOther).map((o) => [o.id, o]),
+    );
     const keptOptions = new Set<string>();
     // One option per statement: D1 binds at most 100 values in one query, and a question may have 100 options.
     for (const [index, option] of question.options.entries()) {
@@ -460,44 +641,134 @@ function questionStatements(
         statements.push(ctx.db.delete(options).where(eq(options.id, option.id)));
       }
     }
+
+    // Other is always the last option, after every one the sender wrote.
+    const other = { position: question.options.length, label: otherLabel, score: null };
+    if (question.allowOther && !storedOther) {
+      statements.push(
+        ctx.db.insert(options).values({ id: newId("option"), questionId, isOther: true, ...other }),
+      );
+    } else if (question.allowOther && storedOther) {
+      if (storedOther.position !== other.position || storedOther.label !== other.label) {
+        statements.push(ctx.db.update(options).set(other).where(eq(options.id, storedOther.id)));
+      }
+    } else if (storedOther) {
+      statements.push(ctx.db.delete(options).where(eq(options.id, storedOther.id)));
+    }
     return statements;
   });
 }
 
+/** What sendProblems reads of a question: the editor's shape, as presentQuestion returns it. */
+export interface ProblemQuestion {
+  type: QuestionType;
+  style: QuestionStyle;
+  prompt: string;
+  options: readonly { label: string }[];
+  allowOther: boolean;
+  followUp: { prompt: string; onlyAfter: readonly number[] | null } | null;
+  lowLabel: string | null;
+  highLabel: string | null;
+}
+
 /**
  * Every reason a draft cannot be sent yet, each naming its field, so the editor can show them
- * all at once. Empty when it is ready.
+ * all at once. Empty when it is ready. A question's field is `questions.<i>.<what>`, and an
+ * option's is `questions.<i>.options.<j>`, counting from 0.
  */
-export function sendProblems(holler: {
-  mode: "pulse" | "survey" | "chase";
-  title: string;
-  externalUrl: string | null;
-  audience: { people: string[]; groups: string[]; everyone: boolean };
-  questions: unknown[];
-}): ServiceError[] {
+export function sendProblems(
+  holler: {
+    mode: Mode;
+    title: string;
+    externalUrl: string | null;
+    audience: { people: string[]; groups: string[]; everyone: boolean };
+    sendAt: Date | null;
+    closesAt: Date | null;
+    questions: readonly ProblemQuestion[];
+  },
+  now: Date,
+): ServiceError[] {
   const problems: ServiceError[] = [];
-  if (!holler.title.trim()) problems.push(new ServiceError("invalid", "Give it a title.", "title"));
-  const limits = questionLimits[holler.mode];
+  const problem = (message: string, field: string) =>
+    problems.push(new ServiceError("invalid", message, field));
+
+  // A pulse needs no title: its first question stands in for one.
+  if (holler.mode !== "pulse" && !holler.title.trim()) problem("Give it a title.", "title");
   if (holler.mode === "chase" && !holler.externalUrl) {
-    problems.push(new ServiceError("invalid", "Add the link to the form.", "externalUrl"));
+    problem("Add the link to the form.", "externalUrl");
   }
-  if (holler.questions.length < limits.min) {
-    problems.push(new ServiceError("invalid", "Add a question.", "questions"));
-  }
+  const limits = questionLimits[holler.mode];
+  if (holler.questions.length < limits.min) problem("Add a question.", "questions");
   if (holler.questions.length > limits.max) {
-    problems.push(
-      new ServiceError(
-        "invalid",
-        holler.mode === "pulse"
-          ? "A pulse has one or two questions. Make it a survey to ask more."
-          : `A survey has at most ${limits.max} questions.`,
-        "questions",
-      ),
+    problem(
+      holler.mode === "pulse"
+        ? "A pulse has one or two questions. Make it a survey to ask more."
+        : `A survey has at most ${limits.max} questions.`,
+      "questions",
     );
   }
+  for (const [i, q] of holler.questions.entries()) {
+    questionProblems(q, `questions.${i}`, problem);
+  }
+
   const { people, groups, everyone } = holler.audience;
   if (!everyone && people.length === 0 && groups.length === 0) {
-    problems.push(new ServiceError("invalid", "Choose who to send it to.", "audience"));
+    problem("Choose who to send it to.", "audience");
+  }
+  if (holler.closesAt) {
+    if (holler.closesAt.getTime() <= now.getTime()) {
+      problem("That close time has passed. Pick a later one.", "closesAt");
+    } else if (holler.sendAt && holler.closesAt.getTime() <= holler.sendAt.getTime()) {
+      problem("It would close before it sends. Pick a close time after the send time.", "closesAt");
+    }
   }
   return problems;
+}
+
+function questionProblems(
+  q: ProblemQuestion,
+  at: string,
+  problem: (message: string, field: string) => void,
+) {
+  if (!q.prompt.trim()) problem("Write the question.", `${at}.prompt`);
+  if (isChoice(q.type)) {
+    const seen = new Set<string>();
+    if (q.allowOther) seen.add(otherLabel.toLocaleLowerCase());
+    for (const [j, option] of q.options.entries()) {
+      const label = option.label.trim().toLocaleLowerCase();
+      if (!label) {
+        problem("Write this option, or remove it.", `${at}.options.${j}`);
+      } else if (q.allowOther && label === otherLabel.toLocaleLowerCase()) {
+        problem(
+          "Other is already the last option. Rename this one or remove it.",
+          `${at}.options.${j}`,
+        );
+      } else if (seen.has(label)) {
+        problem(
+          "This option says the same as another. Change it or remove it.",
+          `${at}.options.${j}`,
+        );
+      }
+      seen.add(label);
+    }
+  }
+  if (q.followUp) {
+    if (!q.followUp.prompt.trim()) {
+      problem("Write the follow-up question, or turn the follow-up off.", `${at}.followUp`);
+    } else if (q.followUp.onlyAfter?.length === 0) {
+      problem(
+        "Pick the answers that show the follow-up, or show it after any answer.",
+        `${at}.followUp`,
+      );
+    }
+  }
+  // Words at the ends of a scale come in pairs: once either is on, both need writing.
+  if (q.style === "scale" && (q.lowLabel !== null || q.highLabel !== null)) {
+    if (!q.lowLabel?.trim()) {
+      problem("Add words for the low end, or turn the words off.", `${at}.lowLabel`);
+    }
+    if (!q.highLabel?.trim()) {
+      problem("Add words for the high end, or turn the words off.", `${at}.highLabel`);
+    }
+  }
 }
