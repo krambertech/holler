@@ -1,0 +1,14 @@
+{
+  "rule": "An illustration has a subject and at most one accent",
+  "layer": "test",
+  "past": "#30 drew the set to these rules and added the check with it; nothing has broken one since",
+  "check": "cd packages/design && pnpm exec vitest run src/illustrations.test.ts",
+  "break": [
+    {
+      "file": "packages/design/src/illustrations.ts",
+      "find": "x === 45.5 && y === 43.5 ? circle",
+      "replace": "x === 45.5 ? circle"
+    }
+  ],
+  "fails": "picks out one subject and at most one accent"
+}
