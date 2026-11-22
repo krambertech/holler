@@ -3,6 +3,7 @@ import activityWithWrite from "./rules/activity-with-write.mjs";
 import boundedInArray from "./rules/bounded-in-array.mjs";
 import noComments from "./rules/no-comments.mjs";
 import noEffectExpressionBody from "./rules/no-effect-expression-body.mjs";
+import noMockedServices from "./rules/no-mocked-services.mjs";
 import noMultiRowInsert from "./rules/no-multi-row-insert.mjs";
 import noResponseOwners from "./rules/no-response-owners.mjs";
 import noSpreadRows from "./rules/no-spread-rows.mjs";
@@ -17,6 +18,7 @@ export default definePlugin({
     "bounded-in-array": boundedInArray,
     "no-comments": noComments,
     "no-effect-expression-body": noEffectExpressionBody,
+    "no-mocked-services": noMockedServices,
     "no-multi-row-insert": noMultiRowInsert,
     "no-response-owners": noResponseOwners,
     "no-spread-rows": noSpreadRows,
