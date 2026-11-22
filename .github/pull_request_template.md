@@ -14,6 +14,6 @@ Verified:
 
 <!-- List only checks that ran and their result: `pnpm verify`, `pnpm test:e2e`, and for a product change the features driven with the verify skill and the evidence folder. Say plainly what was skipped and why. -->
 
-<!-- "Verified:" is one line that names the commands and the evidence, or "none, because …". It stays in the commit. When the change weakens a check, add "## Weakened checks" with each file and why; CI lists them. -->
+<!-- On the Verified line, name the commands and evidence, or write "none, because …". The line stays in the squash commit. If CI flags weakened checks, add "## Weakened checks" with each file and why. -->
 
 <!-- Add Why, Risks or Follow-ups only when material, each one short paragraph or up to three bullets. Omit passing logs, file inventories, empty sections and decorative emoji. -->

@@ -38,9 +38,9 @@ Every pull request shares the preview D1. A branch's migration applies to it bef
 
 ## When nobody is working on it
 
-`weekly.yml` runs every Monday: all of CI on `main`, `pnpm audit` for high severity, a check that GitHub still enforces the ruleset, and `pnpm deploy:health`. A failure opens an issue, or comments on the open one. It turns its own schedule back on each run, because GitHub stops schedules in a repository with no commits for 60 days.
+`weekly.yml` runs every Monday: CI on `main`, a high-severity audit of production dependencies, a ruleset check, and `pnpm deploy:health`. A failure opens an issue or comments on the open one. Each run enables the schedule because GitHub disables schedules after 60 days without commits.
 
-Dependabot opens grouped updates on Mondays for packages that are at least a week old, and for the actions, which are pinned by commit. `minimumReleaseAge` in `pnpm-workspace.yaml` keeps a younger release from being installed by hand.
+Dependabot checks for updates on Mondays, with a seven-day cooldown. It groups minor and patch package updates and GitHub Actions updates. `minimumReleaseAge` in `pnpm-workspace.yaml` also applies to manual installs.
 
 ## One-time setup
 
@@ -65,7 +65,7 @@ Kateryna does these; they handle credentials.
 
    `SLACK_TOKEN_KEY` encrypts stored Slack tokens: changing it later makes every installed workspace reinstall. Slack and Polar secrets come with their own setup in `docs/slack.md` and `docs/billing.md`.
 
-3. Protect `main`. Until this runs, every check is advice:
+3. Protect `main`. Until the ruleset is installed, its merge requirements are not enforced:
 
    ```bash
    gh api -X POST repos/krambertech/holler/rulesets --input .github/rulesets/main.json
