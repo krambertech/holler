@@ -40,6 +40,8 @@ Every pull request shares the preview D1. A branch's migration applies to it bef
 
 `weekly.yml` runs every Monday: CI on `main`, a high-severity audit of production dependencies, a ruleset check, and `pnpm deploy:health`. A failure opens an issue or comments on the open one. Each run enables the schedule because GitHub disables schedules after 60 days without commits.
 
+`health.yml` asks production's `/api/health/work` every hour. It reads stored state for a send, invite, reminder or close more than 15 minutes late (`services/overdue.ts`), so it notices a stopped cron, a stuck queue and lost work alike, and opens an issue. Previews run no cron, so theirs is always late.
+
 Dependabot checks for updates on Mondays, with a seven-day cooldown. It groups minor and patch package updates and GitHub Actions updates. `minimumReleaseAge` in `pnpm-workspace.yaml` also applies to manual installs.
 
 ## One-time setup

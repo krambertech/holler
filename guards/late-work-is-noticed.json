@@ -1,0 +1,14 @@
+{
+  "rule": "A late send, invite, reminder or close is noticed within an hour, whatever made it late",
+  "layer": "test",
+  "past": "#10 lost claimed invites and close work, and nothing but a reviewer would have noticed",
+  "check": "cd apps/web && pnpm exec vitest run src/server/services/overdue.test.ts",
+  "break": [
+    {
+      "file": "apps/web/src/server/services/overdue.ts",
+      "find": "    lost_invite: and(waiting, lte(recipients.invitedAt, late), isNull(recipients.dmTs)),\n",
+      "replace": ""
+    }
+  ],
+  "fails": "claimed and never posted"
+}
