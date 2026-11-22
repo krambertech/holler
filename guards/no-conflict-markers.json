@@ -1,0 +1,14 @@
+{
+  "rule": "No file keeps a merge conflict marker",
+  "layer": "lint",
+  "past": "While these guards were built, a rebase committed markers into docs/operations.md, which no linter reads",
+  "check": "pnpm check:conflicts",
+  "break": [
+    {
+      "file": "docs/operations.md",
+      "find": "# Operations\n",
+      "replace": "<<<<<<< HEAD\n# Operations\n"
+    }
+  ],
+  "fails": "A merge conflict is committed"
+}
