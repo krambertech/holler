@@ -133,7 +133,7 @@ Numbers in tables and counts use `tabular`.
 
 | Component                         | File                          | Notes                                                                                        |
 | --------------------------------- | ----------------------------- | -------------------------------------------------------------------------------------------- |
-| `Button` | `components/ui/button.tsx` | `primary`, `secondary`, `ghost`; sizes `sm`, `md`, `icon-sm`, `icon`; `render` for links; `pending` blocks every further press |
+| `Button` | `components/ui/button.tsx` | `primary`, `secondary`, `ghost`; sizes `sm`, `md`, `lg`, `icon-sm`, `icon`; `render` for links; `pending` blocks every further press |
 | `Plate`, `PlateRow`, `PlateStrip` | `components/ui/plate.tsx`     | The surface system                                                                           |
 | `Chip`, `StatusChip`, `StatusDot` | `components/ui/chip.tsx`      | Pills; a status always has its word                                                          |
 | `Avatar`, `AvatarStack`           | `components/ui/avatar.tsx`    | Waiting people are greyed in a stack; the stack carries one `aria-label`                     |
@@ -181,7 +181,7 @@ Plates are 16 px, controls 10 px, mode glyphs 9 px, and chips are pills. A contr
 
 ## Motion
 
-Transitions are 150 to 250 ms on `--ease-out`. Two exceptions, both on purpose: a menu or popover opens in 140 ms and closes in 100, because it answers a click and must not lag it; and a choice mark (a tick, a radio dot) lands with a small spring from `packages/design/src/motion.ts`, the only spring in the product. Motion shows a change of state: a bar filling, a row appearing, a sheet opening. Nothing moves for decoration and nothing plays on page load. Every animation has a reduced-motion version; `useReduceMotion()` is the only way to ask.
+Transitions are 150 to 250 ms on `--ease-out`. Three exceptions, all on purpose: a menu or popover opens in 140 ms and closes in 100, because it answers a click and must not lag it; a choice mark (a tick, a radio dot) lands with a small spring from `packages/design/src/motion.ts`; and the thank-you after someone sends their answers lands with the `ARRIVE_*` presets there, a larger spring with a ring and a few sparks, then its lines rise in. That is the one moment Holler celebrates, so it plays once, right after the send, and a reload shows the page still. Motion shows a change of state: a bar filling, a row appearing, a sheet opening. Nothing else moves for decoration and nothing plays on page load. Every animation has a reduced-motion version; `useReduceMotion()` is the only way to ask.
 
 ## Voice
 
