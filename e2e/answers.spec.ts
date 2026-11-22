@@ -1,5 +1,5 @@
-import { expect, test } from "@playwright/test";
 import { expectAccessible, signInAs } from "./a11y";
+import { expect, test } from "./fixtures";
 
 test("a person sees every Holler sent to them, grouped by where it stands", async ({ page }) => {
   await signInAs(page, "sender");

@@ -1,5 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, type Page } from "@playwright/test";
+import type { Page } from "@playwright/test";
+import { expect } from "./fixtures";
 
 /** Fails the test on any WCAG 2.2 AA violation on the page as it is now. */
 export async function expectAccessible(page: Page) {

@@ -1,5 +1,5 @@
-import { AlertTriangle, Info, KeyRound, Lock, Radio, Search } from "lucide-react";
-import { EmptySection, EmptyState, NoResults } from "@/components/empty-state";
+import { AlertTriangle, Info, Lock, Radio } from "lucide-react";
+import { EmptyState } from "@/components/empty-state";
 import { ErrorState } from "@/components/error-state";
 import { Notice } from "@/components/notice";
 import { Skeleton } from "@/components/skeleton";
@@ -11,86 +11,97 @@ import type { Group } from "./types";
 export const states: Group = {
   slug: "states",
   title: "Empty, loading and error",
-  lede: "What a screen says when it has nothing, is still loading, or failed. Each one says what is going on and the one thing to do next. None of them is ever just “nothing here”.",
+  lede: "What a screen says when it has nothing, is still loading, or failed. Each one says what is going on and the one thing to do next. None of them is ever just “nothing here”. Their drawings come from the illustration set.",
   entries: [
     {
       slug: "empty-state",
       name: "EmptyState",
       source: "components/empty-state.tsx",
-      note: "A whole screen on first use. A faded example row shows what will appear, then why it is empty and the action that fills it.",
+      covers: ["StateLayout"],
+      note: "Nothing here yet, or nothing matched. One drawing, one line of why, one way forward. The size follows the space it stands in, and the drawing comes with it.",
       Demo: () => (
         <Variants
           stack
           items={[
             {
-              label: "First Holler",
+              label: "lg: a whole screen",
+              note: "First use. The drawing teaches the screen: this is the row that will appear.",
               render: () => (
-                <div className="w-full">
+                <EmptyState
+                  className="w-full"
+                  size="lg"
+                  illustration="hollers"
+                  title="Ask your team something"
+                  description="Holler sends your question to each person in Slack, reminds the ones who have not answered, and shows you the results here."
+                  action={<Button variant="primary">New holler</Button>}
+                />
+              ),
+            },
+            {
+              label: "md: a group inside a screen",
+              note: "Settings sections, a tab with nothing in it.",
+              render: () => (
+                <div className="grid w-full gap-3 md:grid-cols-2">
                   <EmptyState
-                    title="Ask your team something"
-                    description="Holler sends your question to each person in Slack, reminds the ones who have not answered, and shows you the results here."
-                    action={<Button variant="primary">New holler</Button>}
+                    illustration="keys"
+                    title="No API keys yet"
+                    description="Make one to send hollers from a script or Zapier."
+                    action={<Button size="sm">New API key</Button>}
+                  />
+                  <EmptyState
+                    illustration="shared"
+                    title="Nothing shared with you yet"
+                    description="When someone shares a Holler's results with you or the workspace, it shows up here."
                   />
                 </div>
               ),
             },
-          ]}
-        />
-      ),
-    },
-    {
-      slug: "empty-section",
-      name: "EmptySection",
-      source: "components/empty-state.tsx",
-      note: "An empty group inside a screen. Smaller, one icon, one line, one action.",
-      Demo: () => (
-        <Variants
-          items={[
             {
-              label: "No API keys",
+              label: "dashed: nothing matched",
+              note: "Temporary, so it never reads as a plate of results. The action is the way back.",
               render: () => (
-                <EmptySection
-                  className="w-full max-w-md"
-                  icon={<KeyRound />}
-                  title="No API keys yet"
-                  description="Make one to send hollers from a script or Zapier."
-                  action={<Button size="sm">New API key</Button>}
+                <EmptyState
+                  className="w-full"
+                  role="status"
+                  variant="dashed"
+                  illustration="search"
+                  title="No holler matches “retro”"
+                  description="Search looks at titles. Try a shorter word."
+                  action={<Button size="sm">Clear search</Button>}
                 />
               ),
             },
             {
-              label: "Nothing shared",
+              label: "sm: a small element",
+              note: "Beside the words, not above them. bare inside a popover or a plate that is already a surface.",
               render: () => (
-                <EmptySection
-                  className="w-full max-w-md"
-                  icon={<Radio />}
-                  title="Nothing shared with you yet"
-                  description="When someone shares a Holler's results with you or the workspace, it shows up here."
-                />
-              ),
-            },
-          ]}
-        />
-      ),
-    },
-    {
-      slug: "no-results",
-      name: "NoResults",
-      source: "components/empty-state.tsx",
-      note: "A search or filter that matched nothing. Dashed, because it is temporary. The action is the way back.",
-      Demo: () => (
-        <Variants
-          stack
-          items={[
-            {
-              label: "Search",
-              render: () => (
-                <div className="w-full">
-                  <NoResults
-                    icon={<Search />}
-                    title="No holler matches “retro”"
-                    description="Search looks at titles. Try a shorter word."
-                    action={<Button size="sm">Clear search</Button>}
+                <div className="grid w-full gap-3 md:grid-cols-2">
+                  <div className="rounded-control bg-plate shadow-float">
+                    <EmptyState
+                      size="sm"
+                      variant="bare"
+                      illustration="people"
+                      title="No one called “Sam”"
+                      description="Only people in this workspace can be picked."
+                    />
+                  </div>
+                  <EmptyState
+                    size="sm"
+                    illustration="results"
+                    title="No answers yet"
+                    description="Holler reminds people tomorrow at 10:00."
+                  />
+                  <EmptyState
+                    size="sm"
+                    illustration="scheduled"
+                    title="Nothing scheduled"
+                    action={<Button size="sm">Schedule one</Button>}
+                  />
+                  <EmptyState
+                    size="sm"
+                    illustration="done"
+                    title="Everyone answered"
+                    description="12 of 12, two days before it closes."
                   />
                 </div>
               ),
@@ -103,20 +114,68 @@ export const states: Group = {
       slug: "error-state",
       name: "ErrorState",
       source: "components/error-state.tsx",
-      note: "Something failed to load. What failed, what to do, and Try again. A reference code for support when there is one.",
+      note: "Something failed. What failed, what to do, and Try again. The same sizes as EmptyState; the drawing says which kind of failure, and a reference code sits at the bottom for support.",
       Demo: () => (
         <Variants
           stack
           items={[
             {
-              label: "Load failed",
+              label: "md: a section failed",
+              note: "The rest of the page still works, so only this part says so.",
               render: () => (
-                <div className="w-full">
+                <ErrorState
+                  className="w-full"
+                  title="We could not load your hollers"
+                  onRetry={() => {}}
+                  reference="hol-7f3a9c"
+                />
+              ),
+            },
+            {
+              label: "lg: Holler could not be reached",
+              render: () => (
+                <ErrorState
+                  className="w-full"
+                  size="lg"
+                  illustration="offline"
+                  title="Holler is not answering"
+                  description="Your hollers are safe. Check your connection, then try again."
+                  onRetry={() => {}}
+                />
+              ),
+            },
+            {
+              label: "md: no access",
+              note: "locked draws in warning: nothing broke, it is just not yours to see.",
+              render: () => (
+                <ErrorState
+                  className="w-full"
+                  illustration="locked"
+                  title="This Holler is not shared with you"
+                  description="Ask the person who sent it to share its results with you or the workspace."
+                />
+              ),
+            },
+            {
+              label: "sm: inside a small element",
+              render: () => (
+                <div className="grid w-full gap-3 md:grid-cols-2">
                   <ErrorState
-                    title="We could not load your hollers"
+                    size="sm"
+                    title="We could not load the plan"
+                    description="Try again in a moment."
                     onRetry={() => {}}
-                    reference="hol-7f3a9c"
                   />
+                  <div className="rounded-control bg-plate shadow-float">
+                    <ErrorState
+                      size="sm"
+                      variant="bare"
+                      illustration="offline"
+                      title="We could not load the channels"
+                      description="Slack did not answer. Try again."
+                      onRetry={() => {}}
+                    />
+                  </div>
                 </div>
               ),
             },
