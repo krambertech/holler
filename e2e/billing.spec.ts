@@ -1,5 +1,6 @@
-import { expect, type Page, test } from "@playwright/test";
+import type { Page } from "@playwright/test";
 import { expectAccessible, signInAs } from "./a11y";
+import { expect, test } from "./fixtures";
 
 async function openBilling(page: Page, persona: "lead" | "sender") {
   await signInAs(page, persona, "/settings#billing");
