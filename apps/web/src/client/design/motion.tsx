@@ -8,7 +8,7 @@ export function Motion() {
   return (
     <Doc
       title="Motion"
-      lede="Motion shows a change of state and nothing else: 150 to 250 ms on one ease-out curve. Menus open in 140 ms and close in 100, and a choice mark lands with one small spring. Nothing plays on page load, and reduced motion turns every animation into an instant change."
+      lede="Motion shows a change of state and nothing else: 150 to 250 ms on one ease-out curve. Menus open in 140 ms and close in 100, a choice mark lands with one small spring, and the thank-you after sending lands with a larger one, once. Nothing plays on page load, and reduced motion turns every animation into an instant change."
     >
       <Sub
         title="Timing"
@@ -37,7 +37,7 @@ export function Motion() {
           ]}
           donts={[
             "Fade sections in on scroll or on page load.",
-            "Bounce, overshoot or spring.",
+            "Bounce, overshoot or spring, outside a choice mark and the thank-you.",
             "Animate width, height or layout without a reason.",
           ]}
         />

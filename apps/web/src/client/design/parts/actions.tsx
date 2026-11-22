@@ -6,13 +6,13 @@ import type { Group } from "./types";
 export const actions: Group = {
   slug: "actions",
   title: "Actions",
-  lede: "Three variants and four sizes, nothing else. One plum button per screen. Buttons press down 2%; nothing lifts.",
+  lede: "Three variants and five sizes, nothing else. One plum button per screen. Buttons press down 2%; nothing lifts.",
   entries: [
     {
       slug: "button",
       name: "Button",
       source: "components/ui/button.tsx",
-      note: "Medium (40 px) is the default; small (32 px) sits inside rows and toolbars. On touch screens every size keeps a 44 px hit area. A link that should look like a button passes itself as render.",
+      note: "Medium (40 px) is the default; small (32 px) sits inside rows and toolbars; large (48 px) is a page's one closing action, such as sending a form. On touch screens every size keeps a 44 px hit area. A link that should look like a button passes itself as render.",
       Demo: () => (
         <Variants
           items={[
@@ -68,6 +68,15 @@ export const actions: Group = {
               label: "As a link",
               note: 'render={<a href="…" />} or a router Link. Never a styled anchor beside a button.',
               render: () => <Button render={<a href="#actions" />}>Open the report</Button>,
+            },
+            {
+              label: "Large",
+              note: "The action a whole page leads to, full width on a phone.",
+              render: () => (
+                <Button size="lg" variant="primary">
+                  Send answers
+                </Button>
+              ),
             },
             {
               label: "Small",
