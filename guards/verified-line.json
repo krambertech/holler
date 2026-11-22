@@ -1,0 +1,8 @@
+{
+  "rule": "A pull request says what verified it, and git log keeps the answer",
+  "layer": "ci",
+  "past": "Of the 27 commits on main by 22 November, git log says how only a few were verified",
+  "check": "PR_BODY='Verified: pnpm verify' node scripts/check-verified.mjs",
+  "refuses": "PR_BODY='Verified: tested' node scripts/check-verified.mjs",
+  "fails": "names nothing that ran"
+}

@@ -1,0 +1,8 @@
+{
+  "rule": "A pull request that weakens a check names it in its description, judged by main's copy of the rule",
+  "layer": "ci",
+  "past": "#6 dropped the permission rule that denied pnpm deploy*, and nothing in its description said so",
+  "check": "PR_BODY= node scripts/check-weakened.mjs HEAD HEAD",
+  "refuses": "PR_BODY= node scripts/check-weakened.mjs 739cb1c^ 739cb1c",
+  "fails": "no longer denies Bash(pnpm deploy*)"
+}

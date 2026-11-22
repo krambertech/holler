@@ -51,3 +51,12 @@ Start from [the template](../.github/pull_request_template.md). Open with the pr
 ## Merge a pull request
 
 Merge with **Squash and merge** after CI passes and review threads are resolved. Confirm that the generated commit title matches the pull request title. GitHub uses the pull request description as the commit body and deletes the branch after merging.
+
+## What main refuses
+
+The ruleset in [`.github/rulesets/main.json`](../.github/rulesets/main.json) holds for everyone, owners and agents included. `main` takes a pull request only when it is squashed, up to date with `main`, has no open review thread, and passes two checks.
+
+- `ready` is the last job in `ci.yml`. It needs every other job, so a new job blocks a merge as soon as it exists; `pnpm check:workflows` fails when one is left out.
+- `protect` runs `main`'s own copy of [`scripts/check-weakened.mjs`](../scripts/check-weakened.mjs), so a pull request cannot change the rule that judges it. It lists every check the pull request weakens: a deleted guard or test, a lint rule turned off, a new suppression, a changed CI file. Each must be named under `## Weakened checks` in the description, with the reason.
+
+The description also carries one `Verified:` line that names what ran, or `none, because …`. Squash merging keeps it, so `git log --grep "^Verified: none"` finds every change nobody verified. It warns for now; change `MODE` in `protect.yml` to `enforce` once it has run quietly for a while.
