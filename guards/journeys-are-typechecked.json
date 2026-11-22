@@ -5,10 +5,10 @@
   "check": "pnpm exec tsc -p e2e/tsconfig.json",
   "break": [
     {
-      "file": "e2e/a11y.ts",
-      "find": "request.newContext(baseURL ? { baseURL } : {})",
-      "replace": "request.newContext({ baseURL })"
+      "file": "e2e/fixtures.ts",
+      "find": "        ...(baseURL ? { baseURL } : {}),",
+      "replace": "        baseURL,"
     }
   ],
-  "fails": "e2e/a11y.ts"
+  "fails": "e2e/fixtures.ts"
 }

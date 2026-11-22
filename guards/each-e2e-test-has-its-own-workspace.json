@@ -1,0 +1,14 @@
+{
+  "rule": "Each browser test has its own workspace, so no test sees another's changes",
+  "layer": "browser",
+  "past": "#21 and #27 failed CI three times because a parallel test had added a second Offsite to the workspace they shared",
+  "check": "pnpm exec playwright test --project=chromium e2e/workspaces.spec.ts",
+  "break": [
+    {
+      "file": "e2e/fixtures.ts",
+      "find": "use(ownWorkspace()),",
+      "replace": "use(ownWorkspace() ? {} : {}),"
+    }
+  ],
+  "fails": "another test changed this workspace"
+}

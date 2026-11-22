@@ -4,7 +4,12 @@ import { Hono } from "hono";
 import type { AppEnv } from "../app";
 import { runCronPass } from "../cron";
 import { queueAfterResponse } from "../services/delivery";
-import { ensurePersona, isPersona } from "../services/dev-personas";
+import {
+  DEV_WORKSPACE_HEADER,
+  devWorkspace,
+  ensurePersonas,
+  isPersona,
+} from "../services/dev-personas";
 import { makeWebSurvey } from "../services/dev-respond";
 import { devState, resetDevWorkspace } from "../services/dev-state";
 import { respondUrl } from "../services/respond-links";
@@ -25,8 +30,15 @@ export const devRoutes = new Hono<AppEnv>()
     const as = c.req.query("as") ?? "lead";
     if (!isPersona(as))
       return c.json({ error: { code: "invalid", message: `No persona named ${as}.` } }, 400);
-    if (c.req.query("reset") === "1") await resetDevWorkspace(c.get("db"));
-    const { email, password } = await ensurePersona(c.get("db"), c.get("auth"), as, c.get("now")());
+    const workspace = devWorkspace(c.req.header(DEV_WORKSPACE_HEADER));
+    if (!workspace) {
+      const message = `${DEV_WORKSPACE_HEADER} takes 8 to 32 lowercase letters and digits.`;
+      return c.json({ error: { code: "invalid", message } }, 400);
+    }
+    const db = c.get("db");
+    if (c.req.query("reset") === "1") await resetDevWorkspace(db, workspace.teamId);
+    const now = c.get("now")();
+    const { email, password } = await ensurePersonas(db, c.get("auth"), workspace, as, now);
     const signIn = await c.get("auth").api.signInEmail({
       body: { email, password },
       headers: c.req.raw.headers,
@@ -38,6 +50,11 @@ export const devRoutes = new Hono<AppEnv>()
   })
   .get("/state", async (c) => c.json(await devState(requireMember(c))))
   .post("/tick", sValidator("json", devTickInputSchema), async (c) => {
+    if (c.req.header(DEV_WORKSPACE_HEADER) !== undefined) {
+      const message =
+        "A tick runs every workspace, so a browser test with its own would change the others.";
+      return c.json({ error: { code: "conflict", message } }, 409);
+    }
     const { at } = c.req.valid("json");
     const when = at ? new Date(at) : c.get("now")();
     const pass = await runCronPass(c.env, c.get("db"), when);
