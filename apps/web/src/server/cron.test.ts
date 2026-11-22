@@ -41,7 +41,7 @@ describe("runSteps", () => {
     const order: string[] = [];
     await runSteps({
       first: async () => {
-        await new Promise((resolve) => setTimeout(resolve, 5));
+        await new Promise((resolve) => setImmediate(resolve));
         order.push("first");
       },
       second: async () => order.push("second"),
