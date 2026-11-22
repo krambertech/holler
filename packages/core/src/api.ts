@@ -2,7 +2,12 @@ import { z } from "zod";
 import { modes, questionStyles, questionTypes } from "./modes";
 import { repeatEvery } from "./repeats";
 import type { Results } from "./results";
-import { audienceSchema, hollerStatusSchema, hollerSummarySchema } from "./types";
+import {
+  audienceSchema,
+  hollerStatusSchema,
+  hollerSummarySchema,
+  responseInputSchema,
+} from "./types";
 
 /**
  * What the public API (`/api/v1`) and the MCP tools return. Inputs live in types.ts; these
@@ -289,3 +294,70 @@ export type ConnectedAppOut = z.infer<typeof connectedAppOutSchema>;
 export const okOutSchema = z.object({ ok: z.literal(true) });
 
 export const exportFormatSchema = z.enum(["csv", "md"]);
+
+export const respondLinkSchema = z.object({
+  u: z.string().min(1).max(40),
+  s: z.string().min(1).max(100),
+});
+export type RespondLink = z.infer<typeof respondLinkSchema>;
+
+export const respondQuestionSchema = z.object({
+  id: z.string(),
+  type: z.enum(questionTypes),
+  style: z.enum(questionStyles),
+  prompt: z.string(),
+  description: z.string(),
+  required: z.boolean(),
+  options: z.array(
+    z.object({
+      id: z.string(),
+      position: z.number().int(),
+      label: z.string(),
+      isOther: z.boolean(),
+    }),
+  ),
+  maxChoices: z.number().int().nullable(),
+  followUp: z
+    .object({ prompt: z.string(), onlyAfter: z.array(z.number().int()).nullable() })
+    .nullable(),
+  lowLabel: z.string().nullable(),
+  highLabel: z.string().nullable(),
+  numberMin: z.number().int().nullable(),
+  numberMax: z.number().int().nullable(),
+});
+export type RespondQuestion = z.infer<typeof respondQuestionSchema>;
+
+const respondHollerSchema = z.object({
+  id: z.string(),
+  mode: z.enum(modes),
+  title: z.string(),
+  description: z.string(),
+  senderName: z.string(),
+  senderSlackUserId: z.string(),
+  senderAvatarUrl: z.string().nullable(),
+  anonymous: z.boolean(),
+  closesAt: timestamp.nullable(),
+  externalUrl: z.string().nullable(),
+});
+
+export const respondFormOutSchema = z.discriminatedUnion("state", [
+  z.object({
+    state: z.literal("open"),
+    holler: respondHollerSchema,
+    questions: z.array(respondQuestionSchema),
+  }),
+  z.object({ state: z.literal("answered"), holler: respondHollerSchema }),
+  z.object({ state: z.literal("closed"), holler: respondHollerSchema }),
+]);
+export type RespondForm = z.infer<typeof respondFormOutSchema>;
+
+export const respondInputSchema = respondLinkSchema.extend({
+  response: responseInputSchema,
+});
+
+export const respondPersonSchema = z.object({
+  slackUserId: z.string(),
+  name: z.string(),
+  avatarUrl: z.string().nullable(),
+});
+export type RespondPerson = z.infer<typeof respondPersonSchema>;
