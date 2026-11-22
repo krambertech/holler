@@ -1,0 +1,14 @@
+{
+  "rule": "Every journey page passes axe at WCAG 2.2 AA",
+  "layer": "browser",
+  "past": "CI runs 44935436757 and 44952952039 stopped pages axe read as low contrast; a faint label is text no contrast pair covers",
+  "check": "pnpm exec playwright test --project=chromium --retries=1 -g 'a new sender sees how to start'",
+  "break": [
+    {
+      "file": "apps/web/src/client/routes/_app/index.tsx",
+      "find": "mt-[3px] flex items-center gap-1.5 text-sm text-muted",
+      "replace": "mt-[3px] flex items-center gap-1.5 text-sm text-faint"
+    }
+  ],
+  "fails": "color-contrast: Elements must meet minimum color contrast ratio thresholds"
+}
