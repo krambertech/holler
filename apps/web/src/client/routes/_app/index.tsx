@@ -14,7 +14,10 @@ import { Input, InputGroup } from "@/components/ui/input";
 import { Plate, PlateStrip } from "@/components/ui/plate";
 import { Segmented, SegmentedItem } from "@/components/ui/segmented";
 import { count } from "@/lib/format";
+import { waitingFor } from "@/lib/pages";
 import { hollersQuery, homeCountsQuery } from "@/lib/queries";
+
+const newHoller = waitingFor("#11", "/new");
 
 const searchSchema = z.object({
   tab: z.enum(["mine", "shared"]).optional().catch(undefined),
@@ -55,7 +58,7 @@ function Home() {
             {searching ? <X aria-hidden strokeWidth={2} /> : <Search aria-hidden strokeWidth={2} />}
           </Button>
           {/* The editor owns /new; until it lands this link reaches the not-found page. */}
-          <Button variant={firstVisit ? "secondary" : "primary"} render={<a href="/new" />}>
+          <Button variant={firstVisit ? "secondary" : "primary"} render={<a href={newHoller} />}>
             <Plus aria-hidden strokeWidth={2} />
             New holler
           </Button>
@@ -264,7 +267,7 @@ function EmptyList({
       title="Ask your team something"
       description="Holler sends your question to each person in Slack, reminds the ones who have not answered, and shows you the results here."
       action={
-        <Button variant="primary" render={<a href="/new" />}>
+        <Button variant="primary" render={<a href={newHoller} />}>
           New holler
         </Button>
       }

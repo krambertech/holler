@@ -1,4 +1,5 @@
 import { hmacSha256, timingSafeEqual } from "../hmac";
+import { productUrl } from "../product-url";
 
 /** The two settings a link needs; the Worker's Bindings has both. */
 interface LinkEnv {
@@ -21,11 +22,10 @@ async function signature(env: LinkEnv, hollerId: string, slackUserId: string) {
 }
 
 export async function respondUrl(env: LinkEnv, hollerId: string, slackUserId: string) {
-  const query = new URLSearchParams({
-    u: slackUserId,
-    s: await signature(env, hollerId, slackUserId),
+  return productUrl(env, "/respond/$id", {
+    params: { id: hollerId },
+    search: { u: slackUserId, s: await signature(env, hollerId, slackUserId) },
   });
-  return `${env.PRODUCT_URL}/respond/${hollerId}?${query}`;
 }
 
 /** True when `signed` is this person's link to this Holler. */

@@ -15,7 +15,7 @@
   "apps/web/src/client/components/api-keys/queries.ts": 1,
   "apps/web/src/client/components/app-header.tsx": 4,
   "apps/web/src/client/components/billing/billing-queries.ts": 9,
-  "apps/web/src/client/components/billing/limit-reached.tsx": 8,
+  "apps/web/src/client/components/billing/limit-reached.tsx": 7,
   "apps/web/src/client/components/billing/plan-plate.tsx": 5,
   "apps/web/src/client/components/billing/plan-section.tsx": 9,
   "apps/web/src/client/components/editor/questions/answers.tsx": 23,
