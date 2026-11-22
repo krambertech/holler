@@ -1,0 +1,14 @@
+{
+  "rule": "Every CI job can stop a merge, and a deploy waits for all of them",
+  "layer": "ci",
+  "past": "Nothing required any job before this: main had no ruleset, and 10 runs on other branches failed on a red main",
+  "check": "pnpm check:workflows",
+  "break": [
+    {
+      "file": ".github/workflows/ci.yml",
+      "find": "    needs: [title, verify, guards, e2e, preview]",
+      "replace": "    needs: [title, verify, guards, preview]"
+    }
+  ],
+  "fails": "does not need \"e2e\""
+}
