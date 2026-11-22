@@ -10,6 +10,7 @@ import { and, eq, gte, inArray, isNotNull, isNull, lte, or, type SQL, sql } from
 import { runBatch } from "../batch";
 import { type Db, schema } from "../db";
 import type { Bindings } from "../env";
+import { productUrl } from "../product-url";
 import { type SlackHoller, surfaceOf, timeOfDay } from "../slack/blocks/format";
 import {
   type AnswerSummary,
@@ -865,7 +866,11 @@ export async function deliver(env: Bindings, db: Db, send: SlackSend, now: Date)
       await postOnce(db, postKey(send), now, () =>
         slack.postMessage({
           channel: loaded.creatorSlackUserId,
-          ...closeNoticeMessage(holler, counts, `${env.PRODUCT_URL}/hollers/${row.id}`),
+          ...closeNoticeMessage(
+            holler,
+            counts,
+            productUrl(env, "/hollers/$id", { params: { id: row.id } }),
+          ),
         }),
       );
       return;
@@ -874,7 +879,11 @@ export async function deliver(env: Bindings, db: Db, send: SlackSend, now: Date)
       await postOnce(db, postKey(send), now, () =>
         slack.postMessage({
           channel: loaded.creatorSlackUserId,
-          ...sendFailedMessage(holler, send.reason, `${env.PRODUCT_URL}/hollers/${row.id}/edit`),
+          ...sendFailedMessage(
+            holler,
+            send.reason,
+            productUrl(env, "/hollers/$id", { params: { id: row.id } }),
+          ),
         }),
       );
       return;
