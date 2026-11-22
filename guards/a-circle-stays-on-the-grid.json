@@ -1,0 +1,14 @@
+{
+  "rule": "A circle in an illustration stays on the grid on every side",
+  "layer": "test",
+  "past": "The test never looked at a circle's top or right edge, so one drawn to x=69 on a 64 grid passed",
+  "check": "cd packages/design && pnpm exec vitest run src/illustrations.test.ts",
+  "break": [
+    {
+      "file": "packages/design/src/illustrations.ts",
+      "find": "circle(\"subject\", 48, 17, 11)",
+      "replace": "circle(\"subject\", 58, 17, 11)"
+    }
+  ],
+  "fails": "stays on the grid"
+}

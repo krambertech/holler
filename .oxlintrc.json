@@ -83,14 +83,20 @@
         "eslint/no-restricted-imports": [
           "error",
           {
-            "paths": [
+            "patterns": [
               {
-                "name": "@holler/core/db",
+                "group": [
+                  "@holler/core/db",
+                  "@holler/core/schema*",
+                  "drizzle-orm",
+                  "drizzle-orm/**"
+                ],
                 "message": "Routes, Slack handlers and MCP tools call a service in src/server/services; only services touch Drizzle."
               },
               {
-                "name": "drizzle-orm",
-                "message": "Routes, Slack handlers and MCP tools call a service in src/server/services; only services touch Drizzle."
+                "group": ["**/db"],
+                "importNames": ["schema"],
+                "message": "Routes, Slack handlers and MCP tools call a service in src/server/services; only services read the schema."
               }
             ]
           }

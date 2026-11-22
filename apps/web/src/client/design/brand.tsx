@@ -46,7 +46,10 @@ export function Brand() {
           >
             <Logo />
           </div>
-          <div className="flex items-center gap-3 rounded-plate bg-plum p-5 text-white">
+          <div
+            data-theme="light"
+            className="flex items-center gap-3 rounded-plate bg-plum p-5 text-on-primary"
+          >
             <span className="font-semibold text-xl tracking-[-0.02em]">holler</span>
           </div>
         </div>
