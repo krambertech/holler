@@ -1,0 +1,13 @@
+{
+  "rule": "A link waiting for a pull request fails once its page exists, so it becomes a typed link",
+  "layer": "types",
+  "past": "Home kept a plain link to /new with a comment that the editor was coming, and nothing would have removed it",
+  "check": "cd apps/web && pnpm exec tsc -p tsconfig.json",
+  "break": [
+    {
+      "file": "apps/web/src/client/lib/new-holler.ts",
+      "write": "import { waitingFor } from \"./pages\";\n\nexport const settings = waitingFor(\"#11\", \"/settings\");\n"
+    }
+  ],
+  "fails": "thisPageExistsNow"
+}
