@@ -13,6 +13,8 @@ pnpm verify
 | `pnpm check`            | oxfmt and Oxlint, with unused suppressions as errors, `check:design` (DESIGN.md matches the tokens, named components exist), `check:styling` (no raw colours, stock Tailwind colours or physical directions in any file), `check:comments` (no file holds more comment lines than its baseline, and no baseline allows more than its file holds) |
 | `pnpm guards:check`    | Every guard matches the code it protects, and every lint rule and check script has one |
 | `pnpm guards:prove`    | Every check fails when its mistake is brought back. CI runs it in four parts |
+| `pnpm check:models`    | Every order of the steps in the TLA+ models in `formal/` keeps Holler's promises about sending, closing and rounds, and each past bug and recorded finding still breaks the one it names. Needs Java; CI's `models` job runs it |
+| `pnpm check:models:sync` | No function a model describes changed since it was last confirmed. `pnpm check` runs it |
 | `pnpm check:migrations` | No applied migration changed, and the schema needs no migration that is missing                                                                                                                    |
 | `pnpm typecheck`        | Every package and both Workers, strict                                                                                                                                                     |
 | `pnpm test`             | Vitest in every package, plus `node --test` for the repo scripts                                                                                                                           |
@@ -33,6 +35,8 @@ Test a service, not a route, unless the route itself has logic. A service test n
 **A bug gets a check for its class.** When a bug turns up, write the check that fails for every bug of its kind, not only this one: a rule in `oxlint-plugin-holler/rules/` with its test beside it, a limit a fake enforces, a sweep over every zone or day, or a concurrency or failure test across every door. Then add its guard.
 
 **A guard proves its check can fail.** `guards/<rule>.json` names the rule, the `layer` that holds it, the `past` mistake, the `check` command, and one proof: `break`, edits that bring the mistake back, or `refuses`, a command with a bad input. `fails` is text the failing check must print, so a check that fails for another reason does not count. `pnpm guards:prove <rule>` copies the tree, runs the check on it, makes the edits and runs it again. Filter the check to the tests that hold the rule (`-t`), so a proof takes seconds. A guard with the layer `browser` runs in the e2e job.
+
+**Orders of events are modelled.** [`formal/`](../formal) has two TLA+ models, and the [`verify-delivery-model`](../.agents/skills/verify-delivery-model/SKILL.md) skill says how to read, change and confirm them ([ADR 0005](adr/0005-tla-models-for-delivery-and-rounds.md)). What the code gets wrong today is in [`formal/counterexamples.md`](../formal/counterexamples.md).
 
 ## Browser journeys
 

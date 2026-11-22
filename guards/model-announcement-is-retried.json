@@ -1,0 +1,14 @@
+{
+  "rule": "An announcement the queue refused is posted by a later pass",
+  "layer": "model",
+  "past": "#10 restored only invite claims, so a channel whose announcement was refused never got one",
+  "check": "pnpm check:models delivery/announcing",
+  "break": [
+    {
+      "file": "formal/delivery/model.json",
+      "find": "\"AnnouncementPass\": true",
+      "replace": "\"AnnouncementPass\": false"
+    }
+  ],
+  "fails": "delivery/announcing: the current design breaks ClaimedWorkIsNeverLost"
+}
