@@ -63,6 +63,27 @@ export function whenLabel(iso: string, now = new Date()): string {
   return shortDate(iso);
 }
 
+export function closesIn(iso: string, now = new Date()): string {
+  const left = new Date(iso).getTime() - now.getTime();
+  if (left <= 0) return "Closing now";
+  const minutes = Math.ceil(left / 60_000);
+  if (minutes < 60) return `Closes ${relative.format(minutes, "minute")}`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return `Closes ${relative.format(hours, "hour")}`;
+  const time = new Intl.DateTimeFormat(undefined, {
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).format(new Date(iso));
+  const days = Math.round((startOfDay(new Date(iso)) - startOfDay(now)) / DAY);
+  if (days === 1) return `Closes tomorrow at ${time}`;
+  const day =
+    days < 7
+      ? new Intl.DateTimeFormat(undefined, { weekday: "long" }).format(new Date(iso))
+      : longDate(iso);
+  return `Closes ${day} at ${time}`;
+}
+
 export function count(n: number): string {
   return new Intl.NumberFormat().format(n);
 }

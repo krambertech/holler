@@ -20,6 +20,7 @@ A change is verified when every feature it reaches has been driven in a running 
 | Make an API key | [api-keys.md](features/api-keys.md) |
 | Closing tells the creator in Slack | [slack-close.md](features/slack-close.md) |
 | A holler goes out in Slack and comes back answered | [slack-send.md](features/slack-send.md) |
+| A recipient answers on the web form | [respond.md](features/respond.md) |
 | Your answers, named and anonymous | [answers.md](features/answers.md) |
 | The Holler page chases and closes | [holler-page.md](features/holler-page.md) |
 | A repeating pulse shows its rounds and stops repeating | [rounds.md](features/rounds.md) |
@@ -53,6 +54,8 @@ A recipe exports `title`, optional `persona` (default `lead`) and `start` (defau
 - `GET /api/dev/state`: the persona, member, every holler with its recipients, answered count and waiting Slack ids, the last 20 Activity rows, and `slack`: every message the dev FakeSlack posted and edited, with its channel and text.
 - `POST /api/dev/tick` with `{ "at": "<ISO time>" }`: runs the cron's pass at that time: scheduled sends, per-zone invites, reminders and closing. It answers with what each step did.
 - `POST /api/dev/answer` with `{ hollerId, slackUserId, response }`: answers as a recipient, the way their Slack button would, through `recordResponse`, and queues their thank-you.
+- `POST /api/dev/web-survey` with `{ "anonymous": false }`: makes a live survey answered on the web form, every question type in it, sent to the lead and Marta without counting against the monthly limit. Answers `{ id, url }`, the lead's signed link.
+- `GET /api/dev/respond-link?holler=<id>&as=<Slack id>`: that recipient's signed web form link, as `{ url }`.
 
 Slack calls go through the SLACK_SENDS queue, which runs a moment after the request. A recipe checks `slack` with `slackState(check, what)`, which rereads the state until `check` holds and fails after five seconds.
 

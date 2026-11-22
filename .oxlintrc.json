@@ -116,6 +116,12 @@
       }
     },
     {
+      "files": ["apps/web/src/client/**"],
+      "rules": {
+        "holler/no-effect-expression-body": "error"
+      }
+    },
+    {
       "files": ["e2e/**"],
       "excludeFiles": ["e2e/a11y.ts", "e2e/global-setup.ts"],
       "rules": {

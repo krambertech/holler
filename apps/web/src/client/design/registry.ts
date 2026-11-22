@@ -5,6 +5,7 @@ import { Colour } from "./colour";
 import { IllustrationPage } from "./illustration";
 import { Motion } from "./motion";
 import { actions } from "./parts/actions";
+import { answering } from "./parts/answering";
 import { answers } from "./parts/answers";
 import { apiAccess } from "./parts/api-access";
 import { billing } from "./parts/billing";
@@ -76,6 +77,7 @@ export const GROUPS: Group[] = [
   forms,
   choosing,
   questions,
+  answering,
   menus,
   overlays,
   states,
