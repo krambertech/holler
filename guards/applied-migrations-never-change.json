@@ -1,0 +1,14 @@
+{
+  "rule": "An applied migration never changes, and every migration is recorded",
+  "layer": "ci",
+  "past": "#24 renamed 0005_slack_homes after #26 took 0005, and the shared preview database failed with \"table slack_homes already exists\"",
+  "check": "node scripts/check-migrations.mjs",
+  "break": [
+    {
+      "file": "apps/web/migrations/0005_response_owners.sql",
+      "find": "CREATE TABLE `response_owners` (",
+      "replace": "CREATE TABLE IF NOT EXISTS `response_owners` ("
+    }
+  ],
+  "fails": "0005_response_owners.sql changed after it was recorded"
+}
