@@ -1,5 +1,5 @@
-import { expect, test } from "@playwright/test";
 import { expectAccessible, signInAs } from "./a11y";
+import { expect, test } from "./fixtures";
 
 test("a lead starts a Holler from the start screen", async ({ page }) => {
   await signInAs(page, "lead");

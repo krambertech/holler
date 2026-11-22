@@ -296,8 +296,10 @@ function AudiencePicker({
     const data = directory.data;
     return data ? [...data.groups.map(groupEntry), ...data.people.map(personEntry)] : [];
   }, [directory.data]);
-  // oxlint-disable-next-line react-hooks/exhaustive-deps -- remember changes with every entry it keeps; only new results need keeping
-  useEffect(() => remember(fetched), [fetched]);
+  useEffect(() => {
+    remember(fetched);
+    // oxlint-disable-next-line react-hooks/exhaustive-deps -- remember changes with every entry it keeps; only new results need keeping
+  }, [fetched]);
 
   const current = directory.current;
   const matches = useMemo(

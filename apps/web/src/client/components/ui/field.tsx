@@ -238,7 +238,9 @@ function FieldLabel({ className, id, htmlFor, aside, ...props }: FieldLabelProps
   const generatedId = React.useId();
   const ownId = id ?? generatedId;
   const claimLabelId = field?.claimLabelId;
-  React.useLayoutEffect(() => claimLabelId?.(ownId), [claimLabelId, ownId]);
+  React.useLayoutEffect(() => {
+    return claimLabelId?.(ownId);
+  }, [claimLabelId, ownId]);
   const label = (
     <label
       id={ownId}

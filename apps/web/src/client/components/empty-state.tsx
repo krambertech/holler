@@ -1,113 +1,100 @@
-import { Activity } from "lucide-react";
-import type { ReactNode } from "react";
+import type { IllustrationName } from "@holler/design";
+import type { ComponentProps, ReactNode } from "react";
 import { cn } from "@/lib/cn";
-import { Plate } from "./ui/plate";
+import { Illustration, type IllustrationTone } from "./illustration";
 
-/**
- * A whole screen with nothing in it yet, the first time someone gets there. It shows a faded row of
- * what will appear, so it teaches the screen, then one sentence of why and the action that fills it.
- */
-export function EmptyState({
-  title,
-  description,
-  action,
-  preview = true,
-}: {
+export type StateSize = "sm" | "md" | "lg";
+export type StateVariant = "plate" | "dashed" | "bare";
+
+const sizes: Record<
+  StateSize,
+  { box: string; art: string; title: string; description: string; action: string; footer: string }
+> = {
+  lg: {
+    box: "flex flex-col items-center px-6 py-10 text-center",
+    art: "mb-5",
+    title: "text-balance text-xl",
+    description: "mt-1.5 max-w-[44ch] text-pretty text-ink-2",
+    action: "mt-6 justify-center",
+    footer: "mt-5",
+  },
+  md: {
+    box: "flex flex-col items-center px-5 py-8 text-center",
+    art: "mb-3.5",
+    title: "text-balance font-normal text-ink",
+    description: "mt-1 max-w-[40ch] text-pretty text-muted text-sm",
+    action: "mt-4 justify-center",
+    footer: "mt-5",
+  },
+  sm: {
+    box: "grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3.5 gap-y-3 px-4 py-3.5 text-start @md:grid-cols-[auto_minmax(0,1fr)_auto]",
+    art: "",
+    title: "font-normal text-ink text-sm",
+    description: "text-pretty text-muted text-sm",
+    action: "col-start-2 @md:col-start-3 @md:row-start-1",
+    footer: "col-start-2 @md:col-span-2",
+  },
+};
+
+const variants: Record<StateVariant, (size: StateSize) => string> = {
+  plate: (size) => cn("bg-plate edge", size === "sm" ? "rounded-md" : "rounded-plate"),
+  dashed: (size) =>
+    cn(
+      "border-[1.5px] border-edge-2 border-dashed",
+      size === "sm" ? "rounded-md" : "rounded-plate",
+    ),
+  bare: () => "",
+};
+
+interface Props extends Omit<ComponentProps<"section">, "title"> {
+  illustration?: IllustrationName | undefined;
+  tone?: IllustrationTone | undefined;
   title: ReactNode;
-  description: ReactNode;
-  action?: ReactNode;
-  /** The faded example row. Leave it on for a first use; turn it off where an example would mislead. */
-  preview?: boolean;
-}) {
-  return (
-    <Plate className="flex flex-col items-center px-6 pt-8 pb-9 text-center">
-      {preview && (
-        <div aria-hidden className="mb-7 w-full max-w-sm select-none">
-          <div className="flex items-center gap-3 rounded-md bg-canvas px-4 py-3 text-start opacity-80 [mask-image:linear-gradient(to_bottom,black_40%,transparent)]">
-            <span className="grid size-[34px] shrink-0 place-items-center rounded-glyph bg-tint text-tint-ink">
-              <Activity size={16} strokeWidth={2} />
-            </span>
-            <span className="grid flex-1 gap-1.5">
-              <span className="h-2.5 w-3/5 rounded-full bg-track" />
-              <span className="h-2 w-2/5 rounded-full bg-track" />
-            </span>
-            <span className="grid w-16 gap-1.5">
-              <span className="h-2 w-8 rounded-full bg-track" />
-              <span className="h-1.5 w-full overflow-hidden rounded-full bg-track">
-                <span className="block h-full w-3/5 rounded-full bg-primary/50" />
-              </span>
-            </span>
-          </div>
-        </div>
-      )}
-      <h2 className="text-xl">{title}</h2>
-      <p className="mt-1.5 max-w-[44ch] text-ink-2">{description}</p>
-      {action && <div className="mt-5 flex flex-wrap justify-center gap-2">{action}</div>}
-    </Plate>
-  );
+  description?: ReactNode | undefined;
+  action?: ReactNode | undefined;
+  footer?: ReactNode | undefined;
+  size?: StateSize | undefined;
+  variant?: StateVariant | undefined;
 }
 
-/** An empty group inside a screen, such as no API keys yet. One icon, one line of why, one action. */
-export function EmptySection({
-  icon,
+function StateLayout({
+  illustration,
+  tone,
   title,
   description,
   action,
+  footer,
+  size = "md",
+  variant = "plate",
   className,
-}: {
-  icon: ReactNode;
-  title: ReactNode;
-  description?: ReactNode;
-  action?: ReactNode;
-  className?: string;
-}) {
+  ...props
+}: Props) {
+  const s = sizes[size];
+  const Title = size === "lg" ? "h2" : size === "md" ? "h3" : "p";
   return (
-    <div
-      className={cn(
-        "flex flex-col items-center gap-1.5 rounded-md bg-plate px-5 py-7 text-center edge",
-        className,
-      )}
+    <section
+      data-size={size}
+      data-variant={variant}
+      className={cn("@container", variants[variant](size), className)}
+      {...props}
     >
-      <span
-        aria-hidden
-        className="mb-2 grid size-10 place-items-center rounded-full bg-well text-ink-2 [&_svg]:size-[18px]"
-      >
-        {icon}
-      </span>
-      <h3 className="font-normal text-ink">{title}</h3>
-      {description && <p className="max-w-[40ch] text-muted text-sm">{description}</p>}
-      {action && <div className="mt-3 flex flex-wrap justify-center gap-2">{action}</div>}
-    </div>
-  );
-}
-
-/**
- * A search or filter that matched nothing, in the list's place. Dashed, because it is temporary and
- * must never read as a plate of results. The action is the way back: Clear search, Show all.
- */
-export function NoResults({
-  icon,
-  title,
-  description,
-  action,
-}: {
-  icon: ReactNode;
-  /** Names the query or the filter: No holler matches “retro”. */
-  title: ReactNode;
-  description?: ReactNode;
-  action?: ReactNode;
-}) {
-  return (
-    <section className="flex flex-col items-center gap-1.5 rounded-plate border-[1.5px] border-edge-2 border-dashed px-5 py-10 text-center">
-      <span
-        aria-hidden
-        className="mb-2 grid size-10 place-items-center rounded-full bg-well text-ink-2 [&_svg]:size-[18px]"
-      >
-        {icon}
-      </span>
-      <h2 className="text-balance font-normal text-ink">{title}</h2>
-      {description && <p className="max-w-[40ch] text-muted text-sm">{description}</p>}
-      {action && <div className="mt-3 flex flex-wrap justify-center gap-2">{action}</div>}
+      <div className={s.box}>
+        {illustration && (
+          <Illustration name={illustration} size={size} tone={tone} className={s.art} />
+        )}
+        <div className={cn(size === "sm" ? "grid min-w-0 gap-0.5" : "contents")}>
+          <Title className={s.title}>{title}</Title>
+          {description && <p className={s.description}>{description}</p>}
+        </div>
+        {action && <div className={cn("flex flex-wrap gap-2", s.action)}>{action}</div>}
+        {footer && <div className={cn("text-muted text-xs", s.footer)}>{footer}</div>}
+      </div>
     </section>
   );
 }
+
+function EmptyState(props: Omit<Props, "tone">) {
+  return <StateLayout data-slot="empty-state" {...props} />;
+}
+
+export { EmptyState, StateLayout };

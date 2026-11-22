@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { isChoice, modes, questionStyles, questionTypes, scaleBounds } from "./modes";
+import { repeatEvery } from "./repeats";
 
 /**
  * The API contract. Every route parses its input with one of these, and every client infers its
@@ -154,6 +155,7 @@ export const hollerDraftSchema = z.object({
     .max(24 * 60)
     .default(72),
   remindersEnabled: z.boolean().default(true),
+  repeat: z.enum(repeatEvery).nullable().default(null),
   questions: z.array(questionInputSchema).max(30).default([]),
 });
 export type HollerDraftInput = z.input<typeof hollerDraftSchema>;
@@ -236,6 +238,8 @@ export const devAnswerInputSchema = z.object({
 
 /** Local development only: runs the cron's pass as if it fired at `at`, or now. */
 export const devTickInputSchema = z.object({ at: z.iso.datetime().optional() });
+
+export const devWebSurveyInputSchema = z.object({ anonymous: z.boolean().default(false) });
 
 /** Every error the API returns has this shape. `field` names the input at fault, when there is one. */
 export const apiErrorSchema = z.object({

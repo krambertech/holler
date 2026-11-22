@@ -1,10 +1,9 @@
-import { expect, type Page, test } from "@playwright/test";
-import { expectAccessible } from "./a11y";
+import type { Page } from "@playwright/test";
+import { expectAccessible, signInAs } from "./a11y";
+import { expect, test } from "./fixtures";
 
-/** Signs in and lands on the Billing section in one navigation, so no redirect races the test. */
 async function openBilling(page: Page, persona: "lead" | "sender") {
-  await page.goto(`/api/dev/sign-in?as=${persona}&to=${encodeURIComponent("/settings#billing")}`);
-  await page.waitForURL(/\/settings/);
+  await signInAs(page, persona, "/settings#billing");
 }
 
 function billingSection(page: Page) {

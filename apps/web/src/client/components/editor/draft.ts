@@ -4,6 +4,7 @@ import type {
   HollerTemplate,
   Mode,
   QuestionInput,
+  RepeatEvery,
 } from "@holler/core";
 import { type EditorQuestion, withKey } from "./questions/model";
 
@@ -22,6 +23,7 @@ export interface EditorDraft {
   closesAt: Date | null;
   closeAfterHours: number;
   remindersEnabled: boolean;
+  repeat: RepeatEvery | null;
   questions: EditorQuestion[];
 }
 
@@ -41,6 +43,7 @@ export function blankDraft(mode: Mode): EditorDraft {
     closesAt: null,
     closeAfterHours: 72,
     remindersEnabled: true,
+    repeat: null,
     questions: [],
   };
 }
@@ -110,11 +113,12 @@ export function draftFromHoller(holler: HollerOut): EditorDraft {
     closesAt: holler.closesAt ? new Date(holler.closesAt) : null,
     closeAfterHours: holler.closeAfterHours,
     remindersEnabled: holler.remindersEnabled,
+    repeat: holler.repeat,
     questions: holler.questions.map((q) => withKey(questionFromOut(q))),
   };
 }
 
-export function toPayload(draft: EditorDraft): HollerDraftInput {
+export function toPayload(draft: EditorDraft): Required<HollerDraftInput> {
   return {
     mode: draft.mode,
     title: draft.title,
@@ -130,6 +134,7 @@ export function toPayload(draft: EditorDraft): HollerDraftInput {
     closesAt: draft.closesAt,
     closeAfterHours: draft.closeAfterHours,
     remindersEnabled: draft.remindersEnabled,
+    repeat: draft.repeat,
     questions:
       draft.mode === "chase" ? [] : draft.questions.map(({ key: _key, ...question }) => question),
   };
@@ -187,7 +192,7 @@ export function problemFor(
   return problems.find((p) => p.field === field)?.message;
 }
 
-const sendFields = new Set(["audience", "sendAt", "closesAt"]);
+const sendFields = new Set(["audience", "sendAt", "closesAt", "closeAfterHours"]);
 
 export function composeProblems(problems: readonly { message: string; field: string | null }[]) {
   return problems.filter((p) => !(p.field && sendFields.has(p.field)));

@@ -24,3 +24,8 @@ export const CHOICE_LEAVE = { duration: 0.1, ease: EASE_OUT } as const satisfies
 export const CHOICE_FADE = { duration: 0.15, ease: "linear" } as const satisfies Timed;
 /** Reduced motion for anything that moves; a choice mark falls back to CHOICE_FADE instead, so it still shows a change. */
 export const INSTANT = { duration: 0 } as const;
+
+export const ARRIVE_POP = { type: "spring", duration: 0.55, bounce: 0.38 } as const;
+export const ARRIVE_RING = { duration: 0.75, ease: EASE_OUT, delay: 0.08 } as const satisfies Timed;
+export const ARRIVE_SPARK = { duration: 0.7, ease: EASE_OUT, delay: 0.1 } as const satisfies Timed;
+export const ARRIVE_RISE = { duration: 0.32, ease: EASE_OUT } as const satisfies Timed;

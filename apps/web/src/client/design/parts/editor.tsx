@@ -62,6 +62,8 @@ function fakeIo(): EditorIo {
         closeAfterHours: draft.closeAfterHours,
         answeredIn: "slack",
         remindersEnabled: draft.remindersEnabled,
+        repeat: draft.repeat,
+        repeatOfId: null,
         sentAt: null,
         closesAt: draft.closesAt?.toISOString() ?? null,
         closedAt: null,

@@ -62,6 +62,16 @@ colors:
   avatar-5-ink: "#5a3d00"
   avatar-6: "#fce0e6"
   avatar-6-ink: "#7a1f37"
+  illo-grid: "#20130824"
+  illo-object: "#ffffff"
+  illo-bar: "#e6e1dc"
+  illo-line: "#2013084d"
+  illo-neutral: "#f4e1ef"
+  illo-neutral-ink: "#5c1c4e"
+  illo-warning: "#fbebc8"
+  illo-warning-ink: "#6b4a00"
+  illo-danger: "#fbe2df"
+  illo-danger-ink: "#8e1d17"
 typography:
   family: Geologica
   weights: { body: 300, title: 400, button: 500, wordmark: 600 }
@@ -81,7 +91,7 @@ The colours above are generated from `packages/design/tokens.css` by `node scrip
 4. **Pink means live.** Pink is the voice: the logo's sound lines, and in the interface only what is out and calling right now, the Live chip and its dot (`live`, `live-ink`, `live-dot`). Pink never carries body text, and at night soft pink also takes plum's job.
 5. **Status always has a word.** `StatusChip` and `StatusDot` pair a colour with Live, Answered, Waiting, Away, Closed or Not sent. Colour is never the only signal.
 6. **Size makes the hierarchy, not weight.** The type scale is 1.125 from 15 px. Body is 300 by day and 330 at night, where light-on-dark reads thinner; titles, names and numbers are 400, buttons 500, the wordmark 600. Nothing is 700. Titles tighten to -0.025em. Sentence case everywhere.
-7. **The theme lives in the logo.** No speech-bubble corners, megaphones or sound waves in the interface. The calling h (`Mark`, `Logo`) is the only playful shape.
+7. **The theme lives in the logo.** No speech-bubble corners, megaphones or sound waves in the interface. The calling h (`Mark`, `Logo`) is the only playful shape. Empty and error states get a drawing from the illustration set, and those drawings show Holler's own objects, never a character.
 8. **Line icons.** Lucide at 2 px stroke with round ends, 16 to 18 px. An icon-only button has an `aria-label`.
 9. **Tokens only.** Use Tailwind utilities over the tokens: `bg-plate`, `text-ink-2`, `bg-tint text-tint-ink`. A raw hex or a stock Tailwind colour in a component fails `pnpm check:styling`. Use logical directions: `ms-`, `pe-`, `text-start`.
 10. **Contrast is tested.** Every text-on-surface pair the interface draws is listed in `packages/design/src/pairs.ts` and checked in both themes by `pnpm --filter @holler/design test`. Add a pair when you put a token's text on a token's surface for the first time.
@@ -123,7 +133,7 @@ Numbers in tables and counts use `tabular`.
 
 | Component                         | File                          | Notes                                                                                        |
 | --------------------------------- | ----------------------------- | -------------------------------------------------------------------------------------------- |
-| `Button` | `components/ui/button.tsx` | `primary`, `secondary`, `ghost`; sizes `sm`, `md`, `icon-sm`, `icon`; `render` for links; `pending` blocks every further press |
+| `Button` | `components/ui/button.tsx` | `primary`, `secondary`, `ghost`; sizes `sm`, `md`, `lg`, `icon-sm`, `icon`; `render` for links; `pending` blocks every further press |
 | `Plate`, `PlateRow`, `PlateStrip` | `components/ui/plate.tsx`     | The surface system                                                                           |
 | `Chip`, `StatusChip`, `StatusDot` | `components/ui/chip.tsx`      | Pills; a status always has its word                                                          |
 | `Avatar`, `AvatarStack`           | `components/ui/avatar.tsx`    | Waiting people are greyed in a stack; the stack carries one `aria-label`                     |
@@ -142,11 +152,27 @@ Numbers in tables and counts use `tabular`.
 | `Select`, `Combobox` | `components/ui/select.tsx`, `combobox.tsx` | A list behind a control; a sheet on touch. Combobox when the list needs search |
 | `DropdownMenu`, `Popover`, `Tooltip` | `components/ui/` | What floats over the page: plate plus `shadow-float`, growing from the control |
 | `Dialog`, `Toast` | `components/ui/dialog.tsx`, `toast.tsx` | Dialog asks before what cannot be undone; anything undoable gets a toast with Undo |
-| `EmptyState`, `EmptySection`, `NoResults` | `components/empty-state.tsx` | First use, an empty group, a search that matched nothing |
-| `ErrorState`, `Notice`, `Skeleton` | `components/error-state.tsx`, `notice.tsx`, `skeleton.tsx` | A failed load, an inline message, the shape of what is loading |
+| `EmptyState`, `ErrorState` | `components/empty-state.tsx`, `error-state.tsx` | Nothing yet, nothing matched, or a failure. Sizes `sm`, `md`, `lg` follow the space; `plate`, `dashed` for no results, `bare` inside a surface |
+| `Illustration` | `components/illustration.tsx` | A spot drawing from the set in `packages/design/src/illustrations.ts`, sized and toned by the state around it |
+| `Notice`, `Skeleton` | `components/notice.tsx`, `skeleton.tsx` | An inline message, the shape of what is loading |
 | `LimitReached`                    | `components/billing/limit-reached.tsx` | Beside Send when a send returns `402`: upgrade for owners, whom to ask for senders |
 
 Every interactive component has default, hover, focus, active, disabled and pending states. Loading is a skeleton in the shape of what loads, never a spinner in the middle of a page. Errors say what happened and what to do, beside the thing at fault.
+
+## Illustration
+
+Empty and error states carry a small drawing. Each is two or three of Holler's own objects (a plate, a row, an avatar, a key) set down together at a slight angle, with the one that matters picked out as the subject. Behind them is graph paper that fades out from the middle (`illo-grid`), so they look laid out on a surface without a frame. No circle, tile or shadow. At 40 px the grid drops out. The geometry sits in `packages/design/src/illustrations.ts` on a 64 grid beside the logo's, and its shapes name layers, not colours: `object`, `bar`, `ghost`, `subject`, `line`, `accent`. The `illo-*` tokens and the tone (`neutral`, `warning`, `danger`) colour them, so one drawing serves day, night and every tone.
+
+- Three sizes: 40 px inside a small element, 64 in a section, 96 for a whole screen. Outlines stay 1.25 px at every size.
+- Each drawing fills the grid, so a set of them reads at one size.
+- One subject, at most one accent, objects tilted 12 degrees at most. `illustrations.test.ts` holds every drawing to this.
+- Layers: `object` is a plate, card or block with a hairline; `bar` is a line of content or an avatar's place, filled and never outlined; `ghost` is something not there yet, a dashed hairline; `subject` is the one thing the drawing is about, in the tone's surface and ink; `line` is a detail in the tone's ink, such as a tick; `accent` is one solid dot or bar in the tone's strongest colour.
+- `Illustration` draws touching `object` or `subject` shapes that follow each other twice, outlines first and fills over them, so a key's head and shaft read as one outline. Paint comes only from utility classes, so the theme's tokens always win over SVG attributes.
+- Outlines are a 1.25 px hairline at every size (`non-scaling-stroke`); details are 1.5, 1.75 and 2.25 px at `sm`, `md` and `lg`. At `sm` a `ghost` draws as a quiet fill and the grid drops out, because dashes and lines turn to noise at 40 px.
+- A tone token that points at another token keeps the day value inside a night frame, so every `illo-*` token is set again in the night blocks of `tokens.css`.
+- `EmptyState` and `ErrorState` share `StateLayout`. `lg` fills a screen on first use, `md` stands in for a group inside a screen, `sm` sits in a small element such as a popover, a list cell or a combobox with nothing to offer. At `sm` the words sit beside the drawing, and on a narrow element the action drops under the words, never under the drawing. `plate` sits on the canvas, `dashed` is for a search or filter that matched nothing, because it is temporary and must never read as a plate of results, and `bare` sits inside something that is already a surface. `ErrorState` draws `error` for a failed load, `offline` when Holler could not be reached and `locked` for no access, with Try again and a reference code a person can quote to support.
+- At night objects sit just above the plate and the subject turns to a mid tone with light ink (`illo-neutral`, `illo-warning`, `illo-danger`), so it glows instead of sinking. The interface's own `tint` is untouched.
+- No people, faces, mascots, words or question marks inside a drawing. Nothing animates on load.
 
 ## Shape and stacking
 
@@ -154,7 +180,7 @@ Plates are 16 px, controls 10 px, mode glyphs 9 px, and chips are pills. A contr
 
 ## Motion
 
-Transitions are 150 to 250 ms on `--ease-out`. Two exceptions, both on purpose: a menu or popover opens in 140 ms and closes in 100, because it answers a click and must not lag it; and a choice mark (a tick, a radio dot) lands with a small spring from `packages/design/src/motion.ts`, the only spring in the product. Motion shows a change of state: a bar filling, a row appearing, a sheet opening. Nothing moves for decoration and nothing plays on page load. Every animation has a reduced-motion version; `useReduceMotion()` is the only way to ask.
+Transitions are 150 to 250 ms on `--ease-out`. Three exceptions, all on purpose: a menu or popover opens in 140 ms and closes in 100, because it answers a click and must not lag it; a choice mark (a tick, a radio dot) lands with a small spring from `packages/design/src/motion.ts`; and the thank-you after someone sends their answers lands with the `ARRIVE_*` presets there, a larger spring with a ring and a few sparks, then its lines rise in. That is the one moment Holler celebrates, so it plays once, right after the send, and a reload shows the page still. Motion shows a change of state: a bar filling, a row appearing, a sheet opening. Nothing else moves for decoration and nothing plays on page load. Every animation has a reduced-motion version; `useReduceMotion()` is the only way to ask.
 
 ## Voice
 

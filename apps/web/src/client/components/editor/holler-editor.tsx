@@ -537,7 +537,8 @@ function HollerEditor({
             onValueChange={(fields) => update(fields)}
             problems={{
               sendAt: problemFor(sendShown, "sendAt"),
-              closesAt: problemFor(sendShown, "closesAt"),
+              closesAt:
+                problemFor(sendShown, "closesAt") ?? problemFor(sendShown, "closeAfterHours"),
             }}
             reach={summary.reach}
             zones={summary.zones}

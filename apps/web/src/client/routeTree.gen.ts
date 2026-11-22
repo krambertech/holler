@@ -16,6 +16,7 @@ import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
 import { Route as AppNewRouteImport } from './routes/_app/new'
 import { Route as AppSettingsRouteImport } from './routes/_app/settings'
+import { Route as RespondIdRouteImport } from './routes/respond.$id'
 import { Route as AppAnswersIndexRouteImport } from './routes/_app/answers.index'
 import { Route as AppAnswersIdRouteImport } from './routes/_app/answers.$id'
 import { Route as AppHollersIdRouteImport } from './routes/_app/hollers.$id'
@@ -54,6 +55,11 @@ const AppSettingsRoute = AppSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => AppRoute,
 } as any)
+const RespondIdRoute = RespondIdRouteImport.update({
+  id: '/respond/$id',
+  path: '/respond/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AppAnswersIndexRoute = AppAnswersIndexRouteImport.update({
   id: '/answers/',
   path: '/answers/',
@@ -77,6 +83,7 @@ export interface FileRoutesByFullPath {
   '/sign-in': typeof SignInRoute
   '/new': typeof AppNewRoute
   '/settings': typeof AppSettingsRoute
+  '/respond/$id': typeof RespondIdRoute
   '/answers/$id': typeof AppAnswersIdRoute
   '/hollers/$id': typeof AppHollersIdRoute
   '/answers/': typeof AppAnswersIndexRoute
@@ -87,6 +94,7 @@ export interface FileRoutesByTo {
   '/sign-in': typeof SignInRoute
   '/new': typeof AppNewRoute
   '/settings': typeof AppSettingsRoute
+  '/respond/$id': typeof RespondIdRoute
   '/': typeof AppIndexRoute
   '/answers/$id': typeof AppAnswersIdRoute
   '/hollers/$id': typeof AppHollersIdRoute
@@ -100,6 +108,7 @@ export interface FileRoutesById {
   '/sign-in': typeof SignInRoute
   '/_app/new': typeof AppNewRoute
   '/_app/settings': typeof AppSettingsRoute
+  '/respond/$id': typeof RespondIdRoute
   '/_app/': typeof AppIndexRoute
   '/_app/answers/$id': typeof AppAnswersIdRoute
   '/_app/hollers/$id': typeof AppHollersIdRoute
@@ -114,6 +123,7 @@ export interface FileRouteTypes {
     | '/sign-in'
     | '/new'
     | '/settings'
+    | '/respond/$id'
     | '/answers/$id'
     | '/hollers/$id'
     | '/answers/'
@@ -124,6 +134,7 @@ export interface FileRouteTypes {
     | '/sign-in'
     | '/new'
     | '/settings'
+    | '/respond/$id'
     | '/'
     | '/answers/$id'
     | '/hollers/$id'
@@ -136,6 +147,7 @@ export interface FileRouteTypes {
     | '/sign-in'
     | '/_app/new'
     | '/_app/settings'
+    | '/respond/$id'
     | '/_app/'
     | '/_app/answers/$id'
     | '/_app/hollers/$id'
@@ -147,6 +159,7 @@ export interface RootRouteChildren {
   ConsentRoute: typeof ConsentRoute
   InstallRoute: typeof InstallRoute
   SignInRoute: typeof SignInRoute
+  RespondIdRoute: typeof RespondIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -200,6 +213,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSettingsRouteImport
       parentRoute: typeof AppRoute
     }
+    '/respond/$id': {
+      id: '/respond/$id'
+      path: '/respond/$id'
+      fullPath: '/respond/$id'
+      preLoaderRoute: typeof RespondIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_app/answers/': {
       id: '/_app/answers/'
       path: '/answers'
@@ -249,6 +269,7 @@ const rootRouteChildren: RootRouteChildren = {
   ConsentRoute: ConsentRoute,
   InstallRoute: InstallRoute,
   SignInRoute: SignInRoute,
+  RespondIdRoute: RespondIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

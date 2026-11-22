@@ -19,7 +19,7 @@ A template fills the editor and leaves no link behind: from then on it is an ord
 - **A save lands after the editor is gone.** `apiIo` invalidates Home's lists, so Home shows the new draft.
 - **A scheduled Holler.** Its edits wait for **Update schedule**, so autosave is off and leaving drops them on purpose.
 
-`adoptIds` takes the ids the server made for new questions and options without undoing anything typed while the save was on its way. `toPayload` sends no questions for a chase. A draft's `closesAt` is the close the sender fixed; a sent Holler's is its real one.
+`adoptIds` takes the ids the server made for new questions and options without undoing anything typed while the save was on its way. `toPayload` sends every field the server saves, because one left out goes back to its default: a pulse's `repeat` has no control in the editor and still survives a save. It sends no questions for a chase. A draft's `closesAt` is the close the sender fixed; a sent Holler's is its real one.
 
 ## The send bar
 

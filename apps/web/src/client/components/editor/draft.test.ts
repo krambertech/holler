@@ -1,4 +1,4 @@
-import { type HollerOut, hollerDraftSchema, hollerTemplates } from "@holler/core";
+import { type HollerDraft, type HollerOut, hollerDraftSchema, hollerTemplates } from "@holler/core";
 import { describe, expect, it } from "vitest";
 import {
   adoptIds,
@@ -128,10 +128,42 @@ describe("draftFromHoller", () => {
       closesAt: null,
       closeAfterHours: 72,
       remindersEnabled: true,
+      repeat: null,
       questions: [],
     });
     expect(draft.sendAt?.toISOString()).toBe(at);
     expect(draft.closesAt).toBeNull();
+  });
+
+  it("sends back every field the server saves, unchanged by opening and saving", () => {
+    const sendAt = new Date("2026-12-01T09:00:00.000Z");
+    const closesAt = new Date("2026-12-04T09:00:00.000Z");
+    const saved = {
+      mode: "pulse",
+      title: "Weekly pulse",
+      description: "How it went.",
+      externalUrl: "https://example.com/form",
+      anonymous: true,
+      visibility: "workspace",
+      tags: ["team"],
+      audience: { people: ["U1"], groups: ["S1"], everyone: false },
+      announceChannelId: "C1",
+      sendAt,
+      sendInRecipientTimeZone: true,
+      closesAt,
+      closeAfterHours: 24,
+      remindersEnabled: false,
+      repeat: "fortnight",
+      questions: [],
+    } satisfies HollerDraft;
+    expect(Object.keys(saved).sort()).toEqual(Object.keys(hollerDraftSchema.shape).sort());
+    const opened = draftFromHoller({
+      ...({} as HollerOut),
+      ...saved,
+      sendAt: sendAt.toISOString(),
+      closesAt: closesAt.toISOString(),
+    });
+    expect(toPayload(opened)).toEqual(saved);
   });
 });
 
@@ -140,6 +172,7 @@ describe("problems", () => {
     { message: "Write the question.", field: "questions.0.prompt" },
     { message: "Give it a title.", field: "title" },
     { message: "Choose who to send it to.", field: "audience" },
+    { message: "Close it within 7 days.", field: "closeAfterHours" },
   ];
 
   it("keys question problems by their field", () => {

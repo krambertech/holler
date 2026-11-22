@@ -1,5 +1,5 @@
-import { expect, test } from "@playwright/test";
 import { expectAccessible, signInAs } from "./a11y";
+import { expect, test } from "./fixtures";
 
 test("a lead types who to send to, adds by keyboard, and takes one out with Backspace", async ({
   page,

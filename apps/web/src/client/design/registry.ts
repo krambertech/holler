@@ -2,8 +2,10 @@ import type { ComponentType } from "react";
 import { Accessibility } from "./accessibility";
 import { Brand } from "./brand";
 import { Colour } from "./colour";
+import { IllustrationPage } from "./illustration";
 import { Motion } from "./motion";
 import { actions } from "./parts/actions";
+import { answering } from "./parts/answering";
 import { answers } from "./parts/answers";
 import { apiAccess } from "./parts/api-access";
 import { billing } from "./parts/billing";
@@ -46,6 +48,13 @@ export const FOUNDATIONS: Foundation[] = [
     covers: ["Mark", "Logo"],
   },
   { slug: "colour", title: "Colour", source: "design/colour.tsx", Page: Colour },
+  {
+    slug: "illustration",
+    title: "Illustration",
+    source: "design/illustration.tsx",
+    Page: IllustrationPage,
+    covers: ["Illustration"],
+  },
   { slug: "typography", title: "Typography", source: "design/typography.tsx", Page: Typography },
   { slug: "space", title: "Space, shape and depth", source: "design/space.tsx", Page: Space },
   {
@@ -70,6 +79,7 @@ export const GROUPS: Group[] = [
   choosing,
   questions,
   editor,
+  answering,
   menus,
   overlays,
   states,
