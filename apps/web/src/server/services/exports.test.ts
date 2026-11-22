@@ -160,8 +160,9 @@ describe("exportCsv", () => {
     const { ctx, holler } = await answered(everyType((s) => s, true));
     const csv = await exportCsv(ctx, holler.id);
     const rows = parseCsv(csv);
-    expect(rows[0]?.[0]).toBe("Where?");
+    expect(rows[0]?.slice(0, 2)).toEqual(["Answered", "Where?"]);
     expect(csv).not.toMatch(/UA|Person UA|Submitted at/);
+    expect(rows.slice(1).map((row) => row[0])).toEqual(Array(5).fill("Yes"));
     const body = rows.slice(1).map((r) => r.join(","));
     expect(body).toEqual([...body].sort());
   });
