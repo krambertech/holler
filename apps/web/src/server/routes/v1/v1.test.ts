@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { app } from "../../app";
 import type { Db } from "../../db";
 import type { Bindings } from "../../env";
@@ -6,23 +6,21 @@ import { createApiKey } from "../../services/api-keys";
 import { makeLive, workspaceFixture } from "../../services/fixtures";
 import { createDraft } from "../../services/hollers";
 import { recordResponse } from "../../services/responses";
+import { devSlack } from "../../services/slack-connection";
+import { deliveryEnv } from "../../test-delivery";
 import { testEnv } from "./test-env";
-
-// Slack delivery is another area's; these tests check the API calls it, as the member, via "api".
-vi.mock("../../services/delivery", async () => {
-  const { getHoller } = await import("../../services/hollers");
-  const echo = vi.fn((ctx, _env, id: string) => getHoller(ctx, id));
-  return { sendHoller: echo, closeHoller: echo, remindWaiting: echo };
-});
-const delivery = vi.mocked(await import("../../services/delivery"));
 
 let env: Bindings;
 let db: Db;
+let harness: ReturnType<typeof deliveryEnv>;
 let auth: Awaited<ReturnType<typeof testEnv>>["auth"];
 let dispose: () => Promise<void>;
-beforeAll(async () => ({ env, db, auth, dispose } = await testEnv()));
+beforeAll(async () => {
+  ({ env, db, auth, dispose } = await testEnv());
+  harness = deliveryEnv(db, env.DB);
+  env.SLACK_SENDS = harness.env.SLACK_SENDS;
+});
 afterAll(() => dispose());
-beforeEach(() => vi.clearAllMocks());
 
 const pulse = {
   mode: "pulse" as const,
@@ -42,6 +40,19 @@ async function keyFor(scope: "read" | "write") {
   const { key, id } = await createApiKey(fixture.ctx, auth, { name: `${scope} key`, scope });
   return { ...fixture, key, keyId: id };
 }
+
+async function slackAfterSends(workspaceId: string) {
+  await harness.drain(new Date());
+  return devSlack(db, workspaceId);
+}
+
+const stored = (id: string) =>
+  db.query.hollers.findFirst({ where: (holler, { eq }) => eq(holler.id, id) });
+
+const activityOn = (id: string, action: string) =>
+  db.query.activity.findMany({
+    where: (row, { and, eq }) => and(eq(row.subjectId, id), eq(row.action, action)),
+  });
 
 function call(path: string, key: string | null, init: RequestInit = {}) {
   const headers = new Headers(init.headers);
@@ -86,7 +97,7 @@ describe("authentication", () => {
 
 describe("scopes", () => {
   it("lets a read key list and read but not write", async () => {
-    const { key, ctx } = await keyFor("read");
+    const { key, ctx, workspaceId } = await keyFor("read");
     const holler = await createDraft(ctx, pulse);
     expect((await call("/api/v1/hollers", key)).status).toBe(200);
     expect((await call(`/api/v1/hollers/${holler.id}`, key)).status).toBe(200);
@@ -97,7 +108,8 @@ describe("scopes", () => {
     expect(create.status).toBe(403);
     const send = await call(`/api/v1/hollers/${holler.id}/send`, key, { method: "POST" });
     expect(send.status).toBe(403);
-    expect(delivery.sendHoller).not.toHaveBeenCalled();
+    expect((await stored(holler.id))?.status).toBe("draft");
+    expect((await slackAfterSends(workspaceId)).posted).toEqual([]);
   });
 
   it("lets a write key create, and records it as made through the API", async () => {
@@ -111,15 +123,43 @@ describe("scopes", () => {
     expect(holler).toMatchObject({ createdVia: "api", status: "draft" });
   });
 
-  it("sends through the delivery service as the key's member", async () => {
-    const { key, ctx, memberId, keyId } = await keyFor("write");
+  it("sends to the audience as the key's member", async () => {
+    const { key, ctx, memberId, keyId, workspaceId } = await keyFor("write");
     const holler = await createDraft(ctx, pulse);
     const response = await call(`/api/v1/hollers/${holler.id}/send`, key, { method: "POST" });
-    expect(response.status).toBe(200);
-    expect(delivery.sendHoller).toHaveBeenCalledOnce();
-    const [sentCtx, , id] = delivery.sendHoller.mock.calls[0] ?? [];
-    expect(id).toBe(holler.id);
-    expect(sentCtx?.actor).toMatchObject({ via: "api", memberId, credentialId: keyId });
+    expect(response.status, await response.clone().text()).toBe(200);
+    expect(await response.json()).toMatchObject({ id: holler.id, status: "live" });
+    expect((await slackAfterSends(workspaceId)).posted.map((m) => [m.channel, m.text])).toEqual([
+      ["UA", "Person ULEAD sent you a Holler: How was your week?"],
+    ]);
+    expect(await activityOn(holler.id, "holler.sent")).toEqual([
+      expect.objectContaining({ workspaceId, via: "api", memberId, credentialId: keyId }),
+    ]);
+  });
+
+  it("reminds and closes a live Holler as the key's member", async () => {
+    const { key, ctx, memberId, keyId, workspaceId } = await keyFor("write");
+    const holler = await createDraft(ctx, pulse);
+    await call(`/api/v1/hollers/${holler.id}/send`, key, { method: "POST" });
+    const slack = await slackAfterSends(workspaceId);
+
+    const remind = await call(`/api/v1/hollers/${holler.id}/remind`, key, { method: "POST" });
+    expect(remind.status, await remind.clone().text()).toBe(200);
+    expect((await stored(holler.id))?.status).toBe("live");
+    await slackAfterSends(workspaceId);
+    expect(slack.posted.slice(1).map((m) => [m.channel, m.text])).toEqual([
+      ["UA", "A reminder: Person ULEAD still needs your answer to How was your week?"],
+    ]);
+
+    const close = await call(`/api/v1/hollers/${holler.id}/close`, key, { method: "POST" });
+    expect(close.status, await close.clone().text()).toBe(200);
+    expect(await close.json()).toMatchObject({ id: holler.id, status: "closed" });
+    expect((await stored(holler.id))?.status).toBe("closed");
+    for (const action of ["holler.reminded", "holler.closed"]) {
+      expect(await activityOn(holler.id, action)).toEqual([
+        expect.objectContaining({ via: "api", memberId, credentialId: keyId }),
+      ]);
+    }
   });
 
   it("keeps keys off the web-only routes, whatever their scope", async () => {
@@ -241,11 +281,12 @@ describe("copy and delete", () => {
   });
 
   it("previews a send without sending", async () => {
-    const { key, ctx } = await keyFor("read");
+    const { key, ctx, workspaceId } = await keyFor("read");
     const holler = await createDraft(ctx, pulse);
     const response = await call(`/api/v1/hollers/${holler.id}/preview`, key);
     expect(await response.json()).toMatchObject({ reach: 1, people: ["Person UA"], problems: [] });
-    expect(delivery.sendHoller).not.toHaveBeenCalled();
+    expect((await stored(holler.id))?.status).toBe("draft");
+    expect((await slackAfterSends(workspaceId)).posted).toEqual([]);
   });
 });
 

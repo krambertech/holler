@@ -167,7 +167,8 @@
         "holler/no-sql-lower": "error",
         "holler/no-spread-rows": "error",
         "holler/no-multi-row-insert": "error",
-        "holler/bounded-in-array": "error"
+        "holler/bounded-in-array": "error",
+        "holler/no-mocked-services": "error"
       }
     },
     {
