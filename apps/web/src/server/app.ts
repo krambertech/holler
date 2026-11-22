@@ -14,6 +14,7 @@ import { hollerRoutes } from "./routes/hollers";
 import { installRoutes } from "./routes/install";
 import { meRoutes } from "./routes/me";
 import { ownAnswerRoutes } from "./routes/own-answers";
+import { respondRoutes } from "./routes/respond";
 import { settingsRoutes } from "./routes/settings";
 import { v1Routes } from "./routes/v1";
 import { ServiceError } from "./services/context";
@@ -75,7 +76,7 @@ mountOpenApi(app);
 /** Resolves the caller for every product API route. Routes that need one use `requireMember`. */
 app.use("/api/*", async (c, next) => {
   // The public API resolves keys as well as sessions, in routes/v1.
-  const own = ["/api/auth/", "/api/health", "/api/v1/", "/api/openapi.json"];
+  const own = ["/api/auth/", "/api/health", "/api/v1/", "/api/openapi.json", "/api/respond/"];
   if (!own.some((prefix) => c.req.path.startsWith(prefix))) {
     c.set("principal", await principalFor(c.get("auth"), c.get("db"), c.req.raw));
   }
@@ -90,6 +91,7 @@ app.route("/api/directory", directoryRoutes);
 app.route("/api/settings", settingsRoutes);
 app.route("/api/install", installRoutes);
 app.route("/api/billing", billingRoutes);
+app.route("/api/respond", respondRoutes);
 app.route("/api/v1", v1Routes);
 app.use("/api/dev/*", async (c, next) => {
   if (!devRoutesEnabled(c.env)) return c.notFound();

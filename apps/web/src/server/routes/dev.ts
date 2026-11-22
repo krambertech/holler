@@ -1,12 +1,19 @@
-import { devAnswerInputSchema, devSlackInputSchema, devTickInputSchema } from "@holler/core";
+import {
+  devAnswerInputSchema,
+  devSlackInputSchema,
+  devTickInputSchema,
+  devWebSurveyInputSchema,
+} from "@holler/core";
 import { sValidator } from "@hono/standard-validator";
 import { Hono } from "hono";
 import type { AppEnv } from "../app";
 import { runCronPass } from "../cron";
 import { queueAfterResponse } from "../services/delivery";
 import { ensurePersona, isPersona } from "../services/dev-personas";
+import { makeWebSurvey } from "../services/dev-respond";
 import { DEV_TEAM_ID } from "../services/dev-seed";
 import { devState, resetDevWorkspace } from "../services/dev-state";
+import { respondUrl } from "../services/respond-links";
 import { recordResponse } from "../services/responses";
 import { sign } from "../slack/verify";
 import { requireMember } from "./context";
@@ -44,6 +51,19 @@ export const devRoutes = new Hono<AppEnv>()
     const when = at ? new Date(at) : c.get("now")();
     const pass = await runCronPass(c.env, c.get("db"), when);
     return c.json({ at: when.toISOString(), ...pass });
+  })
+  .get("/respond-link", async (c) => {
+    requireMember(c);
+    const hollerId = c.req.query("holler") ?? "";
+    const slackUserId = c.req.query("as") ?? "";
+    const url = new URL(await respondUrl(c.env, hollerId, slackUserId));
+    return c.json({ url: `${url.pathname}${url.search}` });
+  })
+  .post("/web-survey", sValidator("json", devWebSurveyInputSchema), async (c) => {
+    const ctx = requireMember(c);
+    const { id } = await makeWebSurvey(ctx, c.req.valid("json"));
+    const url = new URL(await respondUrl(c.env, id, "U0LEAD"));
+    return c.json({ id, url: `${url.pathname}${url.search}` }, 201);
   })
   .post("/answer", sValidator("json", devAnswerInputSchema), async (c) => {
     const { hollerId, slackUserId, response } = c.req.valid("json");

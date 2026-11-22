@@ -89,6 +89,11 @@ Project skills live in `.agents/skills/`; `.claude/skills` links to it so every 
 | Every App Home, quick pulse and `/holler` reply fits Block Kit's limits at its fullest | `slack/blocks/home.test.ts` builds the largest of each |
 | A quick pulse Slack submits twice makes one Holler and sends it once | View id as `createDraft`'s idempotency key; `slack/sending.test.ts` |
 | A quick pulse that was acknowledged ends on Sent or Not sent, whatever fails | `finishQuickPulse` catches every error; `slack/sending.test.ts`, "never on Sending" |
+| The web form and `recordResponse` refuse the same answers in the same words | `answerProblem` in `packages/core/src/answers.ts`; `services/respond.test.ts` |
+| The web form shows a follow-up for exactly the answers the server keeps a note for | `noteAsked`; `services/respond.test.ts`, "shows a follow-up for exactly the answers" |
+| No effect returns a value that is not its cleanup | `holler/no-effect-expression-body` in `oxlint-plugin-holler` |
+| The web form searches the directory only while the people picker is open, and makes no failed call | `e2e/respond.spec.ts`, "a recipient answers every question type" |
+| An answer kept while the queue refused still reaches the DM when the person sends again | `services/respond.test.ts`, "puts the DM right when the answers were kept but the queue refused" |
 | Every illustration fills the grid, has one subject and at most one accent, and tilts no object past 12 degrees | `packages/design/src/illustrations.test.ts` |
 | Only Your answers reads who gave an anonymous response | `holler/no-response-owners` in `oxlint-plugin-holler`; `services/own-answers.test.ts`, "never reaches results or exports" |
 | Every round of a repeating pulse lands on the first round's day and time, in every zone, for a year | `packages/core/src/repeats.test.ts` sweep |
