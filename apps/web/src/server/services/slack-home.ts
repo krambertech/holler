@@ -1,5 +1,5 @@
 import { and, asc, eq, inArray, isNotNull, isNull, lte, or, sql } from "@holler/core/db";
-import { runBatch } from "../batch";
+import { readInChunks, runBatch } from "../batch";
 import { type Db, schema } from "../db";
 import type { Bindings } from "../env";
 import { surfaceOf } from "../slack/blocks/format";
@@ -68,27 +68,28 @@ export async function senderState(ctx: ServiceContext, now: Date) {
   live.sort((a, b) => (a.closesAt ?? "").localeCompare(b.closesAt ?? ""));
   const shown = live.slice(0, homeRowLimit);
   const ids = shown.map((row) => row.id);
-  const [reminded, reachable] =
-    ids.length === 0
-      ? [[], []]
-      : await Promise.all([
-          ctx.db
-            .select({ id: hollers.id, remindedAt: hollers.remindedAt })
-            .from(hollers)
-            .where(inArray(hollers.id, ids)),
-          ctx.db
-            .select({ hollerId: recipients.hollerId, count: sql<number>`count(*)` })
-            .from(recipients)
-            .where(
-              and(
-                inArray(recipients.hollerId, ids),
-                isNull(recipients.answeredAt),
-                isNull(recipients.failure),
-                isNotNull(recipients.dmTs),
-              ),
-            )
-            .groupBy(recipients.hollerId),
-        ]);
+  const [reminded, reachable] = await Promise.all([
+    readInChunks(ids, (chunk) =>
+      ctx.db
+        .select({ id: hollers.id, remindedAt: hollers.remindedAt })
+        .from(hollers)
+        .where(inArray(hollers.id, chunk)),
+    ),
+    readInChunks(ids, (chunk) =>
+      ctx.db
+        .select({ hollerId: recipients.hollerId, count: sql<number>`count(*)` })
+        .from(recipients)
+        .where(
+          and(
+            inArray(recipients.hollerId, chunk),
+            isNull(recipients.answeredAt),
+            isNull(recipients.failure),
+            isNotNull(recipients.dmTs),
+          ),
+        )
+        .groupBy(recipients.hollerId),
+    ),
+  ]);
   const gap = manualReminderGapHours * HOUR;
   const rows: HomeLive[] = shown.map((row) => {
     const last = reminded.find((r) => r.id === row.id)?.remindedAt ?? null;
