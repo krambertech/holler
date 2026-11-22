@@ -1,5 +1,5 @@
 import AxeBuilder from "@axe-core/playwright";
-import type { Page } from "@playwright/test";
+import { type APIRequestContext, type Page, request } from "@playwright/test";
 import { expect } from "./fixtures";
 
 /** Fails the test on any WCAG 2.2 AA violation on the page as it is now. */
@@ -27,4 +27,14 @@ export async function signInAs(page: Page, persona: "lead" | "sender", to = "/")
   await page.goto(`/api/dev/sign-in?as=${persona}&to=${encodeURIComponent(to)}`);
   await page.waitForURL((url) => url.pathname === landing);
   await page.waitForLoadState("load");
+}
+
+export async function requestAs(
+  baseURL: string | undefined,
+  persona: "lead" | "sender",
+): Promise<APIRequestContext> {
+  const context = await request.newContext({ baseURL });
+  const signedIn = await context.get(`/api/dev/sign-in?as=${persona}`);
+  if (!signedIn.ok()) throw new Error(`Could not sign in as ${persona}: ${signedIn.status()}`);
+  return context;
 }
