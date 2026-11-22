@@ -28,8 +28,6 @@
   "apps/web/src/client/components/editor/questions/question-list.tsx": 85,
   "apps/web/src/client/components/editor/questions/question-types.tsx": 26,
   "apps/web/src/client/components/editor/questions/scale.tsx": 15,
-  "apps/web/src/client/components/empty-state.tsx": 11,
-  "apps/web/src/client/components/error-state.tsx": 6,
   "apps/web/src/client/components/fluid-highlight.tsx": 4,
   "apps/web/src/client/components/holler-row.tsx": 5,
   "apps/web/src/client/components/logo.tsx": 2,

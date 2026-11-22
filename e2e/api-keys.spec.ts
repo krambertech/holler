@@ -1,5 +1,5 @@
-import { expect, test } from "@playwright/test";
 import { expectAccessible, signInAs } from "./a11y";
+import { expect, test } from "./fixtures";
 
 test("a lead makes an API key, uses it once, and revokes it", async ({ page, request }) => {
   // Both browser projects run this at once as the same persona, so each makes its own key.

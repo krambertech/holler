@@ -103,6 +103,19 @@
   --avatar-5-ink: oklch(0.383 0.08 78.5);
   --avatar-6: oklch(0.931 0.032 3.1);
   --avatar-6-ink: oklch(0.394 0.125 9.6);
+
+  /* Illustrations. Objects sit on graph paper that fades out, with no frame around them. */
+  --illo-grid: var(--edge-2);
+  --illo-object: var(--plate);
+  --illo-bar: oklch(0.912 0.009 72);
+  --illo-line: oklch(0.2 0.029 60.5 / 0.3);
+  /* The subject of a drawing, per tone. By day these are the status surfaces. */
+  --illo-neutral: var(--tint);
+  --illo-neutral-ink: var(--tint-ink);
+  --illo-warning: var(--waiting);
+  --illo-warning-ink: var(--waiting-ink);
+  --illo-danger: var(--danger);
+  --illo-danger-ink: var(--danger-ink);
 }
 
 [data-theme="dark"] {
@@ -172,6 +185,19 @@
   --avatar-5-ink: oklch(0.9 0.07 85);
   --avatar-6: oklch(0.34 0.06 5);
   --avatar-6-ink: oklch(0.89 0.05 5);
+
+  /* At night objects sit just above the plate; the subject is a
+     mid tone with light ink, so it glows rather than sinking into the dark. */
+  --illo-grid: oklch(1 0 0 / 0.16);
+  --illo-object: oklch(0.355 0.024 338);
+  --illo-bar: oklch(0.47 0.026 338);
+  --illo-line: oklch(1 0 0 / 0.24);
+  --illo-neutral: oklch(0.5 0.13 340);
+  --illo-neutral-ink: oklch(0.93 0.045 343);
+  --illo-warning: oklch(0.58 0.11 75);
+  --illo-warning-ink: oklch(0.95 0.06 85);
+  --illo-danger: oklch(0.52 0.14 27);
+  --illo-danger-ink: oklch(0.93 0.05 28);
 }
 
 /* The OS's dark mode, unless the member picked light. */
@@ -242,6 +268,19 @@
     --avatar-5-ink: oklch(0.9 0.07 85);
     --avatar-6: oklch(0.34 0.06 5);
     --avatar-6-ink: oklch(0.89 0.05 5);
+
+    /* At night objects sit just above the plate; the subject is a
+       mid tone with light ink, so it glows rather than sinking into the dark. */
+    --illo-grid: oklch(1 0 0 / 0.16);
+    --illo-object: oklch(0.355 0.024 338);
+    --illo-bar: oklch(0.47 0.026 338);
+    --illo-line: oklch(1 0 0 / 0.24);
+    --illo-neutral: oklch(0.5 0.13 340);
+    --illo-neutral-ink: oklch(0.93 0.045 343);
+    --illo-warning: oklch(0.58 0.11 75);
+    --illo-warning-ink: oklch(0.95 0.06 85);
+    --illo-danger: oklch(0.52 0.14 27);
+    --illo-danger-ink: oklch(0.93 0.05 28);
   }
 }
 
@@ -309,6 +348,16 @@
   --color-avatar-5-ink: var(--avatar-5-ink);
   --color-avatar-6: var(--avatar-6);
   --color-avatar-6-ink: var(--avatar-6-ink);
+  --color-illo-grid: var(--illo-grid);
+  --color-illo-object: var(--illo-object);
+  --color-illo-bar: var(--illo-bar);
+  --color-illo-line: var(--illo-line);
+  --color-illo-neutral: var(--illo-neutral);
+  --color-illo-neutral-ink: var(--illo-neutral-ink);
+  --color-illo-warning: var(--illo-warning);
+  --color-illo-warning-ink: var(--illo-warning-ink);
+  --color-illo-danger: var(--illo-danger);
+  --color-illo-danger-ink: var(--illo-danger-ink);
 
   /* A 1.125 scale from 15 px: 12, 13.5, 15, 17, 19, 21, 24, 27, 30. Size makes the hierarchy;
      weight only separates a name. */
