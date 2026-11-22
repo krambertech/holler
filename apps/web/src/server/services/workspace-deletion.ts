@@ -15,7 +15,7 @@ import {
   type SQL,
   sql,
 } from "@holler/core/db";
-import { runBatch } from "../batch";
+import { inChunks, runBatch } from "../batch";
 import { type Db, schema } from "../db";
 import type { Bindings } from "../env";
 import type { SlackClient } from "../slack/client";
@@ -28,16 +28,6 @@ const keyMember = sql`coalesce(
   case when json_type(${metadataJson}) = 'text' and json_valid(json_extract(${metadataJson}, '$'))
     then json_extract(json_extract(${metadataJson}, '$'), '$.memberId') end
 )`;
-
-const BOUND_VALUES_PER_STATEMENT = 90;
-
-function inChunks<T>(list: T[]): T[][] {
-  const chunks: T[][] = [];
-  for (let at = 0; at < list.length; at += BOUND_VALUES_PER_STATEMENT) {
-    chunks.push(list.slice(at, at + BOUND_VALUES_PER_STATEMENT));
-  }
-  return chunks;
-}
 
 export async function deletionStatements(
   db: Db,
