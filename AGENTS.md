@@ -87,6 +87,11 @@ Project skills live in `.agents/skills/`; `.claude/skills` links to it so every 
 | Every modal element reads back into an answer `recordResponse` takes | `services/answering.test.ts` fills each element by type |
 | No cell of a CSV export runs as a formula, whatever anyone typed | `csvCell`; `services/exports.test.ts` writes every formula start into every field |
 | Anonymous results and exports keep no trace of answer order | `packages/core/src/results.test.ts` shuffles every answer; `services/exports.test.ts` |
+| The web form and `recordResponse` refuse the same answers in the same words | `answerProblem` in `packages/core/src/answers.ts`; `services/respond.test.ts` |
+| The web form shows a follow-up for exactly the answers the server keeps a note for | `noteAsked`; `services/respond.test.ts`, "shows a follow-up for exactly the answers" |
+| No effect returns a value that is not its cleanup | `holler/no-effect-expression-body` in `oxlint-plugin-holler` |
+| The web form searches the directory only while the people picker is open, and makes no failed call | `e2e/respond.spec.ts`, "a recipient answers every question type" |
+| An answer kept while the queue refused still reaches the DM when the person sends again | `services/respond.test.ts`, "puts the DM right when the answers were kept but the queue refused" |
 | Every illustration fills the grid, has one subject and at most one accent, and tilts no object past 12 degrees | `packages/design/src/illustrations.test.ts` |
 | Only Your answers reads who gave an anonymous response | `holler/no-response-owners` in `oxlint-plugin-holler`; `services/own-answers.test.ts`, "never reaches results or exports" |
 | Every round of a repeating pulse lands on the first round's day and time, in every zone, for a year | `packages/core/src/repeats.test.ts` sweep |
