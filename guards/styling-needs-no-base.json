@@ -1,0 +1,14 @@
+{
+  "rule": "check:styling reads every client and site file, so it holds in a shallow clone, on main and for a file not yet committed",
+  "layer": "ci",
+  "past": "check:styling compared with origin/main, so CI's depth-1 checkout printed \"no base to compare with, so nothing to check\" and passed from the foundations (7e28e34) on",
+  "check": "GIT_DIR=/dev/null pnpm check:styling",
+  "break": [
+    {
+      "file": "apps/web/src/client/components/settings/role-select.tsx",
+      "find": "bg-plate ps-3 pe-8 text-ink",
+      "replace": "bg-plate ps-3 pe-8 text-gray-900"
+    }
+  ],
+  "fails": "stock Tailwind colour text-gray-900"
+}

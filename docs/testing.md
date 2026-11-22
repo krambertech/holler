@@ -10,10 +10,10 @@ pnpm verify
 
 | Command                 | What it proves                                                                                                                                                                             |
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `pnpm check`            | oxfmt and Oxlint, with unused suppressions as errors, `check:design` (DESIGN.md matches the tokens, named components exist), `check:styling` (no raw colours, stock Tailwind colours or physical directions in new lines), `check:comments` (no file holds more comment lines than its baseline, and no baseline allows more than its file holds) |
+| `pnpm check`            | oxfmt and Oxlint, with unused suppressions as errors, `check:design` (DESIGN.md matches the tokens, named components exist), `check:styling` (no raw colours, stock Tailwind colours or physical directions in any file), `check:comments` (no file holds more comment lines than its baseline, and no baseline allows more than its file holds) |
 | `pnpm guards:check`    | Every guard matches the code it protects, and every lint rule and check script has one |
 | `pnpm guards:prove`    | Every check fails when its mistake is brought back. CI runs it in four parts |
-| `pnpm check:migrations` | Drizzle's snapshot matches the schema, and no applied migration changed                                                                                                                    |
+| `pnpm check:migrations` | No applied migration changed, and the schema needs no migration that is missing                                                                                                                    |
 | `pnpm typecheck`        | Every package and both Workers, strict                                                                                                                                                     |
 | `pnpm test`             | Vitest in every package, plus `node --test` for the repo scripts                                                                                                                           |
 | `pnpm build`            | Both apps build                                                                                                                                                                            |

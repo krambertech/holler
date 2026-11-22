@@ -206,7 +206,7 @@
   "scripts/check-design-coverage.mjs": 9,
   "scripts/check-design.mjs": 5,
   "scripts/check-migrations.mjs": 4,
-  "scripts/check-styling.mjs": 7,
+  "scripts/check-styling.mjs": 3,
   "scripts/exports.mjs": 5,
   "scripts/wrangler-version.mjs": 3
 }

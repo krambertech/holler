@@ -20,6 +20,11 @@ testRule("no-response-owners", {
     },
     {
       filename,
+      code: "const rows = db.select().from(schema['responseOwners']);",
+      errors: ["'responseOwners'"],
+    },
+    {
+      filename,
       code: "const { responseOwners } = schema;",
       errors: ["responseOwners"],
     },

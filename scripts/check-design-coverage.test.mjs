@@ -22,3 +22,8 @@ test("reads export lists and covers parts through their family", () => {
   assert.equal(isCovered("DialogContent", documented), true);
   assert.equal(isCovered("Drawer", documented), false);
 });
+
+test("a family covers its parts, never a word that only starts the same", () => {
+  assert.equal(isCovered("MarkdownNote", new Set(["Mark"])), false);
+  assert.equal(isCovered("MarkNote", new Set(["Mark"])), true);
+});

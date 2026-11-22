@@ -1,0 +1,14 @@
+{
+  "rule": "Routes, Slack handlers and MCP tools never read a table",
+  "layer": "lint",
+  "past": "The import rule matched exact names, so drizzle-orm/d1 and schema from ../db passed in a route",
+  "check": "pnpm exec oxlint apps/web/src/server",
+  "break": [
+    {
+      "file": "apps/web/src/server/routes/me.ts",
+      "find": "import { describeMe } from \"../services/members\";",
+      "replace": "import { schema } from \"../db\";\nimport { describeMe } from \"../services/members\";\nexport const table = schema.hollers;"
+    }
+  ],
+  "fails": "only services read the schema"
+}
