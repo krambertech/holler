@@ -1,0 +1,35 @@
+name: Health
+
+on:
+  schedule:
+    - cron: "23 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  work:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      actions: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      URL: https://holler.k-porshnieva.workers.dev/api/health/work
+    steps:
+      - name: Keep this schedule on when nobody commits for 60 days
+        run: gh api -X PUT "repos/$GH_REPO/actions/workflows/health.yml/enable"
+      - name: Ask production whether any send, invite, reminder or close is late
+        id: ask
+        run: curl --silent --show-error --fail-with-body --retry 3 --retry-delay 60 --retry-all-errors --max-time 20 "$URL" | tee answer.json
+      - name: Open an issue unless one is open
+        if: failure() && steps.ask.outcome == 'failure'
+        run: |
+          title="Holler is behind on its work"
+          open=$(gh issue list --state open --search "$title in:title" --json number --jq '.[0].number // empty')
+          if [[ -z "$open" ]]; then
+            gh issue create --title "$title" --body "$URL answered: $(cat answer.json 2>/dev/null || echo nothing). docs/operations.md, When nobody is working on it."
+          fi
