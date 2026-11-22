@@ -38,9 +38,10 @@ function YourAnswers() {
         />
       ) : list.data.length === 0 ? (
         <EmptyState
+          size="lg"
+          illustration="shared"
           title="Nothing sent to you yet"
           description="When someone sends you a Holler in Slack, it shows up here with what you answered."
-          preview={false}
         />
       ) : (
         <Groups hollers={list.data} />
