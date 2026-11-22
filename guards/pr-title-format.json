@@ -1,0 +1,8 @@
+{
+  "rule": "A pull request title follows type(scope): summary within 72 characters",
+  "layer": "ci",
+  "past": "#33 opened as a title the check refused (run 44952952039)",
+  "check": "node scripts/check-pr-title.mjs 'feat(web): delete a workspace'",
+  "refuses": "node scripts/check-pr-title.mjs 'feat(web): delete a workspace and everything that is kept in it, by an owner'",
+  "fails": "72"
+}
