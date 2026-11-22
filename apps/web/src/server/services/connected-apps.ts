@@ -3,7 +3,7 @@ import { readInChunks } from "../batch";
 import type { Db } from "../db";
 import { schema } from "../db";
 import { currentMemberFor, type Scope, scopesOf } from "../principal";
-import { auditStatement } from "./audit";
+import { activityOf, recordChange } from "./audit";
 import { memberOf, type ServiceContext, ServiceError } from "./context";
 
 /**
@@ -114,16 +114,27 @@ export async function disconnectApp(ctx: ServiceContext, consentId: string): Pro
       eq(table.referenceId, memberId),
       isNull(table.revoked),
     );
-  await ctx.db.batch([
-    ctx.db.delete(schema.oauthConsent).where(eq(schema.oauthConsent.id, consentId)),
-    ctx.db.update(schema.oauthRefreshToken).set({ revoked }).where(mine(schema.oauthRefreshToken)),
-    ctx.db.update(schema.oauthAccessToken).set({ revoked }).where(mine(schema.oauthAccessToken)),
-    auditStatement(ctx, {
+  await recordChange(
+    ctx,
+    activityOf(ctx, {
       action: "connected_app.disconnected",
       subjectType: "connected_app",
       subjectId: consent.clientId,
     }),
-  ]);
+    ctx.db.delete(schema.oauthConsent).where(eq(schema.oauthConsent.id, consentId)),
+    {
+      after: [
+        ctx.db
+          .update(schema.oauthRefreshToken)
+          .set({ revoked })
+          .where(mine(schema.oauthRefreshToken)),
+        ctx.db
+          .update(schema.oauthAccessToken)
+          .set({ revoked })
+          .where(mine(schema.oauthAccessToken)),
+      ],
+    },
+  );
 }
 
 /** An app's name for the consent page and Activity, if it registered one. */
