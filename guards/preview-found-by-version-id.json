@@ -1,0 +1,14 @@
+{
+  "rule": "A preview is found by its version id, because an alias reports no tag",
+  "layer": "test",
+  "past": "#6: the first preview runs matched the commit tag only and failed with \"serves no tag\" on a healthy preview",
+  "check": "node --test scripts/check-deployment.test.mjs",
+  "break": [
+    {
+      "file": "scripts/check-deployment.mjs",
+      "find": "health.tag !== expected && health.version !== expected",
+      "replace": "health.tag !== expected"
+    }
+  ],
+  "fails": "accepts the expected version id when the alias reports no tag"
+}
