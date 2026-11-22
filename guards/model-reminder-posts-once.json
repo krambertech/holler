@@ -1,0 +1,14 @@
+{
+  "rule": "A reminder delivered twice, by one consumer or two at once, posts once",
+  "layer": "model",
+  "past": "#10 posted a queued reminder with no post key, so a second delivery posted a second DM",
+  "check": "pnpm check:models delivery/sending",
+  "break": [
+    {
+      "file": "formal/delivery/model.json",
+      "find": "\"PostKeys\": [\"invite\", \"reminder\", \"announce\", \"close_notice\"]",
+      "replace": "\"PostKeys\": [\"invite\", \"announce\", \"close_notice\"]"
+    }
+  ],
+  "fails": "delivery/sending: the current design breaks NothingPostsTwice"
+}

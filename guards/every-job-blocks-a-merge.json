@@ -6,8 +6,8 @@
   "break": [
     {
       "file": ".github/workflows/ci.yml",
-      "find": "    needs: [title, verify, guards, e2e, preview]",
-      "replace": "    needs: [title, verify, guards, preview]"
+      "find": "    needs: [title, verify, guards, models, e2e, preview]",
+      "replace": "    needs: [title, verify, guards, models, preview]"
     }
   ],
   "fails": "does not need \"e2e\""

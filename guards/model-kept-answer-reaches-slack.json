@@ -1,0 +1,14 @@
+{
+  "rule": "An answer kept while the queue refused its thank-you reaches the DM when the person sends again",
+  "layer": "model",
+  "past": "#22 returned the answered state on a conflict without queueing the Slack work again",
+  "check": "pnpm check:models delivery/sending",
+  "break": [
+    {
+      "file": "formal/delivery/model.json",
+      "find": "\"AnswerRequeues\": true",
+      "replace": "\"AnswerRequeues\": false"
+    }
+  ],
+  "fails": "delivery/sending: the current design breaks KeptAnswersReachSlack"
+}
