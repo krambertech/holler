@@ -1,10 +1,10 @@
 import type { HollerSummary } from "@holler/core";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Plus, Radio, Search, X } from "lucide-react";
+import { Plus, Search, X } from "lucide-react";
 import { useState } from "react";
 import { z } from "zod";
-import { EmptySection, EmptyState, NoResults } from "@/components/empty-state";
+import { EmptyState } from "@/components/empty-state";
 import { ErrorState } from "@/components/error-state";
 import { HollerRow } from "@/components/holler-row";
 import { Skeleton } from "@/components/skeleton";
@@ -234,8 +234,10 @@ function EmptyList({
 }) {
   if (filtered) {
     return (
-      <NoResults
-        icon={<Search />}
+      <EmptyState
+        role="status"
+        variant="dashed"
+        illustration="search"
         title="No holler matches"
         description="Search looks at titles, and the tag filter at exact tags."
         action={
@@ -248,8 +250,8 @@ function EmptyList({
   }
   if (tab === "shared") {
     return (
-      <EmptySection
-        icon={<Radio />}
+      <EmptyState
+        illustration="shared"
         title="Nothing shared with you yet"
         description="When someone shares a Holler's results with you, or with the whole workspace, it shows up here."
       />
@@ -257,6 +259,8 @@ function EmptyList({
   }
   return (
     <EmptyState
+      size="lg"
+      illustration="hollers"
       title="Ask your team something"
       description="Holler sends your question to each person in Slack, reminds the ones who have not answered, and shows you the results here."
       action={
