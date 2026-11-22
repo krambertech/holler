@@ -1,0 +1,14 @@
+{
+  "rule": "Every text pair and status dot in packages/design/src/pairs.ts meets its WCAG floor in both themes",
+  "layer": "test",
+  "past": "The foundations (7e28e34) drew the waiting dot too pale to see on a plate, and #3 darkened it",
+  "check": "cd packages/design && pnpm exec vitest run src/contrast.test.ts",
+  "break": [
+    {
+      "file": "packages/design/tokens.css",
+      "find": "--waiting-dot: oklch(0.6 0.13 70);",
+      "replace": "--waiting-dot: oklch(0.679 0.142 76.5);"
+    }
+  ],
+  "fails": "waiting-dot on plate meets its floor"
+}
