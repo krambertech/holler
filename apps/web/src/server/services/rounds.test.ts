@@ -1,7 +1,6 @@
 import { earliestInstantOf, type HollerDraftInput } from "@holler/core";
 import { and, eq } from "@holler/core/db";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { runBatch } from "../batch";
 import { type Db, schema } from "../db";
 import { testDb } from "../test-db";
 import { deliveryEnv, emptyDatabase } from "../test-delivery";
@@ -262,10 +261,10 @@ describe("repeating pulses", () => {
 
   it("schedules no round once Stop repeating wins the race against the send", async () => {
     const { ctx, first } = await series();
-    const statements = (await nextRound({ ...ctx, now: () => FIRST }, first.id, null))?.statements;
-    if (!statements) throw new Error("expected a next round");
+    const round = await nextRound({ ...ctx, now: () => FIRST }, first.id, null);
+    if (!round) throw new Error("expected a next round");
     await stopRepeating(ctx, first.id);
-    await runBatch(db, statements);
+    await round.schedule();
     expect((await rounds(first.id)).map((h) => [h.status, h.repeatRule])).toEqual([
       ["scheduled", null],
     ]);
@@ -277,13 +276,13 @@ describe("repeating pulses", () => {
 
   it("removes a round scheduled while Stop repeating was on its way", async () => {
     const { ctx, first } = await series();
-    const statements = (await nextRound({ ...ctx, now: () => FIRST }, first.id, null))?.statements;
-    if (!statements) throw new Error("expected a next round");
+    const round = await nextRound({ ...ctx, now: () => FIRST }, first.id, null);
+    if (!round) throw new Error("expected a next round");
     const racing = new Proxy(db, {
       get(target, key, receiver) {
         if (key !== "batch") return Reflect.get(target, key, receiver);
         return async (...args: Parameters<Db["batch"]>) => {
-          await runBatch(target, statements);
+          await round.schedule();
           return target.batch(...args);
         };
       },
