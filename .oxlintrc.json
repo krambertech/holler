@@ -151,6 +151,18 @@
       }
     },
     {
+      "files": ["apps/web/src/server/**"],
+      "excludeFiles": [
+        "apps/web/src/server/services/audit.ts",
+        "apps/web/src/server/services/dev-*.ts",
+        "apps/web/src/server/services/*fixtures.ts",
+        "**/*.test.ts"
+      ],
+      "rules": {
+        "holler/activity-with-write": "error"
+      }
+    },
+    {
       "files": ["e2e/**"],
       "excludeFiles": ["e2e/fixtures.ts"],
       "rules": {
