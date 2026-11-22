@@ -1,5 +1,6 @@
-import { type APIRequestContext, expect, type Page, test } from "@playwright/test";
+import type { APIRequestContext, Page } from "@playwright/test";
 import { expectAccessible, requestAs } from "./a11y";
+import { expect, test } from "./fixtures";
 
 let lead: APIRequestContext;
 

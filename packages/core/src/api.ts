@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { modes, questionStyles, questionTypes } from "./modes";
+import { repeatEvery } from "./repeats";
 import type { Results } from "./results";
 import {
   audienceSchema,
@@ -70,6 +71,8 @@ export const hollerOutSchema = z.object({
   /** Where it is answered: right in the DM, in a Slack form, on a web page, or a chase. */
   answeredIn: z.enum(["dm", "slack", "web", "chase"]),
   remindersEnabled: z.boolean(),
+  repeat: z.enum(repeatEvery).nullable(),
+  repeatOfId: z.string().nullable(),
   sentAt: timestamp.nullable(),
   closesAt: timestamp.nullable(),
   closedAt: timestamp.nullable(),

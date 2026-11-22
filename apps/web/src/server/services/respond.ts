@@ -88,6 +88,7 @@ export async function respondFormFor(ctx: ServiceContext, hollerId: string): Pro
             and(
               inArray(
                 schema.options.questionId,
+                // oxlint-disable-next-line holler/bounded-in-array -- a Holler has at most 30 questions
                 h.questions.map((q) => q.id),
               ),
               eq(schema.options.isOther, true),

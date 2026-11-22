@@ -81,6 +81,7 @@ export async function recordResponse(
           .where(
             inArray(
               options.questionId,
+              // oxlint-disable-next-line holler/bounded-in-array -- a Holler has at most 30 questions
               qs.map((q) => q.id),
             ),
           );
@@ -214,6 +215,7 @@ export async function resultsFor(ctx: ServiceContext, hollerId: string): Promise
           .where(
             inArray(
               options.questionId,
+              // oxlint-disable-next-line holler/bounded-in-array -- a Holler has at most 30 questions
               qs.map((q) => q.id),
             ),
           )

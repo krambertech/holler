@@ -132,7 +132,27 @@
       "files": ["apps/web/src/server/**", "packages/core/src/**"],
       "rules": {
         "holler/no-sql-lower": "error",
-        "holler/no-multi-row-insert": "error"
+        "holler/no-spread-rows": "error",
+        "holler/no-multi-row-insert": "error",
+        "holler/bounded-in-array": "error"
+      }
+    },
+    {
+      "files": ["e2e/**"],
+      "excludeFiles": ["e2e/fixtures.ts"],
+      "rules": {
+        "eslint/no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              {
+                "name": "@playwright/test",
+                "importNames": ["test", "expect"],
+                "message": "Import test and expect from ./fixtures, which fails a test whose page logs an error."
+              }
+            ]
+          }
+        ]
       }
     },
     {

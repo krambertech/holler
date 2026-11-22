@@ -43,6 +43,13 @@
       "when": 1795290952145,
       "tag": "0005_response_owners",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1795294275604,
+      "tag": "0006_repeating_rounds",
+      "breakpoints": true
     }
   ]
 }

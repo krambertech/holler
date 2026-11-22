@@ -16,6 +16,7 @@ import {
   sendProblems,
   updateDraft,
 } from "./hollers";
+import { previewSend } from "./send-preview";
 
 let db: Db;
 let dispose: () => Promise<void>;
@@ -326,6 +327,57 @@ describe("home", () => {
     const [row] = await listHollers(ctx, { scope: "mine" });
     expect(row).toMatchObject({ recipientCount: 2, people: [] });
   });
+  it("lists more Hollers than D1 binds in one statement", async () => {
+    const { ctx } = await workspaceFixture(db);
+    const many = 101;
+    for (let i = 0; i < many; i++) await createDraft(ctx, { ...pulse, title: `Round ${i}` });
+    const all = await listHollers(ctx, { scope: "mine" });
+    expect(all).toHaveLength(many);
+  });
+
+  it("previews a send to the most groups an audience holds", async () => {
+    const { ctx, workspaceId } = await workspaceFixture(db);
+    const groups = Array.from({ length: 100 }, (_, i) => `S${i}`);
+    for (const slackId of groups) {
+      await db.insert(schema.slackGroups).values({
+        workspaceId,
+        slackId,
+        kind: "usergroup",
+        name: slackId,
+        searchName: slackId.toLocaleLowerCase(),
+        memberCount: 2,
+      });
+    }
+    const draft = await createDraft(ctx, {
+      ...pulse,
+      audience: { people: [], groups, everyone: false },
+    });
+    const preview = await previewSend(ctx, draft.id);
+    expect(preview.groups).toHaveLength(100);
+    expect(preview.reach).toBe(200);
+  });
+
+  it("counts a group once when the audience names it in two lookups", async () => {
+    const { ctx, workspaceId } = await workspaceFixture(db);
+    const groups = Array.from({ length: 90 }, (_, i) => `S${i}`);
+    for (const slackId of groups) {
+      await db.insert(schema.slackGroups).values({
+        workspaceId,
+        slackId,
+        kind: "usergroup",
+        name: slackId,
+        searchName: slackId.toLocaleLowerCase(),
+        memberCount: 2,
+      });
+    }
+    const draft = await createDraft(ctx, {
+      ...pulse,
+      audience: { people: [], groups: [...groups, "S0"], everyone: false },
+    });
+    const preview = await previewSend(ctx, draft.id);
+    expect(preview.groups).toHaveLength(90);
+    expect(preview.reach).toBe(180);
+  });
 });
 
 describe("sendProblems", () => {
@@ -338,6 +390,8 @@ describe("sendProblems", () => {
     audience: { people: ["UA"], groups: [], everyone: false },
     sendAt: null,
     closesAt: null,
+    closeAfterHours: 72,
+    repeatRule: null,
     questions: [],
   };
   const question = (over: Partial<ProblemQuestion> = {}): ProblemQuestion => ({
@@ -377,6 +431,20 @@ describe("sendProblems", () => {
       question({ style: "scale", options: [{ label: "1" }, { label: "2" }], lowLabel, highLabel });
     expect(fields({ questions: [scale("", "")] })).toEqual([]);
     expect(fields({ questions: [scale("Calm", "")] })).toEqual(["questions.0.highLabel"]);
+  });
+
+  it("lets only a pulse with a send time repeat, closing each round before the next", () => {
+    const sendAt = new Date(now.getTime() + 86_400_000);
+    const pulse = { mode: "pulse" as const, sendAt, repeatRule: "week" as const };
+    expect(fields(pulse)).toEqual([]);
+    expect(fields({ ...pulse, mode: "survey" })).toEqual(["repeat"]);
+    expect(fields({ ...pulse, sendAt: null })).toEqual(["sendAt"]);
+    expect(fields({ ...pulse, closesAt: new Date(sendAt.getTime() + 3_600_000) })).toEqual([
+      "closesAt",
+    ]);
+    expect(fields({ ...pulse, closeAfterHours: 7 * 24 })).toEqual([]);
+    expect(fields({ ...pulse, closeAfterHours: 7 * 24 + 1 })).toEqual(["closeAfterHours"]);
+    expect(fields({ ...pulse, repeatRule: "fortnight", closeAfterHours: 14 * 24 })).toEqual([]);
   });
 
   it("caps a pulse at two questions", () => {
