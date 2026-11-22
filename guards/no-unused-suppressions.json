@@ -1,0 +1,14 @@
+{
+  "rule": "Every lint suppression still suppresses something",
+  "layer": "lint",
+  "past": "#20 deleted suppressions left over after their rule stopped applying, such as the one on Home's search field",
+  "check": "pnpm exec $(node -p \"require('./package.json').scripts.check.split(' && ').find((step) => step.startsWith('oxlint'))\")",
+  "break": [
+    {
+      "file": "apps/web/src/client/routes/_app/index.tsx",
+      "find": "            autoFocus\n",
+      "replace": "            // oxlint-disable-next-line jsx-a11y/no-autofocus -- the search field opens because the member asked for it\n            autoFocus\n"
+    }
+  ],
+  "fails": "Unused oxlint-disable directive"
+}

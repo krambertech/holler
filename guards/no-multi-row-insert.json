@@ -1,0 +1,14 @@
+{
+  "rule": "A server insert writes one row per statement, inside D1's 100-value limit",
+  "layer": "lint",
+  "past": "The foundations (7e28e34) closed every due Holler with one insert of all its Activity rows, so a busy minute would have failed for all of them",
+  "check": "pnpm exec oxlint apps/web/src/server",
+  "break": [
+    {
+      "file": "apps/web/src/server/services/lifecycle.ts",
+      "find": "  const statements = closed.map((row) =>\n    db.insert(schema.activity).values({\n      id: newId(\"activity\"),\n      workspaceId: row.workspaceId,\n      via: \"system\" as const,\n      action: \"holler.closed\",\n      subjectType: \"holler\",\n      subjectId: row.id,\n      data: { reason: \"close_time\" },\n      at: now,\n    }),\n  );\n  for (let start = 0; start < statements.length; start += 100) {\n    await runBatch(db, statements.slice(start, start + 100));\n  }\n",
+      "replace": "  if (closed.length > 0) {\n    await db.insert(schema.activity).values(\n      closed.map((row) => ({\n        id: newId(\"activity\"),\n        workspaceId: row.workspaceId,\n        via: \"system\" as const,\n        action: \"holler.closed\",\n        subjectType: \"holler\",\n        subjectId: row.id,\n        data: { reason: \"close_time\" },\n        at: now,\n      })),\n    );\n  }\n"
+    }
+  ],
+  "fails": "holler(no-multi-row-insert)"
+}
