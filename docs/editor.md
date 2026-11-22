@@ -10,6 +10,8 @@ The audience names a saved draft opens with are looked up once, when it opens. A
 
 A template fills the editor and leaves no link behind: from then on it is an ordinary draft. The start screen shows one template of each kind people reach for most; the rest are in the templates dialog.
 
+`ModePicker` shows Pulse but disables it while the draft has more questions than a pulse may ask (`questionLimits`).
+
 ## Autosave
 
 `useAutosave` saves a moment (`WAIT_MS`) after the last change, one save at a time, and retries on its own after `RETRY_MS` when a save fails. An untouched new Holler (`isBlank`) makes no draft.
