@@ -1,0 +1,14 @@
+{
+  "rule": "Every change a recipient or the cron makes through a service is recorded exactly once",
+  "layer": "test",
+  "past": "#10's snooze moved a person's next reminder and recorded nothing",
+  "check": "cd apps/web && pnpm exec vitest run src/server/activity.test.ts -t 'a recipient snoozes their reminder'",
+  "break": [
+    {
+      "file": "apps/web/src/server/services/reminders.ts",
+      "find": "  await recordChange(\n    ctx,\n    // A recipient actor carries no member, so Activity says a snooze happened, not whose.\n    activityOf(ctx, { action: \"reminder.snoozed\", subjectType: \"holler\", subjectId: hollerId }),\n    ctx.db\n      .update(recipients)\n      .set({ snoozedUntil: until, nextReminderAt: next?.dueAt ?? null })\n      .where(where),\n  );\n",
+      "replace": "  await ctx.db\n    .update(recipients)\n    .set({ snoozedUntil: until, nextReminderAt: next?.dueAt ?? null })\n    .where(where);\n"
+    }
+  ],
+  "fails": "a recipient snoozes their reminder"
+}

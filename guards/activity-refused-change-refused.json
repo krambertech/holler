@@ -1,0 +1,14 @@
+{
+  "rule": "When Activity cannot be written, the change does not land",
+  "layer": "test",
+  "past": "#27's report link was committed without its report_link.made, and closeHoller on main could close a Holler with no Activity",
+  "check": "cd apps/web && pnpm exec vitest run src/server/activity.test.ts -t 'POST /api/hollers/:id/close: changes nothing'",
+  "break": [
+    {
+      "file": "apps/web/src/server/services/audit.ts",
+      "find": "  return db.batch(statements as [Statement, ...Statement[]]);",
+      "replace": "  return Promise.resolve().then(async () => {\n    const results: unknown[] = [];\n    for (const statement of statements) results.push((await db.batch([statement]))[0]);\n    return results;\n  });"
+    }
+  ],
+  "fails": "changes nothing when Activity cannot record it"
+}
