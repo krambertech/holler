@@ -66,6 +66,7 @@ Project skills live in `.agents/skills/`; `.claude/skills` links to it so every 
 | Every exported component has an entry on the design site | `pnpm check:design-coverage` |
 | Files under `apps/web/src/client` are kebab-case                            | Oxlint `unicorn/filename-case`                       |
 | Every journey page passes axe at WCAG 2.2 AA                                | `e2e/`                                               |
+| axe reads a page only once its transitions have finished, so a fade never reads as low contrast | `expectAccessible` in `e2e/a11y.ts` waits for every finite animation |
 | No journey page logs a console error, throws, or gets a 5xx | `e2e/fixtures.ts`, which every spec imports by the Oxlint `no-restricted-imports` rule on `e2e/` |
 | Concurrent first dev sign-ins all succeed and seed once                    | `apps/web/src/server/routes/dev-concurrency.test.ts` |
 | Every e2e sign-in lands where the test goes next, so no redirect races its navigation | `holler/sign-in-lands` in `oxlint-plugin-holler`; `signInAs` in `e2e/a11y.ts` |
