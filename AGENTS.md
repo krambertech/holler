@@ -67,10 +67,13 @@ Project skills live in `.agents/skills/`; `.claude/skills` links to it so every 
 | Every exported component has an entry on the design site | `pnpm check:design-coverage` |
 | Files under `apps/web/src/client` are kebab-case                            | Oxlint `unicorn/filename-case`                       |
 | Every journey page passes axe at WCAG 2.2 AA                                | `e2e/`                                               |
+| No journey page logs a console error, throws, or gets a 5xx | `e2e/fixtures.ts`, which every spec imports by the Oxlint `no-restricted-imports` rule on `e2e/` |
 | Concurrent first dev sign-ins all succeed and seed once                    | `apps/web/src/server/routes/dev-concurrency.test.ts` |
 | Every e2e sign-in lands where the test goes next, so no redirect races its navigation | `holler/sign-in-lands` in `oxlint-plugin-holler`; `signInAs` in `e2e/a11y.ts` |
 | Pull request titles follow `type(scope): summary` within 72 characters      | `scripts/check-pr-title.mjs` in CI                   |
 | Server inserts one row per statement, inside D1's 100-value limit | `holler/no-multi-row-insert` in `oxlint-plugin-holler` |
+| A lookup by a list of ids stays inside D1's 100-value limit however long the list grows | `holler/bounded-in-array` in `oxlint-plugin-holler`; `readInChunks` in `server/batch.ts`, which also reads a repeated id once; `services/hollers.test.ts` lists 101 Hollers and previews 100 groups and a repeated one |
+| No read spreads its rows into a call's arguments, so a large read never overflows the argument limit | `holler/no-spread-rows` in `oxlint-plugin-holler`; `server/batch.test.ts` reads 300,000 rows |
 | Every Slack message and view fits Block Kit's limits | `FakeSlack` refuses what Slack would; `slack/blocks/messages.test.ts` sends the largest Holler |
 | Work claimed for the queue is given back when the queue refuses it | `queueClaimed`; `services/delivery.test.ts`, "no claimed work is lost" |
 | A send, close, reminder or answer happens once when callers race | `services/delivery.test.ts`, "exactly once under concurrency" |
@@ -86,6 +89,7 @@ Project skills live in `.agents/skills/`; `.claude/skills` links to it so every 
 | Every App Home, quick pulse and `/holler` reply fits Block Kit's limits at its fullest | `slack/blocks/home.test.ts` builds the largest of each |
 | A quick pulse Slack submits twice makes one Holler and sends it once | View id as `createDraft`'s idempotency key; `slack/sending.test.ts` |
 | A quick pulse that was acknowledged ends on Sent or Not sent, whatever fails | `finishQuickPulse` catches every error; `slack/sending.test.ts`, "never on Sending" |
+| Every illustration fills the grid, has one subject and at most one accent, and tilts no object past 12 degrees | `packages/design/src/illustrations.test.ts` |
 | Only Your answers reads who gave an anonymous response | `holler/no-response-owners` in `oxlint-plugin-holler`; `services/own-answers.test.ts`, "never reaches results or exports" |
 | Every round of a repeating pulse lands on the first round's day and time, in every zone, for a year | `packages/core/src/repeats.test.ts` sweep |
 | A round that goes out schedules exactly one next round, never in the past | `services/rounds.test.ts` |

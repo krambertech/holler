@@ -1,5 +1,5 @@
-import { expect, test } from "@playwright/test";
 import { expectAccessible, signInAs } from "./a11y";
+import { expect, test } from "./fixtures";
 
 // Role changes touch the shared dev workspace, so this file's tests run one at a time, and the
 // tests that change or read roles run in one browser project only.
