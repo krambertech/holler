@@ -1,0 +1,24 @@
+{
+  "rule": "axe reads a page only once its transitions have finished, so a fade never reads as low contrast",
+  "layer": "browser",
+  "past": "#37: axe measured the thank-you mid-fade in 3 of 16 runs; the break also holds that fade midway, so every run shows it",
+  "check": "pnpm exec playwright test --project=chromium --retries=1 -g 'a recipient answers every question type'",
+  "break": [
+    {
+      "file": "e2e/a11y.ts",
+      "find": "  await page.waitForFunction(() =>\n    document\n      .getAnimations()\n      .every(\n        (animation) =>\n          animation.playState !== \"running\" ||\n          animation.effect?.getComputedTiming().iterations === Number.POSITIVE_INFINITY,\n      ),\n  );\n",
+      "replace": ""
+    },
+    {
+      "file": "packages/design/src/motion.ts",
+      "find": "export const ARRIVE_RISE = { duration: 0.32, ease: EASE_OUT }",
+      "replace": "export const ARRIVE_RISE = { duration: 6, ease: \"linear\" }"
+    },
+    {
+      "file": "apps/web/src/client/components/respond/respond-state.tsx",
+      "find": "initial: reduce ? { opacity: 0 } : { opacity: 0, y: 8 },",
+      "replace": "initial: reduce ? { opacity: 0 } : { opacity: 0.3, y: 8 },"
+    }
+  ],
+  "fails": "color-contrast: Elements must meet minimum color contrast ratio thresholds"
+}
