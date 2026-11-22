@@ -1,5 +1,5 @@
-import { expect, test } from "@playwright/test";
 import { expectAccessible, signInAs } from "./a11y";
+import { expect, test } from "./fixtures";
 
 test("an owner deletes the workspace's data only after typing its name", async ({ page }) => {
   await signInAs(page, "lead", "/settings");

@@ -1,5 +1,5 @@
-import { expect, test } from "@playwright/test";
 import { expectAccessible, signInAs } from "./a11y";
+import { expect, test } from "./fixtures";
 
 test("Sign out in the account menu ends the session", async ({ page }) => {
   await signInAs(page, "sender");
