@@ -19,7 +19,6 @@ beforeEach(() => emptyDatabase(raw));
 
 const NOW = new Date("2026-11-20T10:00:00Z");
 
-/** One question of every type and extra the editor offers. */
 const everyType = {
   mode: "survey",
   title: "Offsite",
@@ -70,10 +69,6 @@ interface InputBlock {
   };
 }
 
-/**
- * What a person would put in each block, by element type. A modal element with no entry here
- * fails the test: every element Holler builds must come back as an answer recordResponse takes.
- */
 function fill(block: InputBlock): StateValue {
   const { element } = block;
   const first = element.options?.[0]?.value ?? "";

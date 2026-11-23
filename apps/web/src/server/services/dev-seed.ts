@@ -44,9 +44,12 @@ const people: [id: string, name: string, tz: string][] = [
 const HOUR = 60 * 60 * 1000;
 const DAY = 24 * HOUR;
 
-export async function seedDevWorkspace(db: Db): Promise<{ workspaceId: string }> {
+export async function seedDevWorkspace(
+  db: Db,
+  teamId = DEV_TEAM_ID,
+): Promise<{ workspaceId: string }> {
   const existing = await db.query.workspaces.findFirst({
-    where: eq(schema.workspaces.slackTeamId, DEV_TEAM_ID),
+    where: eq(schema.workspaces.slackTeamId, teamId),
   });
   if (existing) return { workspaceId: existing.id };
 
@@ -56,7 +59,7 @@ export async function seedDevWorkspace(db: Db): Promise<{ workspaceId: string }>
     await runBatch(db, [
       db.insert(schema.workspaces).values({
         id: workspaceId,
-        slackTeamId: DEV_TEAM_ID,
+        slackTeamId: teamId,
         name: "Northwind",
         slackDomain: "northwind-dev",
         plan: "free",
@@ -94,7 +97,7 @@ export async function seedDevWorkspace(db: Db): Promise<{ workspaceId: string }>
   } catch (error) {
     // Two first sign-ins raced; the unique team id let one batch through. Use the winner's.
     const winner = await db.query.workspaces.findFirst({
-      where: eq(schema.workspaces.slackTeamId, DEV_TEAM_ID),
+      where: eq(schema.workspaces.slackTeamId, teamId),
     });
     if (winner) return { workspaceId: winner.id };
     throw error;

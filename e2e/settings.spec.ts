@@ -1,12 +1,6 @@
 import { expectAccessible, signInAs } from "./a11y";
 import { expect, test } from "./fixtures";
 
-// Role changes touch the shared dev workspace, so this file's tests run one at a time, and the
-// tests that change or read roles run in one browser project only.
-test.describe.configure({ mode: "serial" });
-const rolesProjectOnly = () =>
-  test.skip(test.info().project.name !== "chromium", "Roles are shared across projects");
-
 test("a lead opens Settings from the header and sees the workspace and its members", async ({
   page,
 }) => {
@@ -25,7 +19,6 @@ test("a lead opens Settings from the header and sees the workspace and its membe
 test("an owner makes a sender an owner and back, and cannot leave the workspace without one", async ({
   page,
 }) => {
-  rolesProjectOnly();
   await signInAs(page, "lead", "/settings");
   const tom = page.getByRole("combobox", { name: "Role for Tom Okafor" });
   const mira = page.getByRole("combobox", { name: "Role for Mira Kask" });
@@ -44,7 +37,6 @@ test("an owner makes a sender an owner and back, and cannot leave the workspace 
 });
 
 test("a sender sees the roles but cannot change them", async ({ page }) => {
-  rolesProjectOnly();
   await signInAs(page, "sender", "/settings");
   await expect(page.getByText("Mira Kask")).toBeVisible();
   await expect(page.getByRole("combobox", { name: /^Role for/ })).toHaveCount(0);

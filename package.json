@@ -11,11 +11,11 @@
   "scripts": {
     "dev": "pnpm --parallel --stream --filter @holler/site --filter @holler/web dev",
     "build": "pnpm -r build",
-    "typecheck": "pnpm -r typecheck",
+    "typecheck": "pnpm -r typecheck && tsc -p e2e/tsconfig.json",
     "test": "pnpm -r test && node --test scripts/*.test.mjs oxlint-plugin-holler/rules/*.test.mjs",
     "test:e2e": "playwright test",
     "test:e2e:chromium": "playwright test --project=chromium",
-    "check": "pnpm check:conflicts && oxfmt --check . && oxlint . --report-unused-disable-directives-severity error && pnpm check:design && pnpm check:design-coverage && pnpm check:styling && pnpm check:comments && pnpm check:workflows && pnpm check:models:sync && pnpm guards:check",
+    "check": "pnpm check:conflicts && oxfmt --check . && oxlint . --type-aware --report-unused-disable-directives-severity error && pnpm check:architecture && pnpm check:limits && pnpm check:dead-code && pnpm check:design && pnpm check:design-coverage && pnpm check:styling && pnpm check:comments && pnpm check:workflows && pnpm check:models:sync && pnpm guards:check",
     "check:design": "node scripts/check-design.mjs",
     "check:styling": "node scripts/check-styling.mjs",
     "check:comments": "node scripts/check-comments.mjs",
@@ -23,6 +23,9 @@
     "check:workflows": "node scripts/check-workflows.mjs",
     "check:models": "node scripts/check-models.mjs",
     "check:models:sync": "node scripts/check-models.mjs --sync",
+    "check:architecture": "node scripts/check-architecture.mjs",
+    "check:limits": "node scripts/check-limits.mjs",
+    "check:dead-code": "node scripts/check-dead-code.mjs",
     "guards": "node scripts/guards.mjs list",
     "guards:check": "node scripts/guards.mjs check",
     "guards:prove": "node scripts/guards.mjs prove",
@@ -40,8 +43,11 @@
     "@axe-core/playwright": "^4.11.0",
     "@oxlint/plugins": "1.92.0",
     "@playwright/test": "1.64.0",
+    "@types/node": "^26.6.6",
+    "knip": "6.46.1",
     "oxfmt": "0.77.0",
     "oxlint": "1.92.0",
+    "oxlint-tsgolint": "7.0.2006",
     "typescript": "^6.0.3"
   }
 }

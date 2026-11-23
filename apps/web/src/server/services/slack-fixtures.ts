@@ -2,14 +2,10 @@ import { eq } from "@holler/core/db";
 import { type Db, schema } from "../db";
 import type { SlackInstallGrant } from "../slack/client";
 
-/** Helpers for the install and sign-in tests. Nothing here reaches Slack. */
-
-/** 32 zero bytes, base64: a SLACK_TOKEN_KEY for tests only. */
 export const TEST_TOKEN_KEY = btoa(String.fromCharCode(...new Uint8Array(32)));
 
 let teams = 0;
 
-/** What oauth.v2.access would return for a fresh workspace. */
 export function grantFor(overrides: Partial<SlackInstallGrant> = {}): SlackInstallGrant {
   teams += 1;
   return {
@@ -29,7 +25,6 @@ export function grantFor(overrides: Partial<SlackInstallGrant> = {}): SlackInsta
 const base64Url = (value: unknown) =>
   btoa(JSON.stringify(value)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 
-/** An unsigned Slack ID token with the claims Holler reads. */
 export function idTokenFor(claims: {
   slackUserId: string;
   teamId: string;
@@ -49,7 +44,6 @@ export function idTokenFor(claims: {
   ].join(".");
 }
 
-/** A Better Auth user with a Slack account, as Sign in with Slack leaves them. */
 export async function slackUser(
   db: Db,
   input: { slackUserId: string; teamId: string; enterpriseId?: string },

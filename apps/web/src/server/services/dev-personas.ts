@@ -4,6 +4,7 @@ import type { Auth } from "../auth";
 import { type Db, schema } from "../db";
 import {
   DEV_PASSWORD,
+  DEV_TEAM_ID,
   type PersonaName,
   personas,
   seedDevWorkspace,
@@ -14,11 +15,48 @@ export function isPersona(name: string): name is PersonaName {
   return Object.hasOwn(personas, name);
 }
 
-/** Makes the persona's user, member and seed data if they are missing. Dev routes only. */
-export async function ensurePersona(db: Db, auth: Auth, name: PersonaName, now: Date) {
+export const DEV_WORKSPACE_HEADER = "x-holler-dev-workspace";
+
+export interface DevWorkspace {
+  teamId: string;
+  emailFor: (persona: PersonaName) => string;
+}
+
+export function devWorkspace(key: string | undefined): DevWorkspace | null {
+  if (key === undefined) {
+    return { teamId: DEV_TEAM_ID, emailFor: (persona) => personas[persona].email };
+  }
+  if (!/^[a-z0-9]{8,32}$/.test(key)) return null;
+  return {
+    teamId: `${DEV_TEAM_ID}${key.toUpperCase()}`,
+    emailFor: (persona) => personas[persona].email.replace("@", `.${key}@`),
+  };
+}
+
+export async function ensurePersonas(
+  db: Db,
+  auth: Auth,
+  workspace: DevWorkspace,
+  wanted: PersonaName,
+  now: Date,
+) {
+  for (const name of Object.keys(personas).filter(isPersona)) {
+    await ensurePersona(db, auth, workspace, name, now);
+  }
+  return { email: workspace.emailFor(wanted), password: DEV_PASSWORD };
+}
+
+async function ensurePersona(
+  db: Db,
+  auth: Auth,
+  workspace: DevWorkspace,
+  name: PersonaName,
+  now: Date,
+) {
   const persona = personas[name];
-  const { workspaceId } = await seedDevWorkspace(db);
-  let user = await db.query.user.findFirst({ where: eq(schema.user.email, persona.email) });
+  const email = workspace.emailFor(name);
+  const { workspaceId } = await seedDevWorkspace(db, workspace.teamId);
+  let user = await db.query.user.findFirst({ where: eq(schema.user.email, email) });
   if (!user) {
     const person = await db.query.slackPeople.findFirst({
       where: and(
@@ -28,12 +66,12 @@ export async function ensurePersona(db: Db, auth: Auth, name: PersonaName, now: 
     });
     try {
       await auth.api.signUpEmail({
-        body: { email: persona.email, password: DEV_PASSWORD, name: person?.name ?? name },
+        body: { email, password: DEV_PASSWORD, name: person?.name ?? name },
       });
     } catch {
       // Another request made the same persona a moment ago; the read below finds it.
     }
-    user = await db.query.user.findFirst({ where: eq(schema.user.email, persona.email) });
+    user = await db.query.user.findFirst({ where: eq(schema.user.email, email) });
     if (!user) throw new Error(`Could not create the ${name} persona`);
   }
   let member = await db.query.members.findFirst({ where: eq(schema.members.userId, user.id) });
@@ -52,5 +90,4 @@ export async function ensurePersona(db: Db, auth: Auth, name: PersonaName, now: 
     member = await db.query.members.findFirst({ where: eq(schema.members.userId, user.id) });
   }
   if (name === "lead" && member) await seedLeadHollers(db, workspaceId, member.id, now);
-  return { email: persona.email, password: DEV_PASSWORD };
 }

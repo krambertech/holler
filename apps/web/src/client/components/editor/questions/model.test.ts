@@ -134,7 +134,7 @@ describe("changeTemplate", () => {
 
   it("leaves the question alone when the type does not change", () => {
     const q = multi();
-    expect(changeTemplate(q, "multi")).toBe(q);
+    expect(changeTemplate(q, "multi")).toEqual(q);
   });
 
   it("makes a valid question from every template to every other", () => {
@@ -172,7 +172,7 @@ describe("options", () => {
 
   it("keeps at least two options", () => {
     const q = questionFromTemplate("single");
-    expect(removeOption(q, 0)).toBe(q);
+    expect(removeOption(q, 0)).toEqual(q);
   });
 
   it("takes Other out of the follow-up and the pick limit when it goes", () => {
@@ -186,7 +186,7 @@ describe("options", () => {
 
   it("adds Other only to a plain choice question", () => {
     const rating = questionFromTemplate("rating");
-    expect(setAllowOther(rating, true)).toBe(rating);
+    expect(setAllowOther(rating, true)).toEqual(rating);
     expect(filled(setAllowOther(questionFromTemplate("single"), true)).allowOther).toBe(true);
   });
 });

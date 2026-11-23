@@ -20,7 +20,6 @@ import { describe, input } from "./http";
 
 const idParam = z.object({ id: z.string().min(1) });
 
-/** Who the credential acts as, and the people and groups a Holler can go to. */
 export const v1Account = new Hono<AppEnv>()
   .get(
     "/me",
