@@ -1,5 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
-import { createFileRoute, Outlet, redirect, useLocation } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  Outlet,
+  redirect,
+  useLocation,
+  useNavigate,
+} from "@tanstack/react-router";
 import { AppHeader } from "@/components/app-header";
 import { toast } from "@/components/ui/toast";
 import { UninstalledNotice } from "@/components/uninstalled-notice";
@@ -25,16 +31,16 @@ export const Route = createFileRoute("/_app")({
   component: AppLayout,
 });
 
-async function signOut() {
-  const { error } = await authClient.signOut();
-  if (error) {
-    toast.add({ title: "Holler could not sign you out. Try again in a moment." });
-    return;
-  }
-  window.location.assign("/sign-in");
-}
-
 function AppLayout() {
+  const navigate = useNavigate();
+  const signOut = async () => {
+    const { error } = await authClient.signOut();
+    if (error) {
+      toast.add({ title: "Holler could not sign you out. Try again in a moment." });
+      return;
+    }
+    await navigate({ to: "/sign-in", reloadDocument: true });
+  };
   const { data: me } = useQuery(meQuery);
   // Settings says it in the workspace's own plate, with the button beside it.
   const onSettings = useLocation({ select: (l) => l.pathname === "/settings" });
