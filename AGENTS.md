@@ -20,7 +20,7 @@ Holler needs Node 24 (`.nvmrc`).
 pnpm verify
 ```
 
-It runs formatting, lint, the design, styling and migration checks, typechecking, every test, both builds and the bundle boundary check. A bug fix ships with a check that fails for its whole class, and a guard that proves it (Guards, below). `pnpm fix` writes oxfmt's formatting and Oxlint's fixes. For a change a person sees, also run `pnpm test:e2e` and prove it with the [`verify`](.agents/skills/verify/SKILL.md) skill: it drives each feature the diff reaches at 1280 px and 375 px, in day and night, and keeps the evidence. A product change is not done until it has been driven.
+It runs formatting, lint, the architecture, dead code, design, styling and migration checks, typechecking, every test, both builds and the bundle boundary check. A bug fix ships with a check that fails for its whole class, and a guard that proves it (Guards, below). `pnpm fix` writes oxfmt's formatting and Oxlint's fixes. For a change a person sees, also run `pnpm test:e2e` and prove it with the [`verify`](.agents/skills/verify/SKILL.md) skill: it drives each feature the diff reaches at 1280 px and 375 px, in day and night, and keeps the evidence. A product change is not done until it has been driven.
 
 If a check still fails after three rounds of fixes, stop and say what fails and why. Do not skip, retry or loosen a check to pass it. Review against [`REVIEW.md`](REVIEW.md) from `main`.
 
@@ -45,6 +45,8 @@ Project skills live in `.agents/skills/`; `.claude/skills` links to it so every 
 **Interface text.** Plain, warm, brief, in sentence case, with no exclamation marks and no emoji. Say what happens: "7 of 12 answered". Never build a sentence from fragments or from a ternary on `=== 1`; write both sentences. Dates and numbers go through `Intl`.
 
 **Server layering.** `routes/*` parse input with a core schema, call one service and return. `services/*` hold the logic and own the database; each function takes a `ServiceContext` (db, workspace, actor, clock). Routes, Slack handlers and MCP tools never import Drizzle; Oxlint refuses it. A change that Activity records goes through `recordChange` in `services/audit.ts`: one batch holds the change and its Activity, and a change that matches no row records nothing. `takeBack` undoes both. A rule kept in one door (web, Slack, API, MCP) is kept in all of them because they call the same service.
+
+**Architecture.** [`scripts/architecture.json`](scripts/architecture.json) says what each layer may import; a type-only import still counts across layers, except a type handed down from the server's root. No import cycles. A file holds 500 lines, a function 25 branches and a block 4 levels of nesting; `oxlint-limits.json` holds a higher number for each file that was already over. Nothing is exported, installed or kept that nothing uses (`knip.json`). Every promise is awaited, returned or marked `void`. A recorded exception, limit or ignore only falls: the checks refuse a new or higher one, and refuse one that is no longer needed. Split the code or move what two layers share instead of recording more. `pnpm check:limits --write` lowers the limits.
 
 **Errors.** A service throws `ServiceError` with a code and a message written for the person who reads it, saying what to do next, and a `field` when one input is at fault.
 

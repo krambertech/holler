@@ -39,7 +39,7 @@ function Install() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (status.data?.member) navigate({ to: "/", replace: true });
+    if (status.data?.member) void navigate({ to: "/", replace: true });
   }, [status.data?.member, navigate]);
 
   return (

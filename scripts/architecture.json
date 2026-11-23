@@ -1,0 +1,171 @@
+{
+  "layers": [
+    {
+      "name": "design tokens",
+      "files": ["packages/design/"],
+      "mayImport": [],
+      "fix": "Tokens know nothing about what uses them. Pass the value in from the app."
+    },
+    {
+      "name": "core",
+      "files": ["packages/core/"],
+      "mayImport": [],
+      "fix": "Both apps import core, so core imports neither. Move the shared code into packages/core."
+    },
+    {
+      "name": "site",
+      "files": ["apps/site/"],
+      "mayImport": ["core", "design tokens"],
+      "fix": "The site deploys without the product. Move the shared code into packages/core or packages/design."
+    },
+    {
+      "name": "browser journeys",
+      "files": ["e2e/"],
+      "mayImport": [],
+      "fix": "A journey drives Holler as a person does. Read the page or call /api/dev instead of importing product code."
+    },
+    {
+      "name": "client lib",
+      "files": ["apps/web/src/client/lib/"],
+      "mayImport": ["core", "design tokens"],
+      "fix": "lib holds no components. Move the component part into components, or the plain part into lib."
+    },
+    {
+      "name": "client primitives",
+      "files": [
+        "apps/web/src/client/components/ui/",
+        "apps/web/src/client/components/fluid-highlight.tsx"
+      ],
+      "mayImport": ["client lib", "core", "design tokens"],
+      "fix": "A primitive knows no Holler component. Take it as children or a prop, or move it into components/ui."
+    },
+    {
+      "name": "client components",
+      "files": ["apps/web/src/client/components/"],
+      "mayImport": ["client primitives", "client lib", "core", "design tokens"],
+      "fix": "Components are drawn by routes and by the design site, so they import neither. Move the shared part into components or lib."
+    },
+    {
+      "name": "design site",
+      "files": ["apps/web/src/client/design/", "apps/web/design/"],
+      "mayImport": [
+        "client components",
+        "client primitives",
+        "client lib",
+        "core",
+        "design tokens"
+      ],
+      "fix": "The design site shows components, not pages. Move what it shows into components."
+    },
+    {
+      "name": "client routes",
+      "files": ["apps/web/src/client/"],
+      "mayImport": [
+        "client components",
+        "client primitives",
+        "client lib",
+        "core",
+        "design tokens"
+      ],
+      "fix": "The product never imports the server or the design site. Share a type through packages/core; read data through the API."
+    },
+    {
+      "name": "services",
+      "files": [
+        "apps/web/src/server/services/",
+        "apps/web/src/server/principal.ts",
+        "apps/web/src/server/cron.ts"
+      ],
+      "mayImport": ["blocks", "slack api", "foundation", "core"],
+      "mayImportTypes": ["server"],
+      "fix": "Routes, Slack handlers and MCP tools call services, never the other way. Move the shared code into services."
+    },
+    {
+      "name": "blocks",
+      "files": ["apps/web/src/server/slack/blocks/"],
+      "mayImport": ["core"],
+      "mayImportTypes": ["slack api"],
+      "fix": "A block builder is a pure function of what it is given. Have the service load the data and pass it in."
+    },
+    {
+      "name": "slack api",
+      "files": [
+        "apps/web/src/server/slack/client.ts",
+        "apps/web/src/server/slack/fake.ts",
+        "apps/web/src/server/slack/tokens.ts"
+      ],
+      "mayImport": ["blocks", "core"],
+      "fix": "The Slack client is what services call. Pass the value in from the service."
+    },
+    {
+      "name": "slack handlers",
+      "files": ["apps/web/src/server/slack/"],
+      "mayImport": ["services", "blocks", "slack api", "foundation", "core"],
+      "mayImportTypes": ["server"],
+      "fix": "Every door calls a service. Move what two doors share into services."
+    },
+    {
+      "name": "routes",
+      "files": ["apps/web/src/server/routes/"],
+      "mayImport": ["services", "foundation", "core"],
+      "mayImportTypes": ["server"],
+      "fix": "Every door calls a service. Move what two doors share into services."
+    },
+    {
+      "name": "mcp",
+      "files": ["apps/web/src/server/mcp/"],
+      "mayImport": ["services", "foundation", "core"],
+      "mayImportTypes": ["server"],
+      "fix": "Every door calls a service. Move what two doors share into services."
+    },
+    {
+      "name": "foundation",
+      "files": [
+        "apps/web/src/server/batch.ts",
+        "apps/web/src/server/db.ts",
+        "apps/web/src/server/env.ts",
+        "apps/web/src/server/hmac.ts",
+        "apps/web/src/server/product-url.ts"
+      ],
+      "mayImport": ["core"],
+      "fix": "The database, the environment and the signing helpers know nothing about hollers. Move the code into services."
+    },
+    {
+      "name": "test support",
+      "files": [
+        "apps/web/src/server/crash-sweep/",
+        "apps/web/src/server/test-db.ts",
+        "apps/web/src/server/test-delivery.ts",
+        "apps/web/src/server/services/fixtures.ts",
+        "apps/web/src/server/services/slack-fixtures.ts",
+        "apps/web/src/server/routes/v1/test-env.ts"
+      ],
+      "mayImport": [
+        "server",
+        "services",
+        "slack handlers",
+        "slack api",
+        "blocks",
+        "foundation",
+        "core"
+      ],
+      "fix": "Test support is for tests only. Move what the product needs into services."
+    },
+    {
+      "name": "server",
+      "files": ["apps/web/src/server/"],
+      "mayImport": [
+        "routes",
+        "mcp",
+        "slack handlers",
+        "services",
+        "blocks",
+        "slack api",
+        "foundation",
+        "core"
+      ],
+      "fix": "The Worker never imports the client or test support. Share a type through packages/core."
+    }
+  ],
+  "exceptions": ["apps/web/src/server/mcp/server.ts -> apps/web/src/server/routes/v1/present.ts"]
+}

@@ -139,6 +139,7 @@ describe("Activity", () => {
   it("is a type error to await, to run as a statement, to write alone and to make by hand", () => {
     const misuses = async (activity: Activity) => {
       // @ts-expect-error
+      // oxlint-disable-next-line typescript/await-thenable -- this line is the misuse the types refuse
       await activity;
       // @ts-expect-error
       await db.batch([activity]);

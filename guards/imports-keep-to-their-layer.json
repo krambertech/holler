@@ -1,0 +1,14 @@
+{
+  "rule": "A file imports only what its layer may: doors call services, services never call doors, the client and the server never meet",
+  "layer": "architecture",
+  "past": "#24 signs a Slack request in a dev route with slack/verify, and #4's MCP server imports a REST route file, which is still the one recorded exception",
+  "check": "node scripts/check-architecture.mjs",
+  "break": [
+    {
+      "file": "apps/web/src/server/routes/dev.ts",
+      "find": "import { runCronPass } from \"../cron\";",
+      "replace": "import { runCronPass } from \"../cron\";\nimport { sign } from \"../slack/verify\";"
+    }
+  ],
+  "fails": "routes never imports slack handlers"
+}
