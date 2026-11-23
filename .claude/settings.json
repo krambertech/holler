@@ -5,6 +5,7 @@
       "Bash(pnpm verify)",
       "Bash(pnpm fix)",
       "Bash(pnpm check:*)",
+      "Bash(pnpm guards*)",
       "Bash(pnpm typecheck)",
       "Bash(pnpm test)",
       "Bash(pnpm test:*)",

@@ -1,0 +1,14 @@
+{
+  "rule": "A lookup by a list of ids stays inside D1's 100-value limit however long the list grows",
+  "layer": "lint",
+  "past": "#35 found two live failures, Home with over 100 Hollers and a preview of 100 groups; #31 wrote a third",
+  "check": "pnpm exec oxlint apps/web/src/server",
+  "break": [
+    {
+      "file": "apps/web/src/server/services/reminders.ts",
+      "find": "          db\n            .select({ id: hollers.id })\n            .from(hollers)\n            .where(and(eq(hollers.status, \"live\"), eq(hollers.remindersEnabled, true))),",
+      "replace": "          liveHollerIds,"
+    }
+  ],
+  "fails": "holler(bounded-in-array)"
+}

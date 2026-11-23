@@ -1,0 +1,14 @@
+{
+  "rule": "The product navigates only to routes that exist",
+  "layer": "lint",
+  "past": "#21: Copy into a new draft navigated by href to an editor route that did not exist yet, and no type caught it",
+  "check": "pnpm exec oxlint apps/web/src/client",
+  "break": [
+    {
+      "file": "apps/web/src/client/routes/_app/hollers.$id.tsx",
+      "find": "      void navigate({ to: \"/hollers/$id\", params: { id: draft.id } });",
+      "replace": "      void navigate({ href: `/new?draft=${draft.id}` });"
+    }
+  ],
+  "fails": "holler(typed-navigation)"
+}

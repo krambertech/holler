@@ -1,0 +1,14 @@
+{
+  "rule": "Racing dev sign-ins seed one weekly series whose rounds all name a first round that exists",
+  "layer": "test",
+  "past": "#36: the seed linked rounds by the id its own insert made, which a racing sign-in's insert had replaced",
+  "check": "cd apps/web && pnpm exec vitest run src/server/routes/dev-concurrency.test.ts",
+  "break": [
+    {
+      "file": "apps/web/src/server/services/dev-seed.ts",
+      "find": "      .where(seeded(seed.roundOf));",
+      "replace": "      .where(seeded(order));"
+    }
+  ],
+  "fails": "FAIL"
+}
