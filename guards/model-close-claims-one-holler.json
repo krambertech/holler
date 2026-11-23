@@ -1,0 +1,14 @@
+{
+  "rule": "Every closed Holler's recipients and creator are told once, whichever queue call fails in an overlapping pass",
+  "layer": "model",
+  "past": "#10 claimed every closed Holler before queueing the first, so one refusal left the rest claimed for good",
+  "check": "pnpm check:models delivery/closing",
+  "break": [
+    {
+      "file": "formal/delivery/model.json",
+      "find": "\"ClaimOneHoller\": true",
+      "replace": "\"ClaimOneHoller\": false"
+    }
+  ],
+  "fails": "delivery/closing: the current design breaks ClosedIsToldOnce"
+}

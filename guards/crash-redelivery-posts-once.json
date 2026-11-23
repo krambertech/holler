@@ -1,0 +1,14 @@
+{
+  "rule": "A send the queue delivers again after its consumer died posts once",
+  "layer": "test",
+  "past": "#10 posted a second reminder when the queue delivered one twice",
+  "check": "cd apps/web && pnpm exec vitest run src/server/crash-sweep -t 'through.*deliver reminder$'",
+  "break": [
+    {
+      "file": "apps/web/src/server/services/delivery.ts",
+      "find": "  if (!(await claimSlackDelivery(db, key, now))) return null;\n",
+      "replace": "  await claimSlackDelivery(db, key, now);\n"
+    }
+  ],
+  "fails": "Broken: nobody gets the same message twice"
+}

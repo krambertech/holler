@@ -10,5 +10,5 @@
       "replace": "x === 45.5 ? circle"
     }
   ],
-  "fails": "picks out one subject and at most one accent"
+  "fails": "picks out a subject and at most one accent"
 }

@@ -1,0 +1,14 @@
+{
+  "rule": "Once Stop repeating returns, no later round goes out, whatever send it raced",
+  "layer": "model",
+  "past": "#32 inserted the next round unconditionally, so a pulse went on after Stop repeating returned",
+  "check": "pnpm check:models rounds/repeating",
+  "break": [
+    {
+      "file": "formal/rounds/model.json",
+      "find": "\"UnlessStillRepeating\": true",
+      "replace": "\"UnlessStillRepeating\": false"
+    }
+  ],
+  "fails": "rounds/repeating: the current design breaks NothingGoesOutAfterStop"
+}

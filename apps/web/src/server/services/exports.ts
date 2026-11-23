@@ -178,48 +178,67 @@ function defuse(value: string): string {
   return formulaStart.test(value) ? `'${value}` : value;
 }
 
+function byResponseAndQuestion<T extends { responseId: string; questionId: string }>(
+  rows: readonly T[],
+) {
+  const cells = new Map<string, Map<string, T[]>>();
+  for (const row of rows) {
+    const response = cells.get(row.responseId) ?? new Map<string, T[]>();
+    const cell = response.get(row.questionId) ?? [];
+    cell.push(row);
+    response.set(row.questionId, cell);
+    cells.set(row.responseId, response);
+  }
+  return {
+    cell: (responseId: string, questionId: string): readonly T[] =>
+      cells.get(responseId)?.get(questionId) ?? [],
+  };
+}
+
+const whoColumns = (anonymous: boolean) =>
+  anonymous ? ["Answered"] : ["Submitted at", "Person", "Slack user id"];
+
+function whoAnswered(data: ExportData, response: ExportData["responses"][number]): string[] {
+  if (data.anonymous) return ["Yes"];
+  return [
+    response.submittedAt.toISOString(),
+    response.slackUserId ? (data.names.get(response.slackUserId) ?? "") : "",
+    response.slackUserId ?? "",
+  ];
+}
+
 export function csvFor(data: ExportData): string {
-  const header: string[] = data.anonymous ? [] : ["Submitted at", "Person", "Slack user id"];
-  const columns: { questionId: string; kind: "answer" | "other" | "note" }[] = [];
-  for (const q of data.questions) {
-    header.push(q.prompt);
-    columns.push({ questionId: q.id, kind: "answer" });
-    if (q.type === "single" || q.type === "multi") {
-      if (q.options.some((o) => o.isOther)) {
-        header.push(`${q.prompt} (Other)`);
-        columns.push({ questionId: q.id, kind: "other" });
+  const answersIn = byResponseAndQuestion(data.answers);
+  const notesIn = byResponseAndQuestion(data.notes);
+  const noted = new Set(data.notes.flatMap((n) => (n.kind === "note" ? [n.questionId] : [])));
+  const header = whoColumns(data.anonymous);
+  const columns: {
+    question: ExportData["questions"][number];
+    kind: "answer" | "other" | "note";
+  }[] = [];
+  for (const question of data.questions) {
+    header.push(question.prompt);
+    columns.push({ question, kind: "answer" });
+    if (question.type === "single" || question.type === "multi") {
+      if (question.options.some((o) => o.isOther)) {
+        header.push(`${question.prompt} (Other)`);
+        columns.push({ question, kind: "other" });
       }
-      if (data.notes.some((n) => n.questionId === q.id && n.kind === "note")) {
-        header.push(`${q.prompt} (note)`);
-        columns.push({ questionId: q.id, kind: "note" });
+      if (noted.has(question.id)) {
+        header.push(`${question.prompt} (note)`);
+        columns.push({ question, kind: "note" });
       }
     }
   }
-  const questionById = new Map(data.questions.map((q) => [q.id, q]));
   const rows = data.responses.map((response) => {
-    const cells: string[] = data.anonymous
-      ? []
-      : [
-          csvCell(response.submittedAt.toISOString()),
-          csvCell(response.slackUserId ? (data.names.get(response.slackUserId) ?? "") : ""),
-          csvCell(response.slackUserId ?? ""),
-        ];
-    for (const column of columns) {
-      const question = questionById.get(column.questionId);
-      if (!question) continue;
-      if (column.kind !== "answer") {
-        const note = data.notes.find(
-          (n) =>
-            n.responseId === response.id &&
-            n.questionId === column.questionId &&
-            n.kind === column.kind,
-        );
+    const cells = whoAnswered(data, response).map((value) => csvCell(value));
+    for (const { question, kind } of columns) {
+      if (kind !== "answer") {
+        const note = notesIn.cell(response.id, question.id).find((n) => n.kind === kind);
         cells.push(csvCell(note?.text ?? ""));
         continue;
       }
-      const own = data.answers.filter(
-        (a) => a.responseId === response.id && a.questionId === column.questionId,
-      );
+      const own = answersIn.cell(response.id, question.id);
       if (question.type === "number") {
         cells.push(csvCell(own[0]?.text ?? "", "number"));
       } else if (question.type === "text") {

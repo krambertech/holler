@@ -1,0 +1,14 @@
+{
+  "rule": "A schema change ships with the migration that makes it",
+  "layer": "ci",
+  "past": "check:migrations passed a new column with no migration, though docs/testing.md said it would not",
+  "check": "pnpm check:migrations",
+  "break": [
+    {
+      "file": "packages/core/src/schema/response-owners.ts",
+      "find": "    slackUserId: text(\"slack_user_id\").notNull(),",
+      "replace": "    slackUserId: text(\"slack_user_id\").notNull(),\n    probe: text(\"probe\"),"
+    }
+  ],
+  "fails": "a change no migration makes"
+}

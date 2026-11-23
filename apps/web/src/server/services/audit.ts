@@ -1,19 +1,28 @@
 import { type ActivityAction, type activitySubjectTypes, newId } from "@holler/core";
-import { schema } from "../db";
+import { type BatchItem, eq, getTableColumns, sql } from "@holler/core/db";
+import { type Db, schema } from "../db";
 import type { ServiceContext } from "./context";
 
 export interface AuditEntry {
   action: ActivityAction;
   subjectType: (typeof activitySubjectTypes)[number];
   subjectId: string;
-  /** Never a response's answers, a token or anything a recipient wrote. */
   data?: Record<string, unknown>;
 }
 
-/** Records a write for Activity. Every service that writes calls this in the same pass. */
-export function auditStatement(ctx: ServiceContext, entry: AuditEntry) {
+type Statement = BatchItem<"sqlite">;
+type ActivityRow = typeof schema.activity.$inferInsert;
+
+const rowOf = Symbol("the Activity row only this file reads");
+
+export interface Activity {
+  readonly [rowOf]: ActivityRow;
+  then(passItToRecordChange: never): never;
+}
+
+export function activityOf(ctx: ServiceContext, entry: AuditEntry): Activity {
   const { actor } = ctx;
-  return ctx.db.insert(schema.activity).values({
+  const row: ActivityRow = {
     id: newId("activity"),
     workspaceId: ctx.workspaceId,
     via: actor.via,
@@ -24,9 +33,47 @@ export function auditStatement(ctx: ServiceContext, entry: AuditEntry) {
     subjectId: entry.subjectId,
     data: entry.data ?? null,
     at: ctx.now(),
-  });
+  };
+  return { [rowOf]: row } as Activity;
 }
 
-export async function audit(ctx: ServiceContext, entry: AuditEntry): Promise<void> {
-  await auditStatement(ctx, entry);
+export async function recordChange<T extends Statement>(
+  ctx: ServiceContext,
+  activity: Activity,
+  change: T,
+  { before = [], after = [] }: { before?: Statement[]; after?: Statement[] } = {},
+): Promise<T["_"]["result"]> {
+  const results = await inOneBatch(ctx.db, [
+    ...before,
+    change,
+    insertIfItChanged(ctx.db, activity[rowOf]),
+    ...after,
+  ]);
+  return results[before.length];
+}
+
+export async function takeBack(
+  ctx: ServiceContext,
+  activity: Activity,
+  undo: [Statement, ...Statement[]],
+): Promise<void> {
+  const { id } = activity[rowOf];
+  await inOneBatch(ctx.db, [
+    ...undo,
+    ctx.db.delete(schema.activity).where(eq(schema.activity.id, id)),
+  ]);
+}
+
+function insertIfItChanged(db: Db, row: ActivityRow): Statement {
+  const columns = Object.entries(getTableColumns(schema.activity));
+  const values = columns.map(
+    ([name, column]) => sql`${sql.param(row[name as keyof ActivityRow] ?? null, column)}`,
+  );
+  return db
+    .insert(schema.activity)
+    .select(sql`select ${sql.join(values, sql`, `)} where changes() > 0`);
+}
+
+function inOneBatch(db: Db, statements: Statement[]): Promise<unknown[]> {
+  return db.batch(statements as [Statement, ...Statement[]]);
 }

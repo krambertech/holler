@@ -1,9 +1,10 @@
+import { newId } from "@holler/core";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import type { Db } from "../db";
+import { type Db, schema } from "../db";
 import { FakeSlack } from "../slack/fake";
 import { testDb } from "../test-db";
 import { ACTIVITY_PAGE, listActivity } from "./activity";
-import { audit } from "./audit";
+import type { AuditEntry } from "./audit";
 import type { ServiceContext } from "./context";
 import { createDraft } from "./hollers";
 import { linkSlackAccount, setMemberRole } from "./members";
@@ -16,6 +17,21 @@ beforeAll(async () => ({ db, dispose } = await testDb()));
 afterAll(() => dispose());
 
 const now = new Date("2026-11-21T09:00:00Z");
+
+async function audit(ctx: ServiceContext, entry: AuditEntry) {
+  await ctx.db.insert(schema.activity).values({
+    id: newId("activity"),
+    workspaceId: ctx.workspaceId,
+    via: ctx.actor.via,
+    memberId: "memberId" in ctx.actor ? (ctx.actor.memberId ?? null) : null,
+    credentialId: null,
+    action: entry.action,
+    subjectType: entry.subjectType,
+    subjectId: entry.subjectId,
+    data: entry.data ?? null,
+    at: ctx.now(),
+  });
+}
 
 async function team(installer: string) {
   const grant = grantFor({ installerSlackUserId: installer });

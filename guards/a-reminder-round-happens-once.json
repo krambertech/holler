@@ -6,8 +6,8 @@
   "break": [
     {
       "file": "apps/web/src/server/services/delivery.ts",
-      "find": "      and(eq(hollers.id, id), or(isNull(hollers.remindedAt), lte(hollers.remindedAt, gapStart))),",
-      "replace": "      eq(hollers.id, id),"
+      "find": "        and(waitingWhere, exists(ctx.db.select({ id: hollers.id }).from(hollers).where(mayRemind))),",
+      "replace": "        waitingWhere,"
     }
   ],
   "fails": "sends one round of reminders"
