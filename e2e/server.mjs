@@ -2,7 +2,7 @@
 import { spawn, spawnSync } from "node:child_process";
 import { rmSync } from "node:fs";
 import { resolve } from "node:path";
-import { E2E_ORIGIN, E2E_PORT } from "./origin.mjs";
+import { E2E_ORIGIN, E2E_PORT } from "./origin.ts";
 
 const web = resolve(import.meta.dirname, "../apps/web");
 const env = { ...process.env, HOLLER_E2E: "1", HOLLER_E2E_ORIGIN: E2E_ORIGIN };

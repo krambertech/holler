@@ -1,5 +1,5 @@
 import { defineConfig, devices } from "@playwright/test";
-import { E2E_ORIGIN } from "./e2e/origin.mjs";
+import { E2E_ORIGIN } from "./e2e/origin";
 
 // The product and the site on their own ports, with dev routes and an isolated local D1.
 export default defineConfig({
