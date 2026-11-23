@@ -16,6 +16,14 @@ export function drift(wanted, live) {
   if (live.enforcement !== wanted.enforcement) {
     problems.push(`enforcement is ${live.enforcement}, not ${wanted.enforcement}`);
   }
+  if (live.target !== wanted.target) problems.push(`it targets ${live.target}`);
+  for (const side of ["include", "exclude"]) {
+    const refs = live.conditions?.ref_name?.[side] ?? [];
+    const own = wanted.conditions.ref_name[side];
+    if (JSON.stringify([...refs].sort()) !== JSON.stringify([...own].sort())) {
+      problems.push(`it ${side}s ${JSON.stringify(refs)}, not ${JSON.stringify(own)}`);
+    }
+  }
   if ((live.bypass_actors ?? []).length > wanted.bypass_actors.length) {
     problems.push("someone may bypass the ruleset");
   }

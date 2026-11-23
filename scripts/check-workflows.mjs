@@ -53,6 +53,11 @@ export function workflowProblems(name, text) {
   if (!/^permissions:/m.test(text)) {
     problems.push(`${name}: set top-level permissions, such as "contents: read"`);
   }
+  if (/^\s+(- )?run:/m.test(text) && !/^defaults:\n {2}run:\n {4}shell: bash$/m.test(text)) {
+    problems.push(
+      `${name}: set top-level "defaults: run: shell: bash". Without it a step runs with no pipefail, so a failing command before a pipe passes`,
+    );
+  }
   for (const [at, line] of text.split("\n").entries()) {
     const where = `${name}:${at + 1}`;
     const used = line.match(/uses:\s*([^\s#]+)/)?.[1];

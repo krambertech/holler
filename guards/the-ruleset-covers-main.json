@@ -1,0 +1,14 @@
+{
+  "rule": "The ruleset check notices when main is no longer covered",
+  "layer": "test",
+  "past": "The first check-ruleset.mjs passed a live ruleset that covered another branch (review of #40)",
+  "check": "node --test scripts/check-ruleset.test.mjs",
+  "break": [
+    {
+      "file": "scripts/check-ruleset.mjs",
+      "find": "    if (JSON.stringify([...refs].sort()) !== JSON.stringify([...own].sort())) {",
+      "replace": "    if (refs.length < own.length) {"
+    }
+  ],
+  "fails": "no longer covers main"
+}

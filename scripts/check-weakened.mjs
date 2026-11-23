@@ -79,6 +79,23 @@ function weakenedGate({ file, before, after }) {
   return [after === null ? "is deleted" : "decides what passes, and changed"];
 }
 
+const checking = /^(verify|check|test|typecheck|guards|deploy:check)(:|$)/;
+const stepsOf = (script) => script.split("&&").map((step) => step.trim());
+
+function weakenedScripts({ file, before, after }) {
+  if (!/(^|\/)package\.json$/.test(file) || before === null) return [];
+  const was = JSON.parse(before).scripts ?? {};
+  const is = after === null ? {} : (JSON.parse(after).scripts ?? {});
+  return Object.entries(was)
+    .filter(([name]) => checking.test(name))
+    .flatMap(([name, script]) => {
+      const kept = stepsOf(is[name] ?? "");
+      return stepsOf(script)
+        .filter((step) => !kept.includes(step))
+        .map((step) => `"${name}" no longer runs ${step}`);
+    });
+}
+
 function weakenedPermissions({ file, before, after }) {
   if (file !== ".claude/settings.json" || before === null) return [];
   const kept = after === null ? [] : (JSON.parse(after).permissions?.deny ?? []);
@@ -98,6 +115,7 @@ const detectors = [
   weakenedTest,
   weakenedLint,
   weakenedGate,
+  weakenedScripts,
   weakenedPermissions,
   weakenedSource,
 ];
