@@ -40,7 +40,13 @@ docs(repo): explain local setup
 feat(api)!: replace the holler response shape
 ```
 
+Name the concrete change in literal language. Use the final diff and the original request to choose the title, then check it against the repository's format and recent merged examples. Prefer a specific verb and object over broad words such as "improve", "streamline" or "harden". State a number or performance gain only when measured evidence supports it. Revisit the title and body when scope changes.
+
 Fixup commits are acceptable while a pull request is in progress because GitHub squashes the branch. The pull request title is the durable commit subject, so make it describe one logical change.
+
+## Write the pull request description
+
+Start from [the template](../.github/pull_request_template.md). Open with the problem or missing capability, then the resulting behavior. Keep the summary to one or two short paragraphs. Put checks actually run, observed results, skipped checks and the verify evidence folder in Verification. Attach screenshots through [the screenshot guide](../.agents/skills/open-pr/references/screenshots.md). Include implementation detail only when it explains a decision or material risk. Remove unused sections, file inventories and generated-by footers.
 
 ## Merge a pull request
 

@@ -35,6 +35,24 @@ jobs:
       - name: Dry-run both deployments
         run: pnpm deploy:check
 
+  guards:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        part: [1, 2, 3, 4]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm guards:prove --shard ${{ matrix.part }}/4
+
   e2e:
     runs-on: ubuntu-latest
     steps:
@@ -47,6 +65,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec playwright install --with-deps chromium webkit
       - run: pnpm test:e2e
+      - run: pnpm guards:prove --browser
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
@@ -124,7 +143,7 @@ jobs:
 
   # Production and the preview Worker's base version follow main. Merging is the deploy.
   deploy:
-    needs: [verify, e2e]
+    needs: [verify, guards, e2e]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 20

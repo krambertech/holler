@@ -1,0 +1,14 @@
+{
+  "rule": "Every e2e sign-in lands where the test goes next, so no redirect races its navigation",
+  "layer": "lint",
+  "past": "#34: WebKit reported goto(\"/settings\") as interrupted by the sign-in redirect; CI runs 44947350398, 44948921335 and 44953827920 failed on it",
+  "check": "pnpm exec oxlint e2e",
+  "break": [
+    {
+      "file": "e2e/settings.spec.ts",
+      "find": "  rolesProjectOnly();\n  await signInAs(page, \"sender\", \"/settings\");",
+      "replace": "  rolesProjectOnly();\n  await signInAs(page, \"sender\");\n  await page.goto(\"/settings\");"
+    }
+  ],
+  "fails": "holler(sign-in-lands)"
+}

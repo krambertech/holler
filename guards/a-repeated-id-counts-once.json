@@ -1,0 +1,14 @@
+{
+  "rule": "A list read in chunks counts a repeated id once",
+  "layer": "test",
+  "past": "#35 counted a group twice when an audience named it in two chunks",
+  "check": "cd apps/web && pnpm exec vitest run src/server/batch.test.ts -t 'reads each value once'",
+  "break": [
+    {
+      "file": "apps/web/src/server/batch.ts",
+      "find": "inChunks([...new Set(list)])",
+      "replace": "inChunks([...list])"
+    }
+  ],
+  "fails": "reads each value once"
+}

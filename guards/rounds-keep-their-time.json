@@ -1,0 +1,14 @@
+{
+  "rule": "Every round lands on the first round's day and time, in every zone, for a year",
+  "layer": "test",
+  "past": "The class of #32, which took 168 hours for a week across a clock change",
+  "check": "cd packages/core && pnpm exec vitest run src/repeats.test.ts",
+  "break": [
+    {
+      "file": "packages/core/src/repeats.ts",
+      "find": "    if (at.getTime() > after.getTime()) return at;",
+      "replace": "    const counted = new Date(first.getTime() + round * step * DAY);\n    if (at.getTime() > after.getTime()) return counted;"
+    }
+  ],
+  "fails": "repeats.test.ts"
+}

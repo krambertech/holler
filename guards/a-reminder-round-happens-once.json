@@ -1,0 +1,14 @@
+{
+  "rule": "Five clicks on Send reminder send one round",
+  "layer": "test",
+  "past": "preventive: without the guarded update, every click reminds everyone",
+  "check": "cd apps/web && pnpm exec vitest run src/server/services/delivery.test.ts -t 'one round of reminders'",
+  "break": [
+    {
+      "file": "apps/web/src/server/services/delivery.ts",
+      "find": "      and(eq(hollers.id, id), or(isNull(hollers.remindedAt), lte(hollers.remindedAt, gapStart))),",
+      "replace": "      eq(hollers.id, id),"
+    }
+  ],
+  "fails": "sends one round of reminders"
+}

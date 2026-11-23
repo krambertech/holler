@@ -1,0 +1,14 @@
+{
+  "rule": "A queued send that posts to Slack posts once, however often it arrives",
+  "layer": "test",
+  "past": "#10 posted a reminder twice when the queue delivered it twice",
+  "check": "cd apps/web && pnpm exec vitest run src/server/services/delivery.test.ts -t 'is one post'",
+  "break": [
+    {
+      "file": "apps/web/src/server/services/delivery.ts",
+      "find": "  if (!(await claimSlackDelivery(db, key, now))) return null;",
+      "replace": "  await claimSlackDelivery(db, key, now);"
+    }
+  ],
+  "fails": "is one post"
+}

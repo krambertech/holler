@@ -1,0 +1,13 @@
+{
+  "rule": "Files under apps/web/src/client are kebab-case, except routes",
+  "layer": "lint",
+  "past": "Refused since the foundations (7e28e34); nothing has broken it, and names that differ only in case are one file on a Mac and two in CI",
+  "check": "pnpm exec oxlint apps/web/src/client",
+  "break": [
+    {
+      "file": "apps/web/src/client/components/HollerStatus.tsx",
+      "write": "export const HollerStatus = () => <span>Live</span>;\n"
+    }
+  ],
+  "fails": "unicorn(filename-case)"
+}

@@ -1,0 +1,14 @@
+{
+  "rule": "Anonymous results keep no trace of the order answers arrived in",
+  "layer": "test",
+  "past": "preventive: the order of written answers points at who wrote them",
+  "check": "cd packages/core && pnpm exec vitest run src/results.test.ts",
+  "break": [
+    {
+      "file": "packages/core/src/results.ts",
+      "find": "    anonymous ? [...list].sort(",
+      "replace": "    anonymous && list.length === 0 ? [...list].sort("
+    }
+  ],
+  "fails": "results.test.ts"
+}

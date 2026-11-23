@@ -1,0 +1,14 @@
+{
+  "rule": "Every e2e spec takes test and expect from e2e/fixtures.ts, which fails a test whose page logs an error",
+  "layer": "lint",
+  "past": "#26 wrote answers.spec.ts on @playwright/test, and f052a6b, 0f69882 and df5b9ab fixed more specs on three open branches, so none of them watched the page for errors",
+  "check": "pnpm exec oxlint e2e",
+  "break": [
+    {
+      "file": "e2e/answers.spec.ts",
+      "find": "import { expect, test } from \"./fixtures\";",
+      "replace": "import { expect, test } from \"@playwright/test\";"
+    }
+  ],
+  "fails": "Import test and expect from ./fixtures"
+}
