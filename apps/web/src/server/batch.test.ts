@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { BOUND_VALUES_PER_LIST, readInChunks } from "./batch";
+import { readInChunks } from "./batch";
+
+const D1_BOUND_VALUES_PER_STATEMENT = 100;
 
 describe("readInChunks", () => {
   it("reads each value once, in lists D1 can bind", async () => {
@@ -9,7 +11,7 @@ describe("readInChunks", () => {
       seen.push(chunk);
       return chunk;
     });
-    expect(seen.every((chunk) => chunk.length <= BOUND_VALUES_PER_LIST)).toBe(true);
+    expect(seen.every((chunk) => chunk.length < D1_BOUND_VALUES_PER_STATEMENT)).toBe(true);
     expect(rows).toHaveLength(150);
     expect(new Set(rows).size).toBe(150);
   });

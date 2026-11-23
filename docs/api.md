@@ -24,6 +24,8 @@ A key acts as the member who made it, in the workspace it was made in. Revoke it
 
 `GET` needs any key. Every other method needs a read-and-write key, or it gets `403`. Managing keys and connected apps works only from the web app: no key can list, make or revoke a key.
 
+A key acts as the member who made it, in the workspace it was made in (`principalForApiKey` in `server/principal.ts`), so a person in two workspaces has keys that never cross over.
+
 ## Endpoints
 
 All paths are under `https://app.holler.team/api/v1`.
@@ -128,6 +130,8 @@ Holler's MCP server is at `https://app.holler.team/mcp`. Add it to Claude, ChatG
 - Disconnect it in **Settings**, under **Connected apps**. It stops working at once.
 
 The MCP server uses OAuth 2.1. Clients identify themselves with a Client ID Metadata Document, or with dynamic registration for clients that do not support one. Discovery is at `/.well-known/oauth-protected-resource/mcp`.
+
+An access token outlives a disconnect by up to an hour, so `principalForMcp` decides access and scope from the live consent row and never from the token. `server/mcp/cimd-fetch.ts` fetches a client's metadata document: Workers cannot pin a DNS answer but refuse connections to private ranges, so the code adds HTTPS only, `GET` or `HEAD` only, no literal special-use hosts, and redirects handed back unfollowed.
 
 | Tool             | Does                                                                  |
 | ---------------- | --------------------------------------------------------------------- |

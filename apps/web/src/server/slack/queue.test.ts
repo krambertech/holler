@@ -57,9 +57,7 @@ describe("consumeSlackSends", () => {
     const [ua, ub, uc] = messages;
     expect(ua?.ack).toHaveBeenCalledOnce();
     expect(ua?.retry).not.toHaveBeenCalled();
-    // A rate limit waits as long as Slack asked.
     expect(ub?.retry).toHaveBeenCalledWith({ delaySeconds: 42 });
-    // Anything else backs off by attempt: the third waits 40 seconds.
     expect(uc?.retry).toHaveBeenCalledWith({ delaySeconds: 40 });
     expect(slack.posted.map((m) => m.channel)).toEqual(["UA"]);
   });

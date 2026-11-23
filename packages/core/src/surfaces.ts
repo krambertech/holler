@@ -1,16 +1,5 @@
 import { isChoice, type Mode, type QuestionStyle, type QuestionType, slackLimits } from "./modes";
 
-/**
- * Where a Holler is answered, so the editor can say so before it is sent and Slack delivery can
- * build the matching message. docs/slack.md, Answering.
- *
- * - `dm`: right in the DM. A pulse of one single-choice question shows its options as buttons,
- *   and the DM then offers an optional note. A pulse of one free-text question takes the answer
- *   in a box in the DM.
- * - `slack`: Answer opens a Slack form (a modal).
- * - `web`: Answer opens a web page, because something cannot be shown in Slack.
- * - `chase`: a chase has no questions; people open the form and press I submitted it.
- */
 export type AnswerSurface =
   | { where: "dm" | "slack" | "chase" }
   | { where: "web"; question: number; why: "conditional_follow_up" | "too_many_options" }
@@ -42,8 +31,6 @@ export function answerSurface(holler: {
     }
   }
 
-  // The intro is a section and a divider; each question is one input block, plus one for an
-  // Other write-in and one for a follow-up note.
   const blocks =
     (holler.description?.trim() ? 2 : 0) +
     questions.reduce((n, q) => n + 1 + (q.allowOther ? 1 : 0) + (q.followUp ? 1 : 0), 0);
@@ -63,7 +50,6 @@ export function answerSurface(holler: {
   return { where: "slack" };
 }
 
-/** A pulse needs no title: its first question stands in until the sender writes one. */
 export function hollerTitle(holler: {
   mode: Mode;
   title: string;

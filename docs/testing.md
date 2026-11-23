@@ -16,7 +16,10 @@ pnpm verify
 | `pnpm check:models`    | Every order of the steps in the TLA+ models in `formal/` keeps Holler's promises about sending, closing and rounds, and each past bug and recorded finding still breaks the one it names. Needs Java; CI's `models` job runs it |
 | `pnpm check:models:sync` | No function a model describes changed since it was last confirmed. `pnpm check` runs it |
 | `pnpm check:migrations` | No applied migration changed, nor one this branch pushed, and the schema needs no migration that is missing                                                                                                                    |
-| `pnpm typecheck`        | Every package and both Workers, strict                                                                                                                                                     |
+| `pnpm typecheck`        | Every package, both Workers and the browser journeys, strict                                                                                                                                                     |
+| `pnpm check:architecture` | Every import keeps to its layer, there are no import cycles, and `scripts/architecture.json` gains no exception. Part of `pnpm check` |
+| `pnpm check:limits` | Every number in `oxlint-limits.json` is as low as its file allows, and none rose since the base. Part of `pnpm check` |
+| `pnpm check:dead-code` | Knip finds no unused file, export or dependency. Part of `pnpm check` |
 | `pnpm test`             | Vitest in every package, plus `node --test` for the repo scripts                                                                                                                           |
 | `pnpm build`            | Both apps build                                                                                                                                                                            |
 | `pnpm check:boundaries` | The production product bundle has no dev tools; the site has no product code                                                                                                               |
@@ -39,12 +42,23 @@ Test a service, not a route, unless the route itself has logic. A service test n
 **A guard proves its check can fail.** `guards/<rule>.json` names the rule, the `layer` that holds it, the `past` mistake, the `check` command, and one proof: `break`, edits that bring the mistake back, or `refuses`, a command with a bad input. `fails` is text the failing check must print, so a check that fails for another reason does not count. `pnpm guards:prove <rule>` copies the tree, runs the check on it, makes the edits and runs it again. Filter the check to the tests that hold the rule (`-t`), so a proof takes seconds. A guard with the layer `browser` runs in the e2e job.
 
 **Orders of events are modelled.** [`formal/`](../formal) has two TLA+ models, and the [`verify-delivery-model`](../.agents/skills/verify-delivery-model/SKILL.md) skill says how to read, change and confirm them ([ADR 0005](adr/0005-tla-models-for-delivery-and-rounds.md)). What the code gets wrong today is in [`formal/counterexamples.md`](../formal/counterexamples.md).
+## Limits that only fall
+
+`check:architecture`, `check:limits` and `check:dead-code` each compare their recorded list with the one at the merge base (`scripts/base.mjs`), so a pull request can shorten a list and cannot lengthen it. CI checks out the whole history for this and fails without a base. Each also refuses an entry that is no longer needed, so the lists fall on their own.
+
+- **Layers.** A type-only import is erased, so it never makes a cycle, but it still ties two layers together: the client may not import a server type. `mayImportTypes` is the exception, for `Auth` and `AppEnv`, which describe values the server's root hands down. Test files are free of the layers, and nothing imports test support but them.
+- **Size.** Limits are whole steps (50 lines, 5 branches), so an ordinary edit leaves `oxlint-limits.json` alone and two branches rarely touch it. Test files have no limit.
+- **Dead code.** `ignoreIssues` in `knip.json` holds exports that open pull requests use or that sit in files they change: `LimitReached` and the dropdown menu's parts wait for #11, #21 and #33, and the rest go when the pull request that changes the file lands.
+
+Oxlint's typed rules (`--type-aware`, which `pnpm check` passes) need `oxlint-tsgolint`, pinned beside it. An unawaited promise in a Worker dies with the request.
 
 ## Browser journeys
 
 `e2e/` runs the product and the site on their own ports with `HOLLER_E2E=1`, signs in through `/api/dev/sign-in?as=<persona>` and never types a Slack password. Every journey ends with `expectAccessible(page)`, which runs axe for WCAG 2.2 AA and fails on any violation.
 
-Personas are in `apps/web/src/server/services/dev-seed.ts`: `lead` has live, scheduled and closed hollers; `sender` has nothing, for the empty states. Parallel workers sign in at the same time, so every seed write is guarded by a unique index and re-read when it loses the race; `routes/dev-concurrency.test.ts` fires first sign-ins at once and checks each one succeeds and the seed lands once.
+Every test has its own workspace. `e2e/fixtures.ts` sends a random `x-holler-dev-workspace` key with each request, and dev sign-in makes and seeds that workspace with every persona. A test can change anything, in both browsers at once. Use `signInAs(page, persona)` for a page and the `requestAs` fixture for API calls; both use the test's own workspace. `/api/dev/tick` refuses a keyed caller, because a tick runs every workspace. A flaky test fails: `failOnFlakyTests` is on and `holler/no-flaky-escape` refuses retries, sleeps and bare skips.
+
+Personas are in `apps/web/src/server/services/dev-seed.ts`: `lead` has live, scheduled and closed hollers; `sender` has sent nothing, for the empty states. `routes/dev-concurrency.test.ts` fires first sign-ins at once and checks that each succeeds and the seed lands once.
 
 ## Proving a change in the browser
 

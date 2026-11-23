@@ -7,10 +7,6 @@ import { consumeSlackSends } from "./slack/queue";
 
 export type { AppEnv } from "./app";
 
-/**
- * The cron runs every minute; `runCronPass` owns what it does. The queue consumer makes every
- * Slack call the cron and the services put on SLACK_SENDS.
- */
 export default {
   fetch: app.fetch,
   scheduled(controller, env, executionCtx) {

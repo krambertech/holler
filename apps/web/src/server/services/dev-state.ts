@@ -118,10 +118,10 @@ function homeText(blocks: unknown[]): string[] {
  * Deletes the local dev workspace and everything in it, so the next persona sign-in seeds it
  * again from scratch. Every persona shares it, so this resets all of them. Dev routes only.
  */
-export async function resetDevWorkspace(db: Db): Promise<void> {
+export async function resetDevWorkspace(db: Db, teamId = DEV_TEAM_ID): Promise<void> {
   const deleted = await db
     .delete(schema.workspaces)
-    .where(eq(schema.workspaces.slackTeamId, DEV_TEAM_ID))
+    .where(eq(schema.workspaces.slackTeamId, teamId))
     .returning({ id: schema.workspaces.id });
   for (const row of deleted) forgetDevSlack(row.id);
 }

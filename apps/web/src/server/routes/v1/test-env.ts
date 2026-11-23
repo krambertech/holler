@@ -7,10 +7,6 @@ import type { Bindings } from "../../env";
 
 const appDir = fileURLToPath(new URL("../../../../", import.meta.url));
 
-/**
- * A Worker environment for route tests: an in-memory D1 with every migration, a local KV for
- * Better Auth, and test secrets. `app.request(path, init, env)` runs a request through it.
- */
 export async function testEnv(): Promise<{
   env: Bindings;
   db: Db;

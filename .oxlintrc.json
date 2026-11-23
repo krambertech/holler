@@ -1,5 +1,6 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "extends": ["./oxlint-limits.json"],
   "plugins": ["eslint", "typescript", "unicorn", "oxc", "react", "jsx-a11y", "import"],
   "jsPlugins": ["./oxlint-plugin-holler/index.mjs"],
   "categories": {
@@ -31,6 +32,25 @@
         "disallowTypeAnnotations": false
       }
     ],
+    "typescript/no-floating-promises": [
+      "error",
+      {
+        "allowForKnownSafeCalls": [
+          { "from": "package", "package": "node:test", "name": ["test", "it", "describe"] }
+        ]
+      }
+    ],
+    "typescript/no-misused-promises": [
+      "error",
+      {
+        "checksVoidReturn": { "attributes": false }
+      }
+    ],
+    "typescript/no-duplicate-type-constituents": "off",
+    "typescript/no-misused-spread": "off",
+    "typescript/require-array-sort-compare": "off",
+    "typescript/restrict-template-expressions": "off",
+    "typescript/unbound-method": "off",
     "react/refs": "off",
     "react/set-state-in-effect": "off",
     "react/purity": "off",
@@ -69,6 +89,22 @@
           "error",
           {
             "case": "kebabCase"
+          }
+        ]
+      }
+    },
+    {
+      "files": ["apps/**", "e2e/**"],
+      "rules": {
+        "eslint/no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["drizzle-orm", "drizzle-orm/**"],
+                "message": "Import Drizzle from @holler/core/db. Better Auth brings Kysely, and a second import makes pnpm build two Drizzles whose types do not match."
+              }
+            ]
           }
         ]
       }
@@ -136,9 +172,28 @@
     },
     {
       "files": ["e2e/**"],
-      "excludeFiles": ["e2e/a11y.ts", "e2e/global-setup.ts"],
+      "excludeFiles": ["e2e/a11y.ts", "e2e/fixtures.ts"],
       "rules": {
         "holler/sign-in-lands": "error"
+      }
+    },
+    {
+      "files": ["e2e/**"],
+      "rules": {
+        "holler/test-owns-its-workspace": "error"
+      }
+    },
+    {
+      "files": [
+        "e2e/**",
+        "**/*.test.ts",
+        "**/*.test.tsx",
+        "**/*.test.mjs",
+        "playwright.config.ts",
+        "**/vitest.config.ts"
+      ],
+      "rules": {
+        "holler/no-flaky-escape": "error"
       }
     },
     {
@@ -147,7 +202,8 @@
         "holler/no-sql-lower": "error",
         "holler/no-spread-rows": "error",
         "holler/no-multi-row-insert": "error",
-        "holler/bounded-in-array": "error"
+        "holler/bounded-in-array": "error",
+        "holler/no-mocked-services": "error"
       }
     },
     {
