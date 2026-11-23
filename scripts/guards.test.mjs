@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { coverageProblems, guardProblems, shardOf, verdict } from "./guards.mjs";
+import { coverageProblems, guardProblems, ranNothing, shardOf, verdict } from "./guards.mjs";
 
 const guard = {
   rule: "A send happens once",
@@ -63,4 +63,16 @@ test("a check that passes on broken code, or fails for another reason, proves no
   assert.match(verdict(guard, { status: 0, output: "" }), /passed on the broken code/);
   assert.match(verdict(guard, { status: 1, output: "timeout" }), /another reason/);
   assert.equal(verdict(guard, { status: 1, output: "x sent twice x" }), null);
+});
+
+test("a test filter that matches nothing proves nothing", () => {
+  assert.equal(
+    ranNothing("pnpm exec vitest run a.test.ts -t 'x'", " Tests  28 skipped (28)"),
+    true,
+  );
+  assert.equal(
+    ranNothing("pnpm exec vitest run a.test.ts", " Tests  1 passed | 27 skipped"),
+    false,
+  );
+  assert.equal(ranNothing("pnpm check:styling", "fine"), false);
 });
