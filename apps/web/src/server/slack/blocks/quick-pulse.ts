@@ -1,4 +1,9 @@
-import { type HollerDraftInput, type QuestionInput, questionTemplates } from "@holler/core";
+import {
+  type HollerDraftInput,
+  productPath,
+  type QuestionInput,
+  questionTemplates,
+} from "@holler/core";
 import type { SlackView } from "../client";
 import { actionIds, context, escapeMrkdwn, plain, quickPulseViewId, section, when } from "./format";
 import type { StateValue } from "./modal";
@@ -177,7 +182,7 @@ export function quickPulseModal(
         type: "button",
         action_id: actionIds.productLink,
         text: plain("Open in Holler"),
-        url: `${productUrl}/new`,
+        url: `${productUrl}${productPath("/")}`,
       },
     },
   );
@@ -324,7 +329,7 @@ export function quickSentView(
           type: "button",
           action_id: actionIds.resultsLink,
           text: plain("See results"),
-          url: `${productUrl}/hollers/${sent.hollerId}`,
+          url: `${productUrl}${productPath("/hollers/$id", { params: { id: sent.hollerId } })}`,
         },
       ],
     },
@@ -347,7 +352,7 @@ export function quickFailedView(
           type: "button",
           action_id: actionIds.productLink,
           text: plain("Open in Holler"),
-          url: saved ? `${productUrl}/hollers/${failed.hollerId}/edit` : `${productUrl}/new`,
+          url: `${productUrl}${failed.hollerId ? productPath("/hollers/$id", { params: { id: failed.hollerId } }) : productPath("/")}`,
         },
       ],
     },
@@ -365,7 +370,7 @@ export function signInView(productUrl: string): SlackView {
           type: "button",
           action_id: actionIds.productLink,
           text: plain("Sign in to Holler"),
-          url: `${productUrl}/sign-in`,
+          url: `${productUrl}${productPath("/sign-in")}`,
         },
       ],
     },

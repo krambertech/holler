@@ -277,7 +277,7 @@ describe("the quick pulse", () => {
     expect(shown).toContain("Your pulse is saved as a draft.");
     const drafts = (await hollersOf(workspaceId)).filter((h) => h.status === "draft");
     expect(drafts).toHaveLength(1);
-    expect(shown).toContain(`/hollers/${drafts[0]?.id}/edit`);
+    expect(shown).toContain(`/hollers/${drafts[0]?.id}`);
   });
 
   it("ends on Not sent with the draft when Slack fails mid-send, never on Sending", async () => {
@@ -293,7 +293,7 @@ describe("the quick pulse", () => {
     expect(JSON.stringify(shown?.view.blocks)).toContain("Your pulse is saved as a draft.");
     const [draft] = await hollersOf(workspaceId);
     expect(draft?.status).toBe("draft");
-    expect(JSON.stringify(shown?.view.blocks)).toContain(`/hollers/${draft?.id}/edit`);
+    expect(JSON.stringify(shown?.view.blocks)).toContain(`/hollers/${draft?.id}`);
   });
 
   it("redraws without the options box when the answers are a template", async () => {

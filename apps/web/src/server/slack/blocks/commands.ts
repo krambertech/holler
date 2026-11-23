@@ -1,3 +1,4 @@
+import { productPath } from "@holler/core";
 import type { PostMessage } from "../client";
 import { actionIds, context, escapeMrkdwn, plain, section, when } from "./format";
 import type { HomeLive } from "./home";
@@ -40,7 +41,7 @@ export function resultsMessage(
       text: { type: "mrkdwn", text: `*${escapeMrkdwn(row.title)}*\n${parts.join(" · ")}` },
       accessory: linkButton(
         "See results",
-        `${reader.productUrl}/hollers/${row.id}`,
+        `${reader.productUrl}${productPath("/hollers/$id", { params: { id: row.id } })}`,
         actionIds.resultsLink,
       ),
     });
@@ -78,7 +79,7 @@ export function signInMessage(productUrl: string): Ephemeral {
       {
         type: "actions",
         block_id: "sign-in",
-        elements: [linkButton("Sign in to Holler", `${productUrl}/sign-in`)],
+        elements: [linkButton("Sign in to Holler", `${productUrl}${productPath("/sign-in")}`)],
       },
     ],
   };

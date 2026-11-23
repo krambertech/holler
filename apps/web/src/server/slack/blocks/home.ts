@@ -1,4 +1,4 @@
-import type { HomeCounts } from "@holler/core";
+import { type HomeCounts, productPath } from "@holler/core";
 import type { SlackView } from "../client";
 import {
   actionIds,
@@ -65,7 +65,12 @@ function liveRow(row: HomeLive, state: HomeState): unknown[] {
     const next = timeOfDay(row.remind.next, state.timeZone);
     lines.push(`Reminded at ${last}. You can remind again at ${next}.`);
   }
-  const elements: unknown[] = [link("See results", `${state.productUrl}/hollers/${row.id}`)];
+  const elements: unknown[] = [
+    link(
+      "See results",
+      `${state.productUrl}${productPath("/hollers/$id", { params: { id: row.id } })}`,
+    ),
+  ];
   if (row.remind.status === "ready") {
     elements.push({
       type: "button",
@@ -169,7 +174,7 @@ function signInBlocks(state: HomeState): unknown[] {
     {
       type: "actions",
       block_id: "home:sign-in",
-      elements: [link("Sign in to Holler", `${state.productUrl}/sign-in`)],
+      elements: [link("Sign in to Holler", `${state.productUrl}${productPath("/sign-in")}`)],
     },
   ];
 }
