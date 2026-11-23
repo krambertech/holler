@@ -45,47 +45,67 @@ function rulesNamed(config) {
   );
 }
 
+function weakenedGuard({ file, before, after }) {
+  if (!/^guards\/.*\.json$/.test(file) || before === null) return [];
+  if (after === null) return ["the guard is deleted"];
+  const [was, is] = [JSON.parse(before), JSON.parse(after)];
+  return ["check", "fails", "refuses"]
+    .filter((key) => was[key] !== is[key])
+    .map((key) => `its "${key}" changed`);
+}
+
+function weakenedTest({ file, before, after }) {
+  if (!testFile.test(file) || before === null) return [];
+  if (after === null) return ["the test file is deleted"];
+  const lost = count(before, testCase) - count(after, testCase);
+  return lost > 0 ? [`${lost} fewer test case${lost === 1 ? "" : "s"}`] : [];
+}
+
+function weakenedLint({ file, before, after }) {
+  if (file !== ".oxlintrc.json" || before === null || after === null) return [];
+  const [was, is] = [JSON.parse(before), JSON.parse(after)];
+  const on = rulesOf(is);
+  const already = skipped(was);
+  return [
+    ...[...rulesOf(was).keys()].filter((rule) => !on.has(rule)).map((rule) => `${rule} is off`),
+    ...skipped(is, rulesNamed(was))
+      .filter((entry) => !already.includes(entry))
+      .map((entry) => `skips ${entry}`),
+  ];
+}
+
+function weakenedGate({ file, before, after }) {
+  if (!gateFiles.test(file) || before === null) return [];
+  return [after === null ? "is deleted" : "decides what passes, and changed"];
+}
+
+function weakenedPermissions({ file, before, after }) {
+  if (file !== ".claude/settings.json" || before === null) return [];
+  const kept = after === null ? [] : (JSON.parse(after).permissions?.deny ?? []);
+  return (JSON.parse(before).permissions?.deny ?? [])
+    .filter((rule) => !kept.includes(rule))
+    .map((rule) => `no longer denies ${rule}`);
+}
+
+function weakenedSource({ file, before, after }) {
+  if (!/\.(ts|tsx|mjs)$/.test(file) || /^(oxlint-plugin-holler|scripts)\//.test(file)) return [];
+  const gained = count(after ?? "", suppression) - count(before ?? "", suppression);
+  return gained > 0 ? [`${gained} more suppression${gained === 1 ? "" : "s"}`] : [];
+}
+
+const detectors = [
+  weakenedGuard,
+  weakenedTest,
+  weakenedLint,
+  weakenedGate,
+  weakenedPermissions,
+  weakenedSource,
+];
+
 export function weakened(changes) {
-  const found = [];
-  const say = (file, what) => found.push({ file, what });
-  for (const { file, before, after } of changes) {
-    if (/^guards\/.*\.json$/.test(file) && before !== null) {
-      if (after === null) say(file, "the guard is deleted");
-      else {
-        const [was, is] = [JSON.parse(before), JSON.parse(after)];
-        for (const key of ["check", "fails", "refuses"]) {
-          if (was[key] !== is[key]) say(file, `its "${key}" changed`);
-        }
-      }
-    }
-    if (testFile.test(file) && before !== null) {
-      const lost = count(before, testCase) - count(after ?? "", testCase);
-      if (after === null) say(file, "the test file is deleted");
-      else if (lost > 0) say(file, `${lost} fewer test case${lost === 1 ? "" : "s"}`);
-    }
-    if (file === ".oxlintrc.json" && before !== null && after !== null) {
-      const [was, is] = [JSON.parse(before), JSON.parse(after)];
-      const on = rulesOf(is);
-      for (const rule of rulesOf(was).keys()) if (!on.has(rule)) say(file, `${rule} is off`);
-      const already = skipped(was);
-      for (const entry of skipped(is, rulesNamed(was)))
-        if (!already.includes(entry)) say(file, `skips ${entry}`);
-    } else if (gateFiles.test(file)) {
-      if (before !== null)
-        say(file, after === null ? "is deleted" : "decides what passes, and changed");
-    }
-    if (file === ".claude/settings.json" && before !== null) {
-      const kept = after === null ? [] : (JSON.parse(after).permissions?.deny ?? []);
-      for (const rule of JSON.parse(before).permissions?.deny ?? []) {
-        if (!kept.includes(rule)) say(file, `no longer denies ${rule}`);
-      }
-    }
-    if (/\.(ts|tsx|mjs)$/.test(file) && !/^(oxlint-plugin-holler|scripts)\//.test(file)) {
-      const gained = count(after ?? "", suppression) - count(before ?? "", suppression);
-      if (gained > 0) say(file, `${gained} more suppression${gained === 1 ? "" : "s"}`);
-    }
-  }
-  return found;
+  return changes.flatMap((change) =>
+    detectors.flatMap((detect) => detect(change).map((what) => ({ file: change.file, what }))),
+  );
 }
 
 export function unnamed(found, body) {
