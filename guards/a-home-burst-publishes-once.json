@@ -5,7 +5,7 @@
   "check": "cd apps/web && pnpm exec vitest run src/server/services/slack-home.test.ts -t 'publishes a burst of changes once'",
   "break": [
     {
-      "file": "apps/web/src/server/services/slack-home.ts",
+      "file": "apps/web/src/server/services/home-queue.ts",
       "find": "            : or(isNull(slackHomes.queuedAt), lte(slackHomes.queuedAt, stale)),",
       "replace": "            : undefined,"
     }
