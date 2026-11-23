@@ -1,11 +1,6 @@
 import { type Mode, numberedScale, questionTemplates } from "./modes";
 import type { QuestionInput } from "./types";
 
-/**
- * Templates: ready hollers to start from. Picking one opens the editor filled in; from then on it
- * is an ordinary draft. CONTEXT.md, Template. Not the same as a question template, which is how
- * one question is made.
- */
 export const templateGroups = [
   { id: "check-ins", label: "Check-ins" },
   { id: "team-health", label: "Team health" },
@@ -19,7 +14,6 @@ export interface HollerTemplate {
   id: string;
   group: TemplateGroup;
   name: string;
-  /** One line for the picker. */
   summary: string;
   mode: Mode;
   title: string;

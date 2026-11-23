@@ -29,7 +29,7 @@ Endpoints, all on the product Worker. Slack signs every request it sends, and ea
 | `/slack/interactions`   | Buttons, modals, shortcuts                                                                     |
 | `/slack/commands`       | `/holler`                                                                                      |
 
-Every handler acknowledges within three seconds. Anything slower runs in `waitUntil` or goes on the `SLACK_SENDS` queue. Retries are dropped by recording Slack's event or view id in `slack_deliveries`. Every Slack call goes through `SlackClient` in `apps/web/src/server/slack/client.ts`; tests use `FakeSlack`.
+Every handler acknowledges within three seconds. A request signed more than five minutes from now is refused, so a captured one cannot be replayed. Anything slower runs in `waitUntil` or goes on the `SLACK_SENDS` queue. Retries are dropped by recording Slack's event or view id in `slack_deliveries`. Every Slack call goes through `SlackClient` in `apps/web/src/server/slack/client.ts`; tests use `FakeSlack`.
 
 ## Installing and signing in
 

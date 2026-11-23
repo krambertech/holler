@@ -12,12 +12,6 @@ import type { AppEnv } from "../../app";
 import { apiKeyFrom, principalFor, principalForApiKey } from "../../principal";
 import { ServiceError } from "../../services/context";
 
-/**
- * The plumbing every `/api/v1` route shares: who is calling, what they may do, how inputs are
- * validated, and how each route describes itself for the OpenAPI document.
- */
-
-/** A key in `Authorization: Bearer` or `x-api-key`, or else the web app's session. */
 export const authenticate: MiddlewareHandler<AppEnv> = async (c, next) => {
   const key = apiKeyFrom(c.req.raw);
   const principal = key
@@ -45,10 +39,6 @@ export const authenticate: MiddlewareHandler<AppEnv> = async (c, next) => {
   await next();
 };
 
-/**
- * Validates one part of the request and documents it. A failure is an `invalid` error in the
- * API's one error shape, naming the first field at fault.
- */
 export function input<T extends ZodType, Target extends keyof ValidationTargets>(
   target: Target,
   schema: T,
@@ -72,14 +62,6 @@ type Responses = NonNullable<DescribeRouteOptions["responses"]>;
 type Ok = { status?: number; schema?: ZodType; description: string; media?: string[] };
 type ErrorStatus = 400 | 402 | 404 | 409 | 410 | 503;
 
-/**
- * Describes a route for the OpenAPI document and enforces who may call it, from one
- * declaration so the two cannot disagree.
- *
- * GET needs any credential; every other method needs the `write` scope. `sessionOnly` routes
- * are for the signed-in web app alone, whatever a key's scope: a key can never list, make or
- * revoke keys, and a connection can never see or cut another connection.
- */
 export function describe(
   spec: Omit<DescribeRouteOptions, "responses" | "security"> & {
     ok: Ok;

@@ -33,7 +33,6 @@ describe("zones", () => {
 
   it("knows when the first zone reaches a time", () => {
     const at = new Date("2026-11-23T07:00:00Z");
-    // 09:00 in Tallinn is 09:00 in Kiribati 14 hours earlier than in UTC.
     expect(earliestInstantOf(at, "Europe/Tallinn").toISOString()).toBe("2026-11-22T19:00:00.000Z");
   });
 });

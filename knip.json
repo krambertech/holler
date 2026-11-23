@@ -14,6 +14,7 @@
     ".": {
       "entry": [
         ".agents/skills/verify/{features,scripts}/*.mjs",
+        "scripts/strip-comments.mjs",
         "oxlint-plugin-holler/rules/*.mjs"
       ],
       "ignoreBinaries": ["wrangler", "vite", "drizzle-kit", "java"]
