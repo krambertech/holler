@@ -400,6 +400,13 @@ describe("exactly once under concurrency", () => {
       where: eq(schema.responses.hollerId, holler.id),
     });
     expect(responses).toHaveLength(1);
+    const recipient = await db.query.recipients.findFirst({
+      where: and(
+        eq(schema.recipients.hollerId, holler.id),
+        eq(schema.recipients.slackUserId, "UA"),
+      ),
+    });
+    expect(recipient?.answeredAt).not.toBeNull();
   });
 });
 

@@ -1,0 +1,14 @@
+{
+  "rule": "Server SQL never folds case with lower(), which SQLite does for ASCII only",
+  "layer": "lint",
+  "past": "Search folded names in JavaScript from the start (7e28e34, 8f12651) because lower() leaves Дієслова and дієслова different; nothing has broken the rule since",
+  "check": "pnpm exec oxlint apps/web/src/server",
+  "break": [
+    {
+      "file": "apps/web/src/server/services/directory.ts",
+      "find": "sql`instr(${column}, ${q}) > 0`",
+      "replace": "sql`instr(lower(${column}), ${q}) > 0`"
+    }
+  ],
+  "fails": "holler(no-sql-lower)"
+}

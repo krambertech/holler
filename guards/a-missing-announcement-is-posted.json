@@ -1,0 +1,14 @@
+{
+  "rule": "An announcement the queue refused is posted by the cron",
+  "layer": "test",
+  "past": "#10 lost an announcement for good when its send was refused",
+  "check": "cd apps/web && pnpm exec vitest run src/server/services/delivery.test.ts -t 'two minutes old'",
+  "break": [
+    {
+      "file": "apps/web/src/server/services/delivery.ts",
+      "find": "        isNull(hollers.announceTs),\n        lte(hollers.sentAt",
+      "replace": "        isNotNull(hollers.announceTs),\n        lte(hollers.sentAt"
+    }
+  ],
+  "fails": "post from the cron once the send is two minutes old"
+}

@@ -1,0 +1,14 @@
+{
+  "rule": "A share notice goes only to viewers this request actually added",
+  "layer": "test",
+  "past": "#27: sharing again with someone who could already see the Holler sent them a second notice",
+  "check": "cd apps/web && pnpm exec vitest run src/server/services/sharing.test.ts -t 'goes once to each new viewer'",
+  "break": [
+    {
+      "file": "apps/web/src/server/services/sharing.ts",
+      "find": "    return Array.isArray(inserted) && inserted.length > 0;",
+      "replace": "    return Array.isArray(inserted);"
+    }
+  ],
+  "fails": "FAIL"
+}

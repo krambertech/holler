@@ -1,0 +1,14 @@
+{
+  "rule": "Every modal element reads back into an answer recordResponse takes",
+  "layer": "test",
+  "past": "preventive: Slack returns each kind of element in its own shape",
+  "check": "cd apps/web && pnpm exec vitest run src/server/services/answering.test.ts -t 'every question type'",
+  "break": [
+    {
+      "file": "apps/web/src/server/slack/blocks/modal.ts",
+      "find": "case \"number_input\":",
+      "replace": "case \"email_text_input\":"
+    }
+  ],
+  "fails": "takes an answer to every question type"
+}
