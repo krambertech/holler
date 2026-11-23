@@ -46,7 +46,7 @@ async function manyPeople(world: World) {
       searchName: slackUserId.toLocaleLowerCase(),
     }),
   );
-  if (first) await db.batch([first, ...rest]);
+  if (first !== undefined) await db.batch([first, ...rest]);
 }
 
 async function answerOf(world: World, hollerId: string, slackUserId: string, at: Date) {

@@ -1,8 +1,5 @@
 import type { Db } from "../db";
 
-/** Which door a call came through. Activity records it; CONTEXT.md, Activity. */
-export type Via = "web" | "slack" | "api" | "mcp" | "system";
-
 export type Actor =
   | { via: "web" | "slack"; memberId: string; slackUserId: string }
   | { via: "api" | "mcp"; memberId: string; slackUserId: string; credentialId: string }

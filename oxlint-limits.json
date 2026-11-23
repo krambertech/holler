@@ -1,0 +1,193 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "rules": {
+    "eslint/max-lines": [
+      "error",
+      {
+        "max": 500
+      }
+    ],
+    "eslint/complexity": [
+      "error",
+      {
+        "max": 25
+      }
+    ],
+    "eslint/max-depth": [
+      "error",
+      {
+        "max": 4
+      }
+    ]
+  },
+  "overrides": [
+    {
+      "files": ["**/*.test.*", "**/*.spec.ts", "apps/web/src/server/crash-sweep/**"],
+      "rules": {
+        "eslint/max-lines": "off",
+        "eslint/complexity": "off",
+        "eslint/max-depth": "off"
+      }
+    },
+    {
+      "files": ["apps/web/src/client/components/editor/questions/question-card.tsx"],
+      "rules": {
+        "eslint/complexity": [
+          "error",
+          {
+            "max": 40
+          }
+        ]
+      }
+    },
+    {
+      "files": ["apps/web/src/client/components/editor/questions/question-list.tsx"],
+      "rules": {
+        "eslint/max-lines": [
+          "error",
+          {
+            "max": 950
+          }
+        ]
+      }
+    },
+    {
+      "files": ["apps/web/src/client/components/respond/answer-question.tsx"],
+      "rules": {
+        "eslint/max-lines": [
+          "error",
+          {
+            "max": 600
+          }
+        ]
+      }
+    },
+    {
+      "files": ["apps/web/src/client/components/ui/combobox.tsx"],
+      "rules": {
+        "eslint/max-lines": [
+          "error",
+          {
+            "max": 600
+          }
+        ]
+      }
+    },
+    {
+      "files": ["apps/web/src/client/components/ui/dropdown-menu.tsx"],
+      "rules": {
+        "eslint/max-lines": [
+          "error",
+          {
+            "max": 650
+          }
+        ]
+      }
+    },
+    {
+      "files": ["apps/web/src/client/components/ui/select.tsx"],
+      "rules": {
+        "eslint/max-lines": [
+          "error",
+          {
+            "max": 550
+          }
+        ]
+      }
+    },
+    {
+      "files": ["apps/web/src/server/services/delivery.ts"],
+      "rules": {
+        "eslint/max-lines": [
+          "error",
+          {
+            "max": 1200
+          }
+        ]
+      }
+    },
+    {
+      "files": ["apps/web/src/server/services/dev-seed.ts"],
+      "rules": {
+        "eslint/complexity": [
+          "error",
+          {
+            "max": 30
+          }
+        ]
+      }
+    },
+    {
+      "files": ["apps/web/src/server/services/hollers.ts"],
+      "rules": {
+        "eslint/complexity": [
+          "error",
+          {
+            "max": 30
+          }
+        ],
+        "eslint/max-lines": [
+          "error",
+          {
+            "max": 850
+          }
+        ]
+      }
+    },
+    {
+      "files": ["apps/web/src/server/services/responses.ts"],
+      "rules": {
+        "eslint/complexity": [
+          "error",
+          {
+            "max": 40
+          }
+        ]
+      }
+    },
+    {
+      "files": ["apps/web/src/server/slack/blocks/limits.ts"],
+      "rules": {
+        "eslint/complexity": [
+          "error",
+          {
+            "max": 55
+          }
+        ]
+      }
+    },
+    {
+      "files": ["apps/web/src/server/slack/interactions.ts"],
+      "rules": {
+        "eslint/complexity": [
+          "error",
+          {
+            "max": 55
+          }
+        ]
+      }
+    },
+    {
+      "files": ["packages/core/src/answers.ts"],
+      "rules": {
+        "eslint/complexity": [
+          "error",
+          {
+            "max": 55
+          }
+        ]
+      }
+    },
+    {
+      "files": ["packages/core/src/types.ts"],
+      "rules": {
+        "eslint/complexity": [
+          "error",
+          {
+            "max": 40
+          }
+        ]
+      }
+    }
+  ]
+}
