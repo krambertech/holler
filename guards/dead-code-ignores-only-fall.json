@@ -1,0 +1,14 @@
+{
+  "rule": "A file ignored for one kind of dead code is not ignored for another",
+  "layer": "test",
+  "past": "The first check-dead-code.mjs compared file names, so an entry could grow from exports to types (review of #48)",
+  "check": "node --test scripts/check-dead-code.test.mjs",
+  "break": [
+    {
+      "file": "scripts/check-dead-code.mjs",
+      "find": "    kinds.map((kind) => `${file} (${kind})`),",
+      "replace": "    kinds.slice(0, 1).map((kind) => `${file} (${kind})`),"
+    }
+  ],
+  "fails": "may not hide another kind"
+}

@@ -1,0 +1,14 @@
+{
+  "rule": "A flaky test is fixed or deleted, never retried, skipped or slept past",
+  "layer": "lint",
+  "past": "CI retried every browser test once, and the sign-in race that #34 fixed still failed seven runs, so it showed only when it failed twice",
+  "check": "pnpm exec oxlint playwright.config.ts e2e",
+  "break": [
+    {
+      "file": "playwright.config.ts",
+      "find": "  failOnFlakyTests: true,",
+      "replace": "  retries: process.env.CI ? 1 : 0,"
+    }
+  ],
+  "fails": "holler(no-flaky-escape)"
+}

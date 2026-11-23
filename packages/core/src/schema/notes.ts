@@ -2,11 +2,6 @@ import { index, primaryKey, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { questions } from "./hollers";
 import { responses } from "./responses";
 
-/**
- * Text that rides along with a choice answer: the follow-up note, or what someone wrote beside
- * the Other option. An `answers` row holds an option or text, never both, so these live apart.
- * At most one of each kind per question per response.
- */
 export const answerNotes = sqliteTable(
   "answer_notes",
   {

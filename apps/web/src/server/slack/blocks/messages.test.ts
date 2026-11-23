@@ -146,6 +146,39 @@ const chase: SlackHoller = {
 const valid = (message: { blocks?: unknown[]; text: string }) =>
   blockKitProblems("message", message.blocks ?? [], message.text);
 
+interface Part {
+  type?: string;
+  text?: string | Part;
+  elements?: Part[];
+  element?: Part;
+  label?: Part;
+  hint?: Part;
+  options?: Part[];
+  placeholder?: Part;
+  optional?: boolean;
+  url?: string;
+  style?: string;
+}
+
+const textOf = (part: Part | string | undefined): string =>
+  typeof part === "object" ? textOf(part.text) : (part ?? "");
+
+function linesOf(part: Part): string[] {
+  if (part.type === "button") {
+    const url = part.url ? ` ${part.url}` : "";
+    return [`[${textOf(part)}]${part.style ? ` ${part.style}` : ""}${url}`];
+  }
+  if (part.type === "input") {
+    const label = `${textOf(part.label)}${part.optional ? " (optional)" : ""}`;
+    const choices = (part.element?.options ?? []).map((option) => `( ) ${textOf(option)}`);
+    return [label, ...choices, ...(part.hint ? [textOf(part.hint)] : [])];
+  }
+  return part.elements ? part.elements.flatMap(linesOf) : textOf(part).split("\n");
+}
+
+const reads = (message: { blocks?: unknown[] | undefined }) =>
+  ((message.blocks ?? []) as Part[]).flatMap(linesOf);
+
 describe("where a Holler is answered", () => {
   it("follows answerSurface: buttons, a DM text box, the modal, the web, the chase", () => {
     expect([pulse, textPulse, survey, webOnly, chase].map((h) => surfaceOf(h).where)).toEqual([
@@ -211,13 +244,38 @@ describe("format", () => {
 
 describe("messages", () => {
   it("invites to a one-tap pulse", () => {
-    expect(inviteMessage(pulse, reader)).toMatchSnapshot();
+    const message = inviteMessage(pulse, reader);
+    expect(message.text).toBe("Mira sent you a Holler: How was your week?");
+    expect(reads(message)).toEqual([
+      "_Mira_ sent you a Holler.",
+      "*How was your week?*",
+      "Pulse · 1 question · Closes Friday at 18:00",
+      "[Good]",
+      "[Fine]",
+      "[Rough]",
+    ]);
   });
   it("invites to a survey with Answer", () => {
-    expect(inviteMessage(survey, reader)).toMatchSnapshot();
+    const message = inviteMessage(survey, reader);
+    expect(message.text).toBe("Mira sent you a Holler: Offsite");
+    expect(reads(message)).toEqual([
+      "_Mira_ sent you a Holler.",
+      "*Offsite*",
+      "Two things to *decide*. See <https://example.com/plan|the plan>.",
+      "Survey · 6 questions · Closes Friday at 18:00 · Anonymous",
+      "[Answer] primary",
+    ]);
   });
   it("invites to a chase", () => {
-    expect(inviteMessage(chase, reader)).toMatchSnapshot();
+    const message = inviteMessage(chase, reader);
+    expect(message.text).toBe("Mira sent you a Holler: Benefits enrolment");
+    expect(reads(message)).toEqual([
+      "_Mira_ sent you a Holler.",
+      "*Benefits enrolment*",
+      "Form chase · Closes Friday at 18:00",
+      "[Open the form] https://forms.example.com/benefits",
+      "[I submitted it] primary",
+    ]);
   });
   it("reminds in three tones, with Remind me later before the last", () => {
     expect(reminderMessage(pulse, "gentle", reader).text).toBe(
@@ -233,9 +291,12 @@ describe("messages", () => {
     expect(JSON.stringify(reminderMessage(pulse, "last", reader))).not.toContain("Remind me later");
   });
   it("says when a snoozed reminder comes back", () => {
-    expect(
-      reminderMessage(survey, "gentle", reader, new Date("2026-11-23T13:00:00Z")),
-    ).toMatchSnapshot();
+    const back = new Date("2026-11-23T13:00:00Z");
+    expect(reads(reminderMessage(survey, "gentle", reader, back))).toEqual([
+      "A reminder: Mira still needs your answer to _Offsite_",
+      "[Answer now] primary",
+      "I'll remind you again at 15:00.",
+    ]);
   });
   it("thanks with what they picked and wrote, or only that they answered anonymously", () => {
     const given = [
@@ -243,8 +304,15 @@ describe("messages", () => {
       { prompt: "Who should plan it?", values: [], people: ["UA", "UB"], note: null },
     ];
     const named = answeredMessage({ ...survey, anonymous: false }, given);
-    expect(named).toMatchSnapshot();
-    expect(JSON.stringify(named)).toContain("<@UA>, <@UB>");
+    expect(named.text).toBe("Thanks. Your answer to Offsite is in.");
+    expect(reads(named)).toEqual([
+      "Thanks. Your answer to _Offsite_ is in.",
+      "*Where?*",
+      "Other: Riga",
+      "_Cheap flights_",
+      "*Who should plan it?*",
+      "<@UA>, <@UB>",
+    ]);
     expect(JSON.stringify(answeredMessage(survey, given))).not.toContain("Riga");
   });
   it("asks for the follow-up note under the thank-you", () => {
@@ -262,72 +330,136 @@ describe("messages", () => {
     expect(valid(message)).toEqual([]);
   });
   it("marks a closed Holler", () => {
-    expect(closedMessage(pulse, closesAt, reader)).toMatchSnapshot();
+    const message = closedMessage(pulse, closesAt, reader);
+    expect(message.text).toBe("How was your week? closed. It takes no more answers.");
+    expect(reads(message)).toEqual([
+      "_How was your week?_ closed on Friday at 18:00. It takes no more answers.",
+      "From Mira",
+    ]);
   });
   it("announces in a channel without naming who answered", () => {
-    expect(announcementMessage(pulse, { answered: 7, recipients: 12 }, false)).toMatchSnapshot();
+    const message = announcementMessage(pulse, { answered: 7, recipients: 12 }, false);
+    expect(message.text).toBe("Mira sent a Holler to 12 people: How was your week?");
+    expect(reads(message)).toEqual([
+      "Mira sent a Holler to 12 people: _How was your week?_",
+      "7 of 12 answered",
+    ]);
     expect(announcementMessage(pulse, { answered: 1, recipients: 1 }, true).text).toBe(
       "Mira sent a Holler to 1 person: How was your week?",
     );
   });
   it("tells the creator it closed, or that it did not send", () => {
-    expect(
-      closeNoticeMessage(pulse, { answered: 11, recipients: 12 }, "https://app.test/hollers/hol_1"),
-    ).toMatchSnapshot();
+    const results = "https://app.test/hollers/hol_1";
+    const notice = closeNoticeMessage(pulse, { answered: 11, recipients: 12 }, results);
+    expect(notice.text).toBe("How was your week? closed. 11 of 12 answered.");
+    expect(reads(notice)).toEqual([
+      "_How was your week?_ closed. 11 of 12 answered.",
+      `[See results] ${results}`,
+    ]);
     expect(
       sendFailedMessage(pulse, "You have sent 5 hollers this month.", "https://app.test").text,
     ).toBe("How was your week? did not send. You have sent 5 hollers this month.");
   });
   it("tells someone a Holler's results were shared with them", () => {
-    expect(sharedMessage(pulse, "U0MIRA", "https://app.test/hollers/hol_1")).toMatchSnapshot();
+    const results = "https://app.test/hollers/hol_1";
+    const message = sharedMessage(pulse, "U0MIRA", results);
+    expect(message.text).toBe("<@U0MIRA> shared the results of How was your week? with you.");
+    expect(reads(message)).toEqual([
+      "<@U0MIRA> shared the results of _How was your week?_ with you.",
+      `[See results] ${results}`,
+    ]);
+    expect(valid(message)).toEqual([]);
   });
 });
 
 describe("answer modal", () => {
   const modal = answerModal(survey, { hollerId: survey.id, channel: "DA", ts: "1.1" });
-  const block = (id: string) =>
-    (modal.blocks as { block_id?: string }[]).find((b) => b.block_id === id);
+  const block = (label: string) => {
+    const found = (modal.blocks as (Part & { block_id?: string })[]).find(
+      (b) => textOf(b.label) === label,
+    );
+    if (!found?.block_id) throw new Error(`no input labelled ${label}`);
+    return { ...found, block_id: found.block_id };
+  };
 
   it("builds each question type's element from docs/slack.md", () => {
-    expect(modal).toMatchSnapshot();
-    expect(block("q:q_1")).toMatchObject({ element: { type: "radio_buttons" } });
-    expect(JSON.stringify(block("q:q_1"))).toContain('"value":"o_other"');
-    expect(block("other:q_1")).toMatchObject({
-      optional: true,
-      label: { text: "If Other, what?" },
-    });
-    expect(block("note:q_1")).toMatchObject({ optional: true, label: { text: "Why there?" } });
-    expect(block("q:q_2")).toMatchObject({
-      label: { text: "Which days? Pick up to 3." },
+    expect(reads(modal)).toEqual([
+      "*Offsite*",
+      "Two things to *decide*. See <https://example.com/plan|the plan>.",
+      "Anonymous. Your name is not kept with your answers.",
+      "Where?",
+      "( ) Lisbon",
+      "( ) Tallinn",
+      "( ) Other",
+      "If Other, what? (optional)",
+      "Why there? (optional)",
+      "Which days? Pick up to 3. (optional)",
+      ...Array.from({ length: 12 }, (_, i) => `( ) Day ${i + 1}`),
+      "How calm is your week?",
+      "( ) 1, Chaos",
+      "( ) 2",
+      "( ) 3",
+      "( ) 4",
+      "( ) 5, Calm",
+      "How many nights?",
+      "Who should plan it? Pick up to 2.",
+      "Anything else? (optional)",
+      "Diets, dates",
+    ]);
+    expect([modal.title, modal.submit, modal.close].map((part) => textOf(part as Part))).toEqual([
+      "Answer",
+      "Send",
+      "Cancel",
+    ]);
+    expect(block("Where?")).toMatchObject({ element: { type: "radio_buttons" } });
+    expect(JSON.stringify(block("Where?"))).toContain('"value":"o_other"');
+    expect(block("If Other, what?")).toMatchObject({ element: { max_length: 1000 } });
+    expect(block("Why there?")).toMatchObject({ element: { max_length: 3000, multiline: true } });
+    expect(block("Which days? Pick up to 3.")).toMatchObject({
       element: { type: "multi_static_select", max_selected_items: 3 },
     });
-    expect(JSON.stringify(block("q:q_3"))).toContain("1, Chaos");
-    expect(JSON.stringify(block("q:q_3"))).toContain("5, Calm");
-    expect(block("q:q_4")).toMatchObject({
+    expect(block("How many nights?")).toMatchObject({
       element: { type: "number_input", is_decimal_allowed: false, min_value: "1", max_value: "7" },
     });
-    expect(block("q:q_5")).toMatchObject({
+    expect(block("Who should plan it? Pick up to 2.")).toMatchObject({
       element: { type: "multi_users_select", max_selected_items: 2 },
     });
-    expect(block("q:q_6")).toMatchObject({ optional: true, hint: { text: "Diets, dates" } });
+    expect(block("Anything else?")).toMatchObject({
+      element: { type: "plain_text_input", max_length: 3000, multiline: true },
+    });
     expect(viewProblems(modal)).toEqual([]);
+  });
+
+  it("shows what a sender typed, never an emoji Slack made of it", () => {
+    const words = JSON.stringify([modal, inviteMessage(pulse, reader)]);
+    const count = (text: string) => words.split(text).length - 1;
+    expect(count('"type":"plain_text"')).toBeGreaterThan(0);
+    expect(count('"emoji":false')).toBe(count('"type":"plain_text"'));
   });
 
   it("reads its state back as a response", () => {
     expect(
       readAnswers({
-        "q:q_1": { value: { type: "radio_buttons", selected_option: { value: "o_other" } } },
-        "other:q_1": { value: { type: "plain_text_input", value: " Riga " } },
-        "note:q_1": { value: { type: "plain_text_input", value: "Cheap flights" } },
-        "q:q_2": {
+        [block("Where?").block_id]: {
+          value: { type: "radio_buttons", selected_option: { value: "o_other" } },
+        },
+        [block("If Other, what?").block_id]: {
+          value: { type: "plain_text_input", value: " Riga " },
+        },
+        [block("Why there?").block_id]: {
+          value: { type: "plain_text_input", value: "Cheap flights" },
+        },
+        [block("Which days? Pick up to 3.").block_id]: {
           value: {
             type: "multi_static_select",
             selected_options: [{ value: "d_0" }, { value: "d_3" }],
           },
         },
-        "q:q_4": { value: { type: "number_input", value: "3" } },
-        "q:q_5": { value: { type: "multi_users_select", selected_users: ["UA", "UB"] } },
-        "q:q_6": { value: { type: "plain_text_input", value: "" } },
+        [block("How many nights?").block_id]: { value: { type: "number_input", value: "3" } },
+        [block("Who should plan it? Pick up to 2.").block_id]: {
+          value: { type: "multi_users_select", selected_users: ["UA", "UB"] },
+        },
+        [block("Anything else?").block_id]: { value: { type: "plain_text_input", value: "" } },
         other: { value: { type: "plain_text_input", value: "ignored" } },
       }),
     ).toEqual({

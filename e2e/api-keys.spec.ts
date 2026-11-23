@@ -2,8 +2,7 @@ import { expectAccessible, signInAs } from "./a11y";
 import { expect, test } from "./fixtures";
 
 test("a lead makes an API key, uses it once, and revokes it", async ({ page, request }) => {
-  // Both browser projects run this at once as the same persona, so each makes its own key.
-  const name = `Script ${test.info().project.name} ${Date.now()}`;
+  const name = "Weekly export script";
   await signInAs(page, "lead", "/settings");
   await expect(page.getByRole("heading", { name: "API keys" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Connected apps" })).toBeVisible();

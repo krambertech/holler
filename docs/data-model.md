@@ -62,6 +62,10 @@ Sending is the moment a Holler counts against the monthly limit (`hollers.sent_a
 
 ## Rules
 
+**Billing events.** `polar_events.id` makes a replayed delivery do nothing, and `occurred_at` lets a late, older event lose to a newer one already applied.
+
+**Whose workspace.** A signed-in person acts in the workspace of their most recent Slack sign-in, or in their oldest membership when Slack gave none.
+
 **Anonymity.** For an anonymous Holler, `responses.slack_user_id` is null and `responses.submitted_at` and `recipients.answered_at` are rounded down to the hour. `recipients.answered_at` is how reminders know who answered. `response_owners` links each anonymous response to its person, so Your answers can show them their own; only `services/own-answers.ts` reads it, and Oxlint's `holler/no-response-owners` refuses it anywhere else ([ADR 0003](adr/0003-anonymous-answers-stay-linked-to-their-person.md)). Results open only at five responses (`anonymousThreshold` in `packages/core/src/results.ts`), and the same gate applies to the web app, the API, MCP, exports and Slack. Written answers on an anonymous Holler come back sorted by what they say, not in arrival order, because arrival order could be matched to when someone was reminded or thanked (`summarize` in `packages/core/src/results.ts`).
 
 **One response per person.** The answer path claims `recipients.answered_at` with a guarded update before it writes the response, so two submits at once produce one response. On a named Holler the partial unique index `responses_one_per_person` backs it up.
