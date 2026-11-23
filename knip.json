@@ -12,7 +12,11 @@
   },
   "workspaces": {
     ".": {
-      "entry": [".agents/skills/*/{features,scripts}/*.mjs", "oxlint-plugin-holler/rules/*.mjs"],
+      "entry": [
+        ".agents/skills/verify/{features,scripts}/*.mjs",
+        "scripts/strip-comments.mjs",
+        "oxlint-plugin-holler/rules/*.mjs"
+      ],
       "ignoreBinaries": ["wrangler", "vite", "drizzle-kit", "java"]
     },
     "apps/web": {
