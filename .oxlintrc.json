@@ -94,6 +94,22 @@
       }
     },
     {
+      "files": ["apps/**", "e2e/**"],
+      "rules": {
+        "eslint/no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["drizzle-orm", "drizzle-orm/**"],
+                "message": "Import Drizzle from @holler/core/db. Better Auth brings Kysely, and a second import makes pnpm build two Drizzles whose types do not match."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
       "files": [
         "apps/web/src/server/routes/**",
         "apps/web/src/server/slack/**",

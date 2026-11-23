@@ -40,6 +40,8 @@ Every comment ends deleted. The category decides what else happens:
 - **Excuse.** Delete it and file one issue per workaround. Search first with `gh issue list --search "<symbol>" --state all`. Title the issue with the fix, not the symptom; the body names the file and symbol, quotes the deleted comment, and says what shape removes the workaround. Use existing labels only, as [create-issues](../create-issues/SKILL.md) says.
 - **Decision record.** Delete it and move the decision where the repository keeps it. A decision that is hard to reverse, surprising and the result of a real trade-off gets a new ADR or a sentence in the ADR that owns it, following [the ADR guide](../../../docs/adr/README.md). Everything else, such as a platform quirk or an operating fact, goes in the owning doc: [docs/slack.md](../../../docs/slack.md) for Slack surfaces, [docs/data-model.md](../../../docs/data-model.md) for the schema, [docs/stack.md](../../../docs/stack.md) for tooling, [docs/operations.md](../../../docs/operations.md) for running Holler, [DESIGN.md](../../../DESIGN.md) for the interface. Group several decisions about one module into one section, and name the code it covers so a reader can find it. A decision a test could pin goes in the issue as a test to write.
 
+Delete with `node .agents/skills/delete-comment/scripts/strip.mjs <files>`. It removes every comment but tool directives and refuses a file whose code tokens would change.
+
 Change comments and docs only. A rename, extraction or test that would make the code say what the comment said is an issue, so the deletion pull request stays easy to review.
 
 ## Finish

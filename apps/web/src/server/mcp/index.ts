@@ -6,12 +6,10 @@ import type { Bindings } from "../env";
 import { principalForMcp } from "../principal";
 import { buildMcpServer, type McpPrincipal } from "./server";
 
-/** The scopes an MCP client is told to ask for. offline_access buys it a refresh token. */
 export const MCP_CHALLENGE_SCOPES = ["read", "write", "offline_access"] as const;
 
 type ProductOrigin = { PRODUCT_URL: string };
 
-/** The protected resource every access token is bound to. */
 export function mcpResource(env: ProductOrigin): string {
   return `${env.PRODUCT_URL}/mcp`;
 }
@@ -20,11 +18,6 @@ export function mcpResourceMetadataUrl(env: ProductOrigin): string {
   return new URL("/.well-known/oauth-protected-resource/mcp", env.PRODUCT_URL).toString();
 }
 
-/**
- * `/mcp`. `requireMcpAuth` verifies the access token (signature, issuer, audience, expiry) and
- * answers a missing or bad one with the RFC 9728 challenge; `principalForMcp` then checks the
- * live consent and the member it was granted for.
- */
 export function handleMcpRequest(
   request: Request,
   deps: { auth: Auth; db: Db; env: Bindings; now: () => Date },
@@ -51,7 +44,6 @@ export function handleMcpRequest(
   return handler(request);
 }
 
-/** Split from the auth checks so the transport can be tested alone. */
 export function handleVerifiedMcpRequest(req: Request, principal: McpPrincipal): Promise<Response> {
   const handler = createMcpHandler(() => buildMcpServer(principal));
   return handler.fetch(req);

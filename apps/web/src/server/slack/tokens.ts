@@ -1,8 +1,3 @@
-/**
- * Slack bot tokens are encrypted at rest with AES-GCM under SLACK_TOKEN_KEY (32 bytes, base64).
- * The stored form is `<iv base64>.<ciphertext base64>`. A token is decrypted only to make a Slack
- * call and is never logged or returned by any route.
- */
 const IV_BYTES = 12;
 
 async function importKey(base64Key: string): Promise<CryptoKey> {

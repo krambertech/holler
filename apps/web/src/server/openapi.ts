@@ -2,15 +2,9 @@ import type { Hono } from "hono";
 import { openAPIRouteHandler } from "hono-openapi";
 import type { AppEnv } from "./app";
 
-/**
- * The OpenAPI document for `/api/v1`, generated from the route descriptions and the Zod
- * schemas in packages/core, served at /api/openapi.json. It is public: it describes the API and
- * exposes no data. The public site renders the reference from it.
- */
 export function mountOpenApi(app: Hono<AppEnv>) {
   app.use("/api/openapi.json", async (c, next) => {
     await next();
-    // The public site's docs page may read it from the browser; nothing else cross-origin.
     if (c.req.header("origin") === new URL(c.env.PUBLIC_SITE_URL).origin) {
       c.header("access-control-allow-origin", c.req.header("origin"));
       c.header("vary", "Origin", { append: true });
@@ -20,7 +14,6 @@ export function mountOpenApi(app: Hono<AppEnv>) {
   app.get(
     "/api/openapi.json",
     openAPIRouteHandler(app, {
-      // Only the public API; the web app's own routes are not a contract.
       exclude: [/^(?!\/api\/v1\/)/],
       documentation: {
         openapi: "3.1.0",

@@ -23,7 +23,6 @@ afterAll(() => dispose());
 
 const periodEnd = "2026-12-20T10:00:00.000Z";
 
-/** A Polar subscription webhook as the plugin hands it over, with only the fields billing reads. */
 function subscriptionEvent(
   type: webhooks.WebhookPayload["type"],
   workspaceId: string,
@@ -359,7 +358,6 @@ describe("the Polar webhook endpoint", () => {
     return createAuth(env, db);
   }
 
-  /** Signs a body the way Polar does: Standard Webhooks, keyed by the secret's UTF-8 bytes. */
   async function signed(body: string, signWith = secret) {
     const id = `msg_${crypto.randomUUID()}`;
     const timestamp = String(Math.floor(Date.now() / 1000));
