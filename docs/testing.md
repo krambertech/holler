@@ -16,7 +16,10 @@ pnpm verify
 | `pnpm check:models`    | Every order of the steps in the TLA+ models in `formal/` keeps Holler's promises about sending, closing and rounds, and each past bug and recorded finding still breaks the one it names. Needs Java; CI's `models` job runs it |
 | `pnpm check:models:sync` | No function a model describes changed since it was last confirmed. `pnpm check` runs it |
 | `pnpm check:migrations` | No applied migration changed, and the schema needs no migration that is missing                                                                                                                    |
-| `pnpm typecheck`        | Every package and both Workers, strict                                                                                                                                                     |
+| `pnpm typecheck`        | Every package, both Workers and the browser journeys, strict                                                                                                                                                     |
+| `pnpm check:architecture` | Every import keeps to its layer, there are no import cycles, and `scripts/architecture.json` gains no exception. Part of `pnpm check` |
+| `pnpm check:limits` | Every number in `oxlint-limits.json` is as low as its file allows, and none rose since the base. Part of `pnpm check` |
+| `pnpm check:dead-code` | Knip finds no unused file, export or dependency. Part of `pnpm check` |
 | `pnpm test`             | Vitest in every package, plus `node --test` for the repo scripts                                                                                                                           |
 | `pnpm build`            | Both apps build                                                                                                                                                                            |
 | `pnpm check:boundaries` | The production product bundle has no dev tools; the site has no product code                                                                                                               |
@@ -39,6 +42,15 @@ Test a service, not a route, unless the route itself has logic. A service test n
 **A guard proves its check can fail.** `guards/<rule>.json` names the rule, the `layer` that holds it, the `past` mistake, the `check` command, and one proof: `break`, edits that bring the mistake back, or `refuses`, a command with a bad input. `fails` is text the failing check must print, so a check that fails for another reason does not count. `pnpm guards:prove <rule>` copies the tree, runs the check on it, makes the edits and runs it again. Filter the check to the tests that hold the rule (`-t`), so a proof takes seconds. A guard with the layer `browser` runs in the e2e job.
 
 **Orders of events are modelled.** [`formal/`](../formal) has two TLA+ models, and the [`verify-delivery-model`](../.agents/skills/verify-delivery-model/SKILL.md) skill says how to read, change and confirm them ([ADR 0005](adr/0005-tla-models-for-delivery-and-rounds.md)). What the code gets wrong today is in [`formal/counterexamples.md`](../formal/counterexamples.md).
+## Limits that only fall
+
+`check:architecture`, `check:limits` and `check:dead-code` each compare their recorded list with the one at the merge base (`scripts/base.mjs`), so a pull request can shorten a list and cannot lengthen it. CI checks out the whole history for this and fails without a base. Each also refuses an entry that is no longer needed, so the lists fall on their own.
+
+- **Layers.** A type-only import is erased, so it never makes a cycle, but it still ties two layers together: the client may not import a server type. `mayImportTypes` is the exception, for `Auth` and `AppEnv`, which describe values the server's root hands down. Test files are free of the layers, and nothing imports test support but them.
+- **Size.** Limits are whole steps (50 lines, 5 branches), so an ordinary edit leaves `oxlint-limits.json` alone and two branches rarely touch it. Test files have no limit.
+- **Dead code.** `ignoreIssues` in `knip.json` holds exports that open pull requests use or that sit in files they change: `LimitReached` and the dropdown menu's parts wait for #11, #21 and #33, and the rest go when the pull request that changes the file lands.
+
+Oxlint's typed rules (`--type-aware`, which `pnpm check` passes) need `oxlint-tsgolint`, pinned beside it. An unawaited promise in a Worker dies with the request.
 
 ## Browser journeys
 

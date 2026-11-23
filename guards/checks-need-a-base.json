@@ -1,0 +1,8 @@
+{
+  "rule": "A check that compares with the base fails in CI when there is none",
+  "layer": "ci",
+  "past": "CI's verify job checked out one commit, so check:styling found no base and passed without reading a line",
+  "check": "node -e \"import('./scripts/base.mjs').then((base) => base.baseCommit())\"",
+  "refuses": "CI=1 GIT_DIR=/nowhere node -e \"import('./scripts/base.mjs').then((base) => base.baseCommit())\"",
+  "fails": "fetch-depth: 0"
+}

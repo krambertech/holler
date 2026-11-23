@@ -1,0 +1,14 @@
+{
+  "rule": "Every promise is awaited, returned or marked void",
+  "layer": "lint",
+  "past": "Install and Home left three navigations unawaited until Oxlint's typed rules first ran",
+  "check": "pnpm exec oxlint --type-aware apps/web/src/client/routes",
+  "break": [
+    {
+      "file": "apps/web/src/client/routes/install.tsx",
+      "find": "if (status.data?.member) void navigate(",
+      "replace": "if (status.data?.member) navigate("
+    }
+  ],
+  "fails": "typescript(no-floating-promises)"
+}

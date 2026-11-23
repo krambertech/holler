@@ -33,7 +33,7 @@ export async function requestAs(
   baseURL: string | undefined,
   persona: "lead" | "sender",
 ): Promise<APIRequestContext> {
-  const context = await request.newContext({ baseURL });
+  const context = await request.newContext(baseURL ? { baseURL } : {});
   const signedIn = await context.get(`/api/dev/sign-in?as=${persona}`);
   if (!signedIn.ok()) throw new Error(`Could not sign in as ${persona}: ${signedIn.status()}`);
   return context;
