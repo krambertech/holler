@@ -1,4 +1,4 @@
-import type { HollerOut } from "@holler/core";
+import type { HollerOut, Results } from "@holler/core";
 import { anonymousThreshold, modeLabels } from "@holler/core";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
@@ -166,14 +166,7 @@ function HollerPage() {
         </div>
       </header>
 
-      {h.status === "scheduled" && h.sendAt && (
-        <Plate className="px-6 py-5">
-          <h2 className="text-lg">Sends {momentLabel(h.sendAt)}</h2>
-          <p className="mt-1 max-w-[60ch] text-ink-2">
-            Who answered and the results show here once it goes out.
-          </p>
-        </Plate>
-      )}
+      <ScheduledNotice holler={h} />
 
       {people.data && (
         <HollerPeople
@@ -190,35 +183,55 @@ function HollerPage() {
         <HollerRounds rounds={rounds.data} currentId={h.id} />
       )}
 
-      {results.data?.state === "gated" && (
-        <Plate className="px-6 py-5">
-          <h2 className="text-lg">Results open at {anonymousThreshold} answers</h2>
-          <p className="mt-1 max-w-[60ch] text-ink-2">
-            This Holler is anonymous, so its results stay closed until enough people answered that
-            no one can be picked out.{" "}
-            {results.data.needed === 1
-              ? "One more answer opens them."
-              : `${results.data.needed} more answers open them.`}
-          </p>
-        </Plate>
-      )}
-
-      {results.data?.state === "open" && results.data.questions.length > 0 && (
-        <section aria-labelledby="results-heading" className="flex flex-col gap-4">
-          <h2 id="results-heading" className="text-xl">
-            Results
-          </h2>
-          {results.data.questions.map((question, index) => (
-            <QuestionResult
-              key={question.id}
-              question={question}
-              number={index + 1}
-              people={h.anonymous ? new Map() : lookup}
-            />
-          ))}
-        </section>
+      {results.data && (
+        <HollerResults results={results.data} people={h.anonymous ? new Map() : lookup} />
       )}
     </>
+  );
+}
+
+function ScheduledNotice({ holler }: { holler: HollerOut }) {
+  if (holler.status !== "scheduled" || !holler.sendAt) return null;
+  return (
+    <Plate className="px-6 py-5">
+      <h2 className="text-lg">Sends {momentLabel(holler.sendAt)}</h2>
+      <p className="mt-1 max-w-[60ch] text-ink-2">
+        Who answered and the results show here once it goes out.
+      </p>
+    </Plate>
+  );
+}
+
+interface HollerResultsProps {
+  results: Results;
+  people: Map<string, PersonLookup>;
+}
+
+function HollerResults({ results, people }: HollerResultsProps) {
+  if (results.state === "gated") {
+    return (
+      <Plate className="px-6 py-5">
+        <h2 className="text-lg">Results open at {anonymousThreshold} answers</h2>
+        <p className="mt-1 max-w-[60ch] text-ink-2">
+          This Holler is anonymous, so its results stay closed until enough people answered that no
+          one can be picked out.{" "}
+          {results.needed === 1
+            ? "One more answer opens them."
+            : `${results.needed} more answers open them.`}
+        </p>
+      </Plate>
+    );
+  }
+  if (results.questions.length === 0) return null;
+  return (
+    <section aria-labelledby="results-heading" className="flex flex-col gap-4">
+      <h2 id="results-heading" className="text-xl">
+        Results
+      </h2>
+      {results.questions.map((question, index) => (
+        <QuestionResult key={question.id} question={question} number={index + 1} people={people} />
+      ))}
+    </section>
   );
 }
 
