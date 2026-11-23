@@ -1,12 +1,5 @@
 import { hmacSha256, timingSafeEqual } from "../hmac";
 
-/**
- * Checks Slack's request signature before anything reads the body as data.
- * https://api.slack.com/authentication/verifying-requests-from-slack
- *
- * The signed string is `v0:<timestamp>:<raw body>`, HMAC-SHA256 with the app's signing secret.
- * A timestamp more than five minutes from now is refused, so a captured request cannot be replayed.
- */
 const MAX_SKEW_SECONDS = 5 * 60;
 
 export type SlackVerification =

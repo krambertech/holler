@@ -15,7 +15,6 @@ const bytes = (value: unknown) => new TextEncoder().encode(JSON.stringify(value)
 
 export function deliveryEnv(db: Db, raw: D1Database) {
   const queued: SlackSend[] = [];
-  const batchSizes: number[] = [];
   /** Kinds of send the queue refuses, so a test can make one step of a pass fail. */
   const refuse = new Set<SlackSend["kind"]>();
   /** How many more batches the queue takes before it refuses the rest, to fail midway. */
@@ -36,7 +35,6 @@ export function deliveryEnv(db: Db, raw: D1Database) {
         if (bytes(message.body) > queueLimits.messageBytes)
           throw new Error("Queue refuses a message");
       }
-      batchSizes.push(batch.length);
       queued.push(...batch.map((message) => message.body));
     },
     async send(body: SlackSend) {
@@ -58,7 +56,7 @@ export function deliveryEnv(db: Db, raw: D1Database) {
     for (let send = queued.shift(); send; send = queued.shift()) await deliver(env, db, send, at);
   }
 
-  return { env, queued, batchSizes, refuse, outage, drain };
+  return { env, queued, refuse, outage, drain };
 }
 
 /** Deletes every workspace, and with it every row that hangs off one, so each test starts empty. */

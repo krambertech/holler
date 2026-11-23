@@ -1,0 +1,19 @@
+{
+  "rule": "A pull request never adds an exception to the layers",
+  "layer": "architecture",
+  "past": "#24's dev route import, if it were recorded instead of moved",
+  "check": "node scripts/check-architecture.mjs HEAD",
+  "break": [
+    {
+      "file": "apps/web/src/server/routes/dev.ts",
+      "find": "import { runCronPass } from \"../cron\";",
+      "replace": "import { runCronPass } from \"../cron\";\nimport { sign } from \"../slack/verify\";"
+    },
+    {
+      "file": "scripts/architecture.json",
+      "find": "  \"exceptions\": [",
+      "replace": "  \"exceptions\": [\n    \"apps/web/src/server/routes/dev.ts -> apps/web/src/server/slack/verify.ts\","
+    }
+  ],
+  "fails": "only gets shorter"
+}

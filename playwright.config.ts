@@ -4,11 +4,9 @@ import { E2E_ORIGIN } from "./e2e/origin.mjs";
 // The product and the site on their own ports, with dev routes and an isolated local D1.
 export default defineConfig({
   testDir: "e2e",
-  // Makes each persona once, before tests sign in as them in parallel.
-  globalSetup: "./e2e/global-setup.ts",
   fullyParallel: true,
   forbidOnly: Boolean(process.env.CI),
-  retries: process.env.CI ? 1 : 0,
+  failOnFlakyTests: true,
   reporter: process.env.CI ? [["github"], ["html", { open: "never" }]] : "list",
   use: { baseURL: E2E_ORIGIN, trace: "retain-on-failure" },
   projects: [

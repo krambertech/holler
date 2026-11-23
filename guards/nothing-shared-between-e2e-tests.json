@@ -1,0 +1,14 @@
+{
+  "rule": "A browser test makes what it needs itself, never in a beforeAll or a serial run",
+  "layer": "lint",
+  "past": "#2 made settings.spec.ts serial and skipped it in WebKit, because its tests shared one workspace",
+  "check": "pnpm exec oxlint e2e",
+  "break": [
+    {
+      "file": "e2e/settings.spec.ts",
+      "find": "import { expect, test } from \"./fixtures\";\n",
+      "replace": "import { expect, test } from \"./fixtures\";\ntest.describe.configure({ mode: \"serial\" });\n"
+    }
+  ],
+  "fails": "holler(test-owns-its-workspace)"
+}
