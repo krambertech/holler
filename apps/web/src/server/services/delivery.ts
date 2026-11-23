@@ -667,6 +667,20 @@ export function toneFor(remindersSent: number): ReminderTone {
   return tier.tone;
 }
 
+export async function scheduledDueBy(db: Db, by: Date) {
+  const soon = new Date(by.getTime() + zoneLeadHours * HOUR);
+  const scheduled = await db.query.hollers.findMany({
+    where: and(eq(hollers.status, "scheduled"), lte(hollers.sendAt, soon)),
+  });
+  const due = [];
+  for (const holler of scheduled) {
+    const creator = await creatorOf(db, holler);
+    const liveAt = goesLiveAt(holler, creator.timeZone);
+    if (liveAt && liveAt <= by) due.push({ holler, creator });
+  }
+  return due;
+}
+
 /**
  * The cron's pass for scheduled hollers whose time came. A Holler that can no longer go out (a
  * send problem, the monthly limit, nobody to send to) goes back to draft and its creator gets a
@@ -674,15 +688,8 @@ export function toneFor(remindersSent: number): ReminderTone {
  * down while resolving a group, leaves it scheduled for the next run and does not stop the rest.
  */
 export async function sendDueHollers(env: Bindings, db: Db, now: Date): Promise<string[]> {
-  const soon = new Date(now.getTime() + zoneLeadHours * HOUR);
-  const due = await db.query.hollers.findMany({
-    where: and(eq(hollers.status, "scheduled"), lte(hollers.sendAt, soon)),
-  });
   const sent: string[] = [];
-  for (const holler of due) {
-    const creator = await creatorOf(db, holler);
-    const liveAt = goesLiveAt(holler, creator.timeZone);
-    if (!liveAt || liveAt > now) continue;
+  for (const { holler, creator } of await scheduledDueBy(db, now)) {
     const ctx: ServiceContext = {
       db,
       workspaceId: holler.workspaceId,

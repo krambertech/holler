@@ -17,7 +17,11 @@ const { hollers, recipients, slackPeople } = schema;
 export async function queueDueReminders(env: Bindings, db: Db, now: Date): Promise<number> {
   const claimed = await db
     .update(recipients)
-    .set({ remindersSent: sql`${recipients.remindersSent} + 1`, nextReminderAt: null })
+    .set({
+      remindersSent: sql`${recipients.remindersSent} + 1`,
+      nextReminderAt: null,
+      reminderQueuedAt: now,
+    })
     .where(
       and(
         lte(recipients.nextReminderAt, now),
@@ -54,7 +58,11 @@ export async function queueDueReminders(env: Bindings, db: Db, now: Date): Promi
           ? [
               db
                 .update(recipients)
-                .set({ remindersSent: sql`${recipients.remindersSent} - 1`, nextReminderAt: now })
+                .set({
+                  remindersSent: sql`${recipients.remindersSent} - 1`,
+                  nextReminderAt: now,
+                  reminderQueuedAt: null,
+                })
                 .where(
                   and(
                     eq(recipients.hollerId, send.hollerId),

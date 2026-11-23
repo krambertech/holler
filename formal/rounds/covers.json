@@ -1,8 +1,8 @@
 {
-  "commit": "3a76eb5fe625",
+  "commit": "a7ce96016114",
   "code": {
     "apps/web/src/server/services/delivery.ts#goLive": "f2ff33383da888e8",
-    "apps/web/src/server/services/delivery.ts#sendDueHollers": "24bc08d67fd46da4",
+    "apps/web/src/server/services/delivery.ts#sendDueHollers": "a16ae5b981e1ed34",
     "apps/web/src/server/services/rounds.ts#nextRound": "2e7c978f2397f8c7",
     "apps/web/src/server/services/rounds.ts#stopRepeating": "6274802e8f300c4f"
   }
