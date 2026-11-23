@@ -125,12 +125,18 @@ function readIn(base) {
   };
 }
 
+function sameEverywhere() {
+  const env = { ...process.env, CI: "", FORCE_COLOR: "0", NO_COLOR: "1" };
+  delete env.GITHUB_ACTIONS;
+  return env;
+}
+
 function run(command, cwd) {
   const result = spawnSync("bash", ["-c", command], {
     cwd,
     encoding: "utf8",
     maxBuffer: 64 * 1024 * 1024,
-    env: { ...process.env, CI: "", FORCE_COLOR: "0", NO_COLOR: "1" },
+    env: sameEverywhere(),
   });
   return { status: result.status ?? 1, output: `${result.stdout ?? ""}${result.stderr ?? ""}` };
 }
