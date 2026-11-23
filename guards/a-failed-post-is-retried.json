@@ -1,0 +1,14 @@
+{
+  "rule": "A post that Slack refused is posted on the retry",
+  "layer": "test",
+  "past": "preventive: #10 claims a post before making it, so a failed post must give the claim back",
+  "check": "cd apps/web && pnpm exec vitest run src/server/services/delivery.test.ts -t 'posts on the retry'",
+  "break": [
+    {
+      "file": "apps/web/src/server/services/delivery.ts",
+      "find": "    await releaseSlackDelivery(db, key);\n",
+      "replace": "    if (!key) await releaseSlackDelivery(db, key);\n"
+    }
+  ],
+  "fails": "posts on the retry after Slack failed"
+}

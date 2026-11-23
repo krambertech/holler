@@ -1,0 +1,14 @@
+{
+  "rule": "An invite the queue refused is claimed again on the next run",
+  "layer": "test",
+  "past": "The class of #10, where close claims were lost when the queue refused one Holler's work",
+  "check": "cd apps/web && pnpm exec vitest run src/server/services/delivery.test.ts -t 'cannot queue gives its claims back'",
+  "break": [
+    {
+      "file": "apps/web/src/server/services/delivery.ts",
+      "find": "            .set({ invitedAt: null })",
+      "replace": "            .set({ invitedAt: new Date(0) })"
+    }
+  ],
+  "fails": "gives its claims back"
+}

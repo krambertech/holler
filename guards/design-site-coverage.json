@@ -1,0 +1,14 @@
+{
+  "rule": "Every exported component has an entry on the design site",
+  "layer": "lint",
+  "past": "#3 built the design site because components had no page; a new one like #30's Illustration would have none today",
+  "check": "pnpm check:design-coverage",
+  "break": [
+    {
+      "file": "apps/web/src/client/design/registry.ts",
+      "find": "    covers: [\"Illustration\"],\n",
+      "replace": ""
+    }
+  ],
+  "fails": "Illustration has no page on the design site"
+}

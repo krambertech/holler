@@ -1,0 +1,14 @@
+{
+  "rule": "New client and site lines use logical directions, so an interface in a right-to-left language mirrors",
+  "layer": "lint",
+  "past": "Checked since the foundations (7e28e34); #3 needed two named exemptions for a measured left and nothing else has leaned",
+  "check": "pnpm check:styling",
+  "break": [
+    {
+      "file": "apps/web/src/client/components/settings/role-select.tsx",
+      "find": "pointer-events-none absolute end-2 top-1/2",
+      "replace": "pointer-events-none absolute right-2 top-1/2"
+    }
+  ],
+  "fails": "physical right-2: use end-2"
+}

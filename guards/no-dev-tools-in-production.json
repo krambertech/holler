@@ -1,0 +1,14 @@
+{
+  "rule": "No developer tool reaches the production product bundle",
+  "layer": "ci",
+  "past": "Checked since the foundations (7e28e34), which put the dev persona links on the sign-in page; nothing has leaked, and an unguarded link offers everyone a way in as the lead",
+  "check": "pnpm --filter @holler/web exec vite build && pnpm --filter @holler/site build && node scripts/check-boundaries.mjs",
+  "break": [
+    {
+      "file": "apps/web/src/client/routes/sign-in.tsx",
+      "find": "        {import.meta.env.DEV && (\n",
+      "replace": "        {destination && (\n"
+    }
+  ],
+  "fails": "a developer tool reached the production product bundle"
+}

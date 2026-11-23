@@ -1,0 +1,14 @@
+{
+  "rule": "Every round of a repeating pulse closes before anyone gets the next",
+  "layer": "test",
+  "past": "#32: a spring clock change left two rounds taking answers for an hour",
+  "check": "cd apps/web && pnpm exec vitest run src/server/services/rounds.test.ts -t 'closes every round before'",
+  "break": [
+    {
+      "file": "apps/web/src/server/services/delivery.ts",
+      "find": "new Date(Math.min(lastSend + holler.closeAfterHours * HOUR, nextInvite))",
+      "replace": "new Date(Math.min(lastSend + holler.closeAfterHours * HOUR, nextInvite + HOUR))"
+    }
+  ],
+  "fails": "closes every round before anyone gets the next"
+}
