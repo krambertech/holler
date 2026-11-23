@@ -10,7 +10,6 @@ import { deliveryEnv, emptyDatabase } from "../test-delivery";
 import type { ServiceContext } from "./context";
 import {
   closeHoller,
-  deliver,
   queueAfterResponse,
   queueCloseWork,
   queueDueInvites,
@@ -28,6 +27,7 @@ import { closeDueHollers } from "./lifecycle";
 import { queueDueReminders, snoozeReminder } from "./reminders";
 import { recordResponse } from "./responses";
 import { devSlack } from "./slack-connection";
+import { deliverSend } from "./slack-home";
 
 let db: Db;
 let raw: D1Database;
@@ -305,10 +305,10 @@ describe("delivering a queued send", () => {
     await sendHoller(ctx, env, holler.id);
     const invite = queued.find((s) => s.kind === "invite" && s.slackUserId === "UA");
     if (!invite) throw new Error("no invite for UA");
-    await expect(deliver(env, db, invite, NOW)).rejects.toMatchObject({ retryAfter: 30 });
+    await expect(deliverSend(env, db, invite, NOW)).rejects.toMatchObject({ retryAfter: 30 });
     expect((await recipient(holler.id, "UA")).failure).toBeNull();
     slack.failures.delete("UA");
-    await deliver(env, db, invite, NOW);
+    await deliverSend(env, db, invite, NOW);
     expect(slack.posted.filter((m) => m.channel === "UA")).toHaveLength(1);
   });
 
@@ -317,7 +317,7 @@ describe("delivering a queued send", () => {
     await sendHoller(ctx, env, holler.id);
     const invite = queued.find((s) => s.kind === "invite");
     if (!invite) throw new Error("no invite");
-    for (let i = 0; i < 3; i++) await deliver(env, db, invite, NOW);
+    for (let i = 0; i < 3; i++) await deliverSend(env, db, invite, NOW);
     expect(slack.posted).toHaveLength(1);
   });
 
@@ -325,7 +325,7 @@ describe("delivering a queued send", () => {
     const { ctx, env, slack, holler, answer } = await live();
     await answer("UA");
     const reminder = (slackUserId: string) =>
-      deliver(
+      deliverSend(
         env,
         db,
         {
@@ -346,7 +346,7 @@ describe("delivering a queued send", () => {
   it("does nothing for a Holler that was deleted", async () => {
     const { env } = await setup();
     await expect(
-      deliver(env, db, { kind: "announce", hollerId: "hol_gone" }, NOW),
+      deliverSend(env, db, { kind: "announce", hollerId: "hol_gone" }, NOW),
     ).resolves.toBeUndefined();
   });
 });
@@ -613,7 +613,7 @@ describe("answering and closing", () => {
     const { env, slack, holler, answer } = await live();
     await answer("UA");
     const tapped = { channel: "DA", ts: "1699999999.000100" };
-    await deliver(
+    await deliverSend(
       env,
       db,
       { kind: "answered", hollerId: holler.id, slackUserId: "UA", also: tapped },
@@ -849,8 +849,11 @@ describe("every send that posts, posts once", () => {
     it(`${kind}: twice at once, then again, is one post`, async () => {
       const { env, slack, sends } = await fixtures();
       const before = slack.posted.length;
-      await Promise.all([deliver(env, db, sends[kind], NOW), deliver(env, db, sends[kind], NOW)]);
-      await deliver(env, db, sends[kind], NOW);
+      await Promise.all([
+        deliverSend(env, db, sends[kind], NOW),
+        deliverSend(env, db, sends[kind], NOW),
+      ]);
+      await deliverSend(env, db, sends[kind], NOW);
       expect(slack.posted.length - before).toBe(1);
     });
   }
@@ -858,9 +861,9 @@ describe("every send that posts, posts once", () => {
   it("posts on the retry after Slack failed the first try", async () => {
     const { env, slack, sends } = await fixtures();
     slack.failures.set("ULEAD", new SlackApiError("chat.postMessage", "internal_error"));
-    await expect(deliver(env, db, sends.close_notice, NOW)).rejects.toThrow();
+    await expect(deliverSend(env, db, sends.close_notice, NOW)).rejects.toThrow();
     slack.failures.delete("ULEAD");
-    await deliver(env, db, sends.close_notice, NOW);
+    await deliverSend(env, db, sends.close_notice, NOW);
     expect(slack.posted.filter((m) => m.channel === "ULEAD")).toHaveLength(1);
   });
 });

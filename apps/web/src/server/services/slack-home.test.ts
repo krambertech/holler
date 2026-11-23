@@ -7,17 +7,10 @@ import { deliveryEnv, emptyDatabase } from "../test-delivery";
 import { queueAfterResponse, remindWaiting, sendHoller } from "./delivery";
 import { workspaceFixture } from "./fixtures";
 import { createDraft } from "./hollers";
+import { homeClaimStaleMs, homeDebounceSeconds, markHomeOpened, queueHomes } from "./home-queue";
 import { recordResponse } from "./responses";
 import { devSlack } from "./slack-connection";
-import {
-  homeClaimStaleMs,
-  homeDebounceSeconds,
-  homeState,
-  markHomeOpened,
-  publishHome,
-  queueHomes,
-  slackSenderContext,
-} from "./slack-home";
+import { homeState, publishHome, slackSenderContext } from "./slack-home";
 
 let db: Db;
 let raw: D1Database;

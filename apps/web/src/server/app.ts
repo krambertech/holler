@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { secureHeaders } from "hono/secure-headers";
 import { type Auth, createAuth } from "./auth";
 import { createDb, type Db } from "./db";
+import { devSlackRoutes } from "./dev-slack";
 import { type Bindings, devKeyAccepted, devRoutesEnabled } from "./env";
 import { handleMcpRequest } from "./mcp";
 import { mountOpenApi } from "./openapi";
@@ -100,6 +101,7 @@ app.use("/api/dev/*", async (c, next) => {
   }
   await next();
 });
+app.route("/api/dev/slack", devSlackRoutes);
 app.route("/api/dev", devRoutes);
 
 app.route("/slack/oauth", slackOAuthRoutes);

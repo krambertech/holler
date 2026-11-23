@@ -38,11 +38,12 @@ import { type PostMessage, SlackApiError, type SlackClient } from "../slack/clie
 import { activityOf, recordChange, takeBack } from "./audit";
 import { type ServiceContext, ServiceError } from "./context";
 import { getHoller, presentQuestion, sendProblems } from "./hollers";
+import { type HomeSend, refreshHomes } from "./home-queue";
 import { respondUrl } from "./respond-links";
 import { nextRound } from "./rounds";
 import { slackFor } from "./slack-connection";
 import { claimSlackDelivery, releaseSlackDelivery } from "./slack-deliveries";
-import { publishHome, refreshHomes } from "./slack-home";
+import { chunks, queueClaimed } from "./slack-queue";
 import { assertCanSend } from "./usage";
 
 /**
@@ -78,7 +79,7 @@ export type SlackSend =
   | { kind: "announce"; hollerId: string }
   | { kind: "close_notice"; hollerId: string }
   | { kind: "send_failed"; hollerId: string; reason: string; queuedAt: string }
-  | { kind: "home"; workspaceId: string; slackUserId: string };
+  | HomeSend;
 
 /**
  * What each send does in Slack. A post makes a new message, so the consumer claims it in
@@ -127,46 +128,13 @@ export interface DmRef {
 type HollerDetail = Awaited<ReturnType<typeof getHoller>>;
 
 const HOUR = 60 * 60 * 1000;
-/** Slack's sendBatch takes at most 100 messages; D1 runs 100 statements per batch comfortably. */
-const CHUNK = 100;
 /** A creator's Send reminder can go once in this long. */
 export const manualReminderGapHours = 4;
 /** A per-zone send goes live when the first zone, UTC+14, reaches the send time. */
 const zoneLeadHours = 26;
 
-function chunks<T>(items: T[]): T[][] {
-  const out: T[][] = [];
-  for (let start = 0; start < items.length; start += CHUNK)
-    out.push(items.slice(start, start + CHUNK));
-  return out;
-}
-
 export async function enqueue(env: Bindings, sends: SlackSend[]): Promise<void> {
   await queueClaimed(env, sends, async () => {});
-}
-
-/**
- * Queues the sends for rows a guarded update just claimed. When the queue refuses a chunk,
- * `release` gets that chunk and every later one, the sends that never reached the queue, to give
- * their claims back so the next run retries them; then the error is thrown. Claimed work is
- * never lost, and work that was queued is never released to be sent twice.
- */
-export async function queueClaimed(
-  env: Bindings,
-  sends: SlackSend[],
-  release: (unqueued: SlackSend[]) => Promise<unknown>,
-  options: { delaySeconds?: number } = {},
-): Promise<void> {
-  const batches = chunks(sends);
-  const delay = options.delaySeconds ? { delaySeconds: options.delaySeconds } : {};
-  for (const [index, batch] of batches.entries()) {
-    try {
-      await env.SLACK_SENDS.sendBatch(batch.map((body) => ({ body, ...delay })));
-    } catch (error) {
-      await release(batches.slice(index).flat());
-      throw error;
-    }
-  }
 }
 
 /** Gives back the invite claims of sends that never reached the queue. */
@@ -878,8 +846,12 @@ type Loaded = NonNullable<Awaited<ReturnType<typeof loadSlackHoller>>>;
  * twice does the right thing or nothing. A permanent Slack error on a DM is stored on the
  * recipient; any other Slack error is thrown, and the consumer retries it.
  */
-export async function deliver(env: Bindings, db: Db, send: SlackSend, now: Date): Promise<void> {
-  if (send.kind === "home") return publishHome(env, db, send.workspaceId, send.slackUserId, now);
+export async function deliver(
+  env: Bindings,
+  db: Db,
+  send: Exclude<SlackSend, HomeSend>,
+  now: Date,
+): Promise<void> {
   const loaded = await loadSlackHoller(db, send.hollerId);
   if (!loaded) return;
   const { row, holler } = loaded;

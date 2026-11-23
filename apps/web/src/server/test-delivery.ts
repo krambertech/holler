@@ -1,6 +1,7 @@
 import type { Db } from "./db";
 import type { Bindings } from "./env";
-import { deliver, type SlackSend } from "./services/delivery";
+import type { SlackSend } from "./services/delivery";
+import { deliverSend } from "./services/slack-home";
 
 /**
  * A Worker env for delivery tests: the real local D1, the dev FakeSlack, and a SLACK_SENDS that
@@ -53,7 +54,8 @@ export function deliveryEnv(db: Db, raw: D1Database) {
 
   /** Runs every queued send, and any they queue in turn, as the consumer would at `at`. */
   async function drain(at: Date): Promise<void> {
-    for (let send = queued.shift(); send; send = queued.shift()) await deliver(env, db, send, at);
+    for (let send = queued.shift(); send; send = queued.shift())
+      await deliverSend(env, db, send, at);
   }
 
   return { env, queued, refuse, outage, drain };

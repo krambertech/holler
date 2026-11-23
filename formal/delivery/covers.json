@@ -15,7 +15,7 @@
     "apps/web/src/server/services/delivery.ts#postOnce": "be2c2c9bc16793c2",
     "apps/web/src/server/services/delivery.ts#postToRecipient": "9339b93b0ccd7923",
     "apps/web/src/server/services/delivery.ts#queueAfterResponse": "3d41dedb0d6f83f8",
-    "apps/web/src/server/services/delivery.ts#queueClaimed": "9ee0a34616527d59",
+    "apps/web/src/server/services/slack-queue.ts#queueClaimed": "9ee0a34616527d59",
     "apps/web/src/server/services/delivery.ts#queueCloseWork": "848a37ae58530a6b",
     "apps/web/src/server/services/delivery.ts#queueDueInvites": "cbac6a1010437184",
     "apps/web/src/server/services/delivery.ts#queueMissingAnnouncements": "ce72fac5c16291ea",

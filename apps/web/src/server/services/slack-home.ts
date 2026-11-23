@@ -5,7 +5,7 @@ import type { Bindings } from "../env";
 import { surfaceOf } from "../slack/blocks/format";
 import { type HomeLive, type HomeState, homeRowLimit, homeView } from "../slack/blocks/home";
 import type { ServiceContext } from "./context";
-import { loadSlackHoller, manualReminderGapHours, queueClaimed, type SlackSend } from "./delivery";
+import { deliver, loadSlackHoller, manualReminderGapHours, type SlackSend } from "./delivery";
 import { homeCounts, listHollers } from "./hollers";
 import { respondUrl } from "./respond-links";
 import { slackFor } from "./slack-connection";
@@ -13,9 +13,6 @@ import { slackFor } from "./slack-connection";
 const { slackHomes, members, recipients, hollers, slackPeople } = schema;
 
 const HOUR = 60 * 60 * 1000;
-export const homeDebounceSeconds = 5;
-export const homeClaimStaleMs = 60_000;
-const CLAIM_CHUNK = 90;
 
 export async function slackSenderContext(
   base: Omit<ServiceContext, "actor">,
@@ -142,91 +139,6 @@ async function waitingOn(env: Bindings, db: Db, workspaceId: string, slackUserId
   return { rows: waiting, more: rows.length - shown.length };
 }
 
-export async function markHomeOpened(
-  db: Db,
-  workspaceId: string,
-  slackUserId: string,
-  now: Date,
-): Promise<void> {
-  await db
-    .insert(slackHomes)
-    .values({ workspaceId, slackUserId, openedAt: now })
-    .onConflictDoUpdate({
-      target: [slackHomes.workspaceId, slackHomes.slackUserId],
-      set: { openedAt: now },
-    });
-}
-
-export async function queueHomes(
-  env: Bindings,
-  db: Db,
-  workspaceId: string,
-  slackUserIds: string[],
-  now: Date,
-  options: { soon?: boolean } = {},
-): Promise<number> {
-  const people = [...new Set(slackUserIds)];
-  const stale = new Date(now.getTime() - homeClaimStaleMs);
-  const claimed: string[] = [];
-  for (let start = 0; start < people.length; start += CLAIM_CHUNK) {
-    const chunk = people.slice(start, start + CLAIM_CHUNK);
-    const rows = await db
-      .update(slackHomes)
-      .set({ queuedAt: now })
-      .where(
-        and(
-          eq(slackHomes.workspaceId, workspaceId),
-          inArray(slackHomes.slackUserId, chunk),
-          options.soon
-            ? undefined
-            : or(isNull(slackHomes.queuedAt), lte(slackHomes.queuedAt, stale)),
-        ),
-      )
-      .returning({ slackUserId: slackHomes.slackUserId });
-    claimed.push(...rows.map((row) => row.slackUserId));
-  }
-  const sends: SlackSend[] = claimed.map((slackUserId) => ({
-    kind: "home",
-    workspaceId,
-    slackUserId,
-  }));
-  await queueClaimed(
-    env,
-    sends,
-    async (unqueued) => {
-      const back = unqueued.flatMap((send) => (send.kind === "home" ? [send.slackUserId] : []));
-      for (let start = 0; start < back.length; start += CLAIM_CHUNK) {
-        await db
-          .update(slackHomes)
-          .set({ queuedAt: null })
-          .where(
-            and(
-              eq(slackHomes.workspaceId, workspaceId),
-              inArray(slackHomes.slackUserId, back.slice(start, start + CLAIM_CHUNK)),
-            ),
-          );
-      }
-    },
-    options.soon ? {} : { delaySeconds: homeDebounceSeconds },
-  );
-  return claimed.length;
-}
-
-export async function refreshHomes(
-  env: Bindings,
-  db: Db,
-  workspaceId: string,
-  slackUserIds: string[],
-  now: Date,
-  options: { soon?: boolean } = {},
-): Promise<void> {
-  try {
-    await queueHomes(env, db, workspaceId, slackUserIds, now, options);
-  } catch (error) {
-    console.error("Home refresh not queued; it is rebuilt when opened", error);
-  }
-}
-
 export async function publishHome(
   env: Bindings,
   db: Db,
@@ -248,4 +160,9 @@ export async function publishHome(
   const view = homeView(await homeState(env, db, workspaceId, slackUserId, now));
   await slack.publishHome({ userId: slackUserId, view });
   await runBatch(db, [db.update(slackHomes).set({ publishedAt: now }).where(where)]);
+}
+
+export async function deliverSend(env: Bindings, db: Db, send: SlackSend, now: Date) {
+  if (send.kind === "home") return publishHome(env, db, send.workspaceId, send.slackUserId, now);
+  return deliver(env, db, send, now);
 }

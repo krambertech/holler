@@ -1,4 +1,4 @@
-import { Hono } from "hono";
+import { type Context, Hono } from "hono";
 import type { AppEnv } from "../app";
 import type { Db } from "../db";
 import type { Bindings } from "../env";
@@ -12,6 +12,7 @@ import {
 } from "../services/answering";
 import { ServiceError } from "../services/context";
 import { remindWaiting } from "../services/delivery";
+import { refreshHomes } from "../services/home-queue";
 import {
   type QuickPulseOutcome,
   quickPulseProblems,
@@ -19,7 +20,7 @@ import {
   sendQuickPulse,
 } from "../services/quick-pulse";
 import { slackFor } from "../services/slack-connection";
-import { refreshHomes, slackSenderContext, timeZoneFor } from "../services/slack-home";
+import { slackSenderContext, timeZoneFor } from "../services/slack-home";
 import { workspaceIdForTeam } from "../services/workspaces";
 import { aboutMessageShortcutId, actionIds, answerViewId, quickPulseViewId } from "./blocks/format";
 import { errorBlockFor, readAnswers, readOrigin } from "./blocks/modal";
@@ -61,6 +62,15 @@ interface InteractionPayload {
   };
 }
 
+interface Interaction {
+  c: Context<AppEnv>;
+  payload: InteractionPayload;
+  slackUserId: string;
+  workspaceId: string;
+  base: { db: Db; workspaceId: string; now: () => Date };
+  ctx: ReturnType<typeof recipientContext>;
+}
+
 export const slackInteractionRoutes = new Hono<AppEnv>().post("/", async (c) => {
   const now = c.get("now");
   const verified = await verifySlackRequest(c.req.raw, c.env.SLACK_SIGNING_SECRET, now());
@@ -79,164 +89,222 @@ export const slackInteractionRoutes = new Hono<AppEnv>().post("/", async (c) => 
   const db = c.get("db");
   const workspaceId = await workspaceIdForTeam(db, teamId);
   if (!workspaceId) return c.body(null, 200);
-  const ctx = recipientContext({ db, workspaceId, now }, slackUserId);
   const base = { db, workspaceId, now };
+  const interaction: Interaction = {
+    c,
+    payload,
+    slackUserId,
+    workspaceId,
+    base,
+    ctx: recipientContext(base, slackUserId),
+  };
+  if (payload.type === "message_action") return openFromShortcut(interaction);
+  if (payload.type === "view_submission") return submitView(interaction);
+  if (payload.type === "block_actions") return blockAction(interaction);
+  return c.body(null, 200);
+});
 
-  if (payload.type === "message_action" && payload.callback_id === aboutMessageShortcutId) {
-    if (!payload.trigger_id) return c.body(null, 200);
-    const slack = await slackFor(c.env, db, workspaceId);
-    const sender = await slackSenderContext(base, slackUserId);
-    const url = permalinkOf(payload);
-    await slack.openView({
-      triggerId: payload.trigger_id,
-      view: sender
-        ? quickPulseModal({ about: url ? { url } : null }, emptyQuickPulse, c.env.PRODUCT_URL)
-        : signInView(c.env.PRODUCT_URL),
-    });
+async function openQuickPulse(
+  { c, base, slackUserId, workspaceId }: Interaction,
+  triggerId: string,
+  about: { url: string } | null,
+) {
+  const slack = await slackFor(c.env, base.db, workspaceId);
+  const sender = await slackSenderContext(base, slackUserId);
+  await slack.openView({
+    triggerId,
+    view: sender
+      ? quickPulseModal({ about }, emptyQuickPulse, c.env.PRODUCT_URL)
+      : signInView(c.env.PRODUCT_URL),
+  });
+  return c.body(null, 200);
+}
+
+async function openFromShortcut(interaction: Interaction) {
+  const { c, payload } = interaction;
+  if (payload.callback_id !== aboutMessageShortcutId || !payload.trigger_id) {
     return c.body(null, 200);
   }
+  const url = permalinkOf(payload);
+  return openQuickPulse(interaction, payload.trigger_id, url ? { url } : null);
+}
 
-  if (payload.type === "view_submission" && payload.view?.callback_id === quickPulseViewId) {
-    const sender = await slackSenderContext(base, slackUserId);
-    if (!sender) return c.json({ response_action: "update", view: signInView(c.env.PRODUCT_URL) });
-    const origin = readQuickOrigin(payload.view.private_metadata);
-    const values = readQuickValues(payload.view.state?.values);
-    const read = quickPulseDraft(origin, values);
-    if ("errors" in read) return c.json({ response_action: "errors", errors: read.errors });
-    const problems = quickPulseProblems(sender, read.draft);
-    if (problems.length > 0) {
-      const errors: Record<string, string> = {};
-      for (const problem of problems) errors[quickBlockFor(problem.field)] ??= problem.message;
-      return c.json({ response_action: "errors", errors });
-    }
-    const viewId = payload.view.id;
-    if (!viewId) return c.json({ response_action: "clear" });
-    c.executionCtx.waitUntil(
-      finishQuickPulse(c.env, db, sender, read.draft, viewId).catch((error) =>
-        console.error("quick pulse failed", error),
-      ),
-    );
-    return c.json({ response_action: "update", view: quickSendingView(values.prompt) });
+async function submitView(interaction: Interaction) {
+  const callbackId = interaction.payload.view?.callback_id;
+  if (callbackId === quickPulseViewId) return submitQuickPulse(interaction);
+  if (callbackId === answerViewId) return submitAnswer(interaction);
+  return interaction.c.body(null, 200);
+}
+
+async function submitQuickPulse({ c, payload, base, slackUserId }: Interaction) {
+  const sender = await slackSenderContext(base, slackUserId);
+  if (!sender) return c.json({ response_action: "update", view: signInView(c.env.PRODUCT_URL) });
+  const values = readQuickValues(payload.view?.state?.values);
+  const read = quickPulseDraft(readQuickOrigin(payload.view?.private_metadata), values);
+  if ("errors" in read) return c.json({ response_action: "errors", errors: read.errors });
+  const problems = quickPulseProblems(sender, read.draft);
+  if (problems.length > 0) {
+    const errors: Record<string, string> = {};
+    for (const problem of problems) errors[quickBlockFor(problem.field)] ??= problem.message;
+    return c.json({ response_action: "errors", errors });
   }
+  const viewId = payload.view?.id;
+  if (!viewId) return c.json({ response_action: "clear" });
+  c.executionCtx.waitUntil(
+    finishQuickPulse(c.env, base.db, sender, read.draft, viewId).catch((error) =>
+      console.error("quick pulse failed", error),
+    ),
+  );
+  return c.json({ response_action: "update", view: quickSendingView(values.prompt) });
+}
 
-  if (payload.type === "view_submission" && payload.view?.callback_id === answerViewId) {
-    const origin = readOrigin(payload.view.private_metadata);
-    if (!origin) return c.json({ response_action: "clear" });
-    const outcome = await answerFromSlack(
-      ctx,
-      origin.hollerId,
-      "slack_modal",
-      readAnswers(payload.view.state?.values),
-    );
-    if (outcome.status === "invalid") {
-      return c.json({
-        response_action: "errors",
-        errors: { [errorBlockFor(outcome.questionId)]: outcome.message },
-      });
-    }
-    const tapped = origin.channel && origin.ts ? { channel: origin.channel, ts: origin.ts } : null;
-    await queueOutcome(c.env, ctx, origin.hollerId, outcome, tapped);
-    if (!tapped) await refreshHomes(c.env, db, workspaceId, [slackUserId], now(), { soon: true });
-    return c.json({ response_action: "clear" });
+async function submitAnswer({ c, payload, base, ctx, slackUserId, workspaceId }: Interaction) {
+  const origin = readOrigin(payload.view?.private_metadata);
+  if (!origin) return c.json({ response_action: "clear" });
+  const outcome = await answerFromSlack(
+    ctx,
+    origin.hollerId,
+    "slack_modal",
+    readAnswers(payload.view?.state?.values),
+  );
+  if (outcome.status === "invalid") {
+    return c.json({
+      response_action: "errors",
+      errors: { [errorBlockFor(outcome.questionId)]: outcome.message },
+    });
   }
+  const tapped = origin.channel && origin.ts ? { channel: origin.channel, ts: origin.ts } : null;
+  await queueOutcome(c.env, ctx, origin.hollerId, outcome, tapped);
+  if (!tapped) await refreshOwnHome({ c, base, slackUserId, workspaceId });
+  return c.json({ response_action: "clear" });
+}
 
-  if (payload.type !== "block_actions") return c.body(null, 200);
+function refreshOwnHome({
+  c,
+  base,
+  slackUserId,
+  workspaceId,
+}: Pick<Interaction, "c" | "base" | "slackUserId" | "workspaceId">) {
+  return refreshHomes(c.env, base.db, workspaceId, [slackUserId], base.now(), { soon: true });
+}
+
+type Action = NonNullable<InteractionPayload["actions"]>[number] & { value: string };
+
+async function blockAction(interaction: Interaction) {
+  const { c, payload } = interaction;
   const action = payload.actions?.[0];
-  if (action?.action_id === actionIds.quickKind && payload.view?.id) {
-    const slack = await slackFor(c.env, db, workspaceId);
-    await slack.updateView({
-      viewId: payload.view.id,
-      view: quickPulseModal(
-        readQuickOrigin(payload.view.private_metadata),
-        readQuickValues(payload.view.state?.values),
-        c.env.PRODUCT_URL,
-      ),
-    });
-    return c.body(null, 200);
-  }
+  if (action?.action_id === actionIds.quickKind) return redrawQuickPulse(interaction);
   if (!action?.value) return c.body(null, 200);
-  const fromHome = payload.container?.type === "view" && !payload.view?.callback_id;
+  const valued = { ...action, value: action.value };
+  if (action.action_id === actionIds.homeNew) {
+    return payload.trigger_id
+      ? openQuickPulse(interaction, payload.trigger_id, null)
+      : c.body(null, 200);
+  }
+  if (action.action_id === actionIds.homeRemind) return remindFromHome(interaction, valued);
+  await answerAction(interaction, valued);
+  return c.body(null, 200);
+}
 
-  if (action.action_id === actionIds.homeNew && payload.trigger_id) {
-    const sender = await slackSenderContext(base, slackUserId);
-    const slack = await slackFor(c.env, db, workspaceId);
-    await slack.openView({
-      triggerId: payload.trigger_id,
-      view: sender
-        ? quickPulseModal({ about: null }, emptyQuickPulse, c.env.PRODUCT_URL)
-        : signInView(c.env.PRODUCT_URL),
-    });
-    return c.body(null, 200);
+async function redrawQuickPulse({ c, payload, base, workspaceId }: Interaction) {
+  const viewId = payload.view?.id;
+  if (!viewId) return c.body(null, 200);
+  const slack = await slackFor(c.env, base.db, workspaceId);
+  await slack.updateView({
+    viewId,
+    view: quickPulseModal(
+      readQuickOrigin(payload.view?.private_metadata),
+      readQuickValues(payload.view?.state?.values),
+      c.env.PRODUCT_URL,
+    ),
+  });
+  return c.body(null, 200);
+}
+
+async function remindFromHome(interaction: Interaction, action: Action) {
+  const { c, base, slackUserId } = interaction;
+  const sender = await slackSenderContext(base, slackUserId);
+  if (!sender) return c.body(null, 200);
+  try {
+    await remindWaiting(sender, c.env, action.value);
+  } catch (error) {
+    if (!(error instanceof ServiceError)) throw error;
   }
-  if (action.action_id === actionIds.homeRemind) {
-    const sender = await slackSenderContext(base, slackUserId);
-    if (!sender) return c.body(null, 200);
-    try {
-      await remindWaiting(sender, c.env, action.value);
-    } catch (error) {
-      if (!(error instanceof ServiceError)) throw error;
-    }
-    await refreshHomes(c.env, db, workspaceId, [slackUserId], now(), { soon: true });
-    return c.body(null, 200);
-  }
+  await refreshOwnHome(interaction);
+  return c.body(null, 200);
+}
+
+function tappedMessage(payload: InteractionPayload) {
   const channel = payload.container?.channel_id ?? payload.channel?.id;
   const ts = payload.container?.message_ts ?? payload.message?.ts;
-  const tapped = channel && ts ? { channel, ts } : null;
+  return channel && ts ? { channel, ts } : null;
+}
 
+async function answerAction(interaction: Interaction, action: Action) {
+  const { c, ctx, payload } = interaction;
+  const tapped = tappedMessage(payload);
   if (action.action_id.startsWith(`${actionIds.option}_`)) {
     const [hollerId, questionId, optionId] = action.value.split("|");
-    if (!hollerId || !questionId || !optionId) return c.body(null, 200);
+    if (!hollerId || !questionId || !optionId) return;
     const outcome = await answerFromSlack(ctx, hollerId, "slack_button", {
       answers: [{ questionId, optionIds: [optionId] }],
     });
     // A one-tap question has one required answer, so a button can never be invalid.
     if (outcome.status === "invalid") throw new Error(outcome.message);
     await queueOutcome(c.env, ctx, hollerId, outcome, tapped);
-    return c.body(null, 200);
+    return;
   }
   if (action.action_id === actionIds.text) {
     // The free-text pulse's box: block `text:<holler>:<question>`. Enter on an empty box does nothing.
     const [, hollerId, questionId] = action.block_id?.split(":") ?? [];
-    if (!hollerId || !questionId || !action.value.trim()) return c.body(null, 200);
+    if (!hollerId || !questionId || !action.value.trim()) return;
     const outcome = await answerFromSlack(ctx, hollerId, "slack_button", {
       answers: [{ questionId, text: action.value }],
     });
     if (outcome.status === "invalid") throw new Error(outcome.message);
     await queueOutcome(c.env, ctx, hollerId, outcome, tapped);
-    return c.body(null, 200);
+    return;
   }
   if (action.action_id === actionIds.note) {
     // The note box after a tap: block `note:<response>:<question>`.
     const [, responseId, questionId] = action.block_id?.split(":") ?? [];
-    if (!responseId || !questionId) return c.body(null, 200);
+    if (!responseId || !questionId) return;
     await addNoteFromSlack(c.env, ctx, { responseId, questionId, note: action.value }, tapped);
-    return c.body(null, 200);
+    return;
   }
+  await answerOrOpen(interaction, action, tapped);
+}
+
+async function answerOrOpen(
+  interaction: Interaction,
+  action: Action,
+  tapped: ReturnType<typeof tappedMessage>,
+) {
+  const { c, ctx, payload, base, workspaceId } = interaction;
   if (action.action_id === actionIds.done) {
     const outcome = await answerFromSlack(ctx, action.value, "slack_button", { answers: [] });
     if (outcome.status === "invalid") throw new Error(outcome.message);
     await queueOutcome(c.env, ctx, action.value, outcome, tapped);
-    if (fromHome) await refreshHomes(c.env, db, workspaceId, [slackUserId], now(), { soon: true });
-    return c.body(null, 200);
+    const fromHome = payload.container?.type === "view" && !payload.view?.callback_id;
+    if (fromHome) await refreshOwnHome(interaction);
+    return;
   }
   if (action.action_id === actionIds.open && payload.trigger_id) {
     const opened = await answerViewFor(ctx, action.value, tapped);
     if ("view" in opened) {
       // The trigger id lasts three seconds, so the modal opens before anything else runs.
-      const slack = await slackFor(c.env, db, workspaceId);
+      const slack = await slackFor(c.env, base.db, workspaceId);
       await slack.openView({ triggerId: payload.trigger_id, view: opened.view });
     } else {
       await queueOutcome(c.env, ctx, action.value, opened, tapped);
     }
-    return c.body(null, 200);
+    return;
   }
   if (action.action_id === actionIds.snooze) {
     await snoozeFromSlack(c.env, ctx, action.value, tapped);
-    return c.body(null, 200);
   }
   // Link buttons report their tap too; there is nothing to do.
-  return c.body(null, 200);
-});
+}
 
 export function permalinkOf(payload: InteractionPayload): string | null {
   const domain = payload.team?.domain;

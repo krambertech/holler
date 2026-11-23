@@ -15,11 +15,11 @@ import {
   sendDueHollers,
   sendHoller,
 } from "../services/delivery";
+import { markHomeOpened, queueHomes } from "../services/home-queue";
 import { closeDueHollers } from "../services/lifecycle";
 import { queueDueReminders } from "../services/reminders";
 import { answerOnWeb } from "../services/respond";
 import { stopRepeating } from "../services/rounds";
-import { markHomeOpened, queueHomes } from "../services/slack-home";
 import { BASE, CHANNEL, hours, minutes, type Side, type World } from "./world";
 
 export interface Scenario {
