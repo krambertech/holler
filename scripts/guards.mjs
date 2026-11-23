@@ -101,6 +101,10 @@ export function verdict(guard, { status, output }) {
   return null;
 }
 
+export function ranNothing(check, output) {
+  return check.includes("vitest run") && !/Tests\s.*\d+ passed/.test(output);
+}
+
 export function loadGuards(base = root) {
   const dir = join(base, FOLDER);
   const files = readdirSync(dir)
@@ -190,6 +194,9 @@ function prove(guards, ids) {
       let output = "";
       if (whole.status !== 0) {
         problem = "the check fails on the code as it is, so it proves nothing";
+        output = whole.output;
+      } else if (ranNothing(guard.check, whole.output)) {
+        problem = "the check ran no test, so its filter matches nothing";
         output = whole.output;
       } else if (guard.refuses) {
         const result = run(guard.refuses, dir);
