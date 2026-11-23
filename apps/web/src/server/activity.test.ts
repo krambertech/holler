@@ -274,8 +274,11 @@ const unrecordedRoutes: Record<string, string> = {
   "POST /api/dev/tick": "development and browser tests only",
   "POST /api/dev/web-survey": "development and browser tests only",
   "POST /api/dev/answer": "development and browser tests only",
+  "POST /api/dev/slack": "development and browser tests only",
   "POST /slack/events": "hands over to markUninstalled, proven below, and to sends and answers",
-  "POST /slack/interactions": "hands over to snoozeReminder and addNoteFromSlack, proven below",
+  "POST /slack/commands": "opens the quick pulse or answers in place, and writes nothing",
+  "POST /slack/interactions":
+    "hands over to snoozeReminder and addNoteFromSlack, proven below, and to createDraft, sendHoller and remindWaiting, proven by their routes",
   "ALL /mcp": "every tool is proven below",
   "ALL /api/*": "answers 404",
   "ALL /*": "serves the web app's files",

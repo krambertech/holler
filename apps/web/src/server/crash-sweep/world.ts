@@ -255,7 +255,12 @@ export class World {
 }
 
 export function isTo(send: SlackSend, hollerId: string, slackUserId: string): boolean {
-  return "slackUserId" in send && send.hollerId === hollerId && send.slackUserId === slackUserId;
+  return (
+    "hollerId" in send &&
+    "slackUserId" in send &&
+    send.hollerId === hollerId &&
+    send.slackUserId === slackUserId
+  );
 }
 
 const ID = /\b[a-z]{3}_[0-9a-z]{16}\b/g;
