@@ -19,6 +19,29 @@ export interface KnownWindow {
 
 export const knownWindows: KnownWindow[] = [
   {
+    operation: "sendHoller to more people than one batch holds",
+    failure: "killed after insert recipients",
+    breaks: ["invited", "audience"],
+  },
+  {
+    operation: "sendHoller",
+    failure:
+      "killed after update hollers: status, sent_at, closes_at, updated_at + insert activity",
+    breaks: ["audience"],
+  },
+  {
+    operation: "sendHoller to more people than one batch holds",
+    failure:
+      "killed after update hollers: status, sent_at, closes_at, updated_at + insert activity",
+    breaks: ["audience"],
+  },
+  {
+    operation: "sendDueHollers",
+    failure:
+      "killed after update hollers: status, sent_at, closes_at, updated_at + insert activity",
+    breaks: ["audience", "rounds"],
+  },
+  {
     operation: "queueDueInvites",
     failure: "killed after update recipients: invited_at",
     breaks: ["invited"],
@@ -26,23 +49,7 @@ export const knownWindows: KnownWindow[] = [
   {
     operation: "sendDueHollers",
     failure: "killed after insert recipients",
-    breaks: ["invited", "rounds", "activity"],
-  },
-  {
-    operation: "sendDueHollers",
-    failure:
-      "killed after insert activity + insert hollers + insert questions + insert options + delete hollers + delete activity",
-    breaks: ["invited"],
-  },
-  {
-    operation: "sendHoller to more people than one batch holds",
-    failure: "killed after insert recipients",
-    breaks: ["invited", "audience", "activity"],
-  },
-  {
-    operation: "sendHoller to more people than one batch holds",
-    failure: "killed after insert activity",
-    breaks: ["invited"],
+    breaks: ["invited", "rounds"],
   },
   {
     operation: "sendHoller to more people than one batch holds",
@@ -57,11 +64,6 @@ export const knownWindows: KnownWindow[] = [
   {
     operation: "sendHoller",
     failure: "killed after insert recipients",
-    breaks: ["invited", "activity"],
-  },
-  {
-    operation: "sendHoller",
-    failure: "killed after insert activity",
     breaks: ["invited"],
   },
   {
@@ -72,49 +74,9 @@ export const knownWindows: KnownWindow[] = [
   },
   {
     operation: "sendDueHollers",
-    failure: "killed after update hollers: status, sent_at, closes_at, updated_at",
-    breaks: ["audience", "rounds", "activity"],
-  },
-  {
-    operation: "sendDueHollers",
-    failure: "insert recipients refused, killed after delete recipients",
-    breaks: ["audience", "rounds", "activity"],
-  },
-  {
-    operation: "sendDueHollers",
     failure:
-      "insert activity + insert hollers + insert questions + insert options + delete hollers + delete activity refused, killed after delete recipients",
-    breaks: ["audience", "rounds", "activity"],
-  },
-  {
-    operation: "sendHoller to more people than one batch holds",
-    failure: "killed after update hollers: status, sent_at, closes_at, updated_at",
-    breaks: ["audience", "activity"],
-  },
-  {
-    operation: "sendHoller to more people than one batch holds",
-    failure: "insert recipients refused, killed after delete recipients",
-    breaks: ["audience", "activity"],
-  },
-  {
-    operation: "sendHoller to more people than one batch holds",
-    failure: "insert activity refused, killed after delete recipients",
-    breaks: ["audience", "activity"],
-  },
-  {
-    operation: "sendHoller",
-    failure: "killed after update hollers: status, sent_at, closes_at, updated_at",
-    breaks: ["audience", "activity"],
-  },
-  {
-    operation: "sendHoller",
-    failure: "insert recipients refused, killed after delete recipients",
-    breaks: ["audience", "activity"],
-  },
-  {
-    operation: "sendHoller",
-    failure: "insert activity refused, killed after delete recipients",
-    breaks: ["audience", "activity"],
+      "killed after insert hollers + insert questions + insert options + update hollers: status + insert activity + delete hollers",
+    breaks: ["invited"],
   },
   {
     operation: "answerOnWeb",
@@ -130,11 +92,6 @@ export const knownWindows: KnownWindow[] = [
     operation: "queueDueReminders",
     failure: "killed after update recipients: reminders_sent, next_reminder_at",
     breaks: ["reminded", "rhythm"],
-  },
-  {
-    operation: "remindWaiting",
-    failure: "killed after update recipients: reminders_sent, next_reminder_at",
-    breaks: ["reminded", "rhythm", "reminderNow", "activity"],
   },
   {
     operation: "deliver invite",
@@ -163,25 +120,21 @@ export const knownWindows: KnownWindow[] = [
     tradeOff: true,
   },
   {
+    operation: "remindWaiting",
+    failure:
+      "killed after update recipients: reminders_sent, next_reminder_at + insert activity + update hollers: reminded_at",
+    breaks: ["reminderNow", "reminded", "rhythm"],
+  },
+  {
     operation: "deliver reminder",
     failure: "killed after insert slack deliveries",
     breaks: ["rhythm"],
   },
   {
     operation: "remindWaiting",
-    failure: "killed after update hollers: reminded_at",
-    breaks: ["reminderNow", "activity"],
-  },
-  {
-    operation: "remindWaiting",
-    failure: "update recipients: reminders_sent, next_reminder_at refused",
-    breaks: ["reminderNow", "activity"],
-  },
-  {
-    operation: "remindWaiting",
     failure:
       "queue reminder refused, killed after update recipients: reminders_sent, next_reminder_at",
-    breaks: ["reminderNow", "activity"],
+    breaks: ["reminderNow"],
   },
   {
     operation: "closeHoller",
@@ -253,45 +206,5 @@ export const knownWindows: KnownWindow[] = [
     failure: "killed after Slack posts reminder",
     breaks: ["closedDm"],
     tradeOff: true,
-  },
-  {
-    operation: "remindWaiting",
-    failure: "killed after queue reminder",
-    breaks: ["activity"],
-  },
-  {
-    operation: "remindWaiting",
-    failure: "insert activity refused",
-    breaks: ["activity"],
-  },
-  {
-    operation: "closeHoller",
-    failure: "killed after update hollers: status, closed_at, updated_at",
-    breaks: ["activity"],
-  },
-  {
-    operation: "closeHoller",
-    failure: "insert activity refused",
-    breaks: ["activity"],
-  },
-  {
-    operation: "closeDueHollers, then queueCloseWork",
-    failure: "killed after update hollers: status, closed_at, updated_at",
-    breaks: ["activity"],
-  },
-  {
-    operation: "closeDueHollers, then queueCloseWork",
-    failure: "insert activity refused",
-    breaks: ["activity"],
-  },
-  {
-    operation: "addNoteFromSlack",
-    failure: "killed after insert answer notes",
-    breaks: ["activity"],
-  },
-  {
-    operation: "addNoteFromSlack",
-    failure: "insert activity refused",
-    breaks: ["activity"],
   },
 ];
