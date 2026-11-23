@@ -6,8 +6,8 @@
   "break": [
     {
       "file": "apps/web/src/server/services/lifecycle.ts",
-      "find": "  const statements = closed.map((row) =>\n    db.insert(schema.activity).values({\n      id: newId(\"activity\"),\n      workspaceId: row.workspaceId,\n      via: \"system\" as const,\n      action: \"holler.closed\",\n      subjectType: \"holler\",\n      subjectId: row.id,\n      data: { reason: \"close_time\" },\n      at: now,\n    }),\n  );\n  for (let start = 0; start < statements.length; start += 100) {\n    await runBatch(db, statements.slice(start, start + 100));\n  }\n",
-      "replace": "  if (closed.length > 0) {\n    await db.insert(schema.activity).values(\n      closed.map((row) => ({\n        id: newId(\"activity\"),\n        workspaceId: row.workspaceId,\n        via: \"system\" as const,\n        action: \"holler.closed\",\n        subjectType: \"holler\",\n        subjectId: row.id,\n        data: { reason: \"close_time\" },\n        at: now,\n      })),\n    );\n  }\n"
+      "find": "  const closed: string[] = [];\n",
+      "replace": "  const closed: string[] = [];\n  await db.insert(schema.activity).values(due.map((row) => ({ ...row, via: \"system\" })));\n"
     }
   ],
   "fails": "holler(no-multi-row-insert)"
