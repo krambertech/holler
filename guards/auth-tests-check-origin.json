@@ -1,0 +1,14 @@
+{
+  "rule": "Tests run Better Auth's real origin check, so an untrusted origin is refused",
+  "layer": "test",
+  "past": "#29: tests turned the origin check off, so the sign-out bug only showed in the running product",
+  "check": "cd apps/web && pnpm exec vitest run src/server/routes/local-origins.test.ts -t 'nobody trusts'",
+  "break": [
+    {
+      "file": "apps/web/src/server/auth.ts",
+      "find": "disableOriginCheck: false,",
+      "replace": "disableOriginCheck: true,"
+    }
+  ],
+  "fails": "FAIL"
+}
