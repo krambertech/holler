@@ -44,7 +44,7 @@ Project skills live in `.agents/skills/`; `.claude/skills` links to it so every 
 
 **Interface text.** Plain, warm, brief, in sentence case, with no exclamation marks and no emoji. Say what happens: "7 of 12 answered". Never build a sentence from fragments or from a ternary on `=== 1`; write both sentences. Dates and numbers go through `Intl`.
 
-**Server layering.** `routes/*` parse input with a core schema, call one service and return. `services/*` hold the logic and own the database; each function takes a `ServiceContext` (db, workspace, actor, clock). Routes, Slack handlers and MCP tools never import Drizzle; Oxlint refuses it. Every write records Activity through `services/audit.ts` in the same batch. A rule kept in one door (web, Slack, API, MCP) is kept in all of them because they call the same service.
+**Server layering.** `routes/*` parse input with a core schema, call one service and return. `services/*` hold the logic and own the database; each function takes a `ServiceContext` (db, workspace, actor, clock). Routes, Slack handlers and MCP tools never import Drizzle; Oxlint refuses it. A change that Activity records goes through `recordChange` in `services/audit.ts`: one batch holds the change and its Activity, and a change that matches no row records nothing. `takeBack` undoes both. A rule kept in one door (web, Slack, API, MCP) is kept in all of them because they call the same service.
 
 **Errors.** A service throws `ServiceError` with a code and a message written for the person who reads it, saying what to do next, and a `field` when one input is at fault.
 

@@ -1,4 +1,5 @@
 import { definePlugin } from "@oxlint/plugins";
+import activityWithWrite from "./rules/activity-with-write.mjs";
 import boundedInArray from "./rules/bounded-in-array.mjs";
 import noComments from "./rules/no-comments.mjs";
 import noEffectExpressionBody from "./rules/no-effect-expression-body.mjs";
@@ -12,6 +13,7 @@ import signInLands from "./rules/sign-in-lands.mjs";
 export default definePlugin({
   meta: { name: "holler" },
   rules: {
+    "activity-with-write": activityWithWrite,
     "bounded-in-array": boundedInArray,
     "no-comments": noComments,
     "no-effect-expression-body": noEffectExpressionBody,

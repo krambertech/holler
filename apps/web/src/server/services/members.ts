@@ -1,7 +1,7 @@
 import { newId } from "@holler/core";
 import { and, asc, desc, eq, sql } from "@holler/core/db";
 import { type Db, schema } from "../db";
-import { auditStatement } from "./audit";
+import { activityOf, recordChange } from "./audit";
 import { memberOf, type ServiceContext, ServiceError } from "./context";
 
 /** What the header and Settings show about the signed-in member and their workspace. */
@@ -121,19 +121,20 @@ export async function ensureMember(
     actor: { via: "web", memberId: id, slackUserId },
     now: () => now,
   };
-  const [inserted] = await db.batch([
-    db
-      .insert(schema.members)
-      .values({ id, workspaceId, userId, slackUserId, role, createdAt: now })
-      .onConflictDoNothing()
-      .returning({ id: schema.members.id }),
-    auditStatement(ctx, {
+  const inserted = await recordChange(
+    ctx,
+    activityOf(ctx, {
       action: "member.joined",
       subjectType: "member",
       subjectId: id,
       data: { role },
     }),
-  ]);
+    db
+      .insert(schema.members)
+      .values({ id, workspaceId, userId, slackUserId, role, createdAt: now })
+      .onConflictDoNothing()
+      .returning({ id: schema.members.id }),
+  );
   if (inserted.length === 0) {
     // A second sign-in in the same moment made the row first.
     const winner = await db.query.members.findFirst({
@@ -267,27 +268,31 @@ export async function setMemberRole(
 
   // The count guard is also inside the update, so two owners demoting each other at once still
   // leave one owner standing. The loser of that race gets the error below.
-  const update = ctx.db
-    .update(schema.members)
-    .set({ role })
-    .where(
-      and(
-        eq(schema.members.id, targetId),
-        role === "sender"
-          ? sql`(select count(*) from ${schema.members} where ${schema.members.workspaceId} = ${ctx.workspaceId} and ${schema.members.role} = 'owner') > 1`
-          : undefined,
-      ),
-    )
-    .returning({ id: schema.members.id });
-  const [changed] = await ctx.db.batch([
-    update,
-    auditStatement(ctx, {
+  const changed = await recordChange(
+    ctx,
+    activityOf(ctx, {
       action: "member.role_changed",
       subjectType: "member",
       subjectId: targetId,
       data: { from: target.role, to: role },
     }),
-  ]);
-  if (changed.length === 0) throw lastOwner;
+    ctx.db
+      .update(schema.members)
+      .set({ role })
+      .where(
+        and(
+          eq(schema.members.id, targetId),
+          eq(schema.members.role, target.role),
+          role === "sender"
+            ? sql`(select count(*) from ${schema.members} where ${schema.members.workspaceId} = ${ctx.workspaceId} and ${schema.members.role} = 'owner') > 1`
+            : undefined,
+        ),
+      )
+      .returning({ id: schema.members.id }),
+  );
+  if (changed.length === 0) {
+    const now = await ctx.db.query.members.findFirst({ where: eq(schema.members.id, targetId) });
+    if (now?.role !== role) throw lastOwner;
+  }
   return { id: targetId, role };
 }
