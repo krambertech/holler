@@ -1,0 +1,14 @@
+{
+  "rule": "One cron step failing never stops another",
+  "layer": "test",
+  "past": "preventive: without it, a Slack outage in one pass stops the passes after it",
+  "check": "cd apps/web && pnpm exec vitest run src/server/cron.test.ts",
+  "break": [
+    {
+      "file": "apps/web/src/server/cron.ts",
+      "find": "      failures.push({ name, error });",
+      "replace": "      failures.push({ name, error });\n      throw error;"
+    }
+  ],
+  "fails": "runs every step when one fails"
+}

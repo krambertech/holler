@@ -1,0 +1,14 @@
+{
+  "rule": "Home lists more Hollers than D1 binds in one statement",
+  "layer": "test",
+  "past": "#35: Home failed with more than 100 Hollers",
+  "check": "cd apps/web && pnpm exec vitest run src/server/services/hollers.test.ts -t 'than D1 binds'",
+  "break": [
+    {
+      "file": "apps/web/src/server/batch.ts",
+      "find": "BOUND_VALUES_PER_LIST = 90",
+      "replace": "BOUND_VALUES_PER_LIST = 900"
+    }
+  ],
+  "fails": "lists more Hollers than D1 binds"
+}
