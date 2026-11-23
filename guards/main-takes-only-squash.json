@@ -1,0 +1,14 @@
+{
+  "rule": "The ruleset check notices when main allows another way to merge",
+  "layer": "test",
+  "past": "The first check-ruleset.mjs passed a live ruleset that allowed rebase merges as well as squash (review of #52)",
+  "check": "node --test scripts/check-ruleset.test.mjs",
+  "break": [
+    {
+      "file": "scripts/check-ruleset.mjs",
+      "find": "const exact = new Set([\"allowed_merge_methods\"]);",
+      "replace": "const exact = new Set([]);"
+    }
+  ],
+  "fails": "allows another way to merge"
+}

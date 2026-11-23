@@ -1,0 +1,14 @@
+{
+  "rule": "Require CI jobs before merging or deploying.",
+  "layer": "ci",
+  "past": "Before the ruleset, 10 runs on other branches failed on a red main.",
+  "check": "pnpm check:workflows",
+  "break": [
+    {
+      "file": ".github/workflows/ci.yml",
+      "find": "    needs: [title, verify, guards, e2e, preview]",
+      "replace": "    needs: [title, verify, guards, preview]"
+    }
+  ],
+  "fails": "does not need \"e2e\""
+}

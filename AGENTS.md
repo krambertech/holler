@@ -22,6 +22,8 @@ pnpm verify
 
 It runs formatting, lint, the design, styling and migration checks, typechecking, every test, both builds and the bundle boundary check. A bug fix ships with a check that fails for its whole class, and a guard that proves it (Guards, below). `pnpm fix` writes oxfmt's formatting and Oxlint's fixes. For a change a person sees, also run `pnpm test:e2e` and prove it with the [`verify`](.agents/skills/verify/SKILL.md) skill: it drives each feature the diff reaches at 1280 px and 375 px, in day and night, and keeps the evidence. A product change is not done until it has been driven.
 
+If a check still fails after three rounds of fixes, stop and say what fails and why. Do not skip, retry or loosen a check to pass it. Review against [`REVIEW.md`](REVIEW.md) from `main`.
+
 Open pull requests with the [`open-pr`](.agents/skills/open-pr/SKILL.md) skill and the [template](.github/pull_request_template.md). For branches, commit messages, pull request titles and merging, follow [`docs/git-workflow.md`](docs/git-workflow.md).
 
 Project skills live in `.agents/skills/`; `.claude/skills` links to it so every agent reads the same files.
