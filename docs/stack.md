@@ -61,6 +61,8 @@ Alternative considered: one Worker for both. Lymi split them so the site can dep
 
 The product is a client-rendered app. TanStack Router gives typed, file-based routes; TanStack Query owns every read and every cache. Tailwind v4 reads the Holler tokens from `packages/design/tokens.css`. Interactive primitives (dialog, menu, popover, combobox, tabs) come from `@base-ui/react`, wrapped once in `apps/web/src/client/components/ui` and styled with Holler tokens. Icons are Lucide, at 2 px stroke with round caps, which matches the brand's line icons.
 
+Every link to a page names a page in the route tree. The client uses the router's `to`; the Worker uses `productUrl` and `productPath`, whose pages are `ProductPath` in `packages/core/src/product-paths.ts`, and `apps/web/src/client/pages.ts` fails the typecheck when one is not a route. `holler/product-links` refuses a page path written out as text. A link whose page is still in a pull request says `waitingFor("#11", "/new")`, which stops compiling when the page exists.
+
 The primitives in `components/ui` (field, inputs, select, combobox, dropdown menu, dialog, drawer, popover, tooltip, toast) are ported from Lymi, which has the same author, and restyled with Holler's tokens. They keep Lymi's behaviour: a sheet on touch devices, a centred overlay on the desktop, and the highlight that glides between options.
 
 Holler has no PWA and no service worker. The web app is a place senders visit for two minutes; Slack is where the product lives day to day.

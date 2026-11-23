@@ -6,6 +6,7 @@ import noMultiRowInsert from "./rules/no-multi-row-insert.mjs";
 import noResponseOwners from "./rules/no-response-owners.mjs";
 import noSpreadRows from "./rules/no-spread-rows.mjs";
 import noSqlLower from "./rules/no-sql-lower.mjs";
+import productLinks from "./rules/product-links.mjs";
 import signInLands from "./rules/sign-in-lands.mjs";
 
 export default definePlugin({
@@ -18,6 +19,7 @@ export default definePlugin({
     "no-response-owners": noResponseOwners,
     "no-spread-rows": noSpreadRows,
     "no-sql-lower": noSqlLower,
+    "product-links": productLinks,
     "sign-in-lands": signInLands,
   },
 });
