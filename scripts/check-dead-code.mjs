@@ -23,6 +23,23 @@ export function ignoreProblems(ignored, dead, before) {
   ];
 }
 
+export function ignoresIn(config) {
+  return Object.entries(config.ignoreIssues ?? {}).flatMap(([file, kinds]) =>
+    kinds.map((kind) => `${file} (${kind})`),
+  );
+}
+
+export function otherIgnoresIn(config, where = "") {
+  return Object.entries(config).flatMap(([key, value]) => {
+    if (key === "ignoreIssues") return [];
+    if (key === "workspaces") {
+      return Object.entries(value).flatMap(([name, own]) => otherIgnoresIn(own, `${name} `));
+    }
+    if (!key.startsWith("ignore")) return [];
+    return [value].flat().map((entry) => `${where}${key} ${entry}`);
+  });
+}
+
 function knip(args, options = {}) {
   return spawnSync(resolve(root, "node_modules/.bin/knip"), args, {
     cwd: root,
@@ -38,7 +55,11 @@ function deadWithoutIgnores(config) {
   try {
     writeFileSync(bare, JSON.stringify({ ...config, ignoreIssues: {} }));
     const result = knip(["-c", bare, "--reporter", "json"]);
-    return JSON.parse(result.stdout).issues.map(({ file }) => file);
+    return JSON.parse(result.stdout).issues.flatMap(({ file, ...kinds }) =>
+      Object.entries(kinds)
+        .filter(([, found]) => Array.isArray(found) && found.length > 0)
+        .map(([kind]) => `${file} (${kind})`),
+    );
   } finally {
     rmSync(dir, { recursive: true });
   }
@@ -48,10 +69,14 @@ function main([base]) {
   const config = JSON.parse(readFileSync(resolve(root, CONFIG), "utf8"));
   const before = jsonAt(baseCommit(base), CONFIG);
   const problems = ignoreProblems(
-    Object.keys(config.ignoreIssues),
+    ignoresIn(config),
     deadWithoutIgnores(config),
-    before && Object.keys(before.ignoreIssues),
+    before && ignoresIn(before),
   );
+  const kept = before ? otherIgnoresIn(before) : null;
+  for (const entry of otherIgnoresIn(config)) {
+    if (kept && !kept.includes(entry)) problems.push(`${CONFIG}: "${entry}" is a new ignore`);
+  }
   const found = knip(["--treat-config-hints-as-errors"], { stdio: "inherit" }).status;
   if (found !== 0) problems.push("Delete what nothing uses, or use it. AGENTS.md, Architecture.");
   if (problems.length > 0) {
