@@ -56,7 +56,9 @@ Oxlint's typed rules (`--type-aware`, which `pnpm check` passes) need `oxlint-ts
 
 `e2e/` runs the product and the site on their own ports with `HOLLER_E2E=1`, signs in through `/api/dev/sign-in?as=<persona>` and never types a Slack password. Every journey ends with `expectAccessible(page)`, which runs axe for WCAG 2.2 AA and fails on any violation.
 
-Personas are in `apps/web/src/server/services/dev-seed.ts`: `lead` has live, scheduled and closed hollers; `sender` has nothing, for the empty states. Parallel workers sign in at the same time, so every seed write is guarded by a unique index and re-read when it loses the race; `routes/dev-concurrency.test.ts` fires first sign-ins at once and checks each one succeeds and the seed lands once.
+Every test has its own workspace. `e2e/fixtures.ts` sends a random `x-holler-dev-workspace` key with each request, and dev sign-in makes and seeds that workspace with every persona. A test can change anything, in both browsers at once. Use `signInAs(page, persona)` for a page and the `requestAs` fixture for API calls; both use the test's own workspace. `/api/dev/tick` refuses a keyed caller, because a tick runs every workspace. A flaky test fails: `failOnFlakyTests` is on and `holler/no-flaky-escape` refuses retries, sleeps and bare skips.
+
+Personas are in `apps/web/src/server/services/dev-seed.ts`: `lead` has live, scheduled and closed hollers; `sender` has sent nothing, for the empty states. `routes/dev-concurrency.test.ts` fires first sign-ins at once and checks that each succeeds and the seed lands once.
 
 ## Proving a change in the browser
 

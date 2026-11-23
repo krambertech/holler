@@ -2,7 +2,7 @@
   "rule": "The web form searches the directory only while the people picker is open",
   "layer": "browser",
   "past": "#22: the form searched as it loaded and again after the answers were sent, when the search is refused (7969e0d)",
-  "check": "pnpm exec playwright test --project=chromium --retries=1 -g 'a recipient answers every question type'",
+  "check": "pnpm exec playwright test --project=chromium -g 'a recipient answers every question type'",
   "break": [
     {
       "file": "apps/web/src/client/components/respond/answer-question.tsx",

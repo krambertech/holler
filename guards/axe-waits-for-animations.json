@@ -2,7 +2,7 @@
   "rule": "axe reads a page only once its transitions have finished, so a fade never reads as low contrast",
   "layer": "browser",
   "past": "#37: axe measured the thank-you mid-fade in 3 of 16 runs; the break also holds that fade midway, so every run shows it",
-  "check": "pnpm exec playwright test --project=chromium --retries=1 -g 'a recipient answers every question type'",
+  "check": "pnpm exec playwright test --project=chromium -g 'a recipient answers every question type'",
   "break": [
     {
       "file": "e2e/a11y.ts",

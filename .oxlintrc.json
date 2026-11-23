@@ -156,9 +156,28 @@
     },
     {
       "files": ["e2e/**"],
-      "excludeFiles": ["e2e/a11y.ts", "e2e/global-setup.ts"],
+      "excludeFiles": ["e2e/a11y.ts", "e2e/fixtures.ts"],
       "rules": {
         "holler/sign-in-lands": "error"
+      }
+    },
+    {
+      "files": ["e2e/**"],
+      "rules": {
+        "holler/test-owns-its-workspace": "error"
+      }
+    },
+    {
+      "files": [
+        "e2e/**",
+        "**/*.test.ts",
+        "**/*.test.tsx",
+        "**/*.test.mjs",
+        "playwright.config.ts",
+        "**/vitest.config.ts"
+      ],
+      "rules": {
+        "holler/no-flaky-escape": "error"
       }
     },
     {
