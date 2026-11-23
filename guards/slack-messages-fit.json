@@ -1,0 +1,14 @@
+{
+  "rule": "Every Slack message and view fits Block Kit's limits",
+  "layer": "test",
+  "past": "preventive: FakeSlack refuses what Slack would, so the largest Holler has to fit",
+  "check": "cd apps/web && pnpm exec vitest run src/server/slack/blocks/messages.test.ts",
+  "break": [
+    {
+      "file": "apps/web/src/server/slack/blocks/format.ts",
+      "find": "  return text.length <= max ? text : `${text.slice(0, max - 1)}…`;",
+      "replace": "  return text.length <= max ? text : text;"
+    }
+  ],
+  "fails": "messages.test.ts"
+}

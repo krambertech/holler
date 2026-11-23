@@ -1,0 +1,14 @@
+{
+  "rule": "No object in an illustration tilts past 12 degrees",
+  "layer": "test",
+  "past": "#30 drew the set to these rules and added the check with it; nothing has broken one since",
+  "check": "cd packages/design && pnpm exec vitest run src/illustrations.test.ts",
+  "break": [
+    {
+      "file": "packages/design/src/illustrations.ts",
+      "find": "        -12,\n        [19, 31],",
+      "replace": "        -15,\n        [19, 31],"
+    }
+  ],
+  "fails": "tilts no object more than 12 degrees"
+}

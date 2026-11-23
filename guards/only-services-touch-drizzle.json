@@ -1,0 +1,14 @@
+{
+  "rule": "Routes, Slack handlers and MCP tools call a service; only services touch Drizzle",
+  "layer": "lint",
+  "past": "Refused since the foundations (7e28e34); nothing has broken it, and a query in a route is a rule the API, Slack and MCP then miss",
+  "check": "pnpm exec oxlint apps/web/src/server",
+  "break": [
+    {
+      "file": "apps/web/src/server/routes/directory.ts",
+      "find": "import { sValidator } from \"@hono/standard-validator\";",
+      "replace": "import { asc, eq } from \"@holler/core/db\";\nimport { sValidator } from \"@hono/standard-validator\";"
+    }
+  ],
+  "fails": "only services touch Drizzle"
+}

@@ -1,0 +1,14 @@
+{
+  "rule": "Server tests run shuffled, so one that leans on another's leftovers fails",
+  "layer": "test",
+  "past": "preventive: #10 shuffled the order when its tests shared a database",
+  "check": "cd apps/web && out=$(pnpm exec vitest run src/server/batch.test.ts 2>&1); echo \"$out\"; echo \"$out\" | grep -q 'Running tests with seed' || (echo 'the tests run in file order' && exit 1)",
+  "break": [
+    {
+      "file": "apps/web/vitest.config.ts",
+      "find": "shuffle: true",
+      "replace": "shuffle: false"
+    }
+  ],
+  "fails": "the tests run in file order"
+}

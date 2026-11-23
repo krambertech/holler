@@ -1,0 +1,14 @@
+{
+  "rule": "Every illustration fills the grid, so each looks the same size",
+  "layer": "test",
+  "past": "#30 drew the set to these rules and added the check with it; nothing has broken one since",
+  "check": "cd packages/design && pnpm exec vitest run src/illustrations.test.ts",
+  "break": [
+    {
+      "file": "packages/design/src/illustrations.ts",
+      "find": "      circle(\"ghost\", 11, 29, 9),\n      circle(\"ghost\", 53, 29, 9),\n",
+      "replace": ""
+    }
+  ],
+  "fails": "fills the grid, so every drawing looks the same size"
+}

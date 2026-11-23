@@ -1,0 +1,14 @@
+{
+  "rule": "A read of any size never overflows a call's arguments",
+  "layer": "test",
+  "past": "#35 spread 150,000 rows into one push, which throws",
+  "check": "cd apps/web && pnpm exec vitest run src/server/batch.test.ts -t 'take as arguments'",
+  "break": [
+    {
+      "file": "apps/web/src/server/batch.ts",
+      "find": "    for (const row of await read(chunk)) rows.push(row);",
+      "replace": "    rows.push(...(await read(chunk)));"
+    }
+  ],
+  "fails": "more rows than a call can take"
+}

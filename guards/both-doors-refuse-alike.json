@@ -1,0 +1,14 @@
+{
+  "rule": "The web form and recordResponse refuse the same answers in the same words",
+  "layer": "test",
+  "past": "preventive: #22 moved the checks into answerProblem so the form and the server share them",
+  "check": "cd apps/web && pnpm exec vitest run src/server/services/respond.test.ts -t 'puts a refusal beside'",
+  "break": [
+    {
+      "file": "apps/web/src/server/services/responses.ts",
+      "find": "    const problem = answerProblem(checked, answer);",
+      "replace": "    const problem = answer ? null : answerProblem(checked, answer);"
+    }
+  ],
+  "fails": "puts a refusal beside the question"
+}

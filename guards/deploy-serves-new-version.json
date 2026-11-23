@@ -1,0 +1,8 @@
+{
+  "rule": "A deploy counts only when health names the version that was uploaded",
+  "layer": "ci",
+  "past": "#6: two preview runs stopped because the alias answered with no tag, so the check had to learn the version id without accepting an older version",
+  "check": "node --input-type=module -e \"import { createServer } from 'node:http'; import { checkDeployment } from './scripts/check-deployment.mjs'; const s = createServer((_, r) => r.end(JSON.stringify({ ok: true, worker: 'holler', version: 'v2', tag: '' }))).listen(0, async () => { try { await checkDeployment('http://localhost:' + s.address().port, 'holler', process.argv[1], 1); } catch (e) { console.error(e.message); process.exitCode = 1; } s.close(); });\" v2",
+  "refuses": "node --input-type=module -e \"import { createServer } from 'node:http'; import { checkDeployment } from './scripts/check-deployment.mjs'; const s = createServer((_, r) => r.end(JSON.stringify({ ok: true, worker: 'holler', version: 'v1', tag: '' }))).listen(0, async () => { try { await checkDeployment('http://localhost:' + s.address().port, 'holler', process.argv[1], 1); } catch (e) { console.error(e.message); process.exitCode = 1; } s.close(); });\" v2",
+  "fails": "serves version v1 tag none, expected v2"
+}
