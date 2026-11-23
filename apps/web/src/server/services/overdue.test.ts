@@ -104,6 +104,35 @@ describe("overdueWork", () => {
     expect(await overdueWork(db, at(21 * HOUR))).toEqual([]);
   });
 
+  it("names a per-zone send the cron never made once the first zone reached it", async () => {
+    await sent({ sendAt: at(30 * HOUR).toISOString(), sendInRecipientTimeZone: true });
+    expect(await overdueWork(db, at(16 * HOUR))).toEqual([]);
+    expect(await overdueWork(db, at(16 * HOUR + late))).toEqual(["send"]);
+  });
+
+  it("names a later reminder that was claimed and never posted", async () => {
+    const { env, drain, queued } = await sent({ closeAfterHours: 168 });
+    await drain(NOW);
+    await runCronPass(env, db, at(25 * HOUR));
+    await drain(at(25 * HOUR));
+    await runCronPass(env, db, at(73 * HOUR));
+    expect(queued.map((send) => send.kind)).toContain("reminder");
+    queued.length = 0;
+    expect(await overdueWork(db, at(73 * HOUR))).toEqual([]);
+    expect(await overdueWork(db, at(73 * HOUR + late))).toEqual(["lost_reminder"]);
+  });
+
+  it("names a reminder lost on a Holler that closed before it could be noticed", async () => {
+    const { env, drain, queued } = await sent({ closeAfterHours: 36 });
+    await drain(NOW);
+    await runCronPass(env, db, at(25 * HOUR));
+    expect(queued.map((send) => send.kind)).toContain("reminder");
+    queued.length = 0;
+    await runCronPass(env, db, at(37 * HOUR));
+    queued.length = 0;
+    expect(await overdueWork(db, at(37 * HOUR))).toContain("lost_reminder");
+  });
+
   it("names a first reminder that was claimed and never posted", async () => {
     const { env, drain, queued } = await sent();
     await drain(NOW);

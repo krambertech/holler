@@ -1,14 +1,15 @@
 import { and, eq, gte, isNotNull, isNull, lte, or, type SQL, sql } from "@holler/core/db";
 import { type Db, schema } from "../db";
+import { scheduledDueBy } from "./delivery";
 
 const { hollers, recipients, slackDeliveries, workspaces } = schema;
 
 const MINUTE = 60_000;
+const never = Number.MAX_SAFE_INTEGER;
 export const overdueAfterMinutes = 15;
 const HOUR = 60 * MINUTE;
 const catchUpHours = 24;
 const deliveryKeptHours = 20;
-const firstReminderByHours = 48;
 
 export type OverdueWork =
   | "send"
@@ -25,7 +26,6 @@ export async function overdueWork(db: Db, now: Date): Promise<OverdueWork[]> {
   const recent = new Date(now.getTime() - catchUpHours * HOUR);
   const live = eq(hollers.status, "live");
   const onHollers: Partial<Record<OverdueWork, SQL | undefined>> = {
-    send: and(eq(hollers.status, "scheduled"), lte(hollers.sendAt, late)),
     close: and(live, lte(hollers.closesAt, late)),
     close_work: and(
       eq(hollers.status, "closed"),
@@ -51,16 +51,27 @@ export async function overdueWork(db: Db, now: Date): Promise<OverdueWork[]> {
       lte(recipients.nextReminderAt, late),
     ),
     lost_reminder: and(
-      waiting,
-      eq(hollers.remindersEnabled, true),
-      eq(recipients.remindersSent, 1),
-      isNull(recipients.lastRemindedAt),
-      lte(recipients.invitedAt, new Date(now.getTime() - firstReminderByHours * HOUR)),
-      or(isNull(recipients.snoozedUntil), lte(recipients.snoozedUntil, recent)),
+      isNull(recipients.failure),
+      lte(recipients.reminderQueuedAt, late),
+      gte(recipients.reminderQueuedAt, recent),
+      or(
+        isNull(recipients.lastRemindedAt),
+        sql`${recipients.lastRemindedAt} < ${recipients.reminderQueuedAt}`,
+      ),
+      sql`min(coalesce(${recipients.answeredAt}, ${never}), coalesce(${hollers.closedAt}, ${never})) > ${recipients.reminderQueuedAt} + ${overdueAfterMinutes * MINUTE}`,
     ),
   };
   const installed = isNull(workspaces.uninstalledAt);
   const overdue: OverdueWork[] = [];
+  for (const { holler } of await scheduledDueBy(db, late)) {
+    const workspace = await db.query.workspaces.findFirst({
+      where: and(eq(workspaces.id, holler.workspaceId), installed),
+    });
+    if (workspace) {
+      overdue.push("send");
+      break;
+    }
+  }
   for (const [kind, where] of Object.entries(onHollers)) {
     const found = await db
       .select({ id: hollers.id })

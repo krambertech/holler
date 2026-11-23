@@ -6,8 +6,8 @@
   "break": [
     {
       "file": "apps/web/src/server/services/reminders.ts",
-      "find": "} - 1`, nextReminderAt: now })",
-      "replace": "} - 1`, nextReminderAt: null })"
+      "find": "                  nextReminderAt: now,\n",
+      "replace": "                  nextReminderAt: null,\n"
     }
   ],
   "fails": "leaves the reminders due for the next run"
