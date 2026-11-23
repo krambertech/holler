@@ -6,11 +6,12 @@ import {
   viewersInputSchema,
   withoutNames,
 } from "@holler/core";
-import { and, eq, gte, inArray, isNull, not, sql } from "@holler/core/db";
-import { batchResults, runBatch } from "../batch";
+import { and, eq, gte, inArray, isNotNull, isNull, ne, sql } from "@holler/core/db";
+import { runBatch } from "../batch";
 import { type Db, schema } from "../db";
 import type { Bindings } from "../env";
-import { auditStatement, auditUnless } from "./audit";
+import { productUrl } from "../product-url";
+import { activityOf, recordChange } from "./audit";
 import { type ServiceContext, ServiceError } from "./context";
 import { queueClaimed, type SlackSend } from "./delivery";
 import { getHoller, type HollerDetail } from "./hollers";
@@ -36,16 +37,8 @@ async function creatorsHoller(ctx: ServiceContext, id: string, doing: string) {
   return holler;
 }
 
-function viewerExists(hollerId: string, slackUserId: string) {
-  return sql`exists (select 1 from viewers v where v.holler_id = ${hollerId} and v.slack_user_id = ${slackUserId})`;
-}
-
-function hasReportLink(hollerId: string) {
-  return sql`exists (select 1 from hollers h where h.id = ${hollerId} and h.report_token is not null)`;
-}
-
 export function reportUrl(env: LinkEnv, token: string): string {
-  return `${env.PRODUCT_URL}/report/${token}`;
+  return productUrl(env, "/report/$token", { params: { token } });
 }
 
 function newReportToken(): string {
@@ -111,18 +104,19 @@ export async function setVisibility(
 ): Promise<SharingOut> {
   const holler = await creatorsHoller(ctx, id, "change who sees it");
   if (holler.visibility !== visibility) {
-    await ctx.db.batch([
-      ctx.db
-        .update(hollers)
-        .set({ visibility, updatedAt: ctx.now() })
-        .where(eq(hollers.id, holler.id)),
-      auditStatement(ctx, {
+    await recordChange(
+      ctx,
+      activityOf(ctx, {
         action: "holler.visibility_changed",
         subjectType: "holler",
         subjectId: holler.id,
         data: { visibility },
       }),
-    ]);
+      ctx.db
+        .update(hollers)
+        .set({ visibility, updatedAt: ctx.now() })
+        .where(and(eq(hollers.id, holler.id), ne(hollers.visibility, visibility))),
+    );
   }
   return sharingOf(ctx, env, holler.id);
 }
@@ -165,40 +159,37 @@ export async function addViewers(
   const now = ctx.now();
   const memberId = "memberId" in ctx.actor ? ctx.actor.memberId : undefined;
   if (!memberId) throw new ServiceError("forbidden", "This needs a signed-in member.");
-  const perViewer = wanted.map((slackUserId) => [
-    ...auditUnless(
-      ctx,
-      {
-        action: "viewer.added",
-        subjectType: "holler",
-        subjectId: holler.id,
-        data: { slackUserId },
-      },
-      viewerExists(holler.id, slackUserId),
+  const inserted = await Promise.all(
+    wanted.map((slackUserId) =>
+      recordChange(
+        ctx,
+        activityOf(ctx, {
+          action: "viewer.added",
+          subjectType: "holler",
+          subjectId: holler.id,
+          data: { slackUserId },
+        }),
+        ctx.db
+          .insert(viewers)
+          .values({
+            hollerId: holler.id,
+            slackUserId,
+            addedById: memberId,
+            addedAt: now,
+            notifiedAt: now,
+          })
+          .onConflictDoNothing()
+          .returning({ slackUserId: viewers.slackUserId }),
+      ),
     ),
-    ctx.db
-      .insert(viewers)
-      .values({
-        hollerId: holler.id,
-        slackUserId,
-        addedById: memberId,
-        addedAt: now,
-        notifiedAt: now,
-      })
-      .onConflictDoNothing()
-      .returning({ slackUserId: viewers.slackUserId }),
-  ]);
-  const results = await batchResults(ctx.db, perViewer.flat());
-  const statementsPerViewer = perViewer[0]?.length ?? 0;
-  const added = wanted.filter((_, index) => {
-    const inserted = results[index * statementsPerViewer + statementsPerViewer - 1];
-    return Array.isArray(inserted) && inserted.length > 0;
-  });
+  );
+  const added = inserted.flat().map((row) => row.slackUserId);
   if (added.length === 0) return sharingOf(ctx, env, holler.id);
   const sends: SlackSend[] = added.map((slackUserId) => ({
     kind: "shared",
     hollerId: holler.id,
     slackUserId,
+    addedAt: now.toISOString(),
     queuedAt: now.toISOString(),
   }));
   try {
@@ -215,6 +206,7 @@ async function releaseShares(db: Db, unqueued: SlackSend[], claimedAt: Date) {
     unqueued.flatMap((send) =>
       send.kind === "shared"
         ? [
+            // oxlint-disable-next-line holler/activity-with-write -- notified_at claims the Slack message; the share itself is recorded when the viewer is added
             db
               .update(viewers)
               .set({ notifiedAt: null })
@@ -238,21 +230,18 @@ export async function removeViewer(
   slackUserId: string,
 ): Promise<SharingOut> {
   const holler = await creatorsHoller(ctx, id, "change who sees it");
-  await runBatch(ctx.db, [
-    ...auditUnless(
-      ctx,
-      {
-        action: "viewer.removed",
-        subjectType: "holler",
-        subjectId: holler.id,
-        data: { slackUserId },
-      },
-      not(viewerExists(holler.id, slackUserId)),
-    ),
+  await recordChange(
+    ctx,
+    activityOf(ctx, {
+      action: "viewer.removed",
+      subjectType: "holler",
+      subjectId: holler.id,
+      data: { slackUserId },
+    }),
     ctx.db
       .delete(viewers)
       .where(and(eq(viewers.hollerId, holler.id), eq(viewers.slackUserId, slackUserId))),
-  ]);
+  );
   return sharingOf(ctx, env, holler.id);
 }
 
@@ -266,17 +255,14 @@ export async function makeReportLink(
     throw new ServiceError("invalid", "A report link can be made once the Holler is sent.");
   }
   if (!holler.reportToken) {
-    await runBatch(ctx.db, [
-      ...auditUnless(
-        ctx,
-        { action: "report_link.made", subjectType: "holler", subjectId: holler.id },
-        hasReportLink(holler.id),
-      ),
+    await recordChange(
+      ctx,
+      activityOf(ctx, { action: "report_link.made", subjectType: "holler", subjectId: holler.id }),
       ctx.db
         .update(hollers)
         .set({ reportToken: newReportToken() })
         .where(and(eq(hollers.id, holler.id), isNull(hollers.reportToken))),
-    ]);
+    );
   }
   return sharingOf(ctx, env, holler.id);
 }
@@ -288,14 +274,18 @@ export async function turnOffReportLink(
 ): Promise<SharingOut> {
   const holler = await creatorsHoller(ctx, id, "turn off its report link");
   if (holler.reportToken) {
-    await runBatch(ctx.db, [
-      ...auditUnless(
-        ctx,
-        { action: "report_link.turned_off", subjectType: "holler", subjectId: holler.id },
-        not(hasReportLink(holler.id)),
-      ),
-      ctx.db.update(hollers).set({ reportToken: null }).where(eq(hollers.id, holler.id)),
-    ]);
+    await recordChange(
+      ctx,
+      activityOf(ctx, {
+        action: "report_link.turned_off",
+        subjectType: "holler",
+        subjectId: holler.id,
+      }),
+      ctx.db
+        .update(hollers)
+        .set({ reportToken: null })
+        .where(and(eq(hollers.id, holler.id), isNotNull(hollers.reportToken))),
+    );
   }
   return sharingOf(ctx, env, holler.id);
 }
@@ -349,7 +339,11 @@ export async function getReport(db: Db, token: string, now: Date): Promise<Repor
 
 export async function queueShareNotices(env: QueueEnv, db: Db, now: Date): Promise<number> {
   const due = await db
-    .select({ hollerId: viewers.hollerId, slackUserId: viewers.slackUserId })
+    .select({
+      hollerId: viewers.hollerId,
+      slackUserId: viewers.slackUserId,
+      addedAt: viewers.addedAt,
+    })
     .from(viewers)
     .where(
       and(
@@ -360,6 +354,7 @@ export async function queueShareNotices(env: QueueEnv, db: Db, now: Date): Promi
     .limit(500);
   let queued = 0;
   for (const viewer of due) {
+    // oxlint-disable-next-line holler/activity-with-write -- notified_at claims the Slack message; the share itself is recorded when the viewer is added
     const [claimed] = await db
       .update(viewers)
       .set({ notifiedAt: now })
@@ -372,7 +367,13 @@ export async function queueShareNotices(env: QueueEnv, db: Db, now: Date): Promi
       )
       .returning({ hollerId: viewers.hollerId });
     if (!claimed) continue;
-    const send: SlackSend = { kind: "shared", ...viewer, queuedAt: now.toISOString() };
+    const send: SlackSend = {
+      kind: "shared",
+      hollerId: viewer.hollerId,
+      slackUserId: viewer.slackUserId,
+      addedAt: viewer.addedAt.toISOString(),
+      queuedAt: now.toISOString(),
+    };
     await queueClaimed(env as Bindings, [send], (unqueued) => releaseShares(db, unqueued, now));
     queued += 1;
   }

@@ -31,7 +31,7 @@ import {
 } from "@holler/core/db";
 import { readInChunks } from "../batch";
 import { schema } from "../db";
-import { type AuditEntry, auditStatement } from "./audit";
+import { activityOf, type AuditEntry, recordChange } from "./audit";
 import { memberOf, type ServiceContext, ServiceError } from "./context";
 
 const { hollers, questions, options, recipients, members, slackPeople } = schema;
@@ -402,7 +402,9 @@ async function insertDraft(
   idempotencyKey: string | null,
   entry: AuditEntry,
 ) {
-  await ctx.db.batch([
+  await recordChange(
+    ctx,
+    activityOf(ctx, entry),
     ctx.db.insert(hollers).values({
       id,
       workspaceId: ctx.workspaceId,
@@ -429,9 +431,8 @@ async function insertDraft(
       createdAt: now,
       updatedAt: now,
     }),
-    ...questionStatements(ctx, id, questionsOf(draft), new Map()),
-    auditStatement(ctx, entry),
-  ]);
+    { after: questionStatements(ctx, id, questionsOf(draft), new Map()) },
+  );
 }
 
 /**
@@ -542,16 +543,17 @@ export async function deleteDraft(ctx: ServiceContext, id: string): Promise<void
       "This Holler is already sent, so it stays with its results. Close it to stop the answers.",
     );
   }
-  await ctx.db.batch([
-    // The status guard keeps a draft that was sent a moment ago.
-    ctx.db.delete(hollers).where(and(eq(hollers.id, id), eq(hollers.status, "draft"))),
-    auditStatement(ctx, {
+  await recordChange(
+    ctx,
+    activityOf(ctx, {
       action: "holler.deleted",
       subjectType: "holler",
       subjectId: id,
       data: { mode: existing.mode },
     }),
-  ]);
+    // The status guard keeps a draft that was sent a moment ago.
+    ctx.db.delete(hollers).where(and(eq(hollers.id, id), eq(hollers.status, "draft"))),
+  );
 }
 
 /** The statements that turn a Holler's stored questions into `input`, touching only what changed. */

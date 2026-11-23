@@ -1,0 +1,14 @@
+{
+  "rule": "Run pnpm check before ending a changed agent session.",
+  "layer": "ci",
+  "past": "Ten pushes between 21 and 22 November failed CI on pnpm check, which takes four seconds locally.",
+  "check": "node --test scripts/stop-gate.test.mjs",
+  "break": [
+    {
+      "file": "scripts/stop-gate.mjs",
+      "find": "  if (status === 0) return { block: false };",
+      "replace": "  if (status === 0 || output) return { block: false };"
+    }
+  ],
+  "fails": "blocks a session whose changes fail"
+}

@@ -6,8 +6,8 @@
   "break": [
     {
       "file": "apps/web/src/server/services/sharing.ts",
-      "find": "    return Array.isArray(inserted) && inserted.length > 0;",
-      "replace": "    return Array.isArray(inserted);"
+      "find": "  const added = inserted.flat().map((row) => row.slackUserId);",
+      "replace": "  const added = wanted;"
     }
   ],
   "fails": "FAIL"

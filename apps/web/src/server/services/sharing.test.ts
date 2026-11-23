@@ -260,6 +260,23 @@ describe("the shared-with-you DM", () => {
     expect(slack.posted.filter((m) => m.channel === "UA")).toHaveLength(1);
   });
 
+  it("posts once when the queue takes it and then throws, and the cron queues it again", async () => {
+    const { ctx, env, holler, queued, drain, slack } = await setup();
+    const queue = env.SLACK_SENDS as unknown as { sendBatch: (batch: unknown) => Promise<void> };
+    const takes = queue.sendBatch;
+    queue.sendBatch = async (batch) => {
+      queue.sendBatch = takes;
+      await takes(batch);
+      throw new Error("The queue took the batch, and the reply was lost");
+    };
+    await addViewers(ctx, env, holler.id, { slackUserIds: ["UA"] });
+    const later = new Date(NOW.getTime() + 60_000);
+    expect(await queueShareNotices(env, db, later)).toBe(1);
+    expect(sharesQueued(queued)).toHaveLength(2);
+    await drain(later);
+    expect(slack.posted.filter((m) => m.channel === "UA")).toHaveLength(1);
+  });
+
   it("is not sent to someone removed before it went", async () => {
     const { ctx, env, holler, drain, slack } = await setup();
     await addViewers(ctx, env, holler.id, { slackUserIds: ["UA"] });

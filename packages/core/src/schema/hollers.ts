@@ -179,6 +179,7 @@ export const recipients = sqliteTable(
     answeredAt: integer("answered_at", { mode: "timestamp_ms" }),
     remindersSent: integer("reminders_sent").notNull().default(0),
     lastRemindedAt: integer("last_reminded_at", { mode: "timestamp_ms" }),
+    reminderQueuedAt: integer("reminder_queued_at", { mode: "timestamp_ms" }),
     snoozedUntil: integer("snoozed_until", { mode: "timestamp_ms" }),
     /** When the next rhythm reminder is due, from nextReminder. Null when none is due. */
     nextReminderAt: integer("next_reminder_at", { mode: "timestamp_ms" }),

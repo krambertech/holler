@@ -6,5 +6,6 @@
   "0004_slack_delivery.sql": "6a388946073f6ae5ec527ce6633be2c3a8e326bcb3fb1f6f0a120f7f01e3d12d",
   "0005_response_owners.sql": "cd4dfb38c2a1e43bf5913a7059935ea24bfdc33cf75362fd35501dfd1381e39d",
   "0006_repeating_rounds.sql": "fe1e47f5a624101666625cfbaabd86abab4c26f72f55358f5ff044d4d0e36660",
-  "0007_viewers_by_slack_user.sql": "f813f8cd96f341be6b6a594c426ea5463145dc8e0b79876142dd5373eaa37229"
+  "0007_reminder_claims.sql": "bbb2e4079811f684e6de7a18fa0a8b6d410afbf2423d56f96fa86e12453fc9fb",
+  "0008_viewers_by_slack_user.sql": "f813f8cd96f341be6b6a594c426ea5463145dc8e0b79876142dd5373eaa37229"
 }

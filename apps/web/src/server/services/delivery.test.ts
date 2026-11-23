@@ -831,7 +831,13 @@ describe("every send that posts, posts once", () => {
       announce: { kind: "announce", hollerId: holler.id },
       close_notice: { kind: "close_notice", hollerId: holler.id },
       send_failed: { kind: "send_failed", hollerId: holler.id, reason: "It broke.", queuedAt },
-      shared: { kind: "shared", hollerId: holler.id, slackUserId: "UD", queuedAt },
+      shared: {
+        kind: "shared",
+        hollerId: holler.id,
+        slackUserId: "UD",
+        addedAt: queuedAt,
+        queuedAt,
+      },
     };
     await db.insert(schema.viewers).values({
       hollerId: holler.id,

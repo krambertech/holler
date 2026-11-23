@@ -1,0 +1,13 @@
+{
+  "rule": "Navigation in code goes through the router's typed `to`, so its page exists",
+  "layer": "lint",
+  "past": "#21 opened a copied draft at /new?draft=<id>, a page that did not exist",
+  "check": "pnpm exec oxlint apps/web/src/client",
+  "break": [
+    {
+      "file": "apps/web/src/client/components/results/use-copy.ts",
+      "write": "import { useNavigate } from \"@tanstack/react-router\";\n\nexport function useOpenCopy() {\n  const navigate = useNavigate();\n  return (draft: { id: string }) => {\n    void navigate({ href: `/new?draft=${encodeURIComponent(draft.id)}` });\n  };\n}\n"
+    }
+  ],
+  "fails": "holler(product-links)"
+}

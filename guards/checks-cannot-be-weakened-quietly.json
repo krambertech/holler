@@ -1,0 +1,8 @@
+{
+  "rule": "Name each flagged check in the pull request description.",
+  "layer": "ci",
+  "past": "#6 dropped the permission rule denying pnpm deploy* without mentioning it in the description.",
+  "check": "PR_BODY= node scripts/check-weakened.mjs HEAD HEAD",
+  "refuses": "PR_BODY= node scripts/check-weakened.mjs 739cb1c^ 739cb1c",
+  "fails": "no longer denies Bash(pnpm deploy*)"
+}
