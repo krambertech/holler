@@ -29,7 +29,36 @@ const days = [
   "2027-03-01T00:30:00Z",
 ];
 
+function afterItsFirstLook(run: () => Promise<unknown>): Db {
+  let looked = false;
+  const hollers = {
+    findFirst: async (query: Parameters<typeof db.query.hollers.findFirst>[0]) => {
+      const found = await db.query.hollers.findFirst(query);
+      if (!looked) {
+        looked = true;
+        await run();
+      }
+      return found;
+    },
+  };
+  return new Proxy(db, {
+    get(target, key) {
+      if (key === "query") return { ...target.query, hollers };
+      const value = Reflect.get(target, key);
+      return typeof value === "function" ? value.bind(target) : value;
+    },
+  });
+}
+
 describe("the dev seed", () => {
+  it("lands once when another sign-in seeds between its look and its write", async () => {
+    const now = new Date("2026-11-21T12:00:00Z");
+    const { workspaceId, memberId } = await workspaceFixture(db, now);
+    const seed = (on: Db) => seedLeadHollers(on, workspaceId, memberId, now);
+    await seed(afterItsFirstLook(() => seed(db)));
+    expect(await db.query.hollers.findMany()).toHaveLength(7);
+  });
+
   for (const day of days) {
     it(`on ${day} leaves room to send, and its data works with Slack`, async () => {
       const now = new Date(day);
