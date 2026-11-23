@@ -21,3 +21,10 @@ test("actions are pinned, permissions are set, and no step may fail quietly", ()
   const good = `permissions:\n  contents: read\njobs:\n  a:\n    steps:\n      - uses: actions/checkout@${sha} # v4\n  b:\n    uses: ./.github/workflows/ci.yml\n`;
   assert.deepEqual(workflowProblems("x.yml", good), []);
 });
+
+test("a workflow that runs commands fails when a command before a pipe fails", () => {
+  const steps =
+    "permissions:\n  contents: read\njobs:\n  a:\n    steps:\n      - run: curl x | tee y\n";
+  assert.match(workflowProblems("x.yml", steps)[0], /pipefail/);
+  assert.deepEqual(workflowProblems("x.yml", `defaults:\n  run:\n    shell: bash\n${steps}`), []);
+});

@@ -9,6 +9,10 @@ on:
 permissions:
   contents: read
 
+defaults:
+  run:
+    shell: bash
+
 # A newer push to a pull request supersedes its run. On main every run finishes, so a deploy is
 # never cut off between its migration and its upload.
 concurrency:

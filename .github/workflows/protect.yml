@@ -7,6 +7,10 @@ on:
 permissions:
   contents: read
 
+defaults:
+  run:
+    shell: bash
+
 concurrency:
   group: protect-${{ github.event.pull_request.number }}
   cancel-in-progress: true

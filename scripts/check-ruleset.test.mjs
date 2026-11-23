@@ -35,3 +35,12 @@ test("says what GitHub no longer enforces", () => {
   checks.required_status_checks = [];
   assert.equal(drift(wanted, loose).length, 4);
 });
+
+test("says when the ruleset no longer covers main", () => {
+  const elsewhere = structuredClone(wanted);
+  elsewhere.conditions.ref_name.include = ["refs/heads/unused"];
+  assert.match(drift(wanted, elsewhere)[0], /it includes/);
+  const skipping = structuredClone(wanted);
+  skipping.conditions.ref_name.exclude = ["refs/heads/main"];
+  assert.match(drift(wanted, skipping)[0], /it excludes/);
+});

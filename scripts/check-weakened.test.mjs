@@ -54,3 +54,13 @@ test("wants each file named under the heading, not anywhere in the description",
   assert.equal(unnamed(found, "## Weakened checks\n\n- a.test.ts: moved\n").length, 0);
   assert.equal(unnamed(found, "## Weakened checks\n\nnone\n\n## Notes\n\na.test.ts").length, 1);
 });
+
+test("a package script that no longer runs a check", () => {
+  const scripts = (verify) => JSON.stringify({ scripts: { verify, dev: "vite" } });
+  const before = scripts("pnpm check && pnpm typecheck");
+  assert.deepEqual(files([{ file: "package.json", before, after: scripts("pnpm check") }]), [
+    'package.json: "verify" no longer runs pnpm typecheck',
+  ]);
+  const more = scripts("pnpm check && pnpm typecheck && pnpm test");
+  assert.deepEqual(files([{ file: "package.json", before, after: more }]), []);
+});
