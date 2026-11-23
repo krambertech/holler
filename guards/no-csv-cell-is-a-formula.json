@@ -1,0 +1,14 @@
+{
+  "rule": "No cell of a CSV export runs as a formula, whatever anyone typed",
+  "layer": "test",
+  "past": "preventive: anyone who answers can type a formula into a sender's spreadsheet",
+  "check": "cd apps/web && pnpm exec vitest run src/server/services/exports.test.ts -t 'defuses every formula'",
+  "break": [
+    {
+      "file": "apps/web/src/server/services/exports.ts",
+      "find": "  return formulaStart.test(value) ? `'${value}` : value;",
+      "replace": "  return formulaStart.test(value) ? value : value;"
+    }
+  ],
+  "fails": "defuses every formula"
+}

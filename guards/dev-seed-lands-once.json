@@ -1,0 +1,14 @@
+{
+  "rule": "Concurrent first dev sign-ins all succeed and seed once",
+  "layer": "test",
+  "past": "#9: two first sign-ins both seeded, so the lead had 12 or 18 hollers instead of 6",
+  "check": "cd apps/web && pnpm exec vitest run src/server/routes/dev-concurrency.test.ts",
+  "break": [
+    {
+      "file": "apps/web/src/server/services/dev-seed.ts",
+      "find": "    const idempotencyKey = `dev-seed ${order}`;",
+      "replace": "    const idempotencyKey = `dev-seed ${order} ${crypto.randomUUID()}`;"
+    }
+  ],
+  "fails": "all succeed and seed once"
+}

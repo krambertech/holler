@@ -1,0 +1,14 @@
+{
+  "rule": "An answer kept while the queue refused still reaches the DM when the person sends again",
+  "layer": "test",
+  "past": "#22: a retry returned early on the conflict and the DM stayed on its Answer link",
+  "check": "cd apps/web && pnpm exec vitest run src/server/services/respond.test.ts -t 'puts the DM right'",
+  "break": [
+    {
+      "file": "apps/web/src/server/services/respond.ts",
+      "find": "    if (error.code !== \"conflict\") throw error;",
+      "replace": "    if (error.code === \"conflict\") return respondFormFor(ctx, hollerId);\n    throw error;"
+    }
+  ],
+  "fails": "puts the DM right when the answers were kept"
+}

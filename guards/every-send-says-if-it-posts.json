@@ -1,0 +1,14 @@
+{
+  "rule": "A new kind of send says whether it posts or edits",
+  "layer": "types",
+  "past": "#10 found posting kinds one at a time that had no once-only key",
+  "check": "pnpm --filter @holler/web typecheck",
+  "break": [
+    {
+      "file": "apps/web/src/server/services/delivery.ts",
+      "find": "  send_failed: \"posts\",\n",
+      "replace": ""
+    }
+  ],
+  "fails": "send_failed"
+}
