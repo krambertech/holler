@@ -14,8 +14,8 @@ import { Input, InputGroup } from "@/components/ui/input";
 import { Plate, PlateStrip } from "@/components/ui/plate";
 import { Segmented, SegmentedItem } from "@/components/ui/segmented";
 import { count } from "@/lib/format";
-import { waitingFor } from "@/lib/pages";
 import { hollersQuery, homeCountsQuery } from "@/lib/queries";
+import { waitingFor } from "@/pages";
 
 const newHoller = waitingFor("#11", "/new");
 

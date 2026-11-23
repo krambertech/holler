@@ -1,5 +1,5 @@
 import type { ProductPath } from "@holler/core";
-import type { FileRouteTypes } from "../routeTree.gen";
+import type { FileRouteTypes } from "./routeTree.gen";
 
 type Page = FileRouteTypes["to"];
 
