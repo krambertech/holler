@@ -1,0 +1,14 @@
+{
+  "rule": "Answering again after a failure queues the Slack updates the first try lost",
+  "layer": "test",
+  "past": "#22 kept the answer, lost the thank-you in the DM, and skipped it again on the retry",
+  "check": "cd apps/web && pnpm exec vitest run src/server/crash-sweep -t 'through.*answerOnWeb$'",
+  "break": [
+    {
+      "file": "apps/web/src/server/services/respond.ts",
+      "find": "    if (error.code !== \"conflict\") throw error;\n",
+      "replace": "    if (error.code !== \"conflict\") throw error;\n    return respondFormFor(ctx, hollerId);\n"
+    }
+  ],
+  "fails": "Broken: the DM of a person who answered says so"
+}

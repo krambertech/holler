@@ -1,0 +1,14 @@
+{
+  "rule": "A route that changes something, or an MCP tool that is not read-only, has a test that it records Activity or a written reason it does not",
+  "layer": "test",
+  "past": "#10's snooze and note and #27's viewer routes shipped with nothing that asked what they record",
+  "check": "cd apps/web && pnpm exec vitest run src/server/activity.test.ts -t 'has a proof or a reason'",
+  "break": [
+    {
+      "file": "apps/web/src/server/routes/settings.ts",
+      "find": "  .get(\"/workspace\",",
+      "replace": "  .delete(\"/viewers/:id\", async (c) => c.json(await workspaceSettings(requireMember(c))))\n  .get(\"/workspace\","
+    }
+  ],
+  "fails": "every mutating route has a proof or a reason it records nothing"
+}

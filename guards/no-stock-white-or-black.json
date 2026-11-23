@@ -1,0 +1,14 @@
+{
+  "rule": "White and black are stock Tailwind colours too: bg-white is day at night",
+  "layer": "lint",
+  "past": "check:styling only knew colours with a number, and design/brand.tsx shipped text-white",
+  "check": "pnpm check:styling",
+  "break": [
+    {
+      "file": "apps/web/src/client/design/brand.tsx",
+      "find": "bg-plum p-5 text-on-primary",
+      "replace": "bg-plum p-5 text-white"
+    }
+  ],
+  "fails": "stock Tailwind colour text-white"
+}

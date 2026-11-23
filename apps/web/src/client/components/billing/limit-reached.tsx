@@ -1,5 +1,6 @@
 import type { BillingOverview } from "@holler/core";
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
 import type { ComponentProps } from "react";
 import { Button } from "@/components/ui/button";
 import { Plate } from "@/components/ui/plate";
@@ -85,10 +86,7 @@ function UpgradeButton() {
 }
 
 function SeePlans() {
-  return (
-    // A plain link: Settings is its own area's route, and #billing scrolls to this section there.
-    <Button render={<a href="/settings#billing" />}>See plans</Button>
-  );
+  return <Button render={<Link to="/settings" hash="billing" />}>See plans</Button>;
 }
 
 function limitTitle(overview: BillingOverview): string {

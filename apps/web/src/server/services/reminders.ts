@@ -3,7 +3,7 @@ import { and, eq, inArray, isNotNull, isNull, lte, sql } from "@holler/core/db";
 import { runBatch } from "../batch";
 import { type Db, schema } from "../db";
 import type { Bindings } from "../env";
-import { auditStatement } from "./audit";
+import { activityOf, recordChange } from "./audit";
 import type { ServiceContext } from "./context";
 import { queueClaimed, toneFor } from "./delivery";
 
@@ -17,7 +17,11 @@ const { hollers, recipients, slackPeople } = schema;
 export async function queueDueReminders(env: Bindings, db: Db, now: Date): Promise<number> {
   const claimed = await db
     .update(recipients)
-    .set({ remindersSent: sql`${recipients.remindersSent} + 1`, nextReminderAt: null })
+    .set({
+      remindersSent: sql`${recipients.remindersSent} + 1`,
+      nextReminderAt: null,
+      reminderQueuedAt: now,
+    })
     .where(
       and(
         lte(recipients.nextReminderAt, now),
@@ -54,7 +58,11 @@ export async function queueDueReminders(env: Bindings, db: Db, now: Date): Promi
           ? [
               db
                 .update(recipients)
-                .set({ remindersSent: sql`${recipients.remindersSent} - 1`, nextReminderAt: now })
+                .set({
+                  remindersSent: sql`${recipients.remindersSent} - 1`,
+                  nextReminderAt: now,
+                  reminderQueuedAt: null,
+                })
                 .where(
                   and(
                     eq(recipients.hollerId, send.hollerId),
@@ -111,13 +119,14 @@ export async function snoozeReminder(
           now,
         )
       : null;
-  await runBatch(ctx.db, [
+  await recordChange(
+    ctx,
+    // A recipient actor carries no member, so Activity says a snooze happened, not whose.
+    activityOf(ctx, { action: "reminder.snoozed", subjectType: "holler", subjectId: hollerId }),
     ctx.db
       .update(recipients)
       .set({ snoozedUntil: until, nextReminderAt: next?.dueAt ?? null })
       .where(where),
-    // A recipient actor carries no member, so Activity says a snooze happened, not whose.
-    auditStatement(ctx, { action: "reminder.snoozed", subjectType: "holler", subjectId: hollerId }),
-  ]);
+  );
   return true;
 }

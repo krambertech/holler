@@ -3,7 +3,7 @@ import { APIError } from "better-auth/api";
 import type { Auth } from "../auth";
 import { schema } from "../db";
 import { permissionsFor, type Scope, scopeOfPermissions } from "../principal";
-import { audit, auditStatement } from "./audit";
+import { activityOf, recordChange } from "./audit";
 import { memberOf, type ServiceContext, ServiceError } from "./context";
 
 /**
@@ -88,7 +88,6 @@ export async function createApiKey(
         name: input.name,
         userId,
         permissions: permissionsFor(input.scope),
-        metadata: { memberId },
       },
     })
     .catch((error: unknown) => {
@@ -98,12 +97,19 @@ export async function createApiKey(
       }
       throw error;
     });
-  await audit(ctx, {
-    action: "api_key.created",
-    subjectType: "api_key",
-    subjectId: created.id,
-    data: { name: input.name, scope: input.scope },
-  });
+  await recordChange(
+    ctx,
+    activityOf(ctx, {
+      action: "api_key.created",
+      subjectType: "api_key",
+      subjectId: created.id,
+      data: { name: input.name, scope: input.scope },
+    }),
+    ctx.db
+      .update(schema.apikey)
+      .set({ metadata: JSON.stringify({ memberId }) })
+      .where(eq(schema.apikey.id, created.id)),
+  );
   return {
     id: created.id,
     name: created.name ?? input.name,
@@ -120,13 +126,14 @@ export async function revokeApiKey(ctx: ServiceContext, id: string): Promise<voi
   const keys = await listApiKeys(ctx);
   const key = keys.find((k) => k.id === id);
   if (!key) throw new ServiceError("not_found", "That API key does not exist or is not yours.");
-  await ctx.db.batch([
-    ctx.db.delete(schema.apikey).where(eq(schema.apikey.id, id)),
-    auditStatement(ctx, {
+  await recordChange(
+    ctx,
+    activityOf(ctx, {
       action: "api_key.revoked",
       subjectType: "api_key",
       subjectId: id,
       data: { name: key.name },
     }),
-  ]);
+    ctx.db.delete(schema.apikey).where(eq(schema.apikey.id, id)),
+  );
 }

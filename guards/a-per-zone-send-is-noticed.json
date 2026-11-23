@@ -1,0 +1,14 @@
+{
+  "rule": "A per-zone send the cron never made is named once its first zone reached the send time",
+  "layer": "test",
+  "past": "The first overdue.ts compared the stored sendAt, so a per-zone send that should have started 14 hours earlier looked on time (review of #56)",
+  "check": "cd apps/web && pnpm exec vitest run src/server/services/overdue.test.ts -t 'per-zone send'",
+  "break": [
+    {
+      "file": "apps/web/src/server/services/overdue.ts",
+      "find": "  for (const { holler } of await scheduledDueBy(db, late)) {",
+      "replace": "  for (const { holler } of (await scheduledDueBy(db, late)).filter(\n    ({ holler }) => holler.sendAt && holler.sendAt <= late,\n  )) {"
+    }
+  ],
+  "fails": "per-zone send the cron never made"
+}

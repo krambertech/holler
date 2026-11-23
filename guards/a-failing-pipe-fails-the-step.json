@@ -1,0 +1,14 @@
+{
+  "rule": "A workflow step fails when any command in a pipe fails",
+  "layer": "ci",
+  "past": "The first health.yml piped curl into tee with no pipefail, so production being down would have passed (review of #47)",
+  "check": "pnpm check:workflows",
+  "break": [
+    {
+      "file": ".github/workflows/weekly.yml",
+      "find": "    shell: bash\n",
+      "replace": "    working-directory: .\n"
+    }
+  ],
+  "fails": "pipefail"
+}

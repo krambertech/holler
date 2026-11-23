@@ -47,7 +47,7 @@ describe.each(Object.entries(illustrations))("%s", (_, drawing) => {
     expect(drawing.use.length).toBeGreaterThan(20);
   });
 
-  it("picks out one subject and at most one accent", () => {
+  it("picks out a subject and at most one accent", () => {
     expect(count(shapes, "subject")).toBeGreaterThan(0);
     expect(count(shapes, "accent")).toBeLessThanOrEqual(1);
   });
@@ -74,6 +74,8 @@ describe.each(Object.entries(illustrations))("%s", (_, drawing) => {
         expect(shape.y + shape.h).toBeLessThanOrEqual(size);
       } else if (shape.kind === "circle") {
         expect(shape.cx - shape.r).toBeGreaterThanOrEqual(0);
+        expect(shape.cy - shape.r).toBeGreaterThanOrEqual(0);
+        expect(shape.cx + shape.r).toBeLessThanOrEqual(size);
         expect(shape.cy + shape.r).toBeLessThanOrEqual(size);
       }
     }

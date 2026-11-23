@@ -1,10 +1,7 @@
 #!/usr/bin/env node
 
-// Fails on raw colours, stock Tailwind colours and physical directions added since the base branch.
-// Usage: node scripts/check-styling.mjs [base]; BASE_SHA or the merge base with origin/main by default.
-
-import { spawnSync } from "node:child_process";
-import { resolve } from "node:path";
+import { readdirSync, readFileSync } from "node:fs";
+import { join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = resolve(fileURLToPath(new URL("..", import.meta.url)));
@@ -65,7 +62,10 @@ const physicalClass = new RegExp(
   String.raw`${classStart}(?:(${prefixes})-(?!1\/2\b)(?:\d[\w.\/]*|\[[^\]\s]*\]?|\([^)\s]*\)?|(?:px|auto|full|screen|none|xs|sm|md|lg|\d?xl)\b)|(${bare})(?=[\s"'\`)}]|$))`,
   "g",
 );
-const stockColour = new RegExp(String.raw`${classStart}(?:${UTILITY})-(?:${STOCK})-\d{2,3}\b`, "g");
+const stockColour = new RegExp(
+  String.raw`${classStart}(?:${UTILITY})-(?:(?:${STOCK})-\d{2,3}|white|black)\b`,
+  "g",
+);
 const rawHex = /(?<=["'`[]|:\s*)#(?:[0-9a-f]{8}|[0-9a-f]{6}|[0-9a-f]{3,4})\b/gi;
 // `left: 50%` centres rather than leans.
 const centred = /^\s*["'`]?-?50%/;
@@ -77,7 +77,6 @@ const cssText = /\.(css|astro)$/;
 // An in-page link such as href="#add" is spelled in hex letters too.
 const anchor = /(?:href|to|hash|id)\s*(?:={1,3}|:)\s*["'`]?$/;
 
-/** Every problem on one added line, each naming its fix. */
 export function problemsIn(file, line) {
   const problems = [];
   for (const { 0: hex, index } of line.matchAll(rawHex)) {
@@ -107,66 +106,39 @@ export function problemsIn(file, line) {
   return problems;
 }
 
-/** Added lines in a zero-context unified diff, with their file and new line number. */
-export function addedLines(diff) {
-  const added = [];
-  let file = null;
-  let number = 0;
-  let previous = "";
-  for (const text of diff.split("\n")) {
-    if (text.startsWith("+++ ")) {
-      file = text.startsWith("+++ b/") ? text.slice(6) : null;
-      continue;
-    }
-    const hunk = /^@@ -\S+ \+(\d+)/.exec(text);
-    if (hunk) {
-      number = Number(hunk[1]);
-      previous = "";
-      continue;
-    }
-    if (!file || !text.startsWith("+")) continue;
-    added.push({ file, number, text: text.slice(1), previous });
-    previous = text.slice(1);
-    number++;
-  }
-  return added;
-}
-
-export function check(diff) {
+export function check(files) {
   const found = [];
-  for (const { file, number, text, previous } of addedLines(diff)) {
-    if (!CHECKED.test(file) || SKIPPED.test(file)) continue;
-    if (text.includes(ALLOW) || previous.includes(ALLOW)) continue;
-    for (const problem of problemsIn(file, text)) found.push(`${file}:${number}: ${problem}`);
+  for (const { file, text } of files) {
+    let previous = "";
+    for (const [at, line] of text.split("\n").entries()) {
+      if (!line.includes(ALLOW) && !previous.includes(ALLOW)) {
+        for (const problem of problemsIn(file, line)) found.push(`${file}:${at + 1}: ${problem}`);
+      }
+      previous = line;
+    }
   }
   return found;
 }
 
-function git(args) {
-  const result = spawnSync("git", args, { cwd: root, encoding: "utf8", maxBuffer: 1 << 28 });
-  return result.status === 0 ? result.stdout.trim() : null;
+function filesUnder(dir) {
+  return readdirSync(join(root, dir), { recursive: true, withFileTypes: true })
+    .filter((entry) => entry.isFile() && CHECKED.test(entry.name) && !SKIPPED.test(entry.name))
+    .map((entry) => join(entry.parentPath, entry.name));
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  const base =
-    process.argv[2] ?? (process.env.BASE_SHA || git(["merge-base", "origin/main", "HEAD"]));
-  if (!base) {
-    console.log("check-styling: no base to compare with, so nothing to check");
-    process.exit(0);
+  const files = SCOPE.flatMap(filesUnder).map((path) => ({
+    file: relative(root, path),
+    text: readFileSync(path, "utf8"),
+  }));
+  const found = check(files);
+  if (found.length > 0) {
+    console.error(found.join("\n"));
+    console.error(
+      `\nAGENTS.md, Styling. For a colour that is not Holler's, such as Slack's own grey, add "${ALLOW}: <reason>" in a comment on or above the line.`,
+    );
+    process.exitCode = 1;
+  } else {
+    console.log(`check-styling: ${files.length} files use Holler tokens and logical directions`);
   }
-  const diff = git(["diff", "--unified=0", "--no-color", "--no-ext-diff", base, "--", ...SCOPE]);
-  if (diff === null) {
-    console.error(`check-styling: could not diff against ${base}`);
-    process.exit(1);
-  }
-  const found = check(diff);
-  if (found.length === 0) {
-    console.log("check-styling: no raw colours, stock colours or physical directions added");
-    process.exit(0);
-  }
-  console.error(found.join("\n"));
-  console.error(
-    `\nAGENTS.md, Styling. For a colour that is not Holler's, such as Slack's own grey, add "${ALLOW}: <reason>" in a comment on or above the line.`,
-  );
-  process.exit(1);
 }
