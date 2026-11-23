@@ -79,6 +79,11 @@ export const knownWindows: KnownWindow[] = [
     breaks: ["invited"],
   },
   {
+    operation: "sendHoller to more people than one batch holds",
+    failure: "killed after insert recipients #2",
+    breaks: ["invited"],
+  },
+  {
     operation: "answerOnWeb",
     failure: "killed after update recipients: answered_at",
     breaks: ["answer"],
@@ -151,6 +156,11 @@ export const knownWindows: KnownWindow[] = [
     failure: "killed after insert slack deliveries",
     breaks: ["notice"],
     tradeOff: true,
+  },
+  {
+    operation: "closeDueHollers, then queueCloseWork",
+    failure: "killed after update hollers: close_queued_at #2",
+    breaks: ["closedDm", "notice"],
   },
   {
     operation: "sendDueHollers with nobody to send to",

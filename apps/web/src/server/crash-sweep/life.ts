@@ -15,6 +15,7 @@ const never = new Promise<never>(() => {});
 
 export class Life {
   readonly writes: string[] = [];
+  private readonly seen = new Map<string, number>();
   private dead = false;
   private readonly inFlight = new Set<Promise<unknown>>();
   private readonly death: Promise<Ending>;
@@ -28,7 +29,7 @@ export class Life {
 
   async step<T>(step: Step, act: () => Promise<T>, refusal: () => Error): Promise<T> {
     if (this.dead) return never;
-    const at = step.writes ? this.writes.push(step.label) : 0;
+    const at = step.writes ? this.writes.push(this.named(step.label)) : 0;
     if (at > 0 && at === this.fault.killBefore) return this.die();
     if (at > 0 && at === this.fault.refuse) throw refusal();
     const running = act();
@@ -44,6 +45,12 @@ export class Life {
     } finally {
       this.inFlight.delete(running);
     }
+  }
+
+  private named(label: string): string {
+    const times = (this.seen.get(label) ?? 0) + 1;
+    this.seen.set(label, times);
+    return times === 1 ? label : `${label} #${times}`;
   }
 
   private die(): Promise<never> {

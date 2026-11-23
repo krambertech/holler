@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { sendEffects } from "../services/delivery";
 import { knownWindows, postings } from "./known-windows";
+import { Life } from "./life";
 import { localD1s } from "./local-d1";
 import { deliveries, operations } from "./scenarios";
 import { postingOf, sweep, windowProblems } from "./sweep";
@@ -60,6 +61,18 @@ describe("the sweep", () => {
     expect(opened).toEqual([
       "New crash window in send. Failure: killed after x. Broken: every recipient of a live Holler gets it. Fix: derive this work from stored state in a cron pass, or write it in the same batch.",
     ]);
+  });
+
+  it("tells apart two writes with the same label", async () => {
+    const life = new Life();
+    const write = { label: "insert recipients", writes: true };
+    for (const _ of [1, 2])
+      await life.step(
+        write,
+        async () => {},
+        () => new Error("refused"),
+      );
+    expect(life.writes).toEqual(["insert recipients", "insert recipients #2"]);
   });
 
   it("asks for the line of a window that closed", () => {
