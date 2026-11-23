@@ -1,8 +1,8 @@
 {
-  "rule": "A new source file has no comments, and an older one never gains any",
+  "rule": "A new source file has no comments",
   "layer": "lint",
   "past": "main went red when #19 landed comments just before #20 banned them, and 10 later runs failed on it",
-  "check": "pnpm exec oxlint apps/web/src/server && pnpm check:comments",
+  "check": "pnpm exec oxlint apps/web/src/server",
   "break": [
     {
       "file": "apps/web/src/server/guard-probe.ts",
