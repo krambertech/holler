@@ -1,0 +1,14 @@
+{
+  "rule": "Every App Home, quick pulse and /holler reply fits Block Kit's limits at its fullest",
+  "layer": "test",
+  "past": "preventive: FakeSlack refuses a Home over 100 blocks, so the fullest Home has to fit",
+  "check": "cd apps/web && pnpm exec vitest run src/server/slack/blocks/home.test.ts -t 'fits Block Kit'",
+  "break": [
+    {
+      "file": "apps/web/src/server/slack/blocks/home.ts",
+      "find": "export const homeRowLimit = 10;",
+      "replace": "export const homeRowLimit = 100;"
+    }
+  ],
+  "fails": "fits Block Kit's limits at its fullest"
+}

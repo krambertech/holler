@@ -1,0 +1,14 @@
+{
+  "rule": "A quick pulse Slack submits twice makes one Holler and sends it once",
+  "layer": "test",
+  "past": "preventive: Slack retries a view submission it thinks timed out, and each retry made its own Holler",
+  "check": "cd apps/web && pnpm exec vitest run src/server/slack/sending.test.ts -t 'same submit twice'",
+  "break": [
+    {
+      "file": "apps/web/src/server/services/quick-pulse.ts",
+      "find": "{ idempotencyKey: `slack-view:${viewId}` }",
+      "replace": "{ idempotencyKey: crypto.randomUUID() }"
+    }
+  ],
+  "fails": "same submit twice"
+}
