@@ -17,7 +17,9 @@ export async function expectAccessible(page: Page) {
     .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
     .analyze();
   expect(
-    results.violations.map((v) => `${v.id}: ${v.help} (${v.nodes.length})`),
+    results.violations.map(
+      (v) => `${v.id}: ${v.help} (${v.nodes.map((n) => n.target.join(" ")).join(", ")})`,
+    ),
     "axe found WCAG violations",
   ).toEqual([]);
 }

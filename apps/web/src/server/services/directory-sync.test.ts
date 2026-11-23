@@ -1,3 +1,4 @@
+import { foldForSearch } from "@holler/core";
 import { eq } from "@holler/core/db";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { type Db, schema } from "../db";
@@ -6,12 +7,7 @@ import { SlackApiError } from "../slack/client";
 import { FakeSlack } from "../slack/fake";
 import { testDb } from "../test-db";
 import { searchDirectory } from "./directory";
-import {
-  foldForSearch,
-  refreshSlackPerson,
-  syncDirectoryStep,
-  workspacesDueForSync,
-} from "./directory-sync";
+import { refreshSlackPerson, syncDirectoryStep, workspacesDueForSync } from "./directory-sync";
 import { grantFor, TEST_TOKEN_KEY } from "./slack-fixtures";
 import { completeInstall } from "./workspaces";
 
@@ -48,8 +44,9 @@ const groupsOf = (workspaceId: string) =>
   db.query.slackGroups.findMany({ where: eq(schema.slackGroups.workspaceId, workspaceId) });
 
 describe("foldForSearch", () => {
-  it("folds every script, not only ASCII", () => {
-    expect(foldForSearch("Ölmez Çelik", null, "ÅSA")).toBe("ölmez çelik åsa");
+  it("folds every script, not only ASCII, with accents off", () => {
+    expect(foldForSearch("Ölmez Çelik", null, "ÅSA")).toBe("olmez celik asa");
+    expect(foldForSearch("Ілля", "ілля")).toBe("ілля ілля");
   });
 });
 
@@ -83,7 +80,7 @@ describe("syncDirectoryStep", () => {
     expect(people).toHaveLength(5);
     expect(people.find((p) => p.slackUserId === "U1")).toMatchObject({
       name: "Ölmez Kaya",
-      searchName: "ölmez kaya",
+      searchName: "olmez kaya",
       timeZone: "Europe/Tallinn",
       avatarUrl: "https://example.test/U1.png",
     });
@@ -147,7 +144,7 @@ describe("refreshSlackPerson", () => {
       now,
     );
     expect(await peopleOf(workspaceId)).toMatchObject([
-      { name: "Ada Lund-Berg", displayName: "ada", searchName: "ada lund-berg ada" },
+      { name: "Ada Lund-Berg", displayName: "ada", searchName: "ada lund berg ada" },
     ]);
   });
 });

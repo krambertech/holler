@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Avatar } from "@/components/ui/avatar";
 import {
   Combobox,
   ComboboxContent,
@@ -76,7 +77,10 @@ function PersonCombobox() {
           <ComboboxList>
             {(person: Person) => (
               <ComboboxItem key={person.value} value={person}>
-                <span className="flex-1 truncate">{person.label}</span>
+                <span className="flex min-w-0 flex-1 items-center gap-2.5">
+                  <Avatar name={person.label} seed={person.value} />
+                  <span className="truncate">{person.label}</span>
+                </span>
               </ComboboxItem>
             )}
           </ComboboxList>

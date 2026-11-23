@@ -7,6 +7,7 @@ export * from "./plans";
 export * from "./reminders";
 export * from "./repeats";
 export * from "./results";
+export * from "./search";
 export * from "./surfaces";
 export * from "./templates";
 export * from "./types";
