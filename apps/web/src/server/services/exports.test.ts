@@ -1,9 +1,15 @@
-import { anonymousThreshold, type HollerDraftInput } from "@holler/core";
+import {
+  anonymousThreshold,
+  type HollerDraftInput,
+  type Mode,
+  modes,
+  questionLimits,
+} from "@holler/core";
 import { eq } from "@holler/core/db";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { type Db, schema } from "../db";
 import { testDb } from "../test-db";
-import { csvCell, exportCsv, exportMarkdown, mdInline } from "./exports";
+import { csvCell, csvFor, type ExportData, exportCsv, exportMarkdown, mdInline } from "./exports";
 import { makeLive, workspaceFixture } from "./fixtures";
 import { createDraft } from "./hollers";
 import { recordResponse } from "./responses";
@@ -154,8 +160,9 @@ describe("exportCsv", () => {
     const { ctx, holler } = await answered(everyType((s) => s, true));
     const csv = await exportCsv(ctx, holler.id);
     const rows = parseCsv(csv);
-    expect(rows[0]?.[0]).toBe("Where?");
+    expect(rows[0]?.slice(0, 2)).toEqual(["Answered", "Where?"]);
     expect(csv).not.toMatch(/UA|Person UA|Submitted at/);
+    expect(rows.slice(1).map((row) => row[0])).toEqual(Array(5).fill("Yes"));
     const body = rows.slice(1).map((r) => r.join(","));
     expect(body).toEqual([...body].sort());
   });
@@ -228,6 +235,132 @@ describe("exportMarkdown", () => {
       );
     }
     expect(md).not.toMatch(/<b>|\]\(javascript/);
+  });
+});
+
+async function sentIn(mode: Mode, anonymous: boolean, answeredBy: readonly string[]) {
+  const fixture = await workspaceFixture(db);
+  const holler = await createDraft(fixture.ctx, {
+    mode,
+    title: "Offsite",
+    anonymous,
+    questions: Array.from({ length: questionLimits[mode].max }, (_, at) => ({
+      type: "text" as const,
+      prompt: `Question ${at}`,
+      required: false,
+    })),
+  });
+  await makeLive(db, holler.id, people, fixture.now);
+  for (const [at, slackUserId] of answeredBy.entries()) {
+    const skipsEveryQuestion = at === 0;
+    await recordResponse(fixture.ctx, {
+      hollerId: holler.id,
+      slackUserId,
+      via: "web",
+      response: {
+        answers: skipsEveryQuestion
+          ? []
+          : holler.questions.map((question) => ({ questionId: question.id, text: `Coat ${at}` })),
+      },
+    });
+  }
+  return { ...fixture, holler };
+}
+
+const everyExport = modes.flatMap((mode) =>
+  [false, true].map((anonymous) => ({ mode, anonymous, who: anonymous ? "anonymous" : "named" })),
+);
+
+describe.each(everyExport)("every export of $who $mode hollers", ({ mode, anonymous }) => {
+  it("has a header and one row with something in it for each response", async () => {
+    const answeredBy = people.slice(0, anonymousThreshold);
+    const { ctx, holler } = await sentIn(mode, anonymous, answeredBy);
+    const [header, ...rows] = parseCsv(await exportCsv(ctx, holler.id));
+    expect(header?.filter((cell) => cell === "")).toEqual([]);
+    expect(rows).toHaveLength(answeredBy.length);
+    for (const row of rows) {
+      expect(row).toHaveLength(header?.length ?? 0);
+      expect(row.join("")).not.toBe("");
+    }
+    expect(await exportMarkdown(ctx, holler.id)).toContain(
+      `${answeredBy.length} of ${people.length} people answered.`,
+    );
+  });
+
+  it.runIf(anonymous)("opens at the threshold and says neither who nor when", async () => {
+    const early = await sentIn(mode, anonymous, people.slice(0, anonymousThreshold - 1));
+    await expect(exportCsv(early.ctx, early.holler.id)).rejects.toMatchObject({
+      code: "forbidden",
+    });
+    const { ctx, holler } = await sentIn(mode, anonymous, people.slice(0, anonymousThreshold));
+    const csv = await exportCsv(ctx, holler.id);
+    expect(csv).not.toMatch(/\bU[A-F]\b|Person|20\d\d-/);
+    const rows = csv.split("\r\n").slice(1, -1);
+    expect(rows).toEqual([...rows].sort());
+  });
+});
+
+function readsOf<T extends object>(rows: T[], count: () => void): T[] {
+  return new Proxy(rows, {
+    get(target, key, receiver) {
+      if (typeof key === "string" && /^\d+$/.test(key)) count();
+      return Reflect.get(target, key, receiver);
+    },
+  });
+}
+
+function rowsReadToBuild(size: { responses: number; questions: number }): number {
+  let reads = 0;
+  const count = () => {
+    reads += 1;
+  };
+  const questions: ExportData["questions"] = Array.from({ length: size.questions }, (_, at) => ({
+    id: `question_${at}`,
+    prompt: `Question ${at}`,
+    type: "single",
+    options: [{ id: `option_${at}`, label: "Other", isOther: true }],
+  }));
+  const responses = Array.from({ length: size.responses }, (_, at) => ({
+    id: `response_${at}`,
+    submittedAt: new Date(0),
+    slackUserId: `U${at}`,
+  }));
+  const each = responses.flatMap((response) =>
+    questions.map((question) => ({ responseId: response.id, questionId: question.id })),
+  );
+  csvFor({
+    title: "Offsite",
+    anonymous: false,
+    recipientCount: size.responses,
+    answeredCount: size.responses,
+    questions,
+    responses: readsOf(responses, count),
+    answers: readsOf(
+      each.map((at) => ({
+        ...at,
+        optionId: at.questionId.replace("question", "option"),
+        text: null,
+      })),
+      count,
+    ),
+    notes: readsOf(
+      each.flatMap((at) => [
+        { ...at, kind: "other" as const, text: "Riga" },
+        { ...at, kind: "note" as const, text: "Sunny" },
+      ]),
+      count,
+    ),
+    names: new Map(),
+    results: { state: "open", responseCount: size.responses, questions: [] },
+  });
+  return reads;
+}
+
+describe("csvFor", () => {
+  it("reads no more rows for each response or question as a Holler grows", () => {
+    const once = rowsReadToBuild({ responses: 40, questions: 6 });
+    expect(rowsReadToBuild({ responses: 80, questions: 6 }) / once).toBeLessThanOrEqual(2);
+    expect(rowsReadToBuild({ responses: 40, questions: 12 }) / once).toBeLessThanOrEqual(2);
   });
 });
 

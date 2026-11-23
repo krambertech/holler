@@ -1,0 +1,14 @@
+{
+  "rule": "A pull request that adds a lint override turning an existing rule off or down names it",
+  "layer": "test",
+  "past": "The first check-weakened.mjs passed an override that turned typescript/no-explicit-any off for apps/web/src (review of #52)",
+  "check": "node --test scripts/check-weakened.test.mjs",
+  "break": [
+    {
+      "file": "scripts/check-weakened.mjs",
+      "find": "    ...new Set([...lost, ...relaxed(is, known).filter((entry) => !loose.includes(entry))]),",
+      "replace": "    ...lost,"
+    }
+  ],
+  "fails": "turns an existing rule off or down"
+}

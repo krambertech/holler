@@ -1,0 +1,19 @@
+{
+  "rule": "A close pass that fails partway leaves every Holler's close work for the next pass",
+  "layer": "test",
+  "past": "#10 claimed every closed Holler before queueing the first, so one failure lost the rest for good",
+  "check": "cd apps/web && pnpm exec vitest run src/server/crash-sweep -t 'through.*closeDueHollers, then queueCloseWork$'",
+  "break": [
+    {
+      "file": "apps/web/src/server/services/delivery.ts",
+      "find": "  for (const candidate of candidates) {\n    const [holler] = await db",
+      "replace": "  for (const candidate of candidates)\n    await db.update(hollers).set({ closeQueuedAt: now }).where(eq(hollers.id, candidate.id));\n  for (const candidate of candidates) {\n    const [holler] = await db"
+    },
+    {
+      "file": "apps/web/src/server/services/delivery.ts",
+      "find": "      .where(and(eq(hollers.id, candidate.id), isNull(hollers.closeQueuedAt)))",
+      "replace": "      .where(eq(hollers.id, candidate.id))"
+    }
+  ],
+  "fails": "New crash window in closeDueHollers, then queueCloseWork. Failure: queue closed + close_notice refused."
+}

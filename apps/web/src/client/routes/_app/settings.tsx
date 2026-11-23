@@ -1,6 +1,6 @@
 import type { MemberRole, SettingsWorkspace } from "@holler/core";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { ApiAccessSections } from "@/components/api-keys/api-access";
 import { PlanSection } from "@/components/billing/plan-section";
@@ -225,6 +225,7 @@ function MembersSection({ isOwner }: { isOwner: boolean }) {
 }
 
 function WorkspaceDataSection() {
+  const navigate = useNavigate();
   const workspace = useQuery(workspaceSettingsQuery);
   const [error, setError] = useState<string>();
   if (!workspace.data) return null;
@@ -234,7 +235,7 @@ function WorkspaceDataSection() {
     try {
       await api("/settings/workspace", { method: "DELETE", json: { confirmName } });
       await authClient.signOut().catch(() => undefined);
-      window.location.assign(`/sign-in?deleted=${encodeURIComponent(name)}`);
+      await navigate({ to: "/sign-in", search: { deleted: name }, reloadDocument: true });
     } catch (failure) {
       setError(
         failure instanceof Error ? failure.message : "Holler could not delete the data. Try again.",

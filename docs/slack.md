@@ -103,7 +103,7 @@ sequenceDiagram
   participant K as Slack
   D->>S: send
   S->>S: sendProblems, assertCanSend, resolve audience
-  S->>S: recipients, status live, Activity, in one batch
+  S->>S: status live and its Activity in one batch, then the recipients
   S->>Q: one invite per person due now
   Q->>C: batch
   C->>K: chat.postMessage to the person

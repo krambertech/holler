@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import type { AppEnv } from "../app";
+import { productUrl } from "../product-url";
 import { billingOverview, openPortal, polarGateway, startCheckout } from "../services/billing";
 import { requireMember } from "./context";
 
@@ -11,11 +12,10 @@ import { requireMember } from "./context";
 export const billingRoutes = new Hono<AppEnv>()
   .get("/", async (c) => c.json(await billingOverview(requireMember(c))))
   .post("/checkout", async (c) => {
-    const settings = `${c.env.PRODUCT_URL}/settings`;
     return c.json(
       await startCheckout(requireMember(c), polarGateway(c.env), {
-        successUrl: `${settings}?checkout={CHECKOUT_ID}#billing`,
-        returnUrl: `${settings}#billing`,
+        successUrl: `${productUrl(c.env, "/settings")}?checkout={CHECKOUT_ID}#billing`,
+        returnUrl: productUrl(c.env, "/settings", { hash: "billing" }),
       }),
     );
   })
@@ -24,7 +24,7 @@ export const billingRoutes = new Hono<AppEnv>()
       await openPortal(
         requireMember(c),
         polarGateway(c.env),
-        `${c.env.PRODUCT_URL}/settings#billing`,
+        productUrl(c.env, "/settings", { hash: "billing" }),
       ),
     ),
   );

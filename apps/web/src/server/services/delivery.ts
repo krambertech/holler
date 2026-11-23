@@ -6,10 +6,23 @@ import {
   reminderTiers,
   sameWallClockIn,
 } from "@holler/core";
-import { and, eq, gte, inArray, isNotNull, isNull, lte, or, type SQL, sql } from "@holler/core/db";
+import {
+  and,
+  eq,
+  exists,
+  gte,
+  inArray,
+  isNotNull,
+  isNull,
+  lte,
+  or,
+  type SQL,
+  sql,
+} from "@holler/core/db";
 import { runBatch } from "../batch";
 import { type Db, schema } from "../db";
 import type { Bindings } from "../env";
+import { productUrl } from "../product-url";
 import { type SlackHoller, surfaceOf, timeOfDay } from "../slack/blocks/format";
 import {
   type AnswerSummary,
@@ -22,7 +35,7 @@ import {
   sendFailedMessage,
 } from "../slack/blocks/messages";
 import { type PostMessage, SlackApiError, type SlackClient } from "../slack/client";
-import { auditStatement } from "./audit";
+import { activityOf, recordChange, takeBack } from "./audit";
 import { type ServiceContext, ServiceError } from "./context";
 import { getHoller, presentQuestion, sendProblems } from "./hollers";
 import { respondUrl } from "./respond-links";
@@ -257,18 +270,19 @@ export async function sendHoller(
   const liveAt = goesLiveAt(holler, creator.timeZone);
   if (liveAt && liveAt > now) {
     if (holler.status === "draft") {
-      await runBatch(ctx.db, [
-        ctx.db
-          .update(hollers)
-          .set({ status: "scheduled", updatedAt: now })
-          .where(and(eq(hollers.id, id), eq(hollers.status, "draft"))),
-        auditStatement(ctx, {
+      await recordChange(
+        ctx,
+        activityOf(ctx, {
           action: "holler.scheduled",
           subjectType: "holler",
           subjectId: id,
           data: { sendAt: holler.sendAt?.toISOString() },
         }),
-      ]);
+        ctx.db
+          .update(hollers)
+          .set({ status: "scheduled", updatedAt: now })
+          .where(and(eq(hollers.id, id), eq(hollers.status, "draft"))),
+      );
     }
     return getHoller(ctx, id);
   }
@@ -378,11 +392,21 @@ async function goLive(
     : Number.POSITIVE_INFINITY;
   const closesAt = new Date(Math.min(lastSend + holler.closeAfterHours * HOUR, nextInvite));
 
-  const [claimed] = await ctx.db
-    .update(hollers)
-    .set({ status: "live", sentAt: now, closesAt, updatedAt: now })
-    .where(and(eq(hollers.id, holler.id), inArray(hollers.status, ["draft", "scheduled"])))
-    .returning({ id: hollers.id });
+  const sent = activityOf(ctx, {
+    action: "holler.sent",
+    subjectType: "holler",
+    subjectId: holler.id,
+    data: { recipients: rows.length },
+  });
+  const [claimed] = await recordChange(
+    ctx,
+    sent,
+    ctx.db
+      .update(hollers)
+      .set({ status: "live", sentAt: now, closesAt, updatedAt: now })
+      .where(and(eq(hollers.id, holler.id), inArray(hollers.status, ["draft", "scheduled"])))
+      .returning({ id: hollers.id }),
+  );
   if (!claimed) throw new ServiceError("conflict", "This Holler was already sent.");
 
   try {
@@ -391,22 +415,16 @@ async function goLive(
       ctx.db.insert(recipients).values({ hollerId: holler.id, ...row }),
     );
     for (const chunk of chunks(inserts)) await runBatch(ctx.db, chunk);
-    await runBatch(ctx.db, [
-      auditStatement(ctx, {
-        action: "holler.sent",
-        subjectType: "holler",
-        subjectId: holler.id,
-        data: { recipients: rows.length },
-      }),
-      ...(next?.statements ?? []),
-    ]);
+    await next?.schedule();
   } catch (error) {
     // D1 runs each batch as a transaction but not the chunks together, so undo the send by hand.
-    await ctx.db.delete(recipients).where(eq(recipients.hollerId, holler.id));
-    await ctx.db
-      .update(hollers)
-      .set({ status: holler.status, sentAt: null, closesAt: null })
-      .where(eq(hollers.id, holler.id));
+    await takeBack(ctx, sent, [
+      ctx.db.delete(recipients).where(eq(recipients.hollerId, holler.id)),
+      ctx.db
+        .update(hollers)
+        .set({ status: holler.status, sentAt: null, closesAt: null })
+        .where(eq(hollers.id, holler.id)),
+    ]);
     throw error;
   }
 
@@ -439,18 +457,21 @@ export async function closeHoller(
     );
   }
   const now = ctx.now();
-  const [closed] = await ctx.db
-    .update(hollers)
-    .set({ status: "closed", closedAt: now, updatedAt: now })
-    .where(and(eq(hollers.id, id), eq(hollers.status, "live")))
-    .returning({ id: hollers.id });
-  if (closed) {
-    await auditStatement(ctx, {
+  const [closed] = await recordChange(
+    ctx,
+    activityOf(ctx, {
       action: "holler.closed",
       subjectType: "holler",
       subjectId: id,
       data: { reason: "creator" },
-    });
+    }),
+    ctx.db
+      .update(hollers)
+      .set({ status: "closed", closedAt: now, updatedAt: now })
+      .where(and(eq(hollers.id, id), eq(hollers.status, "live")))
+      .returning({ id: hollers.id }),
+  );
+  if (closed) {
     try {
       await queueCloseWork(ctx.db, env, now, id);
     } catch (error) {
@@ -557,26 +578,52 @@ export async function remindWaiting(
     })
     .from(recipients)
     .where(waitingWhere);
-  if (before.length === 0) {
-    throw new ServiceError(
+  const nobodyWaiting = () =>
+    new ServiceError(
       "conflict",
       "Nobody is waiting to be reminded. Everyone who got it has answered.",
     );
-  }
+  if (before.length === 0) throw nobodyWaiting();
   const gapStart = new Date(now.getTime() - manualReminderGapHours * HOUR);
-  const [claimed] = await ctx.db
-    .update(hollers)
-    .set({ remindedAt: now })
-    .where(
-      and(eq(hollers.id, id), or(isNull(hollers.remindedAt), lte(hollers.remindedAt, gapStart))),
-    )
-    .returning({ id: hollers.id });
-  if (!claimed) {
+  const mayRemind = and(
+    eq(hollers.id, id),
+    or(isNull(hollers.remindedAt), lte(hollers.remindedAt, gapStart)),
+  );
+  const sent = activityOf(ctx, {
+    action: "holler.reminded",
+    subjectType: "holler",
+    subjectId: id,
+    data: { recipients: before.length },
+  });
+  const reminded = await recordChange(
+    ctx,
+    sent,
+    ctx.db
+      .update(recipients)
+      .set({
+        remindersSent: sql`min(${recipients.remindersSent} + 1, ${reminderTiers.length})`,
+        nextReminderAt: null,
+      })
+      .where(
+        and(waitingWhere, exists(ctx.db.select({ id: hollers.id }).from(hollers).where(mayRemind))),
+      )
+      .returning({ slackUserId: recipients.slackUserId, remindersSent: recipients.remindersSent }),
+    {
+      after: [
+        ctx.db
+          .update(hollers)
+          .set({ remindedAt: now })
+          .where(and(mayRemind, sql`changes() > 0`)),
+      ],
+    },
+  );
+  if (reminded.length === 0) {
     const [row] = await ctx.db
       .select({ remindedAt: hollers.remindedAt })
       .from(hollers)
       .where(eq(hollers.id, id));
-    const last = row?.remindedAt ?? now;
+    const last = row?.remindedAt;
+    if (!last || last <= gapStart) throw nobodyWaiting();
     const next = new Date(last.getTime() + manualReminderGapHours * HOUR);
     const zone = (await creatorOf(ctx.db, holler)).timeZone;
     throw new ServiceError(
@@ -584,14 +631,6 @@ export async function remindWaiting(
       `A reminder went out at ${timeOfDay(last, zone)}. You can send the next one at ${timeOfDay(next, zone)}.`,
     );
   }
-  const reminded = await ctx.db
-    .update(recipients)
-    .set({
-      remindersSent: sql`min(${recipients.remindersSent} + 1, ${reminderTiers.length})`,
-      nextReminderAt: null,
-    })
-    .where(waitingWhere)
-    .returning({ slackUserId: recipients.slackUserId, remindersSent: recipients.remindersSent });
   const sends = reminded.map((row) => ({
     kind: "reminder" as const,
     hollerId: id,
@@ -613,14 +652,10 @@ export async function remindWaiting(
       );
     for (const chunk of chunks(restore)) await runBatch(ctx.db, chunk);
     if (unqueued.length === sends.length) {
-      await ctx.db.update(hollers).set({ remindedAt: holler.remindedAt }).where(eq(hollers.id, id));
+      await takeBack(ctx, sent, [
+        ctx.db.update(hollers).set({ remindedAt: holler.remindedAt }).where(eq(hollers.id, id)),
+      ]);
     }
-  });
-  await auditStatement(ctx, {
-    action: "holler.reminded",
-    subjectType: "holler",
-    subjectId: id,
-    data: { recipients: reminded.length },
   });
   return getHoller(ctx, id);
 }
@@ -632,6 +667,20 @@ export function toneFor(remindersSent: number): ReminderTone {
   return tier.tone;
 }
 
+export async function scheduledDueBy(db: Db, by: Date) {
+  const soon = new Date(by.getTime() + zoneLeadHours * HOUR);
+  const scheduled = await db.query.hollers.findMany({
+    where: and(eq(hollers.status, "scheduled"), lte(hollers.sendAt, soon)),
+  });
+  const due = [];
+  for (const holler of scheduled) {
+    const creator = await creatorOf(db, holler);
+    const liveAt = goesLiveAt(holler, creator.timeZone);
+    if (liveAt && liveAt <= by) due.push({ holler, creator });
+  }
+  return due;
+}
+
 /**
  * The cron's pass for scheduled hollers whose time came. A Holler that can no longer go out (a
  * send problem, the monthly limit, nobody to send to) goes back to draft and its creator gets a
@@ -639,15 +688,8 @@ export function toneFor(remindersSent: number): ReminderTone {
  * down while resolving a group, leaves it scheduled for the next run and does not stop the rest.
  */
 export async function sendDueHollers(env: Bindings, db: Db, now: Date): Promise<string[]> {
-  const soon = new Date(now.getTime() + zoneLeadHours * HOUR);
-  const due = await db.query.hollers.findMany({
-    where: and(eq(hollers.status, "scheduled"), lte(hollers.sendAt, soon)),
-  });
   const sent: string[] = [];
-  for (const holler of due) {
-    const creator = await creatorOf(db, holler);
-    const liveAt = goesLiveAt(holler, creator.timeZone);
-    if (!liveAt || liveAt > now) continue;
+  for (const { holler, creator } of await scheduledDueBy(db, now)) {
     const ctx: ServiceContext = {
       db,
       workspaceId: holler.workspaceId,
@@ -668,18 +710,21 @@ export async function sendDueHollers(env: Bindings, db: Db, now: Date): Promise<
         console.error("scheduled send failed; retrying next run", holler.id, error);
         continue;
       }
-      await runBatch(db, [
-        db
-          .update(hollers)
-          .set({ status: "draft", updatedAt: now })
-          .where(and(eq(hollers.id, holler.id), eq(hollers.status, "scheduled"))),
-        auditStatement(ctx, {
+      const [failed] = await recordChange(
+        ctx,
+        activityOf(ctx, {
           action: "holler.send_failed",
           subjectType: "holler",
           subjectId: holler.id,
           data: { code: error.code },
         }),
-      ]);
+        db
+          .update(hollers)
+          .set({ status: "draft", updatedAt: now })
+          .where(and(eq(hollers.id, holler.id), eq(hollers.status, "scheduled")))
+          .returning({ id: hollers.id }),
+      );
+      if (!failed) continue;
       await enqueue(env, [
         {
           kind: "send_failed",
@@ -865,7 +910,11 @@ export async function deliver(env: Bindings, db: Db, send: SlackSend, now: Date)
       await postOnce(db, postKey(send), now, () =>
         slack.postMessage({
           channel: loaded.creatorSlackUserId,
-          ...closeNoticeMessage(holler, counts, `${env.PRODUCT_URL}/hollers/${row.id}`),
+          ...closeNoticeMessage(
+            holler,
+            counts,
+            productUrl(env, "/hollers/$id", { params: { id: row.id } }),
+          ),
         }),
       );
       return;
@@ -874,7 +923,11 @@ export async function deliver(env: Bindings, db: Db, send: SlackSend, now: Date)
       await postOnce(db, postKey(send), now, () =>
         slack.postMessage({
           channel: loaded.creatorSlackUserId,
-          ...sendFailedMessage(holler, send.reason, `${env.PRODUCT_URL}/hollers/${row.id}/edit`),
+          ...sendFailedMessage(
+            holler,
+            send.reason,
+            productUrl(env, "/hollers/$id", { params: { id: row.id } }),
+          ),
         }),
       );
       return;

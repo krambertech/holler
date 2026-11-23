@@ -1,0 +1,14 @@
+{
+  "rule": "A pull request that drops a step from a check script names it",
+  "layer": "test",
+  "past": "The first check-weakened.mjs passed a package.json whose verify no longer typechecked (review of #40)",
+  "check": "node --test scripts/check-weakened.test.mjs",
+  "break": [
+    {
+      "file": "scripts/check-weakened.mjs",
+      "find": "  weakenedScripts,\n",
+      "replace": ""
+    }
+  ],
+  "fails": "no longer runs a check"
+}

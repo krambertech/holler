@@ -1,9 +1,9 @@
 import { deletionDueAt, newId, teamRenews } from "@holler/core";
-import { and, eq, isNull, sql } from "@holler/core/db";
+import { and, eq, isNull, ne, sql } from "@holler/core/db";
 import { type Db, schema } from "../db";
 import type { SlackClient, SlackInstallGrant } from "../slack/client";
 import { encryptToken } from "../slack/tokens";
-import { auditStatement } from "./audit";
+import { activityOf, recordChange } from "./audit";
 import { memberOf, type ServiceContext } from "./context";
 import { ensureMember, latestSlackClaims } from "./members";
 
@@ -59,7 +59,7 @@ export async function completeInstall(
     .values({ id: newId("workspace"), slackTeamId: grant.teamId, ...details, createdAt: now })
     .onConflictDoUpdate({
       target: schema.workspaces.slackTeamId,
-      set: { ...details, uninstalledAt: null },
+      set: details,
     });
   const workspace = await db.query.workspaces.findFirst({
     where: eq(schema.workspaces.slackTeamId, grant.teamId),
@@ -75,18 +75,27 @@ export async function completeInstall(
     installedAt: now,
   };
   const ctx = systemContext(db, workspace.id, now);
-  await db.batch([
-    db
-      .insert(schema.slackInstallations)
-      .values({ workspaceId: workspace.id, ...installation })
-      .onConflictDoUpdate({ target: schema.slackInstallations.workspaceId, set: installation }),
-    auditStatement(ctx, {
+  await recordChange(
+    ctx,
+    activityOf(ctx, {
       action: existing ? "workspace.reinstalled" : "workspace.installed",
       subjectType: "workspace",
       subjectId: workspace.id,
       data: { slackUserId: grant.installerSlackUserId },
     }),
-  ]);
+    db
+      .insert(schema.slackInstallations)
+      .values({ workspaceId: workspace.id, ...installation })
+      .onConflictDoUpdate({ target: schema.slackInstallations.workspaceId, set: installation }),
+    {
+      after: [
+        db
+          .update(schema.workspaces)
+          .set({ uninstalledAt: null })
+          .where(eq(schema.workspaces.id, workspace.id)),
+      ],
+    },
+  );
 
   const installerMemberId = await makeInstallerOwner(
     db,
@@ -117,15 +126,20 @@ async function makeInstallerOwner(db: Db, workspaceId: string, slackUserId: stri
     ? await ensureMember(db, { workspaceId, userId: account.userId, slackUserId }, now)
     : null;
   if (member && member.role !== "owner" && !owner) {
-    await db.batch([
-      db.update(schema.members).set({ role: "owner" }).where(eq(schema.members.id, member.id)),
-      auditStatement(systemContext(db, workspaceId, now), {
+    const ctx = systemContext(db, workspaceId, now);
+    await recordChange(
+      ctx,
+      activityOf(ctx, {
         action: "member.role_changed",
         subjectType: "member",
         subjectId: member.id,
         data: { from: member.role, to: "owner", reason: "reinstalled" },
       }),
-    ]);
+      db
+        .update(schema.members)
+        .set({ role: "owner" })
+        .where(and(eq(schema.members.id, member.id), ne(schema.members.role, "owner"))),
+    );
   }
   return member?.id ?? null;
 }
@@ -140,21 +154,26 @@ export async function markUninstalled(db: Db, slackTeamId: string, now: Date): P
   });
   if (!workspace || workspace.uninstalledAt) return false;
   const ctx = systemContext(db, workspace.id, now);
-  await db.batch([
-    db
-      .update(schema.workspaces)
-      .set({ uninstalledAt: now })
-      .where(and(eq(schema.workspaces.id, workspace.id), isNull(schema.workspaces.uninstalledAt))),
-    // The token is dead; without the row, slackFor says Holler is not installed.
-    db
-      .delete(schema.slackInstallations)
-      .where(eq(schema.slackInstallations.workspaceId, workspace.id)),
-    auditStatement(ctx, {
+  await recordChange(
+    ctx,
+    activityOf(ctx, {
       action: "workspace.uninstalled",
       subjectType: "workspace",
       subjectId: workspace.id,
     }),
-  ]);
+    db
+      .update(schema.workspaces)
+      .set({ uninstalledAt: now })
+      .where(and(eq(schema.workspaces.id, workspace.id), isNull(schema.workspaces.uninstalledAt))),
+    {
+      after: [
+        // The token is dead; without the row, slackFor says Holler is not installed.
+        db
+          .delete(schema.slackInstallations)
+          .where(eq(schema.slackInstallations.workspaceId, workspace.id)),
+      ],
+    },
+  );
   return true;
 }
 

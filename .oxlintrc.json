@@ -83,14 +83,20 @@
         "eslint/no-restricted-imports": [
           "error",
           {
-            "paths": [
+            "patterns": [
               {
-                "name": "@holler/core/db",
+                "group": [
+                  "@holler/core/db",
+                  "@holler/core/schema*",
+                  "drizzle-orm",
+                  "drizzle-orm/**"
+                ],
                 "message": "Routes, Slack handlers and MCP tools call a service in src/server/services; only services touch Drizzle."
               },
               {
-                "name": "drizzle-orm",
-                "message": "Routes, Slack handlers and MCP tools call a service in src/server/services; only services touch Drizzle."
+                "group": ["**/db"],
+                "importNames": ["schema"],
+                "message": "Routes, Slack handlers and MCP tools call a service in src/server/services; only services read the schema."
               }
             ]
           }
@@ -122,6 +128,13 @@
       }
     },
     {
+      "files": ["apps/web/src/**"],
+      "excludeFiles": ["apps/web/src/client/design/**", "**/*.test.ts", "**/*.test.tsx"],
+      "rules": {
+        "holler/product-links": "error"
+      }
+    },
+    {
       "files": ["e2e/**"],
       "excludeFiles": ["e2e/a11y.ts", "e2e/global-setup.ts"],
       "rules": {
@@ -135,6 +148,18 @@
         "holler/no-spread-rows": "error",
         "holler/no-multi-row-insert": "error",
         "holler/bounded-in-array": "error"
+      }
+    },
+    {
+      "files": ["apps/web/src/server/**"],
+      "excludeFiles": [
+        "apps/web/src/server/services/audit.ts",
+        "apps/web/src/server/services/dev-*.ts",
+        "apps/web/src/server/services/*fixtures.ts",
+        "**/*.test.ts"
+      ],
+      "rules": {
+        "holler/activity-with-write": "error"
       }
     },
     {

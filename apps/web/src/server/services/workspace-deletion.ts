@@ -50,6 +50,7 @@ export async function deletionStatements(
   return [
     db.delete(schema.workspaces).where(and(eq(schema.workspaces.id, workspaceId), stillDue)),
     ...inChunks(userIds).map((chunk) =>
+      // oxlint-disable-next-line holler/activity-with-write -- a deleted workspace keeps no Activity: its own rows go with it
       db
         .delete(schema.apikey)
         .where(
@@ -66,6 +67,7 @@ export async function deletionStatements(
         ),
     ),
     ...inChunks(memberIds).map((chunk) =>
+      // oxlint-disable-next-line holler/activity-with-write -- a deleted workspace keeps no Activity: its own rows go with it
       db.delete(schema.apikey).where(and(inArray(keyMember, chunk), workspaceGone)),
     ),
     ...inChunks(memberIds).flatMap((chunk) => [
@@ -75,6 +77,7 @@ export async function deletionStatements(
       db
         .delete(schema.oauthRefreshToken)
         .where(and(inArray(schema.oauthRefreshToken.referenceId, chunk), workspaceGone)),
+      // oxlint-disable-next-line holler/activity-with-write -- a deleted workspace keeps no Activity: its own rows go with it
       db
         .delete(schema.oauthConsent)
         .where(and(inArray(schema.oauthConsent.referenceId, chunk), workspaceGone)),

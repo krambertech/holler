@@ -1,6 +1,7 @@
 import { apiKey } from "@better-auth/api-key";
 import { cimd } from "@better-auth/cimd";
 import { mcp } from "@better-auth/mcp";
+import { productPath } from "@holler/core";
 import { polar, webhooks } from "@polar-sh/better-auth";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
@@ -96,8 +97,8 @@ export function createAuth(env: Bindings, db: Db) {
       // This Worker is the OAuth 2.1 authorization server for MCP clients. Tokens are bound to
       // the MCP endpoint. Scopes mirror API keys; offline_access allows a refresh token.
       mcp({
-        loginPage: "/sign-in",
-        consentPage: "/consent",
+        loginPage: productPath("/sign-in"),
+        consentPage: productPath("/consent"),
         resource: `${env.PRODUCT_URL}/mcp`,
         scopes: ["read", "write", "offline_access"],
         // MCP 2026-07-28 prefers Client ID Metadata Documents (cimd below). Dynamic
@@ -107,7 +108,7 @@ export function createAuth(env: Bindings, db: Db) {
         // A connection acts in the workspace the person was in when they approved it, so it
         // never switches teams because they later signed in somewhere else.
         postLogin: {
-          page: "/consent",
+          page: productPath("/consent"),
           shouldRedirect: () => false,
           consentReferenceId: async ({ user }) => {
             const memberId = await consentMemberFor(db, user.id);

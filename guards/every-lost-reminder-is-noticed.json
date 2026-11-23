@@ -1,0 +1,14 @@
+{
+  "rule": "A lost reminder is named whichever reminder it was, and after its Holler closes",
+  "layer": "test",
+  "past": "The first overdue.ts could only see a lost first reminder on a Holler still live 48 hours after the invite, so a lost second reminder, or one on a 36-hour Holler, went unseen (review of #47 and #56)",
+  "check": "cd apps/web && pnpm exec vitest run src/server/services/overdue.test.ts -t 'reminder'",
+  "break": [
+    {
+      "file": "apps/web/src/server/services/overdue.ts",
+      "find": "      sql`min(coalesce(${recipients.answeredAt}, ${never}), coalesce(${hollers.closedAt}, ${never})) > ${recipients.reminderQueuedAt} + ${overdueAfterMinutes * MINUTE}`,\n",
+      "replace": "      waiting,\n      eq(recipients.remindersSent, 1),\n"
+    }
+  ],
+  "fails": "closed before it could be noticed"
+}

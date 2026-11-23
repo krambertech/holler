@@ -1,0 +1,13 @@
+{
+  "rule": "A change that Activity records is made inside recordChange or takeBack, and only services/audit.ts writes the activity table",
+  "layer": "lint",
+  "past": "#27's removeViewer deleted the viewer, then recorded it in a second statement; a Worker that stopped between the two left an access change nobody could see",
+  "check": "pnpm exec oxlint apps/web/src/server",
+  "break": [
+    {
+      "file": "apps/web/src/server/services/guard-probe.ts",
+      "write": "import { and, eq } from \"@holler/core/db\";\nimport { schema } from \"../db\";\nimport { activityOf, recordChange } from \"./audit\";\nimport type { ServiceContext } from \"./context\";\n\nexport async function removeViewer(ctx: ServiceContext, hollerId: string, memberId: string) {\n  const [removed] = await ctx.db\n    .delete(schema.viewers)\n    .where(and(eq(schema.viewers.hollerId, hollerId), eq(schema.viewers.memberId, memberId)))\n    .returning();\n  if (!removed) return;\n  await recordChange(\n    ctx,\n    activityOf(ctx, { action: \"viewer.removed\", subjectType: \"holler\", subjectId: hollerId }),\n    ctx.db.update(schema.recipients).set({ addedVia: \"viewer\" }),\n  );\n}\n"
+    }
+  ],
+  "fails": "holler(activity-with-write)"
+}
