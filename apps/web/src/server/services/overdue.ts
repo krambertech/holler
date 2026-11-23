@@ -1,17 +1,28 @@
-import { and, eq, gte, isNotNull, isNull, lte, type SQL } from "@holler/core/db";
+import { and, eq, gte, isNotNull, isNull, lte, or, type SQL, sql } from "@holler/core/db";
 import { type Db, schema } from "../db";
 
-const { hollers, recipients, workspaces } = schema;
+const { hollers, recipients, slackDeliveries, workspaces } = schema;
 
 const MINUTE = 60_000;
 export const overdueAfterMinutes = 15;
+const HOUR = 60 * MINUTE;
 const catchUpHours = 24;
+const deliveryKeptHours = 20;
+const firstReminderByHours = 48;
 
-export type OverdueWork = "send" | "close" | "close_work" | "invite" | "lost_invite" | "reminder";
+export type OverdueWork =
+  | "send"
+  | "close"
+  | "close_work"
+  | "lost_close_notice"
+  | "invite"
+  | "lost_invite"
+  | "reminder"
+  | "lost_reminder";
 
 export async function overdueWork(db: Db, now: Date): Promise<OverdueWork[]> {
   const late = new Date(now.getTime() - overdueAfterMinutes * MINUTE);
-  const recent = new Date(now.getTime() - catchUpHours * 60 * MINUTE);
+  const recent = new Date(now.getTime() - catchUpHours * HOUR);
   const live = eq(hollers.status, "live");
   const onHollers: Partial<Record<OverdueWork, SQL | undefined>> = {
     send: and(eq(hollers.status, "scheduled"), lte(hollers.sendAt, late)),
@@ -21,6 +32,12 @@ export async function overdueWork(db: Db, now: Date): Promise<OverdueWork[]> {
       isNull(hollers.closeQueuedAt),
       lte(hollers.closedAt, late),
       gte(hollers.closedAt, recent),
+    ),
+    lost_close_notice: and(
+      eq(hollers.status, "closed"),
+      lte(hollers.closeQueuedAt, late),
+      gte(hollers.closeQueuedAt, new Date(now.getTime() - deliveryKeptHours * HOUR)),
+      sql`not exists (select 1 from ${slackDeliveries} where ${slackDeliveries.id} = 'post:close_notice:' || ${hollers.id})`,
     ),
   };
   const waiting = and(live, isNull(recipients.answeredAt), isNull(recipients.failure));
@@ -32,6 +49,14 @@ export async function overdueWork(db: Db, now: Date): Promise<OverdueWork[]> {
       eq(hollers.remindersEnabled, true),
       isNotNull(recipients.dmTs),
       lte(recipients.nextReminderAt, late),
+    ),
+    lost_reminder: and(
+      waiting,
+      eq(hollers.remindersEnabled, true),
+      eq(recipients.remindersSent, 1),
+      isNull(recipients.lastRemindedAt),
+      lte(recipients.invitedAt, new Date(now.getTime() - firstReminderByHours * HOUR)),
+      or(isNull(recipients.snoozedUntil), lte(recipients.snoozedUntil, recent)),
     ),
   };
   const installed = isNull(workspaces.uninstalledAt);

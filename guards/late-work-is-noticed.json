@@ -1,5 +1,5 @@
 {
-  "rule": "A late send, invite, reminder or close is noticed within an hour, whatever made it late",
+  "rule": "A late send, close or invite, a lost invite, first reminder or close notice is named by /api/health/work",
   "layer": "test",
   "past": "#10 lost claimed invites and close work, and nothing but a reviewer would have noticed",
   "check": "cd apps/web && pnpm exec vitest run src/server/services/overdue.test.ts",
