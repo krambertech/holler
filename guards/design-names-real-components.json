@@ -1,0 +1,14 @@
+{
+  "rule": "Every component DESIGN.md names exists",
+  "layer": "lint",
+  "past": "#30 replaced EmptySection and NoResults with EmptyState, the kind of rename that leaves DESIGN.md naming what is gone",
+  "check": "pnpm check:design",
+  "break": [
+    {
+      "file": "DESIGN.md",
+      "find": "| `EmptyState`, `ErrorState` |",
+      "replace": "| `EmptySection`, `NoResults`, `ErrorState` |"
+    }
+  ],
+  "fails": "DESIGN.md names `EmptySection`, which nothing exports"
+}

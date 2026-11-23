@@ -1,0 +1,14 @@
+{
+  "rule": "A person who answers twice at once is recorded once",
+  "layer": "test",
+  "past": "preventive: a double tap in Slack sends two requests",
+  "check": "cd apps/web && pnpm exec vitest run src/server/services/delivery.test.ts -t 'taps five times'",
+  "break": [
+    {
+      "file": "apps/web/src/server/services/responses.ts",
+      "find": "        isNull(recipients.answeredAt),\n",
+      "replace": ""
+    }
+  ],
+  "fails": "records one answer when a person taps five times"
+}

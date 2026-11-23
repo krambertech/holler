@@ -1,0 +1,14 @@
+{
+  "rule": "DESIGN.md's colours match packages/design/tokens.css",
+  "layer": "lint",
+  "past": "#3 and #12 changed tokens such as --waiting-dot and --hover; DESIGN.md would still name the old colours",
+  "check": "pnpm check:design",
+  "break": [
+    {
+      "file": "packages/design/tokens.css",
+      "find": "--waiting-dot: oklch(0.6 0.13 70);",
+      "replace": "--waiting-dot: oklch(0.679 0.142 76.5);"
+    }
+  ],
+  "fails": "DESIGN.md colors.waiting-dot is"
+}
