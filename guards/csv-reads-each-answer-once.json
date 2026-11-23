@@ -1,0 +1,14 @@
+{
+  "rule": "A CSV export reads each answer and note a fixed number of times, however many responses a Holler has",
+  "layer": "test",
+  "past": "#19 filtered every answer for every cell, so 1,000 responses to 30 questions took 15.8 s of CPU",
+  "check": "cd apps/web && pnpm exec vitest run src/server/services/exports.test.ts -t 'as a Holler grows'",
+  "break": [
+    {
+      "file": "apps/web/src/server/services/exports.ts",
+      "find": "      const own = answersIn.cell(response.id, question.id);",
+      "replace": "      const own = data.answers.filter(\n        (a) => a.responseId === response.id && a.questionId === question.id,\n      );"
+    }
+  ],
+  "fails": "to be less than or equal to 2"
+}

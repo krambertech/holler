@@ -1,0 +1,56 @@
+name: Weekly
+
+on:
+  schedule:
+    - cron: "17 5 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+
+  drift:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm audit --prod --audit-level high
+      - run: node scripts/check-ruleset.mjs
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - run: pnpm deploy:health
+
+  report:
+    needs: [ci, drift]
+    if: always()
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      actions: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      RUN: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+    steps:
+      - name: Keep this schedule on when nobody commits for 60 days
+        run: gh api -X PUT "repos/$GH_REPO/actions/workflows/weekly.yml/enable"
+      - name: Open an issue, or add to the open one, when anything failed
+        if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
+        run: |
+          title="Weekly check failed on main"
+          open=$(gh issue list --state open --search "$title in:title" --json number --jq '.[0].number // empty')
+          if [[ -n "$open" ]]; then gh issue comment "$open" --body "Failed again: $RUN"
+          else gh issue create --title "$title" --body "Nothing changed on \`main\`, but a check that passed now fails: $RUN"; fi

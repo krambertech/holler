@@ -50,6 +50,13 @@
       "when": 1795294275604,
       "tag": "0006_repeating_rounds",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1795417260915,
+      "tag": "0007_reminder_claims",
+      "breakpoints": true
     }
   ]
 }

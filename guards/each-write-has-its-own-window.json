@@ -1,0 +1,14 @@
+{
+  "rule": "Two writes with the same label get their own crash windows",
+  "layer": "test",
+  "past": "The sweep named both recipient batches of a large send \"insert recipients\", so the listed window for the first hid a lost invite after the second (review of #55)",
+  "check": "pnpm --filter @holler/web exec vitest run src/server/crash-sweep -t \"tells apart two writes with the same label\"",
+  "break": [
+    {
+      "file": "apps/web/src/server/crash-sweep/life.ts",
+      "find": "    return times === 1 ? label : `${label} #${times}`;",
+      "replace": "    return label;"
+    }
+  ],
+  "fails": "insert recipients #2"
+}

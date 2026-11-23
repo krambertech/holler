@@ -1,3 +1,4 @@
+import { productPath } from "@holler/core";
 import { Hono } from "hono";
 import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 import type { AppEnv } from "../app";
@@ -29,7 +30,7 @@ const INSTALL_SYNC_PAGES = 4;
 
 type Problem = "denied" | "expired" | "enterprise" | "failed" | "not_configured";
 const toInstallPage = (problem?: Problem) =>
-  problem ? `/install?problem=${problem}` : "/install?installed=1";
+  productPath("/install", { search: problem ? { problem } : { installed: "1" } });
 
 export const slackOAuthRoutes = new Hono<AppEnv>()
   .get("/install", (c) => {

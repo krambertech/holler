@@ -1,13 +1,12 @@
 import { newId, nextRoundAt, type RoundOut, type RoundsOut } from "@holler/core";
-import { and, type BatchItem, desc, eq, inArray, not, or, sql } from "@holler/core/db";
-import { runBatch } from "../batch";
+import { and, type BatchItem, desc, eq, inArray, isNotNull, not, or, sql } from "@holler/core/db";
 import { schema } from "../db";
-import { auditStatement } from "./audit";
+import { activityOf, recordChange } from "./audit";
 import { memberOf, type ServiceContext, ServiceError } from "./context";
 import { getHoller, visibleTo } from "./hollers";
 import { resultsFor } from "./responses";
 
-const { hollers, questions, options, activity, recipients } = schema;
+const { hollers, questions, options, recipients } = schema;
 
 export const ROUNDS_SHOWN = 26;
 
@@ -61,7 +60,7 @@ export function roundOf(source: HollerRow, fresh: Pick<HollerRow, RoundKey>): Ho
 
 export interface NextRound {
   sendAt: Date;
-  statements: BatchItem<"sqlite">[];
+  schedule: () => Promise<unknown>;
 }
 
 export async function nextRound(
@@ -84,7 +83,7 @@ export async function nextRound(
   const id = newId("holler");
   const row = roundOf(source, {
     id,
-    status: "scheduled",
+    status: "draft",
     announceTs: null,
     sendAt,
     sentAt: null,
@@ -113,43 +112,34 @@ export async function nextRound(
               qs.map((q) => q.id),
             ),
           );
-  const statements: BatchItem<"sqlite">[] = [ctx.db.insert(hollers).values(row)];
+  const asked: BatchItem<"sqlite">[] = [];
   for (const question of qs) {
     const questionId = newId("question");
-    statements.push(ctx.db.insert(questions).values({ ...question, id: questionId, hollerId: id }));
+    asked.push(ctx.db.insert(questions).values({ ...question, id: questionId, hollerId: id }));
     for (const option of opts.filter((o) => o.questionId === question.id)) {
-      statements.push(
-        ctx.db.insert(options).values({ ...option, id: newId("option"), questionId }),
-      );
+      asked.push(ctx.db.insert(options).values({ ...option, id: newId("option"), questionId }));
     }
   }
-  statements.push(
-    auditStatement(ctx, {
-      action: "holler.scheduled",
-      subjectType: "holler",
-      subjectId: id,
-      data: { sendAt: sendAt.toISOString(), repeatOf: seriesId },
-    }),
-  );
-  statements.push(...unlessStillRepeating(ctx, id, seriesId));
-  return { sendAt, statements };
-}
-
-function unlessStillRepeating(
-  ctx: ServiceContext,
-  roundId: string,
-  seriesId: string,
-): BatchItem<"sqlite">[] {
   const stillRepeating = sql`exists (select 1 from hollers s where s.id = ${seriesId} and s.repeat_rule is not null)`;
-  const roundGone = sql`not exists (select 1 from hollers r where r.id = ${roundId})`;
-  return [
-    ctx.db.delete(hollers).where(and(eq(hollers.id, roundId), not(stillRepeating))),
-    ctx.db
-      .delete(activity)
-      .where(
-        and(eq(activity.subjectId, roundId), eq(activity.action, "holler.scheduled"), roundGone),
-      ),
-  ];
+  const schedule = () =>
+    recordChange(
+      ctx,
+      activityOf(ctx, {
+        action: "holler.scheduled",
+        subjectType: "holler",
+        subjectId: id,
+        data: { sendAt: sendAt.toISOString(), repeatOf: seriesId },
+      }),
+      ctx.db
+        .update(hollers)
+        .set({ status: "scheduled" })
+        .where(and(eq(hollers.id, id), stillRepeating)),
+      {
+        before: [ctx.db.insert(hollers).values(row), ...asked],
+        after: [ctx.db.delete(hollers).where(and(eq(hollers.id, id), not(stillRepeating)))],
+      },
+    );
+  return { sendAt, schedule };
 }
 
 export async function stopRepeating(ctx: ServiceContext, hollerId: string) {
@@ -171,22 +161,30 @@ export async function stopRepeating(ctx: ServiceContext, hollerId: string) {
     .from(hollers)
     .where(and(inSeries(hollers.repeatOfId), eq(hollers.status, "scheduled")));
   const now = ctx.now();
-  await runBatch(ctx.db, [
-    ctx.db
-      .delete(hollers)
-      .where(and(inSeries(hollers.repeatOfId), eq(hollers.status, "scheduled"))),
-    ctx.db.update(hollers).set({ repeatRule: null, updatedAt: now }).where(inSeries(hollers.id)),
-    ctx.db
-      .update(hollers)
-      .set({ repeatRule: null, updatedAt: now })
-      .where(inSeries(hollers.repeatOfId)),
-    auditStatement(ctx, {
+  await recordChange(
+    ctx,
+    activityOf(ctx, {
       action: "holler.repeat_stopped",
       subjectType: "holler",
       subjectId: seriesId,
       data: { removed: upcoming.length },
     }),
-  ]);
+    ctx.db
+      .update(hollers)
+      .set({ repeatRule: null, updatedAt: now })
+      .where(and(inSeries(hollers.id), isNotNull(hollers.repeatRule))),
+    {
+      after: [
+        ctx.db
+          .delete(hollers)
+          .where(and(inSeries(hollers.repeatOfId), eq(hollers.status, "scheduled"))),
+        ctx.db
+          .update(hollers)
+          .set({ repeatRule: null, updatedAt: now })
+          .where(inSeries(hollers.repeatOfId)),
+      ],
+    },
+  );
   return getHoller(ctx, seriesId);
 }
 

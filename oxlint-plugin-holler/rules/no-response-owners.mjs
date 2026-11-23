@@ -5,7 +5,7 @@ const message =
   "(services/own-answers.ts) read it, and only recordResponse and the dev seed write it, so results, exports, " +
   "the API, MCP and Slack can never say who gave an anonymous answer. docs/adr/0003.";
 
-const table = /\bresponse_owners\b/;
+const table = /\b(response_owners|responseOwners)\b/;
 
 export default defineRule({
   meta: { type: "problem", schema: [] },

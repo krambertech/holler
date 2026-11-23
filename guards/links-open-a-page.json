@@ -1,0 +1,14 @@
+{
+  "rule": "A link in the product goes through the router, so its page exists",
+  "layer": "lint",
+  "past": "#22 linked the thank-you to /answers/<id> with a plain anchor before that page existed; Home linked to /new the same way",
+  "check": "pnpm exec oxlint apps/web/src/client",
+  "break": [
+    {
+      "file": "apps/web/src/client/routes/respond.$id.tsx",
+      "find": "<Link to=\"/answers/$id\" params={{ id: holler.id }} />",
+      "replace": "<a href={`/answers/${holler.id}`} />"
+    }
+  ],
+  "fails": "holler(product-links)"
+}

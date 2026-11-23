@@ -4,6 +4,7 @@ export * from "./ids";
 export * from "./modes";
 export * from "./own-answers";
 export * from "./plans";
+export * from "./product-paths";
 export * from "./reminders";
 export * from "./repeats";
 export * from "./results";

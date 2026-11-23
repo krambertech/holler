@@ -1,4 +1,5 @@
 import { definePlugin } from "@oxlint/plugins";
+import activityWithWrite from "./rules/activity-with-write.mjs";
 import boundedInArray from "./rules/bounded-in-array.mjs";
 import noComments from "./rules/no-comments.mjs";
 import noEffectExpressionBody from "./rules/no-effect-expression-body.mjs";
@@ -6,12 +7,14 @@ import noMultiRowInsert from "./rules/no-multi-row-insert.mjs";
 import noResponseOwners from "./rules/no-response-owners.mjs";
 import noSpreadRows from "./rules/no-spread-rows.mjs";
 import noSqlLower from "./rules/no-sql-lower.mjs";
+import productLinks from "./rules/product-links.mjs";
 import signInLands from "./rules/sign-in-lands.mjs";
 import typedNavigation from "./rules/typed-navigation.mjs";
 
 export default definePlugin({
   meta: { name: "holler" },
   rules: {
+    "activity-with-write": activityWithWrite,
     "bounded-in-array": boundedInArray,
     "no-comments": noComments,
     "no-effect-expression-body": noEffectExpressionBody,
@@ -19,6 +22,7 @@ export default definePlugin({
     "no-response-owners": noResponseOwners,
     "no-spread-rows": noSpreadRows,
     "no-sql-lower": noSqlLower,
+    "product-links": productLinks,
     "sign-in-lands": signInLands,
     "typed-navigation": typedNavigation,
   },

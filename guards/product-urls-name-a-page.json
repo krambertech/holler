@@ -1,0 +1,14 @@
+{
+  "rule": "Every page the server can link to is in the route tree",
+  "layer": "types",
+  "past": "#10 linked a failed send to /hollers/<id>/edit, a page that has never existed",
+  "check": "cd apps/web && pnpm exec tsc -p tsconfig.json",
+  "break": [
+    {
+      "file": "packages/core/src/product-paths.ts",
+      "find": "  | \"/hollers/$id\"\n",
+      "replace": "  | \"/hollers/$id\"\n  | \"/hollers/$id/edit\"\n"
+    }
+  ],
+  "fails": "Property '\"/hollers/$id/edit\"' is missing in type"
+}

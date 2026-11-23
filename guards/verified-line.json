@@ -1,0 +1,8 @@
+{
+  "rule": "Name the verification in the pull request description.",
+  "layer": "ci",
+  "past": "preventive: merged changes did not have to say how they were verified.",
+  "check": "PR_BODY='Verified: pnpm verify' node scripts/check-verified.mjs",
+  "refuses": "PR_BODY='Verified: tested' node scripts/check-verified.mjs",
+  "fails": "names nothing that ran"
+}
