@@ -1,15 +1,6 @@
 import { isPublicRoutableHost } from "@better-auth/core/utils/host";
 import type { ClientMetadataResourceFetch } from "@better-auth/oauth-provider";
 
-/**
- * Fetches a Client ID Metadata Document for the CIMD plugin, on Workers.
- *
- * The plugin wants a transport that rejects special-use addresses and never follows
- * redirects. Workers cannot pin a DNS answer, but the platform refuses outbound connections to
- * private, loopback and link-local ranges, so a hostname that rebinds to one fails at the edge.
- * What is left here: HTTPS only, GET or HEAD only, no literal special-use hosts, and redirects
- * handed back unfollowed so the plugin rejects them.
- */
 export const fetchClientMetadataResource: ClientMetadataResourceFetch = async (input, init) => {
   const request = new Request(input, { ...init, redirect: "manual" });
   const url = new URL(request.url);

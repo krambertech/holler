@@ -1,0 +1,14 @@
+{
+  "rule": "The browser journeys pass the same strict types as the product",
+  "layer": "types",
+  "past": "No script ran e2e/tsconfig.json, which could not find Node's types, so e2e/a11y.ts passed an undefined baseURL unseen",
+  "check": "pnpm exec tsc -p e2e/tsconfig.json",
+  "break": [
+    {
+      "file": "e2e/fixtures.ts",
+      "find": "        ...(baseURL ? { baseURL } : {}),",
+      "replace": "        baseURL,"
+    }
+  ],
+  "fails": "e2e/fixtures.ts"
+}

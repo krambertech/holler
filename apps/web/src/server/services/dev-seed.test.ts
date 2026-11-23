@@ -16,8 +16,6 @@ beforeAll(async () => ({ db, raw, dispose } = await testDb()));
 afterAll(() => dispose());
 beforeEach(() => emptyDatabase(raw));
 
-// The verify recipes and every local session drive the seed on whatever day it is, so the seed
-// must leave the same things possible on every day of a month.
 const days = [
   "2026-11-01T00:30:00Z",
   "2026-11-03T12:00:00Z",
@@ -72,7 +70,6 @@ describe("the dev seed", () => {
         where: eq(schema.hollers.workspaceId, workspaceId),
       });
       for (const holler of hollers.filter((h) => h.status === "scheduled")) {
-        // getHoller lists every reason an unsent Holler cannot go out, at the seed's own time.
         expect((await getHoller(ctx, holler.id)).problems, holler.title).toEqual([]);
       }
       for (const holler of hollers.filter((h) => h.status === "closed")) {

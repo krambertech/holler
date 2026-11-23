@@ -25,7 +25,7 @@ async function outcome(settled: PromiseSettledResult<Response>) {
 describe("concurrent first dev sign-ins", () => {
   it("all succeed and seed once", async () => {
     const signIns = ["lead", "lead", "lead", "sender", "sender", "sender", "lead", "sender"].map(
-      (as) => app.request(`http://localhost:5280/api/dev/sign-in?as=${as}`, {}, env),
+      async (as) => app.request(`http://localhost:5280/api/dev/sign-in?as=${as}`, {}, env),
     );
     const settled = await Promise.allSettled(signIns);
     expect(await Promise.all(settled.map(outcome))).toEqual(signIns.map(() => 302));

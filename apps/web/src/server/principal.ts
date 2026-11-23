@@ -4,7 +4,6 @@ import { type Db, schema } from "./db";
 import type { Actor } from "./services/context";
 import { latestSlackClaims } from "./services/members";
 
-/** What a credential may do. A session can always write; a key or a connection may be read-only. */
 export type Scope = "read" | "write";
 
 export interface Principal {
@@ -17,7 +16,6 @@ export interface Principal {
   scope: Scope;
 }
 
-/** Why a key or token was refused, as the API answers it. */
 export interface CredentialProblem {
   status: 401 | 429;
   code: "unauthorized" | "rate_limited";
@@ -25,17 +23,14 @@ export interface CredentialProblem {
   retryAfter?: number;
 }
 
-/** API key permissions live under this name: `{ holler: ["read"] }` or `{ holler: ["read", "write"] }`. */
 export const API_KEY_PERMISSION = "holler";
 
-/** The access-token claim that names the member a connection acts as. Set at consent. */
 export const MCP_MEMBER_CLAIM = "holler_member";
 
 export function permissionsFor(scope: Scope): Record<string, string[]> {
   return { [API_KEY_PERMISSION]: scope === "write" ? ["read", "write"] : ["read"] };
 }
 
-/** Anything without "write" can only read. */
 export function scopeOfPermissions(
   permissions: Record<string, string[]> | null | undefined,
 ): Scope {
@@ -56,10 +51,6 @@ function principalOf(member: MemberRow, actor: Actor, scope: Scope): Principal {
   };
 }
 
-/**
- * Who is calling, from the session cookie. Null when nobody is signed in or the user has no
- * member row yet (signed in with Slack but the workspace has not installed Holler).
- */
 export async function principalFor(
   auth: Auth,
   db: Db,
@@ -76,10 +67,6 @@ export async function principalFor(
   );
 }
 
-/**
- * The member row a signed-in person acts as: the workspace of their most recent Slack sign-in,
- * or, without one (dev personas, or a token Slack did not give), their oldest membership.
- */
 export async function currentMemberFor(db: Db, userId: string): Promise<MemberRow | null> {
   const claims = await latestSlackClaims(db, userId);
   if (claims) {
@@ -99,7 +86,6 @@ export async function currentMemberFor(db: Db, userId: string): Promise<MemberRo
   return oldest ?? null;
 }
 
-/** The key from `Authorization: Bearer hlr_…` or `x-api-key`, if the request carries one. */
 export function apiKeyFrom(request: Request): string | null {
   const header = request.headers.get("x-api-key");
   if (header) return header.trim();
@@ -108,10 +94,6 @@ export function apiKeyFrom(request: Request): string | null {
   return match?.[1] ?? null;
 }
 
-/**
- * An API key acts as the member who made it, in the workspace it was made in. The member id
- * is in the key's metadata, so a person in two workspaces has keys that never cross over.
- */
 export async function principalForApiKey(
   auth: Auth,
   db: Db,
@@ -148,10 +130,6 @@ export async function principalForApiKey(
   );
 }
 
-/**
- * A verified MCP access token's claims, checked against the live consent. Tokens outlive a
- * disconnect by up to an hour, so the consent row, not the token, decides access and scope.
- */
 export async function principalForMcp(
   db: Db,
   claims: Record<string, unknown>,
@@ -201,10 +179,6 @@ function memberIdOf(metadata: unknown): string | null {
   return null;
 }
 
-/**
- * Scopes arrive as a space-separated string (RFC 9068), an array, or, from a consent row that
- * Better Auth serialised before Drizzle's JSON column did, a JSON string of an array.
- */
 export function scopesOf(value: unknown): string[] {
   if (Array.isArray(value)) return value.filter((s): s is string => typeof s === "string");
   if (typeof value !== "string") return [];
@@ -220,7 +194,6 @@ function safeJson(value: string): unknown {
   }
 }
 
-/** `tryAgainIn` is milliseconds in the error details; Retry-After wants whole seconds. */
 function retryAfterSeconds(error: unknown): number {
   const details = (error as { details?: { tryAgainIn?: unknown } } | null)?.details;
   const ms = typeof details?.tryAgainIn === "number" ? details.tryAgainIn : 60_000;

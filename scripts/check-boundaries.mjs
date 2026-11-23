@@ -21,7 +21,12 @@ function filesUnder(dir) {
 const rules = [
   {
     dir: "apps/web/dist/client",
-    forbidden: ["/api/dev/sign-in", "Holler design system", "holler-dev-persona-password"],
+    forbidden: [
+      "/api/dev/sign-in",
+      "Holler design system",
+      "holler-dev-persona-password",
+      "x-holler-dev-workspace",
+    ],
     why: "a developer tool reached the production product bundle",
   },
   {

@@ -2,7 +2,7 @@ import { type AnswerSurface, answerSurface, type HollerOut, type Mode } from "@h
 
 /**
  * What every Slack message about a Holler needs to know, loaded once by the delivery service.
- * Pure data, so the builders are pure functions with snapshot tests.
+ * Pure data, so the builders are pure functions.
  */
 export interface SlackHoller {
   id: string;

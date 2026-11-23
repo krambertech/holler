@@ -287,17 +287,19 @@ describe.each(everyExport)("every export of $who $mode hollers", ({ mode, anonym
     );
   });
 
-  it.runIf(anonymous)("opens at the threshold and says neither who nor when", async () => {
-    const early = await sentIn(mode, anonymous, people.slice(0, anonymousThreshold - 1));
-    await expect(exportCsv(early.ctx, early.holler.id)).rejects.toMatchObject({
-      code: "forbidden",
+  if (anonymous) {
+    it("opens at the threshold and says neither who nor when", async () => {
+      const early = await sentIn(mode, anonymous, people.slice(0, anonymousThreshold - 1));
+      await expect(exportCsv(early.ctx, early.holler.id)).rejects.toMatchObject({
+        code: "forbidden",
+      });
+      const { ctx, holler } = await sentIn(mode, anonymous, people.slice(0, anonymousThreshold));
+      const csv = await exportCsv(ctx, holler.id);
+      expect(csv).not.toMatch(/\bU[A-F]\b|Person|20\d\d-/);
+      const rows = csv.split("\r\n").slice(1, -1);
+      expect(rows).toEqual([...rows].sort());
     });
-    const { ctx, holler } = await sentIn(mode, anonymous, people.slice(0, anonymousThreshold));
-    const csv = await exportCsv(ctx, holler.id);
-    expect(csv).not.toMatch(/\bU[A-F]\b|Person|20\d\d-/);
-    const rows = csv.split("\r\n").slice(1, -1);
-    expect(rows).toEqual([...rows].sort());
-  });
+  }
 });
 
 function readsOf<T extends object>(rows: T[], count: () => void): T[] {

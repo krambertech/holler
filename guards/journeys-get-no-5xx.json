@@ -2,7 +2,7 @@
   "rule": "No journey page gets a 5xx",
   "layer": "browser",
   "past": "#35: reading Home past 100 Hollers answered 500, and a page that only draws a placeholder for it looks fine to every assertion",
-  "check": "pnpm exec playwright test --project=chromium --retries=1 -g 'a lead sees live, scheduled and closed'",
+  "check": "pnpm exec playwright test --project=chromium -g 'a lead sees live, scheduled and closed'",
   "break": [
     {
       "file": "apps/web/src/server/services/hollers.ts",

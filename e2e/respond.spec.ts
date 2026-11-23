@@ -1,13 +1,12 @@
 import type { APIRequestContext, Page } from "@playwright/test";
-import { expectAccessible, requestAs } from "./a11y";
+import { expectAccessible } from "./a11y";
 import { expect, test } from "./fixtures";
 
 let lead: APIRequestContext;
 
-test.beforeAll(async ({ baseURL }) => {
-  lead = await requestAs(baseURL, "lead");
+test.beforeEach(async ({ requestAs }) => {
+  lead = await requestAs("lead");
 });
-test.afterAll(() => lead.dispose());
 
 async function webSurvey(anonymous = false): Promise<{ id: string; url: string }> {
   const made = await lead.post("/api/dev/web-survey", { data: { anonymous } });

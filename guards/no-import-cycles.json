@@ -1,0 +1,14 @@
+{
+  "rule": "No file imports itself through other files",
+  "layer": "architecture",
+  "past": "#24's services/slack-home.ts and services/delivery.ts import each other; on main the same edit is delivery.ts importing back from reminders.ts",
+  "check": "node scripts/check-architecture.mjs",
+  "break": [
+    {
+      "file": "apps/web/src/server/services/delivery.ts",
+      "find": "import { respondUrl } from \"./respond-links\";",
+      "replace": "import { snoozeReminder } from \"./reminders\";\nimport { respondUrl } from \"./respond-links\";"
+    }
+  ],
+  "fails": "import cycle: apps/web/src/server/services/delivery.ts -> apps/web/src/server/services/reminders.ts"
+}

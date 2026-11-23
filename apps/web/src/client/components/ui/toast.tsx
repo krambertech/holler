@@ -216,10 +216,7 @@ function Toaster({
   );
 }
 
-const createToastManager = ToastPrimitive.createToastManager;
-
 export {
-  createToastManager,
   Toast,
   ToastAction,
   ToastClose,

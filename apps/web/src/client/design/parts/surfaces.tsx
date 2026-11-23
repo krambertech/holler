@@ -10,7 +10,7 @@ export const surfaces: Group = {
   entries: [
     {
       slug: "plate",
-      name: "Plate, PlateRow, PlateStrip, Separator",
+      name: "Plate, PlateRow, PlateStrip",
       source: "components/ui/plate.tsx",
       note: "Never nest a plate in a plate. The strip says the one thing worth acting on.",
       Demo: () => (

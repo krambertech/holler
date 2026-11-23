@@ -1,0 +1,19 @@
+{
+  "rule": "A recorded size limit never rises, and falls when its file shrinks",
+  "layer": "architecture",
+  "past": "#24's interaction handler, if its limit were raised instead of the handler split",
+  "check": "node scripts/check-limits.mjs HEAD",
+  "break": [
+    {
+      "file": "apps/web/src/server/slack/interactions.ts",
+      "find": "  if (payload.type !== \"block_actions\") return c.body(null, 200);",
+      "replace": "  if (payload.type === \"message_action\" && payload.callback_id === aboutMessageShortcutId) {\n    if (!payload.trigger_id) return c.body(null, 200);\n    const slack = await slackFor(c.env, db, workspaceId);\n    const sender = await slackSenderContext(base, slackUserId);\n    const url = permalinkOf(payload);\n    await slack.openView({\n      triggerId: payload.trigger_id,\n      view: sender\n        ? quickPulseModal({ about: url ? { url } : null }, emptyQuickPulse, c.env.PRODUCT_URL)\n        : signInView(c.env.PRODUCT_URL),\n    });\n    return c.body(null, 200);\n  }\n\n  if (payload.type !== \"block_actions\") return c.body(null, 200);"
+    },
+    {
+      "file": "oxlint-limits.json",
+      "find": "\"files\": [\"apps/web/src/server/slack/interactions.ts\"],\n      \"rules\": {\n        \"eslint/complexity\": [\n          \"error\",\n          {\n            \"max\": 55",
+      "replace": "\"files\": [\"apps/web/src/server/slack/interactions.ts\"],\n      \"rules\": {\n        \"eslint/complexity\": [\n          \"error\",\n          {\n            \"max\": 60"
+    }
+  ],
+  "fails": "rose from 55 to 60"
+}
