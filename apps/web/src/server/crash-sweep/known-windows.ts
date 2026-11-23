@@ -94,11 +94,6 @@ export const knownWindows: KnownWindow[] = [
     breaks: ["answer"],
   },
   {
-    operation: "queueDueReminders",
-    failure: "killed after update recipients: reminders_sent, next_reminder_at",
-    breaks: ["reminded", "rhythm"],
-  },
-  {
     operation: "deliver invite",
     failure: "killed after Slack posts invite",
     breaks: ["reminded", "rhythm"],
@@ -129,6 +124,11 @@ export const knownWindows: KnownWindow[] = [
     failure:
       "killed after update recipients: reminders_sent, next_reminder_at + insert activity + update hollers: reminded_at",
     breaks: ["reminderNow", "reminded", "rhythm"],
+  },
+  {
+    operation: "queueDueReminders",
+    failure: "killed after update recipients: reminders_sent, reminder_queued_at, next_reminder_at",
+    breaks: ["reminded", "rhythm"],
   },
   {
     operation: "deliver reminder",
