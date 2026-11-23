@@ -1,0 +1,14 @@
+{
+  "rule": "New client and site lines use Holler tokens and logical directions, never a raw colour, a stock Tailwind colour or a physical side",
+  "layer": "lint",
+  "past": "Checked since the foundations (7e28e34); nothing has broken it, and a stock grey stays day grey at night because dark mode is its own palette",
+  "check": "pnpm check:styling",
+  "break": [
+    {
+      "file": "apps/web/src/client/components/settings/role-select.tsx",
+      "find": "\"h-8 appearance-none rounded-sm bg-plate ps-3 pe-8 text-ink",
+      "replace": "\"h-8 appearance-none rounded-sm bg-white pl-3 pr-8 text-gray-900"
+    }
+  ],
+  "fails": "stock Tailwind colour text-gray-900"
+}

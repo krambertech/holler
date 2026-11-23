@@ -1,0 +1,14 @@
+{
+  "rule": "The web form shows a follow-up for exactly the answers the server keeps a note for",
+  "layer": "test",
+  "past": "preventive: #22 added the form beside the server's own rule, so both read noteAsked",
+  "check": "cd apps/web && pnpm exec vitest run src/server/services/respond.test.ts -t 'shows a follow-up for exactly'",
+  "break": [
+    {
+      "file": "packages/core/src/answers.ts",
+      "find": "    if (!noteAsked(question, picked)) {",
+      "replace": "    if (!noteAsked(question, picked) && picked.length === 0) {"
+    }
+  ],
+  "fails": "shows a follow-up for exactly the answers"
+}

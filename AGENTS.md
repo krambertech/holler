@@ -20,7 +20,7 @@ Holler needs Node 24 (`.nvmrc`).
 pnpm verify
 ```
 
-It runs formatting, lint, the design, styling and migration checks, typechecking, every test, both builds and the bundle boundary check. A bug fix ships with a check that fails for its whole class, and a row in the Enforced rules table; [`docs/testing.md`](docs/testing.md) says how. `pnpm fix` writes oxfmt's formatting and Oxlint's fixes. For a change a person sees, also run `pnpm test:e2e` and prove it with the [`verify`](.agents/skills/verify/SKILL.md) skill: it drives each feature the diff reaches at 1280 px and 375 px, in day and night, and keeps the evidence. A product change is not done until it has been driven.
+It runs formatting, lint, the design, styling and migration checks, typechecking, every test, both builds and the bundle boundary check. A bug fix ships with a check that fails for its whole class, and a guard that proves it (Guards, below). `pnpm fix` writes oxfmt's formatting and Oxlint's fixes. For a change a person sees, also run `pnpm test:e2e` and prove it with the [`verify`](.agents/skills/verify/SKILL.md) skill: it drives each feature the diff reaches at 1280 px and 375 px, in day and night, and keeps the evidence. A product change is not done until it has been driven.
 
 Open pull requests with the [`open-pr`](.agents/skills/open-pr/SKILL.md) skill and the [template](.github/pull_request_template.md). For branches, commit messages, pull request titles and merging, follow [`docs/git-workflow.md`](docs/git-workflow.md).
 
@@ -50,8 +50,18 @@ Project skills live in `.agents/skills/`; `.claude/skills` links to it so every 
 
 **D1.** At most 100 bound values per statement: insert one row per statement inside a batch. SQLite's `lower()` is ASCII-only: fold in JavaScript and store a `search_*` column.
 
-## Enforced rules
+## Guards
 
+Every rule a check enforces is one file in [`guards/`](guards/): the rule, the past mistake it stops, the check, and the edit that brings the mistake back. `pnpm guards` lists them all. CI makes each edit in a scratch copy and fails when the check still passes, so a check that stops working is found before it is trusted ([ADR 0004](docs/adr/0004-every-rule-proves-it-can-fail.md)).
+
+A bug fix ships with a guard for its whole class, at the first of these that can hold it:
+
+1. **Architecture.** Reshape the code so the mistake cannot be written.
+2. **Types.** Make it a type error.
+3. **Lint.** A rule in `oxlint-plugin-holler/rules/` whose message names the fix.
+4. **Test.** Real D1, real services, a fake only for Slack and the queue.
+
+Write `guards/<rule>.json` beside the fix and run `pnpm guards:prove <rule>`. When `pnpm check` says a guard's code moved, rewrite its `break` as the edit that would bring the mistake back today. Delete a guard only when its mistake can no longer be written, and say so in the pull request.
 | Rule                                                                        | Check                                                |
 | --------------------------------------------------------------------------- | ---------------------------------------------------- |
 | Only services touch Drizzle                                                 | Oxlint `no-restricted-imports` on routes, Slack and MCP |

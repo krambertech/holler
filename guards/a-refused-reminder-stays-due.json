@@ -1,0 +1,14 @@
+{
+  "rule": "A reminder the queue refused is due again on the next run",
+  "layer": "test",
+  "past": "The class of #10, where close claims were lost when the queue refused one Holler's work",
+  "check": "cd apps/web && pnpm exec vitest run src/server/services/delivery.test.ts -t 'leaves the reminders due'",
+  "break": [
+    {
+      "file": "apps/web/src/server/services/reminders.ts",
+      "find": "} - 1`, nextReminderAt: now })",
+      "replace": "} - 1`, nextReminderAt: null })"
+    }
+  ],
+  "fails": "leaves the reminders due for the next run"
+}

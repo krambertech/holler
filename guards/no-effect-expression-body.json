@@ -1,0 +1,14 @@
+{
+  "rule": "No effect returns a value that is not its cleanup",
+  "layer": "lint",
+  "past": "#3 wrote FieldLabel's effect and #15 the audience picker's as () => expression, whose result React calls as a cleanup; #22 found it",
+  "check": "pnpm exec oxlint apps/web/src/client",
+  "break": [
+    {
+      "file": "apps/web/src/client/components/ui/field.tsx",
+      "find": "  React.useLayoutEffect(() => {\n    return claimLabelId?.(ownId);\n  }, [claimLabelId, ownId]);",
+      "replace": "  React.useLayoutEffect(() => claimLabelId?.(ownId), [claimLabelId, ownId]);"
+    }
+  ],
+  "fails": "holler(no-effect-expression-body)"
+}

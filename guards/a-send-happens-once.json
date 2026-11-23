@@ -1,0 +1,14 @@
+{
+  "rule": "A send happens once when callers race",
+  "layer": "test",
+  "past": "preventive: without the guarded update, five clicks send five times",
+  "check": "cd apps/web && pnpm exec vitest run src/server/services/delivery.test.ts -t 'sent five times'",
+  "break": [
+    {
+      "file": "apps/web/src/server/services/delivery.ts",
+      "find": "    .where(and(eq(hollers.id, holler.id), inArray(hollers.status, [\"draft\", \"scheduled\"])))",
+      "replace": "    .where(eq(hollers.id, holler.id))"
+    }
+  ],
+  "fails": "sends once when the same Holler is sent five times"
+}

@@ -28,7 +28,7 @@ Done when every check that applies has passed on the final diff, or you can name
 ## 3. Open or update it
 
 - Commit, push the branch, and title the PR `type(scope): imperative summary` per the git workflow.
-- Write the body from [the template](../../../.github/pull_request_template.md): copy it to a temporary file, fill it, delete every guidance comment and every unused optional section. Verification lists only checks that ran, with the verify evidence folder.
+- Write the body from [the template](../../../.github/pull_request_template.md) using [the description rules](../../../docs/git-workflow.md#write-the-pull-request-description). Copy it to a temporary file and pass it with `--body-file`; delete guidance comments and unused optional sections.
 - Read the PR back: base `main`, title, body, attached images, displayed diff.
 
 ## 4. Supervise it

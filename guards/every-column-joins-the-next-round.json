@@ -1,0 +1,14 @@
+{
+  "rule": "Every Holler column is copied to the next round or set for each round",
+  "layer": "types",
+  "past": "preventive: a new column would silently reset, or repeat, on the next round",
+  "check": "pnpm --filter @holler/web typecheck",
+  "break": [
+    {
+      "file": "apps/web/src/server/services/rounds.ts",
+      "find": "  repeatRule: \"copy\",\n",
+      "replace": ""
+    }
+  ],
+  "fails": "repeatRule"
+}

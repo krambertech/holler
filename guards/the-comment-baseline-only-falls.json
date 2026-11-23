@@ -1,0 +1,14 @@
+{
+  "rule": "An older file never gains a comment",
+  "layer": "test",
+  "past": "main went red when #19 landed comments just before #20 banned them, and 10 later runs failed on it",
+  "check": "pnpm check:comments",
+  "break": [
+    {
+      "file": "apps/web/src/server/services/usage.ts",
+      "find": "import { and, eq, gte, isNotNull, sql } from \"@holler/core/db\";",
+      "replace": "// Says how much is left.\nimport { and, eq, gte, isNotNull, sql } from \"@holler/core/db\";"
+    }
+  ],
+  "fails": "comment lines, "
+}
