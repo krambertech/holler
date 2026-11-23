@@ -1,0 +1,14 @@
+{
+  "rule": "An announcement the queue refused is posted by a later cron pass",
+  "layer": "test",
+  "past": "#10 gave back the invites of a refused batch and dropped its announcement for good",
+  "check": "cd apps/web && pnpm exec vitest run src/server/crash-sweep -t 'through.*sendHoller$'",
+  "break": [
+    {
+      "file": "apps/web/src/server/cron.ts",
+      "find": "    announced: () => queueMissingAnnouncements(env, db, at),\n",
+      "replace": ""
+    }
+  ],
+  "fails": "New crash window in sendHoller. Failure: queue invite + announce refused. Broken: the channel gets the announcement"
+}

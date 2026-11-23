@@ -1,0 +1,14 @@
+{
+  "rule": "A typed link names a page in the route tree",
+  "layer": "types",
+  "past": "#21 and #22 linked to pages that did not exist yet, and Slack messages linked to /hollers/<id>/edit, which never did",
+  "check": "cd apps/web && pnpm exec tsc -p tsconfig.json",
+  "break": [
+    {
+      "file": "apps/web/src/client/routes/respond.$id.tsx",
+      "find": "<Link to=\"/answers/$id\" params",
+      "replace": "<Link to=\"/hollers/$id/edit\" params"
+    }
+  ],
+  "fails": "Type '\"/hollers/$id/edit\"' is not assignable to type"
+}

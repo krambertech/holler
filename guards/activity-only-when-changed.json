@@ -1,0 +1,14 @@
+{
+  "rule": "Activity records only a change that happened, however many callers race for it",
+  "layer": "test",
+  "past": "#27 recorded viewer.added for a viewer another request inserted; on main sendHoller and sendDueHollers recorded twice and sent two DMs",
+  "check": "cd apps/web && pnpm exec vitest run src/server/services/audit.test.ts -t 'another caller made first'",
+  "break": [
+    {
+      "file": "apps/web/src/server/services/audit.ts",
+      "find": " where changes() > 0",
+      "replace": ""
+    }
+  ],
+  "fails": "records nothing for an insert another caller made first"
+}

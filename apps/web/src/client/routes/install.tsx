@@ -1,4 +1,4 @@
-import type { InstallStatus } from "@holler/core";
+import { type InstallStatus, productPath } from "@holler/core";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
@@ -123,6 +123,7 @@ function AlreadyAdded() {
 
 /** Someone signed in to the wrong Slack workspace signs out and picks another. */
 function SignInAgain() {
+  const navigate = useNavigate();
   const [pending, setPending] = useState(false);
   return (
     <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-ink-2">
@@ -135,7 +136,7 @@ function SignInAgain() {
         onClick={async () => {
           setPending(true);
           await authClient.signOut();
-          window.location.assign("/sign-in");
+          await navigate({ to: "/sign-in", reloadDocument: true });
         }}
       >
         Sign in again
@@ -153,7 +154,10 @@ function SignInAfterInstall() {
   async function signIn() {
     setPending(true);
     setError(null);
-    const result = await authClient.signIn.social({ provider: "slack", callbackURL: "/" });
+    const result = await authClient.signIn.social({
+      provider: "slack",
+      callbackURL: productPath("/"),
+    });
     if (result.error) {
       setPending(false);
       setError("Unable to start Sign in with Slack. Try the button again.");

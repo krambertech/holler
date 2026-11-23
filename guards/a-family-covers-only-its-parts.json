@@ -1,0 +1,14 @@
+{
+  "rule": "A design site entry covers its own parts, never a name that only starts the same",
+  "layer": "ci",
+  "past": "check:design-coverage passed a new MarkdownNote because Mark had a page",
+  "check": "pnpm check:design-coverage",
+  "break": [
+    {
+      "file": "apps/web/src/client/components/uninstalled-notice.tsx",
+      "find": "import { Unplug } from \"lucide-react\";",
+      "replace": "import { Unplug } from \"lucide-react\";\nexport function MarkdownNote() {\n  return null;\n}"
+    }
+  ],
+  "fails": "MarkdownNote has no page"
+}

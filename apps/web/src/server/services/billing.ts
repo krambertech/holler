@@ -3,11 +3,10 @@ import { and, eq, gt } from "@holler/core/db";
 import { createPolarCore, type models, type webhooks } from "@polar-sh/sdk/2026-10";
 import { createCheckouts } from "@polar-sh/sdk/2026-10/services/checkouts";
 import { createCustomerSessions } from "@polar-sh/sdk/2026-10/services/customer_sessions";
-import { runBatch } from "../batch";
 import type { Db } from "../db";
 import { schema } from "../db";
 import type { Bindings } from "../env";
-import { auditStatement } from "./audit";
+import { activityOf, recordChange } from "./audit";
 import { memberOf, type ServiceContext, ServiceError } from "./context";
 import { usageSummary } from "./usage";
 
@@ -310,9 +309,9 @@ export async function applyPolarEvent(
   }
 
   const ctx: ServiceContext = { db, workspaceId, actor: { via: "system" }, now: deps.now };
-  await runBatch(db, [
-    db.update(workspaces).set(next).where(eq(workspaces.id, workspaceId)),
-    auditStatement(ctx, {
+  await recordChange(
+    ctx,
+    activityOf(ctx, {
       action: "plan.changed",
       subjectType: "workspace",
       subjectId: workspaceId,
@@ -325,6 +324,7 @@ export async function applyPolarEvent(
       },
     }),
     record("applied"),
-  ]);
+    { after: [db.update(workspaces).set(next).where(eq(workspaces.id, workspaceId))] },
+  );
   return "applied";
 }

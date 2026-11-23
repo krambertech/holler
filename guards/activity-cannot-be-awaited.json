@@ -1,0 +1,14 @@
+{
+  "rule": "Activity is a value only recordChange can turn into a row, so awaiting it or writing it alone is a type error",
+  "layer": "types",
+  "past": "closeHoller on main closed a Holler, then wrote its Activity in a second statement (also remindWaiting, addNoteFromSlack and createApiKey)",
+  "check": "pnpm --filter @holler/web exec tsc -p tsconfig.worker.json",
+  "break": [
+    {
+      "file": "apps/web/src/server/services/delivery.ts",
+      "find": "  const [closed] = await recordChange(\n    ctx,\n    activityOf(ctx, {\n      action: \"holler.closed\",\n      subjectType: \"holler\",\n      subjectId: id,\n      data: { reason: \"creator\" },\n    }),\n    ctx.db\n      .update(hollers)\n      .set({ status: \"closed\", closedAt: now, updatedAt: now })\n      .where(and(eq(hollers.id, id), eq(hollers.status, \"live\")))\n      .returning({ id: hollers.id }),\n  );\n  if (closed) {\n",
+      "replace": "  const [closed] = await ctx.db\n    .update(hollers)\n    .set({ status: \"closed\", closedAt: now, updatedAt: now })\n    .where(and(eq(hollers.id, id), eq(hollers.status, \"live\")))\n    .returning({ id: hollers.id });\n  if (closed) {\n    await activityOf(ctx, {\n      action: \"holler.closed\",\n      subjectType: \"holler\",\n      subjectId: id,\n      data: { reason: \"creator\" },\n    });\n"
+    }
+  ],
+  "fails": "TS1320"
+}

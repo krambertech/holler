@@ -1,0 +1,14 @@
+{
+  "rule": "The server builds a product link from a page it names, never from text",
+  "layer": "lint",
+  "past": "#10 sent people whose scheduled Holler failed to /hollers/<id>/edit, a page that has never existed",
+  "check": "pnpm exec oxlint apps/web/src/server",
+  "break": [
+    {
+      "file": "apps/web/src/server/services/delivery.ts",
+      "find": "            send.reason,\n            productUrl(env, \"/hollers/$id\", { params: { id: row.id } }),",
+      "replace": "            send.reason,\n            `${env.PRODUCT_URL}/hollers/${row.id}/edit`,"
+    }
+  ],
+  "fails": "holler(product-links)"
+}
