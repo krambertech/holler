@@ -1,7 +1,3 @@
-/**
- * Ids are a type prefix and 16 random base32 characters: `hol_k3v9q2m8x1c4b7nd`. The prefix
- * says what an id points at in a log line or an API payload; the rest is 80 bits of randomness.
- */
 const ALPHABET = "0123456789abcdefghjkmnpqrstvwxyz";
 
 export const idPrefixes = {
@@ -28,7 +24,6 @@ export function newId(kind: IdKind): string {
   return `${idPrefixes[kind]}_${randomToken(16)}`;
 }
 
-/** A report link's secret: 32 characters, 160 bits. */
 export function newReportToken(): string {
   return randomToken(32);
 }

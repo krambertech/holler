@@ -114,7 +114,6 @@ describe("anonymous hollers", () => {
   });
 });
 
-/** A live survey with one question of each new kind, sent to UA–UF. */
 async function extrasHoller(anonymous = false) {
   const fixture = await workspaceFixture(db);
   const holler = await createDraft(fixture.ctx, {
@@ -256,7 +255,6 @@ describe("Other and follow-up notes", () => {
       field: single.id,
       message: "This question does not ask for a note.",
     });
-    // The follow-up shows only after Planning (0) or Other (3).
     await expect(
       answer("UA", { multi: { questionId: multi.id, optionIds: [option("Demos")], note: "Fun" } }),
     ).rejects.toMatchObject({ field: multi.id });

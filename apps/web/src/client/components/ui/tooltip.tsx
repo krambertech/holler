@@ -114,11 +114,4 @@ function TooltipContent({
   );
 }
 
-/**
- * One tooltip shared by many controls, bound to them by a handle. A field of small controls
- * that all want the same popup pays for one root instead of one each; the payload each trigger
- * carries is what the root renders. Base UI's `createHandle`.
- */
-const createTooltipHandle = TooltipPrimitive.createHandle;
-
-export { createTooltipHandle, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger };
+export { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger };

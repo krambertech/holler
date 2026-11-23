@@ -1,0 +1,14 @@
+{
+  "rule": "Drizzle comes from @holler/core/db, so the workspace builds one copy",
+  "layer": "lint",
+  "past": "preventive: packages/core/src/db.ts said so in a comment, which nothing enforced",
+  "check": "pnpm exec oxlint apps/web/src/server/services",
+  "break": [
+    {
+      "file": "apps/web/src/server/services/usage.ts",
+      "find": "import { and, eq, gte, isNotNull, sql } from \"@holler/core/db\";",
+      "replace": "import { and, eq, gte, isNotNull, sql } from \"drizzle-orm\";"
+    }
+  ],
+  "fails": "Import Drizzle from @holler/core/db"
+}

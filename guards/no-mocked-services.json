@@ -1,0 +1,14 @@
+{
+  "rule": "A server test runs the real services on a real database, with a fake only for Slack and the queue",
+  "layer": "lint",
+  "past": "#4 tested sending through the API and MCP against mocks of services/delivery and services/exports, so close, remind and export were never run through either door and swapping the remind and close services passed every test",
+  "check": "pnpm exec oxlint apps/web/src/server",
+  "break": [
+    {
+      "file": "apps/web/src/server/routes/v1/v1.test.ts",
+      "find": "import { afterAll, beforeAll, describe, expect, it } from \"vitest\";\nimport { app } from \"../../app\";",
+      "replace": "import { afterAll, beforeAll, describe, expect, it, vi } from \"vitest\";\nimport { app } from \"../../app\";\nvi.mock(\"../../services/delivery\", async () => {\n  const { getHoller } = await import(\"../../services/hollers\");\n  const echo = vi.fn((ctx, _env, id: string) => getHoller(ctx, id));\n  return { sendHoller: echo, closeHoller: echo, remindWaiting: echo };\n});"
+    }
+  ],
+  "fails": "holler(no-mocked-services)"
+}

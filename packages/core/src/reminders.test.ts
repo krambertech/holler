@@ -21,7 +21,6 @@ describe("nextReminder", () => {
       "America/New_York",
       new Date("2026-11-16T21:00:00Z"),
     );
-    // 20:00 UTC + 24h is 15:00 in New York, inside working hours.
     expect(next?.dueAt.toISOString()).toBe("2026-11-17T20:00:00.000Z");
   });
 
@@ -51,7 +50,6 @@ describe("nextReminder", () => {
 });
 
 describe("the rhythm's rules hold everywhere", () => {
-  // Whole, half and quarter-hour offsets, both hemispheres' daylight saving, UTC-11 to UTC+14.
   const zones = [
     "UTC",
     "Europe/Tallinn",
@@ -64,7 +62,6 @@ describe("the rhythm's rules hold everywhere", () => {
     null,
   ];
   const HOUR = 3600_000;
-  // Every 5 hours from 1 March to 10 April 2026: across Europe's and America's clock changes.
   const starts = Array.from(
     { length: 200 },
     (_, i) => new Date(Date.UTC(2026, 2, 1) + i * 5 * HOUR),
@@ -106,7 +103,6 @@ describe("the rhythm's rules hold everywhere", () => {
         }
       }
     }
-    // The sweep must exercise the rules, not skip them all.
     expect(checked).toBeGreaterThan(5000);
   });
 
