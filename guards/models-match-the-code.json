@@ -1,0 +1,19 @@
+{
+  "rule": "A model in formal/ is confirmed again whenever the code it describes changes",
+  "layer": "model",
+  "past": "#10's review changed how queueCloseWork claims, which is the step the delivery model describes; a model left behind would prove the old code",
+  "check": "pnpm check:models:sync",
+  "break": [
+    {
+      "file": "apps/web/src/server/services/delivery.ts",
+      "find": "  for (const candidate of candidates) {\n    const [holler] = await db",
+      "replace": "  for (const candidate of candidates)\n    await db.update(hollers).set({ closeQueuedAt: now }).where(eq(hollers.id, candidate.id));\n  for (const candidate of candidates) {\n    const [holler] = await db"
+    },
+    {
+      "file": "apps/web/src/server/services/delivery.ts",
+      "find": "      .where(and(eq(hollers.id, candidate.id), isNull(hollers.closeQueuedAt)))",
+      "replace": "      .where(eq(hollers.id, candidate.id))"
+    }
+  ],
+  "fails": "delivery.ts#queueCloseWork changed"
+}
