@@ -5,9 +5,10 @@
 // `--write` records new files. It never rewrites a recorded hash: edit the manifest by hand only
 // when a migration was provably never applied anywhere, and say so in the pull request.
 
+import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { cpSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
 const root = resolve(import.meta.dirname, "..");
@@ -26,6 +27,36 @@ export function compare(manifest, files) {
   return { problems, unrecorded };
 }
 
+export function missingMigration() {
+  const web = resolve(root, "apps/web");
+  const copy = mkdtempSync(join(web, ".migrations-check-"));
+  try {
+    cpSync(dir, copy, { recursive: true });
+    const before = readdirSync(copy).length;
+    const run = spawnSync(
+      "pnpm",
+      [
+        "exec",
+        "drizzle-kit",
+        "generate",
+        "--dialect=sqlite",
+        "--schema=../../packages/core/src/schema/index.ts",
+        `--out=./${copy.slice(web.length + 1)}`,
+        "--name=unwritten",
+      ],
+      { cwd: web, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] },
+    );
+    if (run.status !== 0) {
+      return `drizzle-kit could not read the schema, or needs an answer about a rename:\n${run.stdout}${run.stderr}`;
+    }
+    if (readdirSync(copy).length === before) return null;
+    const sql = readdirSync(copy).find((name) => name.endsWith("_unwritten.sql"));
+    return `The schema has a change no migration makes: run \`pnpm db:generate\`, then \`node scripts/check-migrations.mjs --write\`\n${readFileSync(join(copy, sql), "utf8")}`;
+  } finally {
+    rmSync(copy, { recursive: true, force: true });
+  }
+}
+
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const files = Object.fromEntries(
     readdirSync(dir)
@@ -38,7 +69,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
           .digest("hex"),
       ]),
   );
-  const manifest = existsSync(manifestPath) ? JSON.parse(readFileSync(manifestPath, "utf8")) : {};
+  const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
   const { problems, unrecorded } = compare(manifest, files);
   if (process.argv.includes("--write")) {
     for (const name of unrecorded) manifest[name] = files[name];
@@ -51,6 +82,8 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
       ),
     );
   }
+  const missing = missingMigration();
+  if (missing) problems.push(missing);
   if (problems.length > 0) {
     console.error(problems.join("\n"));
     process.exit(1);

@@ -38,27 +38,23 @@ test("leaves centring, logical utilities and prose alone", () => {
   assert.deepEqual(problemsIn("apps/site/src/x.tsx", "// reads right-to-left in Arabic"), []);
 });
 
-test("checks only added lines, and honours the allow comment", () => {
-  const diff = [
-    "diff --git a/apps/site/src/mark.tsx b/apps/site/src/mark.tsx",
-    "--- a/apps/site/src/mark.tsx",
-    "+++ b/apps/site/src/mark.tsx",
-    "@@ -10,1 +10,4 @@",
-    '-  fill="#111111"',
-    `+  // ${ALLOW}: the Google mark's own colours`,
-    '+  fill="#4285F4"',
-    '+  <div className="pl-2" />',
-    '+  fill="#34A853"',
+test("reads every line, and honours the allow comment on it or above it", () => {
+  const text = [
+    `  // ${ALLOW}: the Google mark's own colours`,
+    '  fill="#4285F4"',
+    '  <div className="pl-2" />',
+    '  fill="#34A853"',
   ].join("\n");
-  assert.deepEqual(check(diff), [
-    "apps/site/src/mark.tsx:12: physical pl-2: use ps-2",
-    "apps/site/src/mark.tsx:13: raw colour #34A853: use a Holler token such as bg-plate or text-ink-2; dark mode is its own palette, not an inversion",
+  assert.deepEqual(check([{ file: "apps/site/src/mark.tsx", text }]), [
+    "apps/site/src/mark.tsx:3: physical pl-2: use ps-2",
+    "apps/site/src/mark.tsx:4: raw colour #34A853: use a Holler token such as bg-plate or text-ink-2; dark mode is its own palette, not an inversion",
   ]);
 });
 
-test("skips tests and generated files", () => {
-  const diff = ["+++ b/apps/web/src/client/x.test.tsx", "@@ -0,0 +1 @@", '+ "#fff"'].join("\n");
-  assert.deepEqual(check(diff), []);
+test("white and black are stock colours too", () => {
+  const found = problemsIn("apps/web/src/client/x.tsx", 'className="bg-white text-black"');
+  assert.equal(found.length, 2);
+  assert.deepEqual(problemsIn("apps/web/src/client/x.tsx", 'className="text-whitespace"'), []);
 });
 
 test("reads an in-page link as a link, not a colour", () => {
