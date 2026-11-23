@@ -1,0 +1,19 @@
+{
+  "rule": "Work that was claimed and never posted is named, though its claim says it is done",
+  "layer": "test",
+  "past": "The first overdue.ts trusted closeQueuedAt and a cleared nextReminderAt, so a lost notice or reminder looked done (review of #47)",
+  "check": "cd apps/web && pnpm exec vitest run src/server/services/overdue.test.ts -t 'never posted'",
+  "break": [
+    {
+      "file": "apps/web/src/server/services/overdue.ts",
+      "find": "      lte(hollers.closeQueuedAt, late),",
+      "replace": "      isNull(hollers.closeQueuedAt),"
+    },
+    {
+      "file": "apps/web/src/server/services/overdue.ts",
+      "find": "      eq(recipients.remindersSent, 1),",
+      "replace": "      eq(recipients.remindersSent, 0),"
+    }
+  ],
+  "fails": "first reminder that was claimed and never posted"
+}

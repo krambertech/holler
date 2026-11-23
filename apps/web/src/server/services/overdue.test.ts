@@ -95,6 +95,24 @@ describe("overdueWork", () => {
     expect(await overdueWork(db, at(late))).toEqual(["close_work"]);
   });
 
+  it("names a close notice that was queued and never posted", async () => {
+    const { ctx, env, id, drain, queued } = await sent();
+    await drain(NOW);
+    await closeHoller(ctx, env, id);
+    queued.length = 0;
+    expect(await overdueWork(db, at(late))).toEqual(["lost_close_notice"]);
+    expect(await overdueWork(db, at(21 * HOUR))).toEqual([]);
+  });
+
+  it("names a first reminder that was claimed and never posted", async () => {
+    const { env, drain, queued } = await sent();
+    await drain(NOW);
+    await runCronPass(env, db, at(25 * HOUR));
+    expect(queued.map((send) => send.kind)).toContain("reminder");
+    queued.length = 0;
+    expect(await overdueWork(db, at(49 * HOUR))).toEqual(["lost_reminder"]);
+  });
+
   it("leaves a workspace that removed Holler alone", async () => {
     const { workspaceId, queued } = await sent();
     queued.length = 0;
