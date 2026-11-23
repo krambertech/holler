@@ -1,0 +1,19 @@
+{
+  "rule": "Every mode, anonymous or named, exports one row with something in it for each response",
+  "layer": "test",
+  "past": "#19 gave an anonymous Holler no column of its own, so a chase, or an optional question everyone skipped, exported blank lines",
+  "check": "cd apps/web && pnpm exec vitest run src/server/services/exports.test.ts -t 'one row with something in it'",
+  "break": [
+    {
+      "file": "apps/web/src/server/services/exports.ts",
+      "find": "  anonymous ? [\"Answered\"] : [",
+      "replace": "  anonymous ? [] : ["
+    },
+    {
+      "file": "apps/web/src/server/services/exports.ts",
+      "find": "  if (data.anonymous) return [\"Yes\"];",
+      "replace": "  if (data.anonymous) return [];"
+    }
+  ],
+  "fails": "every export of anonymous chase hollers"
+}

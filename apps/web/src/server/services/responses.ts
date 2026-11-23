@@ -177,6 +177,7 @@ export async function recordResponse(
         : []),
       // One answer per statement: D1 binds at most 100 values in one query.
       ...rows.map((row) => ctx.db.insert(answers).values(row)),
+      // oxlint-disable-next-line holler/activity-with-write -- a note given with its answer is part of the response
       ...notes.map((row) => ctx.db.insert(answerNotes).values(row)),
     ]);
   } catch (error) {

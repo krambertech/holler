@@ -30,8 +30,10 @@ export function exportedComponents(source) {
  */
 export function isCovered(name, documented) {
   if (documented.has(name)) return true;
-  for (const root of documented) if (root.length >= 4 && name.startsWith(root)) return true;
-  return false;
+  return [...documented].some(
+    (family) =>
+      family.length >= 4 && name.startsWith(family) && /^[A-Z]/.test(name.slice(family.length)),
+  );
 }
 
 /** Names the design site documents: entry names and foundation `covers`. */

@@ -78,13 +78,17 @@ export function coverageProblems(guards, { rules, scripts }) {
       .filter((rule) => !named.includes(`holler(${rule})`))
       .map((rule) => `oxlint-plugin-holler/rules/${rule}.mjs has no guard that proves it fails`),
     ...scripts
-      .filter((script) => !named.includes(script) && !named.includes(commandFor(script)))
+      .filter((script) => !namesOf(script).some((name) => named.includes(name)))
       .map((script) => `scripts/${script} has no guard that proves it fails`),
   ];
 }
 
-function commandFor(script) {
-  return script.replace(/^check-/, "pnpm check:").replace(/\.mjs$/, "");
+function namesOf(script) {
+  return [
+    script,
+    script.replace(/\.mjs$/, ".test.mjs"),
+    script.replace(/^check-/, "pnpm check:").replace(/\.mjs$/, ""),
+  ];
 }
 
 export function shardOf(ids, shard) {

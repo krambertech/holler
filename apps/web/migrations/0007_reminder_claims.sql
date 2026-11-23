@@ -1,0 +1,1 @@
+ALTER TABLE `recipients` ADD `reminder_queued_at` integer;

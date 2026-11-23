@@ -1,0 +1,14 @@
+{
+  "rule": "Require squashed, green, up-to-date pull requests from everyone.",
+  "layer": "ci",
+  "past": "#2 landed as a merge commit, and #20 turned main red after #19 merged.",
+  "check": "node --test scripts/check-ruleset.test.mjs",
+  "break": [
+    {
+      "file": ".github/rulesets/main.json",
+      "find": "\"strict_required_status_checks_policy\": true",
+      "replace": "\"strict_required_status_checks_policy\": false"
+    }
+  ],
+  "fails": "main takes only squashed pull requests"
+}

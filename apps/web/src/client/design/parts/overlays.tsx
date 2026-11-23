@@ -84,7 +84,7 @@ export const overlays: Group = {
     },
     {
       slug: "toast",
-      name: "Toast",
+      name: "Toast, Toaster",
       source: "components/ui/toast.tsx",
       note: "A short line after something happened, bottom-end on a desktop and bottom centre on a phone. Up to three stack, newest in front. Errors are announced at once.",
       Demo: () => <Variants items={[{ label: "Try it", render: () => <ToastButtons /> }]} />,

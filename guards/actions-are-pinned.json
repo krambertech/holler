@@ -1,0 +1,14 @@
+{
+  "rule": "Pin every action to a commit SHA.",
+  "layer": "ci",
+  "past": "preventive: workflows used moving tags, allowing actions to change without a commit here.",
+  "check": "pnpm check:workflows",
+  "break": [
+    {
+      "file": ".github/workflows/weekly.yml",
+      "find": "actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4",
+      "replace": "actions/checkout@v4"
+    }
+  ],
+  "fails": "pin actions/checkout@v4"
+}

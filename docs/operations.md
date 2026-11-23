@@ -13,7 +13,7 @@ Holler runs on Cloudflare Workers on the account's `workers.dev` subdomain until
 
 ## Deploys
 
-Merging to `main` is the deploy. The `deploy` job in `.github/workflows/ci.yml` waits for `verify` and `e2e`, then:
+Merging to `main` is the deploy. The `deploy` job in `.github/workflows/ci.yml` waits for `ready`, which needs every other job, then:
 
 1. applies new migrations to the production D1,
 2. deploys `holler` and `holler-site` with the commit as the version tag,
@@ -35,6 +35,14 @@ HOLLER_DEV_KEY=$(cat ~/.holler-dev-key) node .agents/skills/verify/scripts/run.m
 ```
 
 Every pull request shares the preview D1. A branch's migration applies to it before merging, so keep migrations additive while they are open. Never rename or change a migration after you push it: the preview D1 has applied it under that name, so the next preview fails with `already exists`, and `pnpm check:migrations` compares your files with the pushed branch's manifest to refuse it first. When main takes your migration's number before you merge, keep both files, because Wrangler applies migrations by name: take main's `apps/web/migrations/meta/`, run `pnpm db:generate --name <your name>`, delete the SQL file it writes, and set that journal entry's `tag` to your pushed file's name, the one hand edit a generated file takes. If a pushed migration must go, Kateryna undoes it on `holler-preview` and deletes its row from `d1_migrations`, and the check then runs with `PREVIEW_RESET=<file>`.
+
+## When nobody is working on it
+
+`weekly.yml` runs every Monday: CI on `main`, a high-severity audit of production dependencies, a ruleset check, and `pnpm deploy:health`. A failure opens an issue or comments on the open one. Each run enables the schedule because GitHub disables schedules after 60 days without commits.
+
+`health.yml` asks production's `/api/health/work` every hour and opens an issue when it answers 503. The answer comes from stored state (`services/overdue.ts`), so it covers a stopped cron and a stuck queue: a send, invite, reminder, close or close work more than 15 minutes late, and an invite, close notice or first reminder that was claimed and never posted. It cannot see a lost second or third reminder, because nothing stores when those were claimed. Previews run no cron, so theirs is always late.
+
+Dependabot checks for updates on Mondays, with a seven-day cooldown. It groups minor and patch package updates and GitHub Actions updates. `minimumReleaseAge` in `pnpm-workspace.yaml` also applies to manual installs.
 
 ## One-time setup
 
@@ -58,6 +66,14 @@ Kateryna does these; they handle credentials.
    ```
 
    `SLACK_TOKEN_KEY` encrypts stored Slack tokens: changing it later makes every installed workspace reinstall. Slack and Polar secrets come with their own setup in `docs/slack.md` and `docs/billing.md`.
+
+3. Protect `main`. Until the ruleset is installed, its merge requirements are not enforced:
+
+   ```bash
+   gh api -X POST repos/krambertech/holler/rulesets --input .github/rulesets/main.json
+   ```
+
+   Run it after `protect.yml` is on `main`, because GitHub runs `pull_request_target` workflows from there. Check it with `node scripts/check-ruleset.mjs`.
 
 ## Moving to holler.team
 
