@@ -1,34 +1,22 @@
+import type { ActivityAction } from "@holler/core";
 import { Client } from "@modelcontextprotocol/client";
 import { InMemoryTransport } from "@modelcontextprotocol/server";
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { Db } from "../db";
-import type { Bindings } from "../env";
 import type { Principal } from "../principal";
 import { makeLive, workspaceFixture } from "../services/fixtures";
 import { createDraft, updateDraft } from "../services/hollers";
 import { recordResponse } from "../services/responses";
+import { devSlack } from "../services/slack-connection";
 import { testDb } from "../test-db";
+import { deliveryEnv } from "../test-delivery";
 import { buildMcpServer } from "./server";
 
-// Slack delivery and exports are other areas'; these tests check the tools call them.
-vi.mock("../services/delivery", async () => {
-  const { getHoller } = await import("../services/hollers");
-  const echo = vi.fn((ctx, _env, id: string) => getHoller(ctx, id));
-  return { sendHoller: echo, closeHoller: echo, remindWaiting: echo };
-});
-vi.mock("../services/exports", () => ({
-  exportCsv: vi.fn(async () => "question,option,count\n"),
-  exportMarkdown: vi.fn(async () => "# Results\n"),
-}));
-const delivery = vi.mocked(await import("../services/delivery"));
-
 let db: Db;
+let raw: D1Database;
 let dispose: () => Promise<void>;
-beforeAll(async () => ({ db, dispose } = await testDb()));
+beforeAll(async () => ({ db, raw, dispose } = await testDb()));
 afterAll(() => dispose());
-beforeEach(() => vi.clearAllMocks());
-
-const env = { BETTER_AUTH_SECRET: "test-secret-at-least-thirty-two-characters-long" } as Bindings;
 
 const pulse = {
   mode: "pulse" as const,
@@ -62,6 +50,7 @@ async function connect(scope: "read" | "write") {
     actor,
     scope,
   };
+  const { env, drain } = deliveryEnv(db, raw);
   const server = buildMcpServer({
     principal,
     ctx,
@@ -80,8 +69,20 @@ async function connect(scope: "read" | "write") {
       _meta?: Record<string, unknown>;
     };
   };
-  return { ...fixture, ctx, client, callTool };
+  const slackAfterSends = async () => {
+    await drain(ctx.now());
+    return devSlack(db, fixture.workspaceId);
+  };
+  return { ...fixture, ctx, client, callTool, slackAfterSends };
 }
+
+const statusOf = async (id: string) =>
+  (await db.query.hollers.findFirst({ where: (holler, { eq }) => eq(holler.id, id) }))?.status;
+
+const activityOn = (id: string, action: ActivityAction) =>
+  db.query.activity.findMany({
+    where: (row, { and, eq }) => and(eq(row.subjectId, id), eq(row.action, action)),
+  });
 
 describe("tools", () => {
   it("offers the tools the API and MCP area promised", async () => {
@@ -170,7 +171,7 @@ describe("tools", () => {
 
 describe("sending in two steps", () => {
   it("previews first and sends nothing", async () => {
-    const { callTool, ctx } = await connect("write");
+    const { callTool, ctx, slackAfterSends } = await connect("write");
     const holler = await createDraft(ctx, pulse);
     const preview = await callTool("send_holler", { hollerId: holler.id });
     expect(preview.isError).toBeFalsy();
@@ -179,23 +180,33 @@ describe("sending in two steps", () => {
       preview: { reach: 2, people: ["Person UA", "Person UB"], morePeople: 0, problems: [] },
     });
     expect(typeof preview.structuredContent?.confirm).toBe("string");
-    expect(delivery.sendHoller).not.toHaveBeenCalled();
+    expect(await statusOf(holler.id)).toBe("draft");
+    expect((await slackAfterSends()).posted).toEqual([]);
   });
 
-  it("sends with the confirm token from the preview", async () => {
-    const { callTool, ctx } = await connect("write");
+  it("sends with the confirm token from the preview, as the member who granted access", async () => {
+    const { callTool, ctx, memberId, slackAfterSends } = await connect("write");
     const holler = await createDraft(ctx, pulse);
     const preview = await callTool("send_holler", { hollerId: holler.id });
     const confirm = preview.structuredContent?.confirm as string;
     const sent = await callTool("send_holler", { hollerId: holler.id, confirm });
-    expect(sent.isError).toBeFalsy();
-    expect(sent.structuredContent).toMatchObject({ sent: true });
-    expect(delivery.sendHoller).toHaveBeenCalledOnce();
-    expect(delivery.sendHoller.mock.calls[0]?.[0].actor).toMatchObject({ via: "mcp" });
+    expect(sent.isError, sent.content[0]?.text).toBeFalsy();
+    expect(sent.structuredContent).toMatchObject({
+      sent: true,
+      holler: { id: holler.id, status: "live" },
+    });
+    const invites = (await slackAfterSends()).posted.map((m) => `${m.channel}: ${m.text}`);
+    expect(invites.sort()).toEqual([
+      "UA: Person ULEAD sent you a Holler: How was your week?",
+      "UB: Person ULEAD sent you a Holler: How was your week?",
+    ]);
+    expect(await activityOn(holler.id, "holler.sent")).toEqual([
+      expect.objectContaining({ via: "mcp", memberId, credentialId: "client-1" }),
+    ]);
   });
 
   it("refuses a token once the Holler changed after the preview", async () => {
-    const { callTool, ctx, now } = await connect("write");
+    const { callTool, ctx, now, slackAfterSends } = await connect("write");
     const holler = await createDraft(ctx, pulse);
     const preview = await callTool("send_holler", { hollerId: holler.id });
     const confirm = preview.structuredContent?.confirm as string;
@@ -204,18 +215,20 @@ describe("sending in two steps", () => {
     const sent = await callTool("send_holler", { hollerId: holler.id, confirm });
     expect(sent.isError).toBe(true);
     expect(sent.content[0]?.text).toMatch(/out of date/);
-    expect(delivery.sendHoller).not.toHaveBeenCalled();
+    expect(await statusOf(holler.id)).toBe("draft");
+    expect((await slackAfterSends()).posted).toEqual([]);
   });
 
   it("refuses a token made for another Holler", async () => {
-    const { callTool, ctx } = await connect("write");
+    const { callTool, ctx, slackAfterSends } = await connect("write");
     const one = await createDraft(ctx, pulse);
     const other = await createDraft(ctx, pulse);
     const preview = await callTool("send_holler", { hollerId: one.id });
     const confirm = preview.structuredContent?.confirm as string;
     const sent = await callTool("send_holler", { hollerId: other.id, confirm });
     expect(sent.isError).toBe(true);
-    expect(delivery.sendHoller).not.toHaveBeenCalled();
+    expect([await statusOf(one.id), await statusOf(other.id)]).toEqual(["draft", "draft"]);
+    expect((await slackAfterSends()).posted).toEqual([]);
   });
 
   it("gives no token while the draft has problems", async () => {
@@ -229,6 +242,59 @@ describe("sending in two steps", () => {
       confirm: null,
       preview: { problems: [expect.objectContaining({ field: "audience" })] },
     });
+  });
+});
+
+describe("a live Holler", () => {
+  it("is reminded and closed by its own tools, as the member who granted access", async () => {
+    const { callTool, ctx, memberId, slackAfterSends } = await connect("write");
+    const holler = await createDraft(ctx, {
+      ...pulse,
+      audience: { people: ["UA"], groups: [], everyone: false },
+    });
+    const preview = await callTool("send_holler", { hollerId: holler.id });
+    const confirm = preview.structuredContent?.confirm as string;
+    await callTool("send_holler", { hollerId: holler.id, confirm });
+    const slack = await slackAfterSends();
+
+    const reminded = await callTool("send_reminder", { hollerId: holler.id });
+    expect(reminded.isError, reminded.content[0]?.text).toBeFalsy();
+    expect(await statusOf(holler.id)).toBe("live");
+    await slackAfterSends();
+    expect(slack.posted.slice(1).map((m) => [m.channel, m.text])).toEqual([
+      ["UA", "A reminder: Person ULEAD still needs your answer to How was your week?"],
+    ]);
+
+    const closed = await callTool("close_holler", { hollerId: holler.id });
+    expect(closed.structuredContent).toMatchObject({ id: holler.id, status: "closed" });
+    expect(await statusOf(holler.id)).toBe("closed");
+    for (const action of ["holler.reminded", "holler.closed"] as const) {
+      expect(await activityOn(holler.id, action)).toEqual([
+        expect.objectContaining({ via: "mcp", memberId, credentialId: "client-1" }),
+      ]);
+    }
+  });
+
+  it("exports its results in the format asked for", async () => {
+    const { callTool, ctx, now } = await connect("read");
+    const holler = await createDraft(ctx, pulse);
+    await makeLive(db, holler.id, ["UA"], now);
+    const [question] = holler.questions;
+    await recordResponse(ctx, {
+      hollerId: holler.id,
+      slackUserId: "UA",
+      via: "slack_button",
+      response: {
+        answers: [{ questionId: question?.id ?? "", optionIds: [question?.options[1]?.id ?? ""] }],
+      },
+    });
+    const md = await callTool("export_results", { hollerId: holler.id });
+    expect(md.content[0]?.text).toContain("1 of 1 person answered.");
+    expect(md.content[0]?.text).toContain("| Great | 1 | 100% |");
+    const csv = await callTool("export_results", { hollerId: holler.id, format: "csv" });
+    const [header, row] = (csv.content[0]?.text ?? "").split("\r\n");
+    expect(header).toContain("How was it?");
+    expect(row).toMatch(/Person UA.*Great/);
   });
 });
 
@@ -257,5 +323,10 @@ describe("the anonymous gate", () => {
     });
     const results = await callTool("get_results", { hollerId: holler.id });
     expect(results.structuredContent).toEqual({ state: "gated", responseCount: 3, needed: 2 });
+    for (const format of ["csv", "md"]) {
+      const exported = await callTool("export_results", { hollerId: holler.id, format });
+      expect(exported.isError).toBe(true);
+      expect(exported.content[0]?.text).toMatch(/2 more answers/);
+    }
   });
 });

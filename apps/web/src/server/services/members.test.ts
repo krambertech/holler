@@ -14,7 +14,6 @@ afterAll(() => dispose());
 
 const now = new Date("2026-11-21T09:00:00Z");
 
-/** An installed workspace with an owner and two senders, each signed in with Slack. */
 async function team() {
   const grant = grantFor({ installerSlackUserId: "U0OWN" });
   const outcome = await completeInstall(db, {

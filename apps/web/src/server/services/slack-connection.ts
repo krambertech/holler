@@ -6,11 +6,6 @@ import { FakeSlack } from "../slack/fake";
 import { decryptToken } from "../slack/tokens";
 import { ServiceError } from "./context";
 
-/**
- * The Slack client for one workspace, from its stored bot token. Every Slack call a service makes
- * starts here. With DEV_ROUTES on and no installation, it returns a FakeSlack, so local
- * development sends nothing real and still exercises the whole path.
- */
 export async function slackFor(env: Bindings, db: Db, workspaceId: string): Promise<SlackClient> {
   const installation = await db.query.slackInstallations.findFirst({
     where: eq(schema.slackInstallations.workspaceId, workspaceId),
@@ -27,11 +22,6 @@ export async function slackFor(env: Bindings, db: Db, workspaceId: string): Prom
   );
 }
 
-/**
- * One FakeSlack per workspace for the life of the isolate, so local development and tests can
- * read back what Holler sent (`/api/dev/state`). It starts with the workspace's directory, and
- * every group and channel holds everyone, so an audience resolves the way it would in Slack.
- */
 const devFakes = new Map<string, FakeSlack>();
 
 export async function devSlack(db: Db, workspaceId: string): Promise<FakeSlack> {
@@ -70,12 +60,10 @@ export async function devSlack(db: Db, workspaceId: string): Promise<FakeSlack> 
   return fake;
 }
 
-/** What the dev FakeSlack recorded for a workspace, or nothing when it was never used. */
 export function devSlackRecord(workspaceId: string): FakeSlack | undefined {
   return devFakes.get(workspaceId);
 }
 
-/** Forgets the dev FakeSlack, so a reseeded workspace starts with an empty record. */
 export function forgetDevSlack(workspaceId: string): void {
   devFakes.delete(workspaceId);
 }

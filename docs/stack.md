@@ -57,6 +57,10 @@ flowchart LR
 
 Alternative considered: one Worker for both. Lymi split them so the site can deploy without touching auth, and the same reason holds here.
 
+### Time zones: `packages/core/src/zones.ts`, `Intl` only
+
+A zone `Intl` does not know counts as UTC, so a person with a broken zone still gets their Holler. A wall-clock time that a clock change skips lands just after the jump. The module keeps one formatter per zone, because building one costs far more than using it.
+
 ### Product UI: Vite, React 19, TanStack Router and Query, Tailwind v4, Base UI
 
 The product is a client-rendered app. TanStack Router gives typed, file-based routes; TanStack Query owns every read and every cache. Tailwind v4 reads the Holler tokens from `packages/design/tokens.css`. Interactive primitives (dialog, menu, popover, combobox, tabs) come from `@base-ui/react`, wrapped once in `apps/web/src/client/components/ui` and styled with Holler tokens. Icons are Lucide, at 2 px stroke with round caps, which matches the brand's line icons.

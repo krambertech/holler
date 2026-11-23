@@ -12,11 +12,6 @@ import { hollers, options, questions } from "./hollers";
 
 const now = sql`(unixepoch() * 1000)`;
 
-/**
- * One recipient's answers to one Holler. For an anonymous Holler `slackUserId` is null and
- * `submittedAt` is rounded down to the hour, so nothing here points back at a person.
- * Who answered lives on `recipients.answeredAt` instead.
- */
 export const responses = sqliteTable(
   "responses",
   {
@@ -30,7 +25,6 @@ export const responses = sqliteTable(
   },
   (t) => [
     index("responses_holler").on(t.hollerId),
-    // One response per person on a named Holler. Anonymous ones are guarded by recipients.answeredAt.
     uniqueIndex("responses_one_per_person")
       .on(t.hollerId, t.slackUserId)
       .where(sql`${t.slackUserId} is not null`),

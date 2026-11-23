@@ -51,7 +51,7 @@ function Home() {
             aria-label={searching ? "Close search" : "Search"}
             aria-expanded={searching}
             onClick={() => {
-              if (searching) navigate({ search: (s) => ({ ...s, q: undefined }) });
+              if (searching) void navigate({ search: (s) => ({ ...s, q: undefined }) });
               setSearching(!searching);
             }}
           >
@@ -126,7 +126,7 @@ function Home() {
           filtered={Boolean(tag || q)}
           onClear={() => {
             setSearching(false);
-            navigate({ search: (s) => ({ ...s, q: undefined, tag: undefined }) });
+            void navigate({ search: (s) => ({ ...s, q: undefined, tag: undefined }) });
           }}
         />
       ) : (

@@ -1,0 +1,14 @@
+{
+  "rule": "Stripping a comment never changes code, line breaks that end a statement included",
+  "layer": "test",
+  "past": "The first strip.mjs turned a return broken over two lines into one that returns a value (review of #51)",
+  "check": "node --test scripts/strip-comments.test.mjs",
+  "break": [
+    {
+      "file": "scripts/strip-comments.mjs",
+      "find": "text.slice(start, end).includes(\"\\n\") ? \"\\n\" : after ? \" \" : \"\"",
+      "replace": "after ? \" \" : \"\""
+    }
+  ],
+  "fails": "keeps a line break that ends a statement"
+}

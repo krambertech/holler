@@ -2,7 +2,7 @@
   "rule": "No journey page logs a console error or throws",
   "layer": "browser",
   "past": "#22: an effect written as () => window.scrollTo(…) returned what scrollTo gives back, and React tried to call it as a cleanup",
-  "check": "pnpm exec playwright test --project=chromium --retries=1 -g 'a recipient answers every question type'",
+  "check": "pnpm exec playwright test --project=chromium -g 'a recipient answers every question type'",
   "break": [
     {
       "file": "apps/web/src/client/routes/respond.$id.tsx",
