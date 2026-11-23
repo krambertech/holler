@@ -1,0 +1,14 @@
+{
+  "rule": "Once Stop repeating returns, no further round goes out, whichever write lands first",
+  "layer": "test",
+  "past": "#32: a round going live read the rule, Stop repeating cleared it, and the next round was inserted anyway",
+  "check": "cd apps/web && pnpm exec vitest run src/server/services/rounds.test.ts -t 'Stop repeating'",
+  "break": [
+    {
+      "file": "apps/web/src/server/services/rounds.ts",
+      "find": "  statements.push(...unlessStillRepeating(ctx, id, seriesId));",
+      "replace": "  if (!id) statements.push(...unlessStillRepeating(ctx, id, seriesId));"
+    }
+  ],
+  "fails": "Stop repeating"
+}

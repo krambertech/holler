@@ -1,0 +1,14 @@
+{
+  "rule": "Client code reads reduced motion from useReduceMotion, which also honours the design site's switch",
+  "layer": "lint",
+  "past": "Refused since the foundations (7e28e34); nothing has broken it, and a component on Motion's own hook keeps moving while the design site says reduced motion is on",
+  "check": "pnpm exec oxlint apps/web/src/client",
+  "break": [
+    {
+      "file": "apps/web/src/client/components/respond/respond-state.tsx",
+      "find": "import { motion } from \"motion/react\";",
+      "replace": "import { motion, useReducedMotion } from \"motion/react\";"
+    }
+  ],
+  "fails": "Use useReduceMotion()"
+}

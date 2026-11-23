@@ -20,7 +20,7 @@ Holler needs Node 24 (`.nvmrc`).
 pnpm verify
 ```
 
-It runs formatting, lint, the design, styling and migration checks, typechecking, every test, both builds and the bundle boundary check. A bug fix ships with a check that fails for its whole class, and a row in the Enforced rules table; [`docs/testing.md`](docs/testing.md) says how. `pnpm fix` writes oxfmt's formatting and Oxlint's fixes. For a change a person sees, also run `pnpm test:e2e` and prove it with the [`verify`](.agents/skills/verify/SKILL.md) skill: it drives each feature the diff reaches at 1280 px and 375 px, in day and night, and keeps the evidence. A product change is not done until it has been driven.
+It runs formatting, lint, the design, styling and migration checks, typechecking, every test, both builds and the bundle boundary check. A bug fix ships with a check that fails for its whole class, and a guard that proves it (Guards, below). `pnpm fix` writes oxfmt's formatting and Oxlint's fixes. For a change a person sees, also run `pnpm test:e2e` and prove it with the [`verify`](.agents/skills/verify/SKILL.md) skill: it drives each feature the diff reaches at 1280 px and 375 px, in day and night, and keeps the evidence. A product change is not done until it has been driven.
 
 Open pull requests with the [`open-pr`](.agents/skills/open-pr/SKILL.md) skill and the [template](.github/pull_request_template.md). For branches, commit messages, pull request titles and merging, follow [`docs/git-workflow.md`](docs/git-workflow.md).
 
@@ -50,57 +50,18 @@ Project skills live in `.agents/skills/`; `.claude/skills` links to it so every 
 
 **D1.** At most 100 bound values per statement: insert one row per statement inside a batch. SQLite's `lower()` is ASCII-only: fold in JavaScript and store a `search_*` column.
 
-## Enforced rules
+## Guards
 
-| Rule                                                                        | Check                                                |
-| --------------------------------------------------------------------------- | ---------------------------------------------------- |
-| Only services touch Drizzle                                                 | Oxlint `no-restricted-imports` on routes, Slack and MCP |
-| No `lower()` in server SQL                                                  | `holler/no-sql-lower` in `oxlint-plugin-holler`      |
-| New lines use Holler tokens and logical directions                          | `pnpm check:styling`                                 |
-| DESIGN.md's colours match `tokens.css`, and every component it names exists | `pnpm check:design`                                  |
-| Every text pair meets WCAG AA in both themes                                | `packages/design/src/contrast.test.ts`               |
-| A new source file has no comments, and an older one never gains any | `holler/no-comments` and `pnpm check:comments` against `scripts/comment-baseline.json` |
-| Every lint suppression still suppresses something | `oxlint --report-unused-disable-directives-severity error` in `pnpm check` |
-| Applied migrations never change                                             | `pnpm check:migrations`                              |
-| A migration a branch pushed keeps its name and contents, so the shared preview database never applies it twice | `keptSincePush` in `scripts/check-migrations.mjs` against `@{upstream}`; `scripts/check-migrations.test.mjs` |
-| No dev tools in the production bundle                                       | `pnpm check:boundaries`                              |
-| Every exported component has an entry on the design site | `pnpm check:design-coverage` |
-| Files under `apps/web/src/client` are kebab-case                            | Oxlint `unicorn/filename-case`                       |
-| Every journey page passes axe at WCAG 2.2 AA                                | `e2e/`                                               |
-| No journey page logs a console error, throws, or gets a 5xx | `e2e/fixtures.ts`, which every spec imports by the Oxlint `no-restricted-imports` rule on `e2e/` |
-| Concurrent first dev sign-ins all succeed and seed once                    | `apps/web/src/server/routes/dev-concurrency.test.ts` |
-| Every e2e sign-in lands where the test goes next, so no redirect races its navigation | `holler/sign-in-lands` in `oxlint-plugin-holler`; `signInAs` in `e2e/a11y.ts` |
-| Pull request titles follow `type(scope): summary` within 72 characters      | `scripts/check-pr-title.mjs` in CI                   |
-| Server inserts one row per statement, inside D1's 100-value limit | `holler/no-multi-row-insert` in `oxlint-plugin-holler` |
-| A lookup by a list of ids stays inside D1's 100-value limit however long the list grows | `holler/bounded-in-array` in `oxlint-plugin-holler`; `readInChunks` in `server/batch.ts`, which also reads a repeated id once; `services/hollers.test.ts` lists 101 Hollers and previews 100 groups and a repeated one |
-| No read spreads its rows into a call's arguments, so a large read never overflows the argument limit | `holler/no-spread-rows` in `oxlint-plugin-holler`; `server/batch.test.ts` reads 300,000 rows |
-| Every Slack message and view fits Block Kit's limits | `FakeSlack` refuses what Slack would; `slack/blocks/messages.test.ts` sends the largest Holler |
-| Work claimed for the queue is given back when the queue refuses it | `queueClaimed`; `services/delivery.test.ts`, "no claimed work is lost" |
-| A send, close, reminder or answer happens once when callers race | `services/delivery.test.ts`, "exactly once under concurrency" |
-| Every queued send that posts to Slack posts once, however often it arrives | `sendEffects` and `postKey` in `services/delivery.ts`; `services/delivery.test.ts`, "every send that posts, posts once" |
-| One cron step failing never stops another | `runSteps`; `cron.test.ts` |
-| Reminders land in working hours, clear of the close, in every zone | `packages/core/src/reminders.test.ts` sweep |
-| The dev seed leaves room to send on every day of a month | `services/dev-seed.test.ts` |
-| Server tests pass in any order | `sequence.shuffle` with a fixed seed in `apps/web/vitest.config.ts` |
-| Every modal element reads back into an answer `recordResponse` takes | `services/answering.test.ts` fills each element by type |
-| No cell of a CSV export runs as a formula, whatever anyone typed | `csvCell`; `services/exports.test.ts` writes every formula start into every field |
-| Anonymous results and exports keep no trace of answer order | `packages/core/src/results.test.ts` shuffles every answer; `services/exports.test.ts` |
-| A burst of changes publishes each App Home once, and only to people who opened it | `queueHomes` claims `slack_homes.queued_at`; `services/slack-home.test.ts` |
-| Every App Home, quick pulse and `/holler` reply fits Block Kit's limits at its fullest | `slack/blocks/home.test.ts` builds the largest of each |
-| A quick pulse Slack submits twice makes one Holler and sends it once | View id as `createDraft`'s idempotency key; `slack/sending.test.ts` |
-| A quick pulse that was acknowledged ends on Sent or Not sent, whatever fails | `finishQuickPulse` catches every error; `slack/sending.test.ts`, "never on Sending" |
-| The web form and `recordResponse` refuse the same answers in the same words | `answerProblem` in `packages/core/src/answers.ts`; `services/respond.test.ts` |
-| The web form shows a follow-up for exactly the answers the server keeps a note for | `noteAsked`; `services/respond.test.ts`, "shows a follow-up for exactly the answers" |
-| No effect returns a value that is not its cleanup | `holler/no-effect-expression-body` in `oxlint-plugin-holler` |
-| The web form searches the directory only while the people picker is open, and makes no failed call | `e2e/respond.spec.ts`, "a recipient answers every question type" |
-| An answer kept while the queue refused still reaches the DM when the person sends again | `services/respond.test.ts`, "puts the DM right when the answers were kept but the queue refused" |
-| Every illustration fills the grid, has one subject and at most one accent, and tilts no object past 12 degrees | `packages/design/src/illustrations.test.ts` |
-| Only Your answers reads who gave an anonymous response | `holler/no-response-owners` in `oxlint-plugin-holler`; `services/own-answers.test.ts`, "never reaches results or exports" |
-| Every round of a repeating pulse lands on the first round's day and time, in every zone, for a year | `packages/core/src/repeats.test.ts` sweep |
-| A round that goes out schedules exactly one next round, never in the past | `services/rounds.test.ts` |
-| Every Holler column is either copied to the next round or set for each round | `roundColumns` in `services/rounds.ts` (typecheck); `services/rounds.test.ts` |
-| Every round of a repeating pulse closes before anyone gets the next, across clock changes and late sends | `goLive` caps `closesAt` at the next round's first invite; `services/rounds.test.ts` |
-| Once Stop repeating returns, no further round goes out, whichever write lands first | `unlessStillRepeating` in `services/rounds.ts`; `services/rounds.test.ts`, both race cases |
+Every rule a check enforces is one file in [`guards/`](guards/): the rule, the past mistake it stops, the check, and the edit that brings the mistake back. `pnpm guards` lists them all. CI makes each edit in a scratch copy and fails when the check still passes, so a check that stops working is found before it is trusted ([ADR 0004](docs/adr/0004-every-rule-proves-it-can-fail.md)).
+
+A bug fix ships with a guard for its whole class, at the first of these that can hold it:
+
+1. **Architecture.** Reshape the code so the mistake cannot be written.
+2. **Types.** Make it a type error.
+3. **Lint.** A rule in `oxlint-plugin-holler/rules/` whose message names the fix.
+4. **Test.** Real D1, real services, a fake only for Slack and the queue.
+
+Write `guards/<rule>.json` beside the fix and run `pnpm guards:prove <rule>`. When `pnpm check` says a guard's code moved, rewrite its `break` as the edit that would bring the mistake back today. Delete a guard only when its mistake can no longer be written, and say so in the pull request.
 
 ## Generated files
 

@@ -1,0 +1,14 @@
+{
+  "rule": "A round that goes out late schedules its next round in the future",
+  "layer": "test",
+  "past": "preventive: a late cron run would schedule a round that is due at once",
+  "check": "cd apps/web && pnpm exec vitest run src/server/services/rounds.test.ts -t 'never schedules a round in the past'",
+  "break": [
+    {
+      "file": "apps/web/src/server/services/rounds.ts",
+      "find": "  const thisRound = source.sendAt && source.sendAt > now ? source.sendAt : now;",
+      "replace": "  const thisRound = source.sendAt ?? now;"
+    }
+  ],
+  "fails": "never schedules a round in the past"
+}
