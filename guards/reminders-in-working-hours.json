@@ -1,0 +1,14 @@
+{
+  "rule": "A reminder lands in working hours, clear of the close, in every zone",
+  "layer": "test",
+  "past": "preventive: a fixed interval reminds people at night",
+  "check": "cd packages/core && pnpm exec vitest run src/reminders.test.ts",
+  "break": [
+    {
+      "file": "packages/core/src/reminders.ts",
+      "find": "    if (hour >= workdayStartHour && hour < workdayEndHour) break;",
+      "replace": "    if (hour >= workdayStartHour - 1 && hour < workdayEndHour) break;"
+    }
+  ],
+  "fails": "reminders.test.ts"
+}

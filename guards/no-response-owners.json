@@ -1,0 +1,14 @@
+{
+  "rule": "Only Your answers reads who gave an anonymous response",
+  "layer": "lint",
+  "past": "#26 began keeping the link in response_owners (ADR 0003); one join on it in an export names every anonymous person, and nothing has written one",
+  "check": "pnpm exec oxlint apps/web/src/server",
+  "break": [
+    {
+      "file": "apps/web/src/server/services/exports.ts",
+      "find": "      text: answers.text,\n      slackUserId: responses.slackUserId,\n    })\n    .from(answers)\n    .innerJoin(responses, eq(responses.id, answers.responseId))\n",
+      "replace": "      text: answers.text,\n      slackUserId: schema.responseOwners.slackUserId,\n    })\n    .from(answers)\n    .innerJoin(responses, eq(responses.id, answers.responseId))\n    .leftJoin(schema.responseOwners, eq(schema.responseOwners.responseId, responses.id))\n"
+    }
+  ],
+  "fails": "holler(no-response-owners)"
+}

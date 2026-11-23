@@ -1,0 +1,19 @@
+{
+  "rule": "Work claimed for the queue is given back when the queue refuses it",
+  "layer": "test",
+  "past": "#10 claimed every closed Holler before queueing the first, so one refusal lost the rest for good",
+  "check": "cd apps/web && pnpm exec vitest run src/server/services/delivery.test.ts -t 'partway through a pass'",
+  "break": [
+    {
+      "file": "apps/web/src/server/services/delivery.ts",
+      "find": "  for (const candidate of candidates) {\n    const [holler] = await db",
+      "replace": "  for (const candidate of candidates)\n    await db.update(hollers).set({ closeQueuedAt: now }).where(eq(hollers.id, candidate.id));\n  for (const candidate of candidates) {\n    const [holler] = await db"
+    },
+    {
+      "file": "apps/web/src/server/services/delivery.ts",
+      "find": "      .where(and(eq(hollers.id, candidate.id), isNull(hollers.closeQueuedAt)))",
+      "replace": "      .where(eq(hollers.id, candidate.id))"
+    }
+  ],
+  "fails": "once when the queue fails partway"
+}

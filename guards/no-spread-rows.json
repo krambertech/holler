@@ -1,0 +1,14 @@
+{
+  "rule": "No read spreads its rows into a call's arguments, so a large read never overflows the argument limit",
+  "layer": "lint",
+  "past": "The first version of #35 (550dafd) pushed each chunk's rows with one spread in four services; review found 150,000 recipients throw RangeError",
+  "check": "pnpm exec oxlint apps/web/src/server",
+  "break": [
+    {
+      "file": "apps/web/src/server/services/connected-apps.ts",
+      "find": "  const used = await readInChunks(\n    consents.map((c) => c.clientId),\n    (chunk) =>\n      ctx.db\n        .select({\n          clientId: schema.oauthAccessToken.clientId,\n          at: max(schema.oauthAccessToken.createdAt),\n        })\n        .from(schema.oauthAccessToken)\n        .where(\n          and(\n            eq(schema.oauthAccessToken.userId, userId),\n            inArray(schema.oauthAccessToken.clientId, chunk),\n          ),\n        )\n        .groupBy(schema.oauthAccessToken.clientId),\n  );\n",
+      "replace": "  const used = [];\n  for (const chunk of inChunks(consents.map((c) => c.clientId))) {\n    used.push(\n      ...(await ctx.db\n        .select({\n          clientId: schema.oauthAccessToken.clientId,\n          at: max(schema.oauthAccessToken.createdAt),\n        })\n        .from(schema.oauthAccessToken)\n        .where(\n          and(\n            eq(schema.oauthAccessToken.userId, userId),\n            inArray(schema.oauthAccessToken.clientId, chunk),\n          ),\n        )\n        .groupBy(schema.oauthAccessToken.clientId)),\n    );\n  }\n"
+    }
+  ],
+  "fails": "holler(no-spread-rows)"
+}

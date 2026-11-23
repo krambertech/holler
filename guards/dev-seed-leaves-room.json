@@ -1,0 +1,14 @@
+{
+  "rule": "The dev seed leaves room to send on every day of a month",
+  "layer": "test",
+  "past": "preventive: a seed that uses up Free's monthly hollers stops every local session from sending",
+  "check": "cd apps/web && pnpm exec vitest run src/server/services/dev-seed.test.ts -t '2026-11-21'",
+  "break": [
+    {
+      "file": "apps/web/src/server/services/dev-seed.ts",
+      "find": "      sentAt: at(-40 * DAY),",
+      "replace": "      sentAt: at(-4 * DAY),"
+    }
+  ],
+  "fails": "leaves room to send"
+}

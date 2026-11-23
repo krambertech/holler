@@ -1,0 +1,14 @@
+{
+  "rule": "An anonymous export keeps no trace of answer order",
+  "layer": "test",
+  "past": "preventive: rows in the order answers arrived point at who answered when",
+  "check": "cd apps/web && pnpm exec vitest run src/server/services/exports.test.ts -t 'keeps no answer order'",
+  "break": [
+    {
+      "file": "apps/web/src/server/services/exports.ts",
+      "find": "  if (data.anonymous) rows.sort();",
+      "replace": "  if (data.anonymous && rows.length === 0) rows.sort();"
+    }
+  ],
+  "fails": "keeps no answer order"
+}

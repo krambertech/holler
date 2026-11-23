@@ -1,0 +1,14 @@
+{
+  "rule": "The OS dark theme matches the picked dark theme token for token",
+  "layer": "test",
+  "past": "#12 changed --hover at night, which lives in two blocks; changing one gives the OS theme another colour",
+  "check": "cd packages/design && pnpm exec vitest run src/contrast.test.ts",
+  "break": [
+    {
+      "file": "packages/design/tokens.css",
+      "find": "\n    --hover: oklch(1 0 0 / 0.07);",
+      "replace": "\n    --hover: oklch(0.793 0.122 343 / 0.08);"
+    }
+  ],
+  "fails": "matches the [data-theme=dark] block token for token"
+}
