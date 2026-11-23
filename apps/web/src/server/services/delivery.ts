@@ -578,12 +578,12 @@ export async function remindWaiting(
     })
     .from(recipients)
     .where(waitingWhere);
-  if (before.length === 0) {
-    throw new ServiceError(
+  const nobodyWaiting = () =>
+    new ServiceError(
       "conflict",
       "Nobody is waiting to be reminded. Everyone who got it has answered.",
     );
-  }
+  if (before.length === 0) throw nobodyWaiting();
   const gapStart = new Date(now.getTime() - manualReminderGapHours * HOUR);
   const mayRemind = and(
     eq(hollers.id, id),
@@ -608,14 +608,22 @@ export async function remindWaiting(
         and(waitingWhere, exists(ctx.db.select({ id: hollers.id }).from(hollers).where(mayRemind))),
       )
       .returning({ slackUserId: recipients.slackUserId, remindersSent: recipients.remindersSent }),
-    { after: [ctx.db.update(hollers).set({ remindedAt: now }).where(mayRemind)] },
+    {
+      after: [
+        ctx.db
+          .update(hollers)
+          .set({ remindedAt: now })
+          .where(and(mayRemind, sql`changes() > 0`)),
+      ],
+    },
   );
   if (reminded.length === 0) {
     const [row] = await ctx.db
       .select({ remindedAt: hollers.remindedAt })
       .from(hollers)
       .where(eq(hollers.id, id));
-    const last = row?.remindedAt ?? now;
+    const last = row?.remindedAt;
+    if (!last || last <= gapStart) throw nobodyWaiting();
     const next = new Date(last.getTime() + manualReminderGapHours * HOUR);
     const zone = (await creatorOf(ctx.db, holler)).timeZone;
     throw new ServiceError(

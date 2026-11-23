@@ -6,8 +6,13 @@
   "break": [
     {
       "file": "apps/web/src/server/services/rounds.ts",
-      "find": "  statements.push(...unlessStillRepeating(ctx, id, seriesId));",
-      "replace": "  if (!id) statements.push(...unlessStillRepeating(ctx, id, seriesId));"
+      "find": "        .where(and(eq(hollers.id, id), stillRepeating)),",
+      "replace": "        .where(eq(hollers.id, id)),"
+    },
+    {
+      "file": "apps/web/src/server/services/rounds.ts",
+      "find": "        after: [ctx.db.delete(hollers).where(and(eq(hollers.id, id), not(stillRepeating)))],",
+      "replace": "        after: stillRepeating ? [] : [ctx.db.delete(hollers).where(not(stillRepeating))],"
     }
   ],
   "fails": "Stop repeating"
