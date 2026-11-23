@@ -14,13 +14,14 @@ const gateFiles =
   /^(\.github\/(workflows|rulesets)\/|scripts\/(check-|guards)[^/]*(?<!\.test)\.mjs$|playwright\.config\.ts$|apps\/web\/vitest\.config\.ts$|oxlint-plugin-holler\/(?!index\.mjs$|.*\.test\.mjs$)|tsconfig\.base\.json$)/;
 
 const count = (text, pattern) => (text.match(pattern) ?? []).length;
+const levelOf = (value) => (Array.isArray(value) ? value[0] : value);
+const isOn = (value) => ["error", "deny", 2].includes(levelOf(value));
 
 function rulesOf(config) {
   const on = new Map();
   const add = (scope, rules) => {
     for (const [rule, value] of Object.entries(rules ?? {})) {
-      const level = Array.isArray(value) ? value[0] : value;
-      if (level === "error") on.set(`${rule} in ${scope}`, true);
+      if (isOn(value)) on.set(`${rule} in ${scope}`, true);
     }
   };
   add("every file", config.rules);
@@ -45,6 +46,14 @@ function rulesNamed(config) {
   );
 }
 
+function relaxed(config, known) {
+  return (config.overrides ?? []).flatMap((override) =>
+    Object.entries(override.rules ?? {})
+      .filter(([rule, value]) => known.has(rule) && !isOn(value))
+      .map(([rule, value]) => `${rule} in ${override.files.join(", ")} is ${levelOf(value)}`),
+  );
+}
+
 function weakenedGuard({ file, before, after }) {
   if (!/^guards\/.*\.json$/.test(file) || before === null) return [];
   if (after === null) return ["the guard is deleted"];
@@ -66,8 +75,13 @@ function weakenedLint({ file, before, after }) {
   const [was, is] = [JSON.parse(before), JSON.parse(after)];
   const on = rulesOf(is);
   const already = skipped(was);
+  const known = new Set([...rulesOf(was).keys()].map((entry) => entry.split(" in ")[0]));
+  const loose = relaxed(was, known);
+  const lost = [...rulesOf(was).keys()]
+    .filter((rule) => !on.has(rule))
+    .map((rule) => `${rule} is off`);
   return [
-    ...[...rulesOf(was).keys()].filter((rule) => !on.has(rule)).map((rule) => `${rule} is off`),
+    ...new Set([...lost, ...relaxed(is, known).filter((entry) => !loose.includes(entry))]),
     ...skipped(is, rulesNamed(was))
       .filter((entry) => !already.includes(entry))
       .map((entry) => `skips ${entry}`),

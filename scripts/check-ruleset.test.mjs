@@ -44,3 +44,10 @@ test("says when the ruleset no longer covers main", () => {
   skipping.conditions.ref_name.exclude = ["refs/heads/main"];
   assert.match(drift(wanted, skipping)[0], /it excludes/);
 });
+
+test("says when the ruleset allows another way to merge", () => {
+  const rebasing = structuredClone(wanted);
+  const pull = rebasing.rules.find((own) => own.type === "pull_request").parameters;
+  pull.allowed_merge_methods = ["squash", "rebase"];
+  assert.match(drift(wanted, rebasing)[0], /allowed_merge_methods/);
+});

@@ -64,3 +64,20 @@ test("a package script that no longer runs a check", () => {
   const more = scripts("pnpm check && pnpm typecheck && pnpm test");
   assert.deepEqual(files([{ file: "package.json", before, after: more }]), []);
 });
+
+test("a new override that turns an existing rule off or down", () => {
+  const file = ".oxlintrc.json";
+  const on = config({ rules: { "holler/a": "error" } });
+  const turned = (level) =>
+    config({
+      rules: { "holler/a": "error" },
+      overrides: [{ files: ["src/**"], rules: { "holler/a": level } }],
+    });
+  assert.deepEqual(files([{ file, before: on, after: turned("off") }]), [
+    ".oxlintrc.json: holler/a in src/** is off",
+  ]);
+  assert.deepEqual(files([{ file, before: on, after: turned(["warn"]) }]), [
+    ".oxlintrc.json: holler/a in src/** is warn",
+  ]);
+  assert.deepEqual(files([{ file, before: turned("off"), after: turned("off") }]), []);
+});

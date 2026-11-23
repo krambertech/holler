@@ -7,6 +7,9 @@ import { fileURLToPath } from "node:url";
 
 const file = resolve(import.meta.dirname, "../.github/rulesets/main.json");
 const REPO = "krambertech/holler";
+const exact = new Set(["allowed_merge_methods"]);
+
+const same = (a, b) => JSON.stringify([...a].sort()) === JSON.stringify([...b].sort());
 
 export function drift(wanted, live) {
   if (!live) {
@@ -20,7 +23,7 @@ export function drift(wanted, live) {
   for (const side of ["include", "exclude"]) {
     const refs = live.conditions?.ref_name?.[side] ?? [];
     const own = wanted.conditions.ref_name[side];
-    if (JSON.stringify([...refs].sort()) !== JSON.stringify([...own].sort())) {
+    if (!same(refs, own)) {
       problems.push(`it ${side}s ${JSON.stringify(refs)}, not ${JSON.stringify(own)}`);
     }
   }
@@ -35,9 +38,11 @@ export function drift(wanted, live) {
     }
     for (const [key, value] of Object.entries(rule.parameters ?? {})) {
       const actual = own.parameters?.[key];
-      const kept = Array.isArray(value)
-        ? value.every((item) => JSON.stringify(actual ?? []).includes(named(item)))
-        : actual === value;
+      const kept = exact.has(key)
+        ? same(actual ?? [], value)
+        : Array.isArray(value)
+          ? value.every((item) => JSON.stringify(actual ?? []).includes(named(item)))
+          : actual === value;
       if (!kept) problems.push(`${rule.type}: ${key} is ${JSON.stringify(actual)}`);
     }
   }

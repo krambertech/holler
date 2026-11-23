@@ -6,7 +6,7 @@
   "break": [
     {
       "file": "scripts/check-ruleset.mjs",
-      "find": "    if (JSON.stringify([...refs].sort()) !== JSON.stringify([...own].sort())) {",
+      "find": "    if (!same(refs, own)) {",
       "replace": "    if (refs.length < own.length) {"
     }
   ],
