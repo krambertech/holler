@@ -96,6 +96,42 @@ test("a recipient answers every question type, with a follow-up after some answe
   expect(failures).toEqual([]);
 });
 
+test("a worded scale whose end words do not fit one row stacks on a phone", async ({ page }) => {
+  const draft = await lead.post("/api/hollers", {
+    data: {
+      mode: "survey",
+      title: "Office days",
+      audience: { people: ["U0LEAD"], groups: [], everyone: false },
+      questions: [
+        {
+          type: "single",
+          style: "scale",
+          prompt: "How often do you come in?",
+          options: [{ label: "No" }, { label: "Some" }, { label: "Yes" }],
+          lowLabel: "Not once in the whole month",
+          highLabel: "Every single working day",
+          followUp: { prompt: "What would change that?", onlyAfter: [0] },
+        },
+      ],
+    },
+  });
+  expect(draft.status(), await draft.text()).toBe(201);
+  const { id } = await draft.json();
+  const sent = await lead.post(`/api/hollers/${id}/send`);
+  expect(sent.status(), await sent.text()).toBe(200);
+  const link = await lead.get(`/api/dev/respond-link?holler=${id}&as=U0LEAD`);
+  const { url } = await link.json();
+
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.goto(url);
+  const scale = question(page, "How often do you come in?");
+  await expect(scale.getByRole("radio", { name: "No, Not once in the whole month" })).toBeVisible();
+  const last = await scale
+    .getByRole("radio", { name: "Yes, Every single working day" })
+    .boundingBox();
+  expect((last?.x ?? Number.POSITIVE_INFINITY) + (last?.width ?? 0)).toBeLessThanOrEqual(375);
+});
+
 test("an anonymous Holler says what the sender will and will not see", async ({ page }) => {
   const { url } = await webSurvey(true);
   await page.goto(url);

@@ -73,6 +73,10 @@ function useFitsOneRow() {
 
 function WordScale({ question, value, onValueChange, legendId }: ControlProps) {
   const { box, ruler, fits } = useFitsOneRow();
+  const tiles = question.options.map((option, index) => ({
+    id: option.id,
+    label: labelOf(question, index),
+  }));
   return (
     <div ref={box} className="relative">
       <div
@@ -80,9 +84,9 @@ function WordScale({ question, value, onValueChange, legendId }: ControlProps) {
         className="pointer-events-none invisible absolute inset-x-0 h-0 overflow-hidden"
       >
         <div ref={ruler} className="flex w-max gap-2">
-          {question.options.map((option) => (
-            <span key={option.id} className={cn(tileClassName, "whitespace-nowrap px-4")}>
-              {option.label}
+          {tiles.map((tile) => (
+            <span key={tile.id} className={cn(tileClassName, "whitespace-nowrap px-4")}>
+              {tile.label}
             </span>
           ))}
         </div>
@@ -94,16 +98,16 @@ function WordScale({ question, value, onValueChange, legendId }: ControlProps) {
         data-fits={fits || undefined}
         className="flex flex-col gap-2 data-fits:flex-row"
       >
-        {question.options.map((option, index) => (
+        {tiles.map((tile) => (
           <RadioPrimitive.Root
-            key={option.id}
-            value={option.id}
+            key={tile.id}
+            value={tile.id}
             className={cn(
               tileClassName,
               "text-balance in-data-fits:flex-auto in-data-fits:whitespace-nowrap in-data-fits:px-4",
             )}
           >
-            {labelOf(question, index)}
+            {tile.label}
           </RadioPrimitive.Root>
         ))}
       </RadioGroupPrimitive>
