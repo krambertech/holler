@@ -321,3 +321,11 @@ export type BillingOverview = z.infer<typeof billingOverviewSchema>;
 /** Where to send the browser next: a Polar checkout or the customer portal. */
 export const billingRedirectSchema = z.object({ url: z.url() });
 export type BillingRedirect = z.infer<typeof billingRedirectSchema>;
+
+export const visibilitySchema = z.enum(["private", "workspace"]);
+export const visibilityInputSchema = z.object({ visibility: visibilitySchema });
+
+export const viewersInputSchema = z.object({
+  slackUserIds: z.array(z.string().min(1).max(32)).min(1).max(50),
+});
+export type ViewersInput = z.input<typeof viewersInputSchema>;

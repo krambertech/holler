@@ -1,4 +1,10 @@
-import { exportFormatSchema, hollerDraftSchema, listHollersQuerySchema } from "@holler/core";
+import {
+  exportFormatSchema,
+  hollerDraftSchema,
+  listHollersQuerySchema,
+  viewersInputSchema,
+  visibilityInputSchema,
+} from "@holler/core";
 import { sValidator } from "@hono/standard-validator";
 import { Hono } from "hono";
 import { z } from "zod";
@@ -18,6 +24,14 @@ import {
 import { resultsFor } from "../services/responses";
 import { listRounds, stopRepeating } from "../services/rounds";
 import { previewSend } from "../services/send-preview";
+import {
+  addViewers,
+  getSharing,
+  makeReportLink,
+  removeViewer,
+  setVisibility,
+  turnOffReportLink,
+} from "../services/sharing";
 import { requireMember } from "./context";
 import { hollerOut } from "./v1/present";
 
@@ -80,4 +94,31 @@ export const hollerRoutes = new Hono<AppEnv>()
         "content-disposition": `attachment; filename="holler-${id}.${format}"`,
       });
     },
+  )
+  .get("/:id/sharing", async (c) =>
+    c.json(await getSharing(requireMember(c), c.env, c.req.param("id"))),
+  )
+  .put("/:id/visibility", sValidator("json", visibilityInputSchema), async (c) =>
+    c.json(
+      await setVisibility(
+        requireMember(c),
+        c.env,
+        c.req.param("id"),
+        c.req.valid("json").visibility,
+      ),
+    ),
+  )
+  .post("/:id/viewers", sValidator("json", viewersInputSchema), async (c) =>
+    c.json(await addViewers(requireMember(c), c.env, c.req.param("id"), c.req.valid("json"))),
+  )
+  .delete("/:id/viewers/:slackUserId", async (c) =>
+    c.json(
+      await removeViewer(requireMember(c), c.env, c.req.param("id"), c.req.param("slackUserId")),
+    ),
+  )
+  .post("/:id/report-link", async (c) =>
+    c.json(await makeReportLink(requireMember(c), c.env, c.req.param("id"))),
+  )
+  .delete("/:id/report-link", async (c) =>
+    c.json(await turnOffReportLink(requireMember(c), c.env, c.req.param("id"))),
   );

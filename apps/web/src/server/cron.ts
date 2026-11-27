@@ -9,6 +9,7 @@ import {
 import { runDirectorySyncs } from "./services/directory-sync";
 import { closeDueHollers } from "./services/lifecycle";
 import { queueDueReminders } from "./services/reminders";
+import { queueShareNotices } from "./services/sharing";
 import { pruneSlackDeliveries } from "./services/slack-deliveries";
 import { deleteUninstalledWorkspaces } from "./services/workspace-deletion";
 
@@ -43,6 +44,7 @@ export async function runCronPass(env: Bindings, db: Db, at: Date): Promise<Cron
     invited: () => queueDueInvites(env, db, at),
     reminded: () => queueDueReminders(env, db, at),
     announced: () => queueMissingAnnouncements(env, db, at),
+    shared: () => queueShareNotices(env, db, at),
     synced: () => runDirectorySyncs(env, db, at),
     pruned: () => pruneSlackDeliveries(db, at),
     deleted: () => deleteUninstalledWorkspaces(db, at),

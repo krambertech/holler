@@ -262,6 +262,7 @@ export const directoryOutSchema = z.object({
     }),
   ),
 });
+export type DirectoryOut = z.infer<typeof directoryOutSchema>;
 
 export const meOutSchema = z.object({
   member: z.object({
@@ -393,3 +394,31 @@ export const respondPersonSchema = z.object({
   avatarUrl: z.string().nullable(),
 });
 export type RespondPerson = z.infer<typeof respondPersonSchema>;
+export const sharingOutSchema = z.object({
+  visibility: z.enum(["private", "workspace"]),
+  viewers: z.array(
+    z.object({
+      slackUserId: z.string(),
+      name: z.string(),
+      avatarUrl: z.string().nullable(),
+      member: z.boolean(),
+      addedAt: timestamp,
+    }),
+  ),
+  reportUrl: z.url().nullable().describe("The read-only report link, or null while there is none."),
+});
+export type SharingOut = z.infer<typeof sharingOutSchema>;
+
+export const reportOutSchema = z.object({
+  title: z.string(),
+  mode: z.enum(modes),
+  anonymous: z.boolean(),
+  status: z.enum(["live", "closed"]),
+  workspaceName: z.string(),
+  sentAt: timestamp.nullable(),
+  closedAt: timestamp.nullable(),
+  recipientCount: z.number().int(),
+  answeredCount: z.number().int(),
+  results: resultsOutSchema,
+});
+export type ReportOut = z.infer<typeof reportOutSchema>;

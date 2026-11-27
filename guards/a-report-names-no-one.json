@@ -1,0 +1,14 @@
+{
+  "rule": "A report names no one, on any Holler",
+  "layer": "test",
+  "past": "#27: a report link could have carried who picked each option on a named Holler; Kateryna chose that report links never name anyone",
+  "check": "cd apps/web && pnpm exec vitest run src/server/services/sharing.test.ts -t 'names no one on a named Holler'",
+  "break": [
+    {
+      "file": "packages/core/src/results.ts",
+      "find": "options: q.options.map((o) => ({ ...o, slackUserIds: [] })),",
+      "replace": "options: q.options,"
+    }
+  ],
+  "fails": "FAIL"
+}

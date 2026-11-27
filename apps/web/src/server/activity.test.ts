@@ -23,6 +23,7 @@ import { snoozeReminder } from "./services/reminders";
 import { recordResponse } from "./services/responses";
 import { nextRound } from "./services/rounds";
 import { sendConfirmToken } from "./services/send-preview";
+import { addViewers, makeReportLink } from "./services/sharing";
 import { grantFor, slackUser, TEST_TOKEN_KEY } from "./services/slack-fixtures";
 import { completeInstall, markUninstalled } from "./services/workspaces";
 import { FakeSlack } from "./slack/fake";
@@ -210,6 +211,18 @@ const hollerRoutes = (base: string): Record<string, Proof> => ({
   ),
 });
 
+async function sharedWithUA() {
+  const id = await live();
+  await addViewers(world.ctx, world.env, id, { slackUserIds: ["UA"] });
+  return id;
+}
+
+async function withReportLink() {
+  const id = await live();
+  await makeReportLink(world.ctx, world.env, id);
+  return id;
+}
+
 async function colleague() {
   const { userId: theirs } = await slackUser(db, { slackUserId: "UA", teamId: "T" });
   const member = await ensureMember(
@@ -260,6 +273,21 @@ const routeProofs: Record<string, Proof> = {
   ),
   "DELETE /api/v1/connected-apps/:id": proof("connected_app.disconnected", appOfMine, (id) =>
     call("DELETE", `/api/v1/connected-apps/${id}`),
+  ),
+  "PUT /api/hollers/:id/visibility": proof("holler.visibility_changed", live, (id) =>
+    call("PUT", `/api/hollers/${id}/visibility`, { visibility: "workspace" }),
+  ),
+  "POST /api/hollers/:id/viewers": proof("viewer.added", live, (id) =>
+    call("POST", `/api/hollers/${id}/viewers`, { slackUserIds: ["UA"] }),
+  ),
+  "DELETE /api/hollers/:id/viewers/:slackUserId": proof("viewer.removed", sharedWithUA, (id) =>
+    call("DELETE", `/api/hollers/${id}/viewers/UA`),
+  ),
+  "POST /api/hollers/:id/report-link": proof("report_link.made", live, (id) =>
+    call("POST", `/api/hollers/${id}/report-link`),
+  ),
+  "DELETE /api/hollers/:id/report-link": proof("report_link.turned_off", withReportLink, (id) =>
+    call("DELETE", `/api/hollers/${id}/report-link`),
   ),
 };
 

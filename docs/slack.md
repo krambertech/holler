@@ -174,7 +174,7 @@ Each reminder carries **Answer now** and **Remind me later** (snooze to 15:00 to
 
 **Channel announcement.** Optional. "Mira sent a Holler to 12 people: _How was your week?_" with a live line, "7 of 12 answered", updated in place after each response, and a closed state when it closes. It never names who answered.
 
-**To the sender.** When a Holler closes: "_How was your week?_ closed. 11 of 12 answered." with **See results**. When a scheduled send fails: what failed and a link to fix it. When results are shared with someone: "Mira shared the results of _How was your week?_ with you."
+**To the sender.** When a Holler closes: "_How was your week?_ closed. 11 of 12 answered." with **See results**. When a scheduled send fails: what failed and a link to fix it. When results are shared with someone: "Mira shared the results of _How was your week?_ with you." with **See results**, sent once per share (`shared` in `sendEffects`), and not sent when the share was removed or the Holler went back to a draft before it went.
 
 ## App Home
 

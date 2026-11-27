@@ -42,7 +42,7 @@ Holler asks a team something in Slack, reminds the people who have not answered,
 
 **Audience**: Everyone a Holler is sent to, as the sender chose them: people, Slack user groups and channels' members, or the whole workspace. The audience is resolved to recipients when the Holler is sent. _Avoid_: Targeting, distribution list
 
-**Viewer**: A member a Holler's creator shared its results with. _Avoid_: Collaborator, guest
+**Viewer**: A person in the workspace a Holler's creator shared its results with, by Slack user. Someone who has never signed in can be one, and sees the results once they sign in to Holler. _Avoid_: Collaborator, guest
 
 ### Lifecycle
 
@@ -76,7 +76,7 @@ Holler asks a team something in Slack, reminds the people who have not answered,
 
 **Results**: What a Holler's responses add up to: counts per option, averages for scales, and the text answers. _Avoid_: Report (for the in-app view), analytics, stats, insights
 
-**Report**: A read-only page of a Holler's results, opened with an unguessable link, so it can be shared with people who are not members. _Avoid_: Public link, share page
+**Report**: A read-only page of a Holler's results, opened with an unguessable link, so it can be shared with people who are not members. It names no one, even on a named Holler. _Avoid_: Public link, share page
 
 **Your answers**: A person's own page in the web app listing every Holler sent to them, where it stands (waiting on you, answered, closed before you answered), and what they answered. _Avoid_: My responses, history, inbox
 

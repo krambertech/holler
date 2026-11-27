@@ -1,0 +1,14 @@
+{
+  "rule": "A share notice goes only to viewers this request actually added",
+  "layer": "test",
+  "past": "#27: sharing again with someone who could already see the Holler sent them a second notice",
+  "check": "cd apps/web && pnpm exec vitest run src/server/services/sharing.test.ts -t 'goes once to each new viewer'",
+  "break": [
+    {
+      "file": "apps/web/src/server/services/sharing.ts",
+      "find": "  const added = inserted.flat().map((row) => row.slackUserId);",
+      "replace": "  const added = wanted;"
+    }
+  ],
+  "fails": "FAIL"
+}
