@@ -119,14 +119,20 @@ export const recipientOutSchema = z.object({
   avatarUrl: z.string().nullable(),
   /** Null on an anonymous Holler: its sender sees how many answered, never who. */
   answered: z.boolean().nullable(),
+  invited: z.boolean(),
+  unreachable: z.boolean(),
 });
+export type RecipientOut = z.infer<typeof recipientOutSchema>;
 
 export const recipientsOutSchema = z.object({
   recipientCount: z.number().int(),
   answeredCount: z.number().int(),
   waitingCount: z.number().int(),
   recipients: z.array(recipientOutSchema),
+  nextReminderAt: timestamp.nullable(),
+  reminderAvailableAt: timestamp.nullable(),
 });
+export type RecipientsOut = z.infer<typeof recipientsOutSchema>;
 
 const writtenSchema = z.object({ text: z.string(), slackUserId: z.string().nullable() });
 

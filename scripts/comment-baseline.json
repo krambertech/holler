@@ -79,7 +79,7 @@
   "apps/web/src/client/lib/use-reduce-motion.ts": 4,
   "apps/web/src/client/main.tsx": 1,
   "apps/web/src/client/routes/_app.tsx": 3,
-  "apps/web/src/client/routes/_app/hollers.$id.tsx": 6,
+  "apps/web/src/client/routes/_app/hollers.$id.tsx": 1,
   "apps/web/src/client/routes/_app/index.tsx": 2,
   "apps/web/src/client/routes/_app/settings.tsx": 5,
   "apps/web/src/client/routes/consent.tsx": 8,
