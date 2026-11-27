@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { AppHeader } from "@/components/app-header";
 import { Segmented, SegmentedItem } from "@/components/ui/segmented";
+import { toast } from "@/components/ui/toast";
 import { Variants } from "../frame";
 import type { Group } from "./types";
 
@@ -27,7 +28,7 @@ export const navigation: Group = {
       slug: "app-header",
       name: "AppHeader",
       source: "components/app-header.tsx",
-      note: "The logo goes home; the member sits on the right. Nothing else lives up here.",
+      note: "The logo goes home; the member sits on the right and opens Settings and Sign out. Nothing else lives up here.",
       Demo: () => (
         <Variants
           stack
@@ -36,7 +37,11 @@ export const navigation: Group = {
               label: "Signed in",
               render: () => (
                 <div className="w-full">
-                  <AppHeader me={{ name: "Mira", slackUserId: "U0LEAD", avatarUrl: null }} />
+                  <AppHeader
+                    me={{ name: "Mira", slackUserId: "U0LEAD", avatarUrl: null }}
+                    workspaceName="Northwind"
+                    onSignOut={() => toast.add({ title: "The app signs out here" })}
+                  />
                 </div>
               ),
             },
