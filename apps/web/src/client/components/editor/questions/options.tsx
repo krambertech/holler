@@ -164,7 +164,7 @@ function ChoiceOptions({ question, number, onEdit, problems = {} }: Props) {
               <div
                 className={cn(
                   optionRowClassName,
-                  "group/option has-[input:focus-visible]:outline-2 has-[input:focus-visible]:outline-focus has-[input:focus-visible]:outline-offset-1",
+                  "group/option has-[input:focus-visible]:edge-3",
                   problem && "bg-danger edge-danger",
                 )}
               >

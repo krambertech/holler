@@ -55,7 +55,7 @@ function ComposeBarDemo({ problem }: { problem?: string }) {
       className="w-full"
       description={summary.description}
       tone={summary.tone}
-      action={<Button variant="primary">Next: who and when</Button>}
+      action={<Button variant="primary">Next: share</Button>}
     >
       {summary.title}
     </SendBar>

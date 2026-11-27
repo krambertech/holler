@@ -856,7 +856,7 @@ function ReorderGrip({
       onKeyDown={onKeyDown}
       onBlur={onBlur}
       className={cn(
-        "absolute start-0.5 z-1 grid h-7 w-4 cursor-grab touch-none select-none place-items-center rounded-sm text-faint sm:w-5",
+        "absolute start-0 z-1 grid h-7 w-4 cursor-grab touch-none select-none place-items-center rounded-sm text-faint sm:w-5",
         // Level with the number: the head row is 32 px tall under the card's 16 or 18 px top.
         folded ? "top-2.5 opacity-100" : "top-[18px] sm:top-5",
         "opacity-0 transition-[color,opacity] duration-150 group-hover/card:opacity-100 focus-visible:opacity-100 pointer-coarse:opacity-100",

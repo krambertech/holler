@@ -54,10 +54,7 @@ function ChaseForm({
         onChange={(e) => onUpdate({ externalUrl: e.target.value })}
         placeholder="https://forms.gle/…"
       />
-      <FieldDescription>
-        People get the link and an I submitted it button. Holler reminds everyone who has not
-        pressed it until it closes.
-      </FieldDescription>
+      <FieldDescription>Holler reminds people until they press I submitted it.</FieldDescription>
       <FieldError>{linkProblem}</FieldError>
     </Field>
   );
@@ -103,7 +100,7 @@ function HollerEditorWrite({
             aria-label="Intro"
             value={draft.description}
             onChange={(e) => onUpdate({ description: e.target.value })}
-            placeholder="Add a line of context (optional)"
+            placeholder="Add a description (optional)"
             rows={1}
             maxLength={4000}
             className={bareIntro}

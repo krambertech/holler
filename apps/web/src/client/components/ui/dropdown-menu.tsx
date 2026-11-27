@@ -461,6 +461,7 @@ interface RadioItemProps extends RowProps {
   disabled?: boolean | undefined;
   /** False when the menu holds more to choose, such as a filter menu. */
   closeOnClick?: boolean | undefined;
+  checkmark?: boolean | undefined;
 }
 
 /** One of a set. Choosing it closes the menu, unless the set sits among other choices. */
@@ -469,6 +470,7 @@ function DropdownMenuRadioItem({
   value,
   disabled = false,
   closeOnClick = true,
+  checkmark = true,
   className,
   children,
   ...props
@@ -487,9 +489,9 @@ function DropdownMenuRadioItem({
         value={value}
         disabled={disabled}
         closeOnClick={closeOnClick}
-        className={cn(itemClassName, "ps-9", className)}
+        className={cn(itemClassName, checkmark && "ps-9", className)}
       >
-        <ItemCheck checked={checked} />
+        {checkmark && <ItemCheck checked={checked} />}
         {children}
       </MenuPrimitive.RadioItem>
     );
@@ -512,9 +514,9 @@ function DropdownMenuRadioItem({
       )}
       ref={ref as React.Ref<HTMLButtonElement> | undefined}
       data-slot="dropdown-menu-radio-item"
-      className={cn(itemClassName, touchRowClassName, "ps-9", className)}
+      className={cn(itemClassName, touchRowClassName, checkmark && "ps-9", className)}
     >
-      <ItemCheck checked={checked} />
+      {checkmark && <ItemCheck checked={checked} />}
       {children}
     </button>
   );

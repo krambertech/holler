@@ -41,7 +41,7 @@ test("a lead writes a survey, it saves as a draft, and Send names what is missin
     "Which bet should we make first?",
   );
 
-  await page.getByRole("button", { name: "Next: who and when" }).click();
+  await page.getByRole("button", { name: "Next: share" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Send “Q1 planning”" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Who gets it" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "When it goes out" })).toBeVisible();
@@ -97,7 +97,7 @@ test("the back link keeps its place, and a draft is deleted from its menu", asyn
   const back = page.getByRole("link", { name: "Your hollers" });
   const writing = await back.boundingBox();
 
-  await page.getByRole("button", { name: "Next: who and when" }).click();
+  await page.getByRole("button", { name: "Next: share" }).click();
   const toQuestions = page.getByRole("button", { name: "Back to questions" });
   await expect(toQuestions).toBeVisible();
   const sending = await toQuestions.boundingBox();

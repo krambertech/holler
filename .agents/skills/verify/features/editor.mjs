@@ -40,7 +40,7 @@ export default async function drive({ page, step, api, expect }) {
 
   await step("Next opens the sending page, with the back link in the same place", async () => {
     const before = await page.getByRole("link", { name: "Your hollers" }).boundingBox();
-    await page.getByRole("button", { name: "Next: who and when" }).click();
+    await page.getByRole("button", { name: "Next: share" }).click();
     await expect(page.getByRole("heading", { level: 1, name: `Send “${TITLE}”` })).toBeVisible();
     const after = await page.getByRole("button", { name: "Back to questions" }).boundingBox();
     expect(after?.x).toBe(before?.x);

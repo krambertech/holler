@@ -16,7 +16,7 @@ A template fills the editor and leaves no link behind: from then on it is an ord
 
 `HollerEditor` holds the state (`useHollerEditor`) and shows one of two pages: `HollerEditorWrite` or `HollerEditorSend`. `HollerEditorTop` draws the same row on the start screen and both pages, so the back link never moves: on the start screen and the writing page it goes to Your hollers, on the sending page back to the questions (or the form, for a chase). Delete draft sits in that row's menu.
 
-The writing page has no visible title of its own; its `h1` is visually hidden ("Write a survey"), and the Holler's title field is the largest text. A pulse's title field shows its first question in grey, the title it gets when the sender types none. Every mode has the line of context under its title.
+The writing page has no visible title of its own; its `h1` is visually hidden ("Write a survey"), and the Holler's title field is the largest text. A pulse's title field shows its first question in grey, the title it gets when the sender types none. Every mode has an optional description under its title.
 
 The sending page reads top to bottom: `AudiencePicker`, `WhenPicker`, then `SendSettings`. `WhenPicker` puts Now and Later on one line, and Later's day, time and clock sit right under it. `SendSettings` shows every setting as a row; a new setting is one more row.
 

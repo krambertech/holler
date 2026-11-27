@@ -112,7 +112,7 @@ function ScaleOptions({ question, number, custom, onEdit, problems = {} }: Props
               previewChipClassName,
               "justify-center",
               // A numbered scale stays one row on a phone, the way people will see it.
-              numbered && "min-w-8 px-1 tabular max-sm:min-w-0 max-sm:flex-1",
+              numbered && "min-w-10 px-1 tabular max-sm:min-w-0 max-sm:flex-1",
               editable && "sm:flex-1",
             )}
           >

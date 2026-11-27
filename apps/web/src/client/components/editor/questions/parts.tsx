@@ -46,7 +46,7 @@ export const addRowClassName =
 
 /** A step of an answer the type sets, such as Yes or 4: quiet text on the well, with no control's edge. */
 export const previewChipClassName =
-  "inline-flex h-8 items-center gap-2 rounded-sm bg-well px-3 text-ink-2 text-sm select-none";
+  "inline-flex min-h-11 items-center gap-2 rounded-control bg-well px-3 text-ink-2 select-none md:min-h-10";
 
 /**
  * A small control inside a settings sentence: 28 px with a mouse, with a 44 px target under a finger

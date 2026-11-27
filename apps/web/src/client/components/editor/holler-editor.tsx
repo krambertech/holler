@@ -200,7 +200,7 @@ function HollerEditor({
           action={
             writing ? (
               <Button variant="primary" onClick={() => editor.goTo("send")}>
-                Next: who and when
+                Next: share
               </Button>
             ) : (
               <SendAction editor={editor} />

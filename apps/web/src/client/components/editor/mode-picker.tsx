@@ -1,5 +1,5 @@
 import { type Mode, modeDescriptions, modeLabels, modes, questionLimits } from "@holler/core";
-import { ChevronDown } from "lucide-react";
+import { Check, ChevronDown } from "lucide-react";
 import type { ComponentProps } from "react";
 import { modeIcons } from "@/components/mode-glyph";
 import {
@@ -25,7 +25,7 @@ function ModePicker({ mode, onChange, questionCount, className, ...props }: Prop
         {...props}
         data-slot="mode-picker"
         className={cn(
-          "relative inline-flex h-8 items-center gap-2 rounded-control ps-1 pe-2 text-ink outline-none transition-colors focus-visible:ring-2 focus-visible:ring-focus hoverable:hover:bg-hover data-popup-open:bg-hover pointer-coarse:before:absolute pointer-coarse:before:-inset-y-1.5 pointer-coarse:before:inset-x-0 pointer-coarse:before:content-['']",
+          "relative -ms-1 inline-flex h-8 items-center gap-2 rounded-control ps-1 pe-2 text-ink outline-none transition-colors focus-visible:ring-2 focus-visible:ring-focus hoverable:hover:bg-hover data-popup-open:bg-hover pointer-coarse:before:absolute pointer-coarse:before:-inset-y-1.5 pointer-coarse:before:inset-x-0 pointer-coarse:before:content-['']",
           className,
         )}
       >
@@ -46,16 +46,17 @@ function ModePicker({ mode, onChange, questionCount, className, ...props }: Prop
                 key={option}
                 value={option}
                 disabled={tooMany}
-                className="items-start py-2.5"
+                checkmark={false}
+                className="py-2.5"
               >
-                <span className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] gap-x-2.5 gap-y-0.5">
-                  <OptionIcon
-                    aria-hidden
-                    size={16}
-                    strokeWidth={2}
-                    className={cn("mt-1", option === mode ? "text-tint-ink" : "text-muted")}
-                  />
+                <span className="grid min-w-0 flex-1 grid-cols-[1rem_minmax(0,1fr)_1rem] items-center gap-x-3 gap-y-0.5">
+                  <OptionIcon aria-hidden size={16} strokeWidth={2} className="text-muted" />
                   <span className="font-normal text-ink">{modeLabels[option]}</span>
+                  {option === mode ? (
+                    <Check aria-hidden size={16} strokeWidth={2.5} className="text-ink" />
+                  ) : (
+                    <span aria-hidden />
+                  )}
                   <span className="col-start-2 whitespace-normal text-muted text-sm">
                     {tooMany
                       ? "A pulse has one or two questions. Remove some to switch."

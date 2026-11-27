@@ -39,7 +39,7 @@ function AnswerPreview({ kind }: PreviewProps) {
   return (
     <div
       data-slot="answer-preview"
-      className="flex min-h-10 items-center gap-2.5 rounded-control bg-well px-3 text-muted"
+      className="flex min-h-11 items-center gap-2.5 rounded-control bg-well px-3 text-muted md:min-h-10"
     >
       <Icon aria-hidden className="size-4 shrink-0" strokeWidth={2} />
       {words}
