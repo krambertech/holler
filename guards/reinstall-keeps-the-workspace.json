@@ -1,0 +1,14 @@
+{
+  "rule": "A workspace reinstalled while the cron deletes it keeps everything",
+  "layer": "test",
+  "past": "#33: a reinstall between reading members and deleting them would have lost its people's keys, because later statements did not wait for the workspace row to be gone",
+  "check": "cd apps/web && pnpm exec vitest run src/server/services/workspace-deletion.test.ts -t 'reinstalled mid-deletion'",
+  "break": [
+    {
+      "file": "apps/web/src/server/services/workspace-deletion.ts",
+      "find": "db.delete(schema.apikey).where(and(inArray(keyMember, chunk), workspaceGone)),",
+      "replace": "db.delete(schema.apikey).where(inArray(keyMember, chunk)),"
+    }
+  ],
+  "fails": "FAIL"
+}

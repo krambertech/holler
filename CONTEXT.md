@@ -34,6 +34,8 @@ Holler asks a team something in Slack, reminds the people who have not answered,
 
 **Workspace**: One Slack workspace that installed Holler. Everything belongs to a workspace: members, hollers, the plan and the bill. In code it is `workspace`, keyed by Slack's team id. _Avoid_: Team, org, organization, tenant, account
 
+**Workspace deletion**: Deleting everything Holler keeps for a workspace. An owner does it from Settings, or Holler does it 90 days after Slack reports an uninstall. In copy it is "delete the workspace's data". _Avoid_: Erase, wipe, purge, close the account
+
 **Member**: A person in a workspace who has signed in to Holler with Slack. Members send hollers and read results. A member is an **owner** (installed Holler or was made one, manages billing) or a **sender** (everyone else). _Avoid_: User (in copy), admin, seat
 
 **Recipient**: A person a Holler is sent to. A recipient needs no account: they are a Slack user in the workspace, and they answer in Slack or on a web page Slack links them to. _Avoid_: Respondent (before they answer), participant, target, audience member

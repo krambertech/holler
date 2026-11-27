@@ -86,6 +86,8 @@ Sending is the moment a Holler counts against the monthly limit (`hollers.sent_a
 
 **Mode.** The mode may change while a Holler is a draft or scheduled. A chase has no questions, so saving a draft as a chase deletes its questions.
 
+**Deleting a workspace.** `services/workspace-deletion.ts` builds one batch: the `workspaces` row first, whose cascades take every table that hangs off it, then the API keys and OAuth grants pinned to its members (`apikey.reference_id` is a user and `oauth_*.reference_id` a member, neither a foreign key), then every user left with no member row. Each statement after the first runs only once the workspace row is gone, so a reinstall that clears `uninstalled_at` while the cron deletes leaves everything in place. A person who is also a member of another workspace keeps their user, sessions and that workspace's keys. A deletion records no Activity, because the Activity goes with the workspace; the Worker logs the workspace id instead. A new table that holds workspace data must cascade from `workspaces` or be added to the batch: `services/workspace-deletion.test.ts` fills every table and fails otherwise.
+
 **Case folding.** SQLite's `lower()` folds ASCII only, so Дієслова and дієслова would differ. Text that is searched is stored folded with `toLocaleLowerCase()` in a `search_*` column. Oxlint (`holler/no-sql-lower`) refuses `lower(` in server SQL.
 
 **D1 binds at most 100 values in one statement.** Insert rows one per statement inside a batch, never a multi-row `values([...])` that can grow with input. `runBatch` in `apps/web/src/server/batch.ts` takes a list.
