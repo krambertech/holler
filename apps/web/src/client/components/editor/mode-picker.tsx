@@ -1,0 +1,78 @@
+import { type Mode, modeDescriptions, modeLabels, modes, questionLimits } from "@holler/core";
+import { ChevronDown } from "lucide-react";
+import type { ComponentProps } from "react";
+import { modeIcons } from "@/components/mode-glyph";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/cn";
+
+interface Props extends Omit<ComponentProps<"button">, "onChange"> {
+  mode: Mode;
+  onChange: (mode: Mode) => void;
+  questionCount: number;
+}
+
+function ModePicker({ mode, onChange, questionCount, className, ...props }: Props) {
+  const Icon = modeIcons[mode];
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        {...props}
+        data-slot="mode-picker"
+        className={cn(
+          "-my-1 inline-flex items-center gap-2 rounded-control py-1 ps-1 pe-2 text-ink outline-none transition-colors focus-visible:ring-2 focus-visible:ring-focus hoverable:hover:bg-hover data-popup-open:bg-hover",
+          className,
+        )}
+      >
+        <span className="grid size-9 place-items-center rounded-glyph bg-tint text-tint-ink">
+          <Icon aria-hidden size={18} strokeWidth={2} />
+        </span>
+        {modeLabels[mode].toLocaleLowerCase()}
+        <ChevronDown aria-hidden size={20} strokeWidth={2} className="text-muted" />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent aria-label="What you are sending" align="start" className="w-[22rem]">
+        <DropdownMenuRadioGroup value={mode} onValueChange={(next) => onChange(next as Mode)}>
+          {modes.map((option) => {
+            const OptionIcon = modeIcons[option];
+            const tooMany = questionCount > questionLimits[option].max && option === "pulse";
+            return (
+              <DropdownMenuRadioItem
+                key={option}
+                value={option}
+                disabled={tooMany}
+                className="h-auto items-start py-2.5"
+              >
+                <span className="flex min-w-0 items-start gap-3">
+                  <span
+                    aria-hidden
+                    className={cn(
+                      "mt-0.5 grid size-7 shrink-0 place-items-center rounded-glyph",
+                      option === mode ? "bg-tint text-tint-ink" : "bg-well text-muted",
+                    )}
+                  >
+                    <OptionIcon size={15} strokeWidth={2} />
+                  </span>
+                  <span className="flex min-w-0 flex-col">
+                    <span className="font-normal text-ink">{modeLabels[option]}</span>
+                    <span className="whitespace-normal text-muted text-sm">
+                      {tooMany
+                        ? "A pulse has one or two questions. Remove some to switch."
+                        : modeDescriptions[option]}
+                    </span>
+                  </span>
+                </span>
+              </DropdownMenuRadioItem>
+            );
+          })}
+        </DropdownMenuRadioGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+export { ModePicker };

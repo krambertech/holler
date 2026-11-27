@@ -10,6 +10,7 @@ import { answers } from "./parts/answers";
 import { apiAccess } from "./parts/api-access";
 import { billing } from "./parts/billing";
 import { choosing } from "./parts/choosing";
+import { editor } from "./parts/editor";
 import { feedback } from "./parts/feedback";
 import { forms } from "./parts/forms";
 import { labels } from "./parts/labels";
@@ -20,6 +21,7 @@ import { overlays } from "./parts/overlays";
 import { people } from "./parts/people";
 import { questions } from "./parts/questions";
 import { results } from "./parts/results";
+import { sending } from "./parts/sending";
 import { settings } from "./parts/settings";
 import { states } from "./parts/states";
 import { surfaces } from "./parts/surfaces";
@@ -77,6 +79,7 @@ export const GROUPS: Group[] = [
   forms,
   choosing,
   questions,
+  editor,
   answering,
   menus,
   overlays,
@@ -89,6 +92,7 @@ export const GROUPS: Group[] = [
   people,
   feedback,
   navigation,
+  sending,
   settings,
   billing,
   apiAccess,

@@ -242,25 +242,47 @@ export const roundsOutSchema = z.object({
 });
 export type RoundsOut = z.infer<typeof roundsOutSchema>;
 
+const directoryPersonSchema = z.object({
+  slackUserId: z.string(),
+  name: z.string(),
+  displayName: z.string().nullable(),
+  avatarUrl: z.string().nullable(),
+  timeZone: z.string().nullable(),
+  sends: z.number().int().nonnegative().optional(),
+});
+
+const directoryGroupSchema = z.object({
+  slackId: z.string(),
+  kind: z.enum(["usergroup", "channel"]),
+  name: z.string(),
+  handle: z.string().nullable(),
+  memberCount: z.number().int().nullable(),
+  sends: z.number().int().nonnegative().optional(),
+});
+
 export const directoryOutSchema = z.object({
-  people: z.array(
-    z.object({
-      slackUserId: z.string(),
-      name: z.string(),
-      displayName: z.string().nullable(),
-      avatarUrl: z.string().nullable(),
-      timeZone: z.string().nullable(),
-    }),
-  ),
-  groups: z.array(
-    z.object({
-      slackId: z.string(),
-      kind: z.enum(["usergroup", "channel"]),
-      name: z.string(),
-      handle: z.string().nullable(),
-      memberCount: z.number().int().nullable(),
-    }),
-  ),
+  people: z.array(directoryPersonSchema),
+  groups: z.array(directoryGroupSchema),
+  syncing: z
+    .boolean()
+    .optional()
+    .describe(
+      "True while Holler reads the workspace's directory for the first time, so some people may be missing.",
+    ),
+});
+
+export const directoryResolveInSchema = z.object({
+  terms: z.array(z.string().trim().min(1).max(200)).min(1).max(100),
+});
+
+export const directoryResolveOutSchema = z.object({
+  people: z.array(directoryPersonSchema),
+  groups: z.array(directoryGroupSchema),
+  missed: z
+    .array(z.object({ term: z.string(), reason: z.enum(["none", "several"]) }))
+    .describe(
+      "Each term that matched nobody, or more than one person or group, in the order pasted.",
+    ),
 });
 export type DirectoryOut = z.infer<typeof directoryOutSchema>;
 

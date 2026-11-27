@@ -1,5 +1,7 @@
 import type {
   DirectoryOut,
+  directoryOutSchema,
+  HollerOut,
   HollerSummary,
   HomeCounts,
   InstallStatus,
@@ -13,6 +15,7 @@ import type {
   SharingOut,
 } from "@holler/core";
 import { queryOptions } from "@tanstack/react-query";
+import type { z } from "zod";
 import { api } from "./api";
 
 export interface Me {
@@ -107,6 +110,24 @@ export const directoryQuery = (q: string) =>
     queryKey: ["directory", q],
     queryFn: () => api<DirectoryOut>(`/directory?q=${encodeURIComponent(q)}`),
     staleTime: 60_000,
+  });
+
+export const hollerQuery = (id: string) =>
+  queryOptions({
+    queryKey: ["hollers", id],
+    queryFn: () => api<HollerOut>(`/hollers/${id}`),
+  });
+
+export const directoryLookupQuery = (ids: readonly string[]) =>
+  queryOptions({
+    queryKey: ["directory", "lookup", [...ids].sort().join(",")],
+    queryFn: (): Promise<z.infer<typeof directoryOutSchema>> =>
+      ids.length === 0
+        ? Promise.resolve({ people: [], groups: [] })
+        : api<z.infer<typeof directoryOutSchema>>(
+            `/directory/lookup?ids=${encodeURIComponent(ids.join(","))}`,
+          ),
+    staleTime: 5 * 60_000,
   });
 
 export const ownAnswersQuery = queryOptions({

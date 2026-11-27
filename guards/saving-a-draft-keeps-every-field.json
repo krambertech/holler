@@ -1,0 +1,14 @@
+{
+  "rule": "Opening a draft in the editor and saving it changes no field, repeat included",
+  "layer": "test",
+  "past": "#11: after #32 added repeating pulses, the editor sent no repeat, so saving a pulse draft stopped it repeating",
+  "check": "cd apps/web && pnpm exec vitest run src/client/components/editor/draft.test.ts -t 'sends back every field the server saves'",
+  "break": [
+    {
+      "file": "apps/web/src/client/components/editor/draft.ts",
+      "find": "    repeat: draft.repeat,\n",
+      "replace": ""
+    }
+  ],
+  "fails": "sends back every field the server saves"
+}

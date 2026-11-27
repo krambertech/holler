@@ -1,7 +1,7 @@
 import type { HollerOut, Results, SharingOut } from "@holler/core";
 import { anonymousThreshold, modeLabels } from "@holler/core";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, Navigate, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
 import { useDeferredValue, useMemo, useState } from "react";
 import { ErrorState } from "@/components/error-state";
@@ -111,7 +111,7 @@ function HollerPage() {
     onSuccess: (draft) => {
       void queryClient.invalidateQueries({ queryKey: ["hollers"], refetchType: "none" });
       toast.add({ title: "Copied into a new draft." });
-      void navigate({ to: "/hollers/$id", params: { id: draft.id } });
+      void navigate({ to: "/new", search: { draft: draft.id } });
     },
     onError: (error) => toast.add({ tone: "danger", title: error.message }),
   });
@@ -137,6 +137,9 @@ function HollerPage() {
     );
   }
   const h = holler.data;
+  if (h.isCreator && (h.status === "draft" || h.status === "scheduled")) {
+    return <Navigate to="/new" search={{ draft: h.id }} replace />;
+  }
   const live = h.status === "live";
 
   return (

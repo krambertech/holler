@@ -2,13 +2,11 @@
   "$schema": "./node_modules/knip/schema.json",
   "ignoreExportsUsedInFile": true,
   "ignoreIssues": {
-    "apps/web/src/client/components/billing/limit-reached.tsx": ["exports"],
     "apps/web/src/client/components/ui/combobox.tsx": ["exports"],
     "apps/web/src/client/components/ui/dropdown-menu.tsx": ["exports"],
     "apps/web/src/client/components/ui/field.tsx": ["exports"],
     "apps/web/src/client/components/ui/select.tsx": ["exports"],
-    "apps/web/src/server/services/connected-apps.ts": ["exports"],
-    "apps/web/src/client/pages.ts": ["exports"]
+    "apps/web/src/server/services/connected-apps.ts": ["exports"]
   },
   "workspaces": {
     ".": {
@@ -20,7 +18,7 @@
       "ignoreBinaries": ["wrangler", "vite", "drizzle-kit", "java"]
     },
     "apps/web": {
-      "entry": ["design/worker.ts", "src/server/auth-cli.ts"]
+      "entry": ["design/worker.ts", "src/server/auth-cli.ts", "src/client/pages.ts"]
     }
   }
 }
