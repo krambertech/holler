@@ -1,0 +1,14 @@
+{
+  "rule": "Activity links a Holler only when the owner reading it can open it",
+  "layer": "test",
+  "past": "#31: Activity linked another member's private draft, and the link opened a not-found page",
+  "check": "cd apps/web && pnpm exec vitest run src/server/services/activity.test.ts -t 'links a Holler only'",
+  "break": [
+    {
+      "file": "apps/web/src/server/services/activity.ts",
+      "find": "canOpen: sql<number>`case when ${visibleTo(ctx, memberId)} then 1 else 0 end`",
+      "replace": "canOpen: sql<number>`1`"
+    }
+  ],
+  "fails": "FAIL"
+}
