@@ -56,6 +56,9 @@ async function copyResultsAsMarkdown(id: string) {
   }
 }
 
+const writtenInEditor = (h: HollerOut) =>
+  h.isCreator && (h.status === "draft" || h.status === "scheduled");
+
 function HollerPage() {
   const { id } = Route.useParams();
   const queryClient = useQueryClient();
@@ -137,9 +140,7 @@ function HollerPage() {
     );
   }
   const h = holler.data;
-  if (h.isCreator && (h.status === "draft" || h.status === "scheduled")) {
-    return <Navigate to="/new" search={{ draft: h.id }} replace />;
-  }
+  if (writtenInEditor(h)) return <Navigate to="/new" search={{ draft: h.id }} replace />;
   const live = h.status === "live";
 
   return (

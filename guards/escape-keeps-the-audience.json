@@ -6,8 +6,8 @@
   "break": [
     {
       "file": "apps/web/src/client/components/editor/send/audience-logic.ts",
-      "find": "if (k.key === \"Escape\") return k.open ? \"close\" : \"swallow\";",
-      "replace": "if (k.key === \"Escape\") return k.open ? \"close\" : null;"
+      "find": "[\"Escape\", (k) => (k.open ? \"close\" : \"swallow\")],",
+      "replace": "[\"Escape\", (k) => (k.open ? \"close\" : null)],"
     }
   ],
   "fails": "never lets Escape clear the chips"

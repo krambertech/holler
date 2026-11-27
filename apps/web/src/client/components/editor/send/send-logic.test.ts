@@ -297,7 +297,7 @@ describe("reach", () => {
 describe("the bar", () => {
   it("says where Compose's Holler is answered, or what to fix", () => {
     expect(composeBarSummary({ where: "dm" }, 1)).toEqual({
-      title: "Answered right in the DM",
+      title: "Answered in the Slack message",
       description: "1 question",
     });
     expect(composeBarSummary({ where: "slack" }, 4, "Give it a title.")).toEqual({

@@ -420,7 +420,7 @@ export function sendActionLabel(reach: Reach, scheduled: boolean): string {
 export function answeredInLabel(surface: AnswerSurface): string {
   switch (surface.where) {
     case "dm":
-      return "Answered right in the DM";
+      return "Answered in the Slack message";
     case "slack":
       return "Answered in a Slack form";
     case "web":

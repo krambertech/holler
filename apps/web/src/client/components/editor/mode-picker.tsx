@@ -25,15 +25,16 @@ function ModePicker({ mode, onChange, questionCount, className, ...props }: Prop
         {...props}
         data-slot="mode-picker"
         className={cn(
-          "-my-1 inline-flex items-center gap-2 rounded-control py-1 ps-1 pe-2 text-ink outline-none transition-colors focus-visible:ring-2 focus-visible:ring-focus hoverable:hover:bg-hover data-popup-open:bg-hover",
+          "relative inline-flex h-8 items-center gap-2 rounded-control ps-1 pe-2 text-ink outline-none transition-colors focus-visible:ring-2 focus-visible:ring-focus hoverable:hover:bg-hover data-popup-open:bg-hover pointer-coarse:before:absolute pointer-coarse:before:-inset-y-1.5 pointer-coarse:before:inset-x-0 pointer-coarse:before:content-['']",
           className,
         )}
       >
-        <span className="grid size-9 place-items-center rounded-glyph bg-tint text-tint-ink">
-          <Icon aria-hidden size={18} strokeWidth={2} />
+        <span className="grid size-6 place-items-center rounded-glyph bg-tint text-tint-ink">
+          <Icon aria-hidden size={14} strokeWidth={2} />
         </span>
-        {modeLabels[mode].toLocaleLowerCase()}
-        <ChevronDown aria-hidden size={20} strokeWidth={2} className="text-muted" />
+        <span className="sr-only">Mode: </span>
+        {modeLabels[mode]}
+        <ChevronDown aria-hidden size={16} strokeWidth={2} className="text-muted" />
       </DropdownMenuTrigger>
       <DropdownMenuContent aria-label="What you are sending" align="start" className="w-[22rem]">
         <DropdownMenuRadioGroup value={mode} onValueChange={(next) => onChange(next as Mode)}>

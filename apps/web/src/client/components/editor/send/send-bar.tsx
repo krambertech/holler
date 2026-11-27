@@ -173,8 +173,8 @@ function SendBar({
       >
         <div
           className={cn(
-            "flex flex-wrap items-center gap-x-3 gap-y-2.5 rounded-plate py-2.5 ps-5 pe-2.5 transition-shadow duration-200 ease-(--ease-out) max-sm:px-4",
-            settled ? "bg-plate edge" : "floating",
+            "flex flex-wrap items-center gap-x-3 gap-y-2.5 py-2.5 ps-5 pe-2.5 transition-[background-color,box-shadow,border-radius] duration-200 ease-(--ease-out) max-sm:px-4",
+            settled ? "rounded-none border-divider border-t" : "floating rounded-plate",
           )}
         >
           <div className="grid min-w-0 flex-1 basis-44 leading-snug" aria-live="polite">
@@ -192,7 +192,7 @@ function SendBar({
             )}
           </div>
           <div className="flex grow items-center justify-end gap-2 sm:grow-0">
-            {secondary && <div className="max-sm:hidden">{secondary}</div>}
+            {secondary}
             <div className="flex max-sm:grow max-sm:*:grow">{action}</div>
           </div>
         </div>

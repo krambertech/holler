@@ -4,13 +4,21 @@ How the editor behaves and why. The code is `apps/web/src/client/components/edit
 
 ## One route, from start screen to draft
 
-`/new` shows the start screen. A mode (`?mode=`) or a template (`?template=`) opens Compose, and a saved draft opens at `/new?draft=<id>`. The first save adds `draft` to the address without remounting, so the sender keeps typing through it. `startedHere` stops the route from loading a draft it just made. `/hollers/<id>` sends the creator of a draft or a scheduled Holler here, because that is where it is written.
+`/new` shows the start screen. A mode (`?mode=`) or a template (`?template=`) opens the writing page, and a saved draft opens at `/new?draft=<id>`. `?stage=send` is the sending page. Moving between the two pushes a history entry, so the browser's Back returns to the other page. The first save adds `draft` to the address without remounting, so the sender keeps typing through it. `startedHere` stops the route from loading a draft it just made. `/hollers/<id>` sends the creator of a draft or a scheduled Holler here, because that is where it is written.
 
 The audience names a saved draft opens with are looked up once, when it opens. Autosave changes the cached Holler but not that lookup, and only the first load shows the skeleton, so the editor is never swapped out mid-edit.
 
-A template fills the editor and leaves no link behind: from then on it is an ordinary draft. The start screen shows one template of each kind people reach for most; the rest are in the templates dialog.
+A template fills the editor and leaves no link behind: from then on it is an ordinary draft. The start screen shows six templates people reach for most; the rest are in the templates dialog.
 
 `ModePicker` shows Pulse but disables it while the draft has more questions than a pulse may ask (`questionLimits`).
+
+## Two pages, no stepper
+
+`HollerEditor` holds the state (`useHollerEditor`) and shows one of two pages: `HollerEditorWrite` or `HollerEditorSend`. `HollerEditorTop` draws the same row on the start screen and both pages, so the back link never moves: on the start screen and the writing page it goes to Your hollers, on the sending page back to the questions (or the form, for a chase). Delete draft sits in that row's menu.
+
+The writing page has no visible title of its own; its `h1` is visually hidden ("Write a survey"), and the Holler's title field is the largest text. A pulse shows the title it takes from its first question, and **Use a different title** on the sending page replaces it. Every mode has the line of context under its title.
+
+The sending page reads top to bottom: `AudiencePicker`, `WhenPicker`, then `SendSettings`. `WhenPicker` puts Now and Later on one line, and Later's day, time and clock sit right under it. `SendSettings` shows every setting as a row; a new setting is one more row.
 
 ## Autosave
 
@@ -25,7 +33,7 @@ A template fills the editor and leaves no link behind: from then on it is an ord
 
 ## The send bar
 
-The bar rides at the bottom of the window and settles into place at the end of the page, so it never covers the last row. Its plum button names what a press does and who it reaches; with nobody chosen it reads **Send**. On a phone the button takes its own line before the words are cut short.
+The bar rides at the bottom of the window and settles into place at the end of the page, so it never covers the last row. Floating, it is a plate with a shadow; settled, it drops the plate and sits on the page under a hairline, because a lone plate at the end reads as one more card. Its plum button names what a press does and who it reaches; with nobody chosen it reads **Send**. On a phone the button takes its own line before the words are cut short.
 
 `isBigSend` asks once more before sending to everyone, to more than `bigSendAbove` (50) people, or to a group of unknown size, which could be any size. The question follows the audience on screen, never the last save's problems, which can be stale. `useNow` gives the bar and `SendSettings` one clock, so the close time each prints is the same minute.
 
@@ -48,7 +56,7 @@ The bar rides at the bottom of the window and settles into place at the end of t
 
 ## When and how: send settings
 
-`SendSettings` shows each setting as a row whose whole line is the button, with an action word that says what a press does. **Change** opens one row at a time, so the defaults need no clicks. An open row grows to its content's own height, and nothing inside a shut row can be reached.
+`WhenPicker` chooses now or later. Later starts at the next working morning (`tomorrowMorning`). In `SendSettings` each setting is a row whose whole line is the button, with an action word that says what a press does. **Change** opens one row at a time, so the defaults need no clicks. An open row grows to its content's own height, and nothing inside a shut row can be reached.
 
 - **Sending in each person's own time.** `landingTimes` reads `sendAt` as a wall-clock time on the sender's clock and finds that time in each zone, with the conversion delivery uses (`sameWallClockIn`), so the preview and the send agree. A person with no time zone in Slack counts as UTC, as in delivery. Times at one moment sort west to east, so the local times read in clock order. `atWallClock` corrects twice, so a time either side of a daylight-saving change lands on the right hour, and a time the change skips moves forward.
 - **The browser's clock.** The date and time pickers read and write the browser's clock, so `toPicker` and `fromPicker` carry a time across from the sender's zone.

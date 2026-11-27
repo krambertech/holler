@@ -26,6 +26,7 @@ import { settings } from "./parts/settings";
 import { states } from "./parts/states";
 import { surfaces } from "./parts/surfaces";
 import type { Group } from "./parts/types";
+import { whenAndHow } from "./parts/when-and-how";
 import { Space } from "./space";
 import { Typography } from "./typography";
 import { Voice } from "./voice";
@@ -93,6 +94,7 @@ export const GROUPS: Group[] = [
   feedback,
   navigation,
   sending,
+  whenAndHow,
   settings,
   billing,
   apiAccess,

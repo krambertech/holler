@@ -114,19 +114,29 @@ export type FieldKeyAction =
   | "close"
   | null;
 
+type KeyRule = (k: FieldKey, empty: boolean) => FieldKeyAction;
+
+const takesHighlighted = (k: FieldKey, empty: boolean) => k.open && k.highlighted && !empty;
+const opensList: KeyRule = (k) => (k.open ? null : "open");
+
+const fieldKeyRules = new Map<string, KeyRule>([
+  ["Escape", (k) => (k.open ? "close" : "swallow")],
+  ["ArrowDown", opensList],
+  ["ArrowUp", opensList],
+  ["Enter", (k) => (k.open ? null : "swallow")],
+  ["Backspace", (k, empty) => (empty && k.chips > 0 ? "select-last-chip" : null)],
+  [
+    "ArrowLeft",
+    (k) => (k.caret === 0 && !k.selection && !k.shift && k.chips > 0 ? "select-last-chip" : null),
+  ],
+  ["Tab", (k, empty) => (!k.shift && takesHighlighted(k, empty) ? "commit" : null)],
+  [",", (k, empty) => (takesHighlighted(k, empty) ? "commit" : "swallow")],
+]);
+
 export function fieldKeyAction(k: FieldKey): FieldKeyAction {
   const empty = k.value === "";
   if (k.mod) return k.key.toLowerCase() === "z" && !k.shift && empty ? "undo" : null;
-  if (k.key === "Escape") return k.open ? "close" : "swallow";
-  if ((k.key === "ArrowDown" || k.key === "ArrowUp") && !k.open) return "open";
-  if (k.key === "Enter" && !k.open) return "swallow";
-  if (k.key === "Backspace" && empty && k.chips > 0) return "select-last-chip";
-  if (k.key === "ArrowLeft" && k.caret === 0 && !k.selection && !k.shift && k.chips > 0) {
-    return "select-last-chip";
-  }
-  if (k.key === "Tab" && !k.shift && k.open && k.highlighted && !empty) return "commit";
-  if (k.key === ",") return k.open && k.highlighted && !empty ? "commit" : "swallow";
-  return null;
+  return fieldKeyRules.get(k.key)?.(k, empty) ?? null;
 }
 
 export type ChipKeyAction = { focus: number | "input"; remove?: true | undefined } | null;

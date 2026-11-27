@@ -7,7 +7,7 @@ test("a lead types who to send to, adds by keyboard, and takes one out with Back
   await signInAs(page, "lead");
   await expect(page.getByRole("heading", { name: "Your hollers" })).toBeVisible();
   await page.goto("/new?mode=pulse&stage=send");
-  await expect(page.getByRole("heading", { name: "Who" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Who gets it" })).toBeVisible();
 
   const field = page.getByRole("combobox", { name: /people, groups or channels/ });
   const chips = page.getByRole("list", { name: "Chosen" }).getByRole("listitem");

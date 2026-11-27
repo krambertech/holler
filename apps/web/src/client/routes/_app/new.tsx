@@ -4,7 +4,12 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useRef, useState } from "react";
 import { z } from "zod";
 import { blankDraft, draftFromHoller, draftFromTemplate } from "@/components/editor/draft";
-import { BackLabel, HollerEditor } from "@/components/editor/holler-editor";
+import { HollerEditor } from "@/components/editor/holler-editor";
+import {
+  BackLabel,
+  backLinkClassName,
+  HollerEditorTop,
+} from "@/components/editor/holler-editor-top";
 import { apiIo } from "@/components/editor/io";
 import { StartScreen } from "@/components/editor/start-screen";
 import { TemplatesDialog } from "@/components/editor/templates-dialog";
@@ -26,10 +31,7 @@ export const Route = createFileRoute("/_app/new")({
 
 function BackLink() {
   return (
-    <Link
-      to="/"
-      className="relative inline-flex w-fit items-center gap-1.5 rounded-sm py-1 text-ink-2 hoverable:hover:text-ink pointer-coarse:before:absolute pointer-coarse:before:-inset-2 pointer-coarse:before:content-['']"
-    >
+    <Link to="/" className={backLinkClassName}>
       <BackLabel />
     </Link>
   );
@@ -49,7 +51,7 @@ function NewHoller() {
   if (!fresh) {
     return (
       <>
-        <BackLink />
+        <HollerEditorTop back={<BackLink />} saveState="idle" />
         <StartScreen
           onPickMode={(next) => navigate({ search: { mode: next } })}
           onPickTemplate={(id) => navigate({ search: { template: id } })}
@@ -136,9 +138,7 @@ function Editor({
       saved={saved}
       known={known}
       stage={stage}
-      onStageChange={(next) =>
-        navigate({ search: (prev) => ({ ...prev, stage: next }), replace: true })
-      }
+      onStageChange={(next) => navigate({ search: (prev) => ({ ...prev, stage: next }) })}
       sender={me.data?.member.name ?? "You"}
       workspaceSize={workspace.data?.people ?? null}
       onCreated={(holler) =>

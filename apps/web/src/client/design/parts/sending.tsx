@@ -1,22 +1,10 @@
-import { answerSurface, foldText, type HollerDraft, parseSearch } from "@holler/core";
-import { ArrowLeft } from "lucide-react";
+import { answerSurface } from "@holler/core";
 import { useEffect, useRef, useState } from "react";
-import { rankEntries } from "@/components/editor/send/audience-logic";
 import { AudiencePicker, type AudienceSummary } from "@/components/editor/send/audience-picker";
-import {
-  type Directory,
-  type DirectoryGroup,
-  type DirectoryPerson,
-  type DirectoryResolve,
-  type DirectorySearch,
-  groupEntry,
-  personEntry,
-  type Resolved,
-} from "@/components/editor/send/directory";
-import { type BigSend, SendBar, SendButton } from "@/components/editor/send/send-bar";
+import type { DirectorySearch } from "@/components/editor/send/directory";
+import { SendBar, SendButton } from "@/components/editor/send/send-bar";
 import {
   answeredInLabel,
-  audienceReach,
   closeTime,
   composeBarSummary,
   dayTime,
@@ -25,257 +13,40 @@ import {
   sendActionLabel,
   sendBarSummary,
   sendWindow,
-  type ZoneCount,
 } from "@/components/editor/send/send-logic";
-import { SendSettings, type SendSettingsRow } from "@/components/editor/send/send-settings";
+import { SendSettings } from "@/components/editor/send/send-settings";
 import { type PreviewHoller, SlackPreview } from "@/components/editor/send/slack-preview";
 import { useNow } from "@/components/editor/send/use-now";
+import { WhenPicker } from "@/components/editor/send/when-picker";
 import { Button } from "@/components/ui/button";
 import { Variants } from "../frame";
+import {
+  type Audience,
+  big,
+  chase,
+  defaults,
+  everyone,
+  failingSearch,
+  four,
+  fridayFive,
+  known,
+  mondayNine,
+  none,
+  pulse,
+  pulseWithNote,
+  resolve,
+  search,
+  sendFor,
+  slowSearch,
+  survey,
+  syncingSearch,
+  team,
+  textPulse,
+  three,
+  WORKSPACE,
+  web,
+} from "./sending-fixtures";
 import type { Group } from "./types";
-
-const person = (
-  slackUserId: string,
-  name: string,
-  timeZone: string | null,
-  displayName: string | null = null,
-  sends = 0,
-): DirectoryPerson => ({ slackUserId, name, displayName, avatarUrl: null, timeZone, sends });
-
-const team: DirectoryPerson[] = [
-  person("U0JB", "Jonas Berg", "Europe/Berlin", "jonas", 6),
-  person("U0AT", "Ana Torres", "Europe/Lisbon", "ana.t", 4),
-  person("U0KL", "Kai Liu", "Asia/Singapore", "kai"),
-  person("U0MK", "Marta Kowalska", "Europe/Warsaw", "marta.k", 2),
-  person("U0MA", "Mateo Álvarez", "America/Bogota", "mateo"),
-  person("U0MR", "Mira Rao", "Asia/Kolkata", null),
-  person("U0JW", "Jun Watanabe", "Asia/Tokyo"),
-  person("U0AM", "Amara Thompson", "America/New_York"),
-  person("U0TR", "Tomás Ruiz", "America/Mexico_City"),
-  person("U0PS", "Priya Shah", "Asia/Kolkata"),
-  person("U0SN", "Sofia Nieminen", "Europe/Helsinki"),
-  person("U0KO", "Kofi Owusu", null),
-];
-
-const groups: DirectoryGroup[] = [
-  {
-    slackId: "S0DES",
-    kind: "usergroup",
-    name: "Design team",
-    handle: "design-team",
-    memberCount: 11,
-  },
-  { slackId: "S0ENG", kind: "usergroup", name: "Engineering", handle: "eng", memberCount: 64 },
-  { slackId: "C0GEN", kind: "channel", name: "general", handle: null, memberCount: 186 },
-  { slackId: "C0LDS", kind: "channel", name: "leads", handle: null, memberCount: 9 },
-  { slackId: "C0ANN", kind: "channel", name: "announcements", handle: null, memberCount: 214 },
-];
-
-const WORKSPACE = 214;
-
-const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
-function lookUp(query: string): Directory {
-  const found = rankEntries([...groups.map(groupEntry), ...team.map(personEntry)], query);
-  return {
-    people: found.flatMap((entry) => (entry.kind === "person" ? [entry.person] : [])),
-    groups: found.flatMap((entry) => (entry.kind === "group" ? [entry.group] : [])),
-  };
-}
-
-const search: DirectorySearch = async (query) => {
-  await wait(250);
-  return lookUp(query);
-};
-const syncingSearch: DirectorySearch = async (query) => {
-  await wait(250);
-  const found = lookUp(query);
-  return { people: found.people.slice(0, 2), groups: [], syncing: true };
-};
-const slowSearch: DirectorySearch = () => new Promise(() => {});
-const failingSearch: DirectorySearch = async () => {
-  await wait(250);
-  throw new Error("offline");
-};
-
-const resolve: DirectoryResolve = async (terms) => {
-  await wait(400);
-  const missed: Resolved["missed"] = [];
-  const found: Directory = { people: [], groups: [] };
-  const whole = (names: (string | null)[], term: string) => {
-    const words = new Set(names.flatMap((name) => (name ? foldText(name).split(" ") : [])));
-    const { tokens } = parseSearch(term);
-    return tokens.length > 0 && tokens.every((token) => words.has(token));
-  };
-  for (const term of terms) {
-    const hits = lookUp(term);
-    const people = hits.people.filter((p) => whole([p.name, p.displayName], term));
-    const named = hits.groups.filter((g) => whole([g.name, g.handle], term));
-    if (people.length + named.length !== 1) {
-      missed.push({ term, reason: people.length + named.length ? "several" : "none" });
-    } else {
-      found.people.push(...people);
-      found.groups.push(...named);
-    }
-  }
-  return { ...found, missed };
-};
-
-const known = { people: team, groups };
-const sizeOf = (id: string) => groups.find((g) => g.slackId === id)?.memberCount;
-const zonesOf = (ids: string[]): ZoneCount[] => {
-  const byZone = new Map<string | null, number>();
-  for (const id of ids) {
-    const zone = team.find((p) => p.slackUserId === id)?.timeZone ?? null;
-    byZone.set(zone, (byZone.get(zone) ?? 0) + 1);
-  }
-  return [...byZone.entries()].map(([zone, people]) => ({ zone, people }));
-};
-
-type Audience = HollerDraft["audience"];
-const none: Audience = { people: [], groups: [], everyone: false };
-const four: Audience = { people: ["U0JB", "U0AT", "U0KL", "U0MK"], groups: [], everyone: false };
-const three: Audience = { people: ["U0JB", "U0AT", "U0KL"], groups: [], everyone: false };
-const spread: Audience = {
-  people: ["U0JB", "U0AT", "U0KL", "U0JW", "U0AM", "U0TR", "U0PS", "U0KO"],
-  groups: [],
-  everyone: false,
-};
-
-const big: Audience = { people: ["U0JB", "U0AT"], groups: ["S0ENG", "C0GEN"], everyone: false };
-const everyone: Audience = { people: [], groups: [], everyone: true };
-
-function nextMonday(hour: number) {
-  const at = new Date();
-  at.setDate(at.getDate() + ((8 - at.getDay()) % 7 || 7));
-  at.setHours(hour, 0, 0, 0);
-  return at;
-}
-const DAY = 24 * 3600_000;
-const mondayNine = nextMonday(9);
-const fridayFive = new Date(nextMonday(17).getTime() + 4 * DAY);
-const yesterdayFive = (() => {
-  const at = new Date(Date.now() - DAY);
-  at.setHours(17, 0, 0, 0);
-  return at;
-})();
-
-const defaults: SendFields = {
-  sendAt: null,
-  sendInRecipientTimeZone: false,
-  closesAt: null,
-  closeAfterHours: 72,
-  anonymous: false,
-  remindersEnabled: true,
-  announceChannelId: null,
-  tags: [],
-};
-
-const option = (label: string) => ({ label });
-const pulse: PreviewHoller = {
-  mode: "pulse",
-  title: "",
-  anonymous: false,
-  questions: [
-    {
-      type: "single",
-      style: "plain",
-      prompt: "How was your week?",
-      options: ["Great", "Fine", "Rough"].map(option),
-    },
-  ],
-};
-const pulseWithNote: PreviewHoller = {
-  ...pulse,
-  questions: [
-    {
-      type: "single",
-      style: "plain",
-      prompt: "How was your week?",
-      options: ["Great", "Fine", "Rough"].map(option),
-      followUp: { prompt: "Anything behind that?", onlyAfter: null },
-    },
-  ],
-};
-const textPulse: PreviewHoller = {
-  mode: "pulse",
-  title: "",
-  anonymous: true,
-  questions: [{ type: "text", style: "plain", prompt: "What should we stop doing?", options: [] }],
-};
-const survey: PreviewHoller = {
-  mode: "survey",
-  title: "Q4 retro",
-  description: "Ten minutes, before Thursday's retro.",
-  anonymous: false,
-  questions: [
-    {
-      type: "single",
-      style: "scale",
-      prompt: "How did the quarter feel?",
-      options: ["1", "2", "3", "4", "5"].map(option),
-      lowLabel: "Rough",
-      highLabel: "Great",
-    },
-    {
-      type: "multi",
-      style: "plain",
-      prompt: "What slowed us down?",
-      options: ["Meetings", "Unclear priorities", "Reviews", "On-call"].map(option),
-      allowOther: true,
-      maxChoices: 2,
-    },
-    { type: "text", style: "plain", prompt: "One thing to change next quarter", options: [] },
-  ],
-};
-const web: PreviewHoller = {
-  ...survey,
-  title: "Offsite planning",
-  description: "",
-  questions: [
-    {
-      type: "single",
-      style: "plain",
-      prompt: "Can you make the offsite?",
-      options: ["Yes", "Maybe", "No"].map(option),
-      followUp: { prompt: "What would make it work?", onlyAfter: [1, 2] },
-    },
-    {
-      type: "person",
-      style: "plain",
-      prompt: "Who should you room with?",
-      options: [],
-      maxChoices: 1,
-    },
-  ],
-};
-const chase: PreviewHoller = {
-  mode: "chase",
-  title: "Fill in the benefits enrolment form",
-  description: "It takes five minutes, and enrolment closes Friday.",
-  anonymous: false,
-  questions: [],
-};
-
-function sendFor(audience: Audience, fields: SendFields): BigSend {
-  const chosen = [
-    ...audience.groups.map((id) => {
-      const group = groups.find((g) => g.slackId === id) as DirectoryGroup;
-      return { kind: "group" as const, id, group };
-    }),
-    ...audience.people.map((id) => {
-      const p = team.find((t) => t.slackUserId === id) as DirectoryPerson;
-      return { kind: "person" as const, id, person: p };
-    }),
-  ];
-  return {
-    title: "How was your week?",
-    reach: audienceReach(audience, sizeOf, WORKSPACE),
-    chosen,
-    when: fields.sendAt ? dayTime(fields.sendAt) : "now",
-    scheduled: Boolean(fields.sendAt),
-  };
-}
 
 function ComposeBarDemo({ problem }: { problem?: string }) {
   const summary = composeBarSummary({ where: "dm" }, 1, problem);
@@ -312,10 +83,7 @@ function SendBarDemo({
       className="w-full"
       description={summary.description}
       secondary={
-        <Button variant="ghost">
-          <ArrowLeft aria-hidden />
-          Compose
-        </Button>
+        <SlackPreview holler={pulse} sender="Mira" closesAt={fridayFive} variant="ghost" />
       }
       action={
         <SendButton send={send} onSend={() => setSent(true)}>
@@ -385,38 +153,9 @@ function PickerDemo({
   );
 }
 
-function SettingsDemo({
-  start,
-  audience = four,
-  openRow,
-  timeZone,
-  channelsKnown = true,
-}: {
-  start: Partial<SendFields>;
-  audience?: Audience;
-  openRow?: SendSettingsRow;
-  timeZone?: string;
-  channelsKnown?: boolean;
-}) {
-  return (
-    <SendSettings
-      className="w-full"
-      defaultValue={{ ...defaults, ...start }}
-      defaultOpenRow={openRow}
-      reach={audienceReach(audience, sizeOf, WORKSPACE)}
-      zones={zonesOf(audience.people)}
-      tagSuggestions={["weekly", "design", "retro", "offsite", "hiring"]}
-      knownChannels={channelsKnown ? groups.filter((g) => g.kind === "channel") : []}
-      timeZone={timeZone}
-      search={search}
-    />
-  );
-}
-
 function SendStageDemo() {
   const [audience, setAudience] = useState<Audience>(four);
   const [fields, setFields] = useState<SendFields>(defaults);
-  const [openRow, setOpenRow] = useState<SendSettingsRow | null>(null);
   const [summary, setSummary] = useState<AudienceSummary | null>(null);
   const reach: Reach = summary?.reach ?? { count: 0, exact: true, everyone: false, unknown: false };
   const zones = summary?.zones ?? [];
@@ -433,17 +172,8 @@ function SendStageDemo() {
   const empty = reach.count === 0 && !reach.everyone;
   return (
     <div className="h-[34rem] w-full overflow-y-auto rounded-md bg-canvas edge">
-      <div className="mx-auto grid max-w-[45rem] gap-7 px-4 pt-6">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h1 className="text-3xl tracking-title">How was your week?</h1>
-          <SlackPreview
-            holler={pulse}
-            sender="Mira"
-            recipient="Jonas"
-            closesAt={closeTime(fields, window)}
-            sendsAt={fields.sendAt}
-          />
-        </div>
+      <div className="mx-auto grid max-w-[45rem] gap-8 px-4 pt-6">
+        <h1 className="text-4xl tracking-title">Send “How was your week?”</h1>
         <AudiencePicker
           value={audience}
           onValueChange={setAudience}
@@ -453,12 +183,17 @@ function SendStageDemo() {
           search={search}
           onSummaryChange={setSummary}
         />
+        <WhenPicker
+          now={now}
+          value={fields}
+          onValueChange={(when) => setFields({ ...fields, ...when })}
+          reach={reach}
+          zones={zones}
+        />
         <SendSettings
           now={now}
           value={fields}
           onValueChange={setFields}
-          openRow={openRow}
-          onOpenRowChange={setOpenRow}
           reach={reach}
           zones={zones}
           tagSuggestions={["weekly", "design"]}
@@ -468,10 +203,14 @@ function SendStageDemo() {
           tone={empty ? "danger" : "neutral"}
           description={empty ? null : bar.description}
           secondary={
-            <Button variant="ghost">
-              <ArrowLeft aria-hidden />
-              Compose
-            </Button>
+            <SlackPreview
+              holler={pulse}
+              sender="Mira"
+              recipient="Jonas"
+              closesAt={closeTime(fields, window)}
+              sendsAt={fields.sendAt}
+              variant="ghost"
+            />
           }
           action={
             <SendButton
@@ -522,7 +261,7 @@ const surfaceNote = (holler: PreviewHoller) => answeredInLabel(answerSurface(hol
 export const sending: Group = {
   slug: "sending",
   title: "Sending",
-  lede: "The Send stage of the editor: who it goes to, when and how, what they see in Slack, and the bar that sends it. Each part reads as plain facts until you change one.",
+  lede: "The page that sends a Holler: who gets it, what they see in Slack, and the bar that sends it. When it goes out and what happens next have their own page.",
   entries: [
     {
       slug: "audience-picker",
@@ -611,85 +350,6 @@ export const sending: Group = {
       ),
     },
     {
-      slug: "send-settings",
-      name: "SendSettings",
-      source: "components/editor/send/send-settings.tsx",
-      note: "One plate of facts. Change opens one row at a time; a switch row acts at once. A time that has passed or comes too early says so in its row. Give it value and onValueChange, and openRow and onOpenRowChange to open a row from outside, or leave either to the settings.",
-      Demo: () => (
-        <Variants
-          stack
-          items={[
-            { label: "Send now, the defaults", render: () => <SettingsDemo start={{}} /> },
-            {
-              label: "Scheduled in each person's time",
-              note: "Monday 09:00 on each clock. The preview says when each zone gets it on yours.",
-              render: () => (
-                <SettingsDemo
-                  start={{ sendAt: mondayNine, sendInRecipientTimeZone: true }}
-                  audience={spread}
-                  openRow="send"
-                />
-              ),
-            },
-            {
-              label: "Scheduled in your time",
-              note: "Everyone at once; zones outside their working day are flagged.",
-              render: () => (
-                <SettingsDemo start={{ sendAt: mondayNine }} audience={spread} openRow="send" />
-              ),
-            },
-            {
-              label: "A fixed close date",
-              render: () => <SettingsDemo start={{ closesAt: fridayFive }} openRow="close" />,
-            },
-            {
-              label: "A close date in the past",
-              render: () => <SettingsDemo start={{ closesAt: yesterdayFive }} />,
-            },
-            {
-              label: "Anonymous, under five people",
-              render: () => <SettingsDemo start={{ anonymous: true }} audience={three} />,
-            },
-            {
-              label: "The sender in New York",
-              note: "The boxes and the summary both read New York's clock, whatever this browser's is.",
-              render: () => (
-                <SettingsDemo
-                  start={{ sendAt: mondayNine }}
-                  openRow="send"
-                  timeZone="America/New_York"
-                />
-              ),
-            },
-            {
-              label: "Announced in a channel not named yet",
-              note: "The draft has a channel the page has no name for: it still says so, and it can be cleared.",
-              render: () => (
-                <SettingsDemo
-                  start={{ announceChannelId: "C0LDS" }}
-                  openRow="announce"
-                  channelsKnown={false}
-                />
-              ),
-            },
-            {
-              label: "Announced, tagged, no reminders",
-              render: () => (
-                <SettingsDemo
-                  start={{
-                    announceChannelId: "C0LDS",
-                    tags: ["weekly", "design"],
-                    remindersEnabled: false,
-                    closeAfterHours: 24,
-                  }}
-                />
-              ),
-            },
-          ]}
-        />
-      ),
-    },
-    {
       slug: "slack-preview",
       name: "SlackPreview",
       source: "components/editor/send/slack-preview.tsx",
@@ -735,29 +395,29 @@ export const sending: Group = {
       slug: "send-bar",
       name: "SendBar",
       source: "components/editor/send/send-bar.tsx",
-      note: "The bar at the bottom of Compose and Send. It rides at the bottom of the window and settles at the end of the page, with a shadow only while it floats. Its children say what the next press does, and the action slot holds the one plum button.",
+      note: "The bar at the bottom of both editor pages. It floats at the bottom of the window as a plate with a shadow, and at the end of the page it settles into a plain row under a hairline. Its children say what the next press does, and the action slot holds the one plum button.",
       Demo: () => (
         <Variants
           stack
           items={[
-            { label: "On Compose", render: () => <ComposeBarDemo /> },
+            { label: "While writing", render: () => <ComposeBarDemo /> },
             {
-              label: "On Compose, with something to fix",
+              label: "While writing, with something to fix",
               render: () => <ComposeBarDemo problem="Give the second question a prompt." />,
             },
-            { label: "On Send", render: () => <SendBarDemo /> },
+            { label: "On the sending page", render: () => <SendBarDemo /> },
             {
-              label: "On Send, scheduled",
+              label: "On the sending page, scheduled",
               render: () => <SendBarDemo start={{ sendAt: mondayNine }} />,
             },
             {
-              label: "On Send, a big send",
+              label: "On the sending page, a big send",
               note: "Press it: more than 50 people asks once more.",
               render: () => <SendBarDemo audience={big} />,
             },
             {
               label: "On a page",
-              note: "The whole Send stage. Scroll inside: the bar floats, then settles.",
+              note: "The whole sending page. Scroll inside: the bar floats, then settles.",
               render: () => <SendStageDemo />,
             },
           ]}

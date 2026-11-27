@@ -7,12 +7,8 @@ import {
 } from "@holler/core";
 import { useState } from "react";
 import { blankDraft, draftFromTemplate, type EditorDraft } from "@/components/editor/draft";
-import {
-  BackLabel,
-  type EditorIo,
-  type EditorStage,
-  HollerEditor,
-} from "@/components/editor/holler-editor";
+import { type EditorIo, type EditorStage, HollerEditor } from "@/components/editor/holler-editor";
+import { BackLabel } from "@/components/editor/holler-editor-top";
 import { ModePicker } from "@/components/editor/mode-picker";
 import { StartScreen } from "@/components/editor/start-screen";
 import { TemplatePreview, TemplatesDialog } from "@/components/editor/templates-dialog";
@@ -141,12 +137,7 @@ function EditorDemo({
 
 function PickerDemo({ start, count }: { start: Mode; count: number }) {
   const [mode, setMode] = useState<Mode>(start);
-  return (
-    <h1 className="flex flex-wrap items-center gap-x-2.5 text-4xl tracking-title">
-      New
-      <ModePicker mode={mode} onChange={setMode} questionCount={count} />
-    </h1>
-  );
+  return <ModePicker mode={mode} onChange={setMode} questionCount={count} />;
 }
 
 function TemplatesDemo() {
@@ -168,13 +159,13 @@ const template = (id: string) => {
 export const editor: Group = {
   slug: "editor",
   title: "Editor",
-  lede: "Making a Holler: the start screen, the mode in the page's title, the templates, and the editor's two stages, Compose and Send, with the bar that names what the next press does.",
+  lede: "Making a Holler: the start screen, the mode above the title, the templates, and the editor's two pages, one to write and one to send, with the bar that names what the next press does.",
   entries: [
     {
       slug: "start-screen",
       name: "StartScreen",
       source: "components/editor/start-screen.tsx",
-      note: "What New holler opens. Each mode is one card with a drawing of what people get; one click opens Compose in it. Three templates sit below, apart from the modes.",
+      note: "What New holler opens. Each mode is a row with a drawing of what people get, what it is and what it is good for; one click opens the editor in it. Hovering tints only the drawing. Six templates sit below, apart from the modes.",
       Demo: () => (
         <div className="w-full max-w-[800px]">
           <StartScreen onPickMode={noop} onPickTemplate={noop} onSeeAllTemplates={noop} />
@@ -185,7 +176,7 @@ export const editor: Group = {
       slug: "mode-picker",
       name: "ModePicker",
       source: "components/editor/mode-picker.tsx",
-      note: "The mode, named in the title: New survey. It opens the three modes with a line on each, and stays changeable until the Holler is sent. A pulse is offered only when the questions fit in one.",
+      note: "The mode, small above the title: its glyph, its name and a chevron. It opens the three modes with a line on each, and stays changeable until the Holler is sent. A pulse is offered only when the questions fit in one.",
       Demo: () => (
         <Variants
           stack
@@ -225,7 +216,7 @@ export const editor: Group = {
       slug: "holler-editor",
       name: "HollerEditor, BackLabel",
       source: "components/editor/holler-editor.tsx",
-      note: "Compose and Send, both reachable at any time. It saves a moment after each change. Send shows every problem beside its field and moves to the stage that has one; here, Slack refuses the send, as it does until Slack delivery is switched on.",
+      note: "One page to write and one to send, with no stepper: the back link keeps its place and says where it goes. It saves a moment after each change, and Delete draft is in the menu beside the save status. Send shows every problem beside its field and moves to the page that has one; here, Slack refuses the send, as it does until Slack delivery is switched on.",
       Demo: () => (
         <Variants
           stack
@@ -240,7 +231,7 @@ export const editor: Group = {
               render: () => <EditorDemo start={draftFromTemplate(template("expense-report"))} />,
             },
             {
-              label: "Send",
+              label: "The sending page",
               render: () => (
                 <EditorDemo start={draftFromTemplate(template("retro"))} stage="send" />
               ),

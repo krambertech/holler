@@ -4,14 +4,15 @@ import { expect, test } from "./fixtures";
 test("a lead starts a Holler from the start screen", async ({ page }) => {
   await signInAs(page, "lead");
   await page.getByRole("link", { name: "New holler" }).click();
-  await expect(page.getByRole("heading", { name: "What are you sending?" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "What do you want to ask?" })).toBeVisible();
   await expect(page.getByRole("button", { name: /^Survey/ })).toBeVisible();
   await expectAccessible(page);
 
   await page.getByRole("button", { name: /^Weekly pulse/ }).click();
-  await expect(page.getByRole("heading", { level: 1, name: /New\s+pulse/ })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Write a pulse" })).toBeAttached();
+  await expect(page.getByRole("button", { name: "Mode: Pulse" })).toBeVisible();
   await expect(page.getByLabel("Question 1", { exact: true })).toHaveValue("How was your week?");
-  await expect(page.getByText("Answered right in the DM")).toBeVisible();
+  await expect(page.getByText("Answered in the Slack message")).toBeVisible();
   await expectAccessible(page);
 });
 
@@ -21,7 +22,7 @@ test("a lead writes a survey, it saves as a draft, and Send names what is missin
   await signInAs(page, "lead");
   await expect(page.getByRole("heading", { name: "Your hollers" })).toBeVisible();
   await page.goto("/new?mode=survey");
-  await expect(page.getByRole("heading", { level: 1, name: /New\s+survey/ })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Write a survey" })).toBeAttached();
 
   await page.getByRole("textbox", { name: "Title" }).fill("Q1 planning");
   await page.getByRole("button", { name: "Single choice" }).click();
@@ -38,10 +39,11 @@ test("a lead writes a survey, it saves as a draft, and Send names what is missin
   );
 
   await page.getByRole("button", { name: "Next: who and when" }).click();
-  await expect(
-    page.getByRole("navigation", { name: "Steps" }).getByRole("button", { name: /Send/ }),
-  ).toHaveAttribute("aria-current", "step");
-  await expect(page.getByRole("heading", { name: "Who" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Send “Q1 planning”" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Who gets it" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "When it goes out" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Settings" })).toBeVisible();
+  await expect(page.getByRole("switch", { name: "Anonymous answers" })).toBeVisible();
   await expectAccessible(page);
 
   await page.locator('[data-slot="send-bar"]').getByRole("button", { name: "Send" }).click();
@@ -80,4 +82,30 @@ test("leaving the editor straight after typing keeps the draft", async ({ page }
   const { id } = (await response.json()) as { id: string };
   const draft = await page.request.get(`/api/hollers/${id}`);
   expect(((await draft.json()) as { title: string }).title).toBe("Left in a hurry");
+});
+
+test("the back link keeps its place, and a draft is deleted from its menu", async ({ page }) => {
+  await signInAs(page, "lead");
+  await expect(page.getByRole("heading", { name: "Your hollers" })).toBeVisible();
+  await page.goto("/new?mode=survey");
+  await page.getByRole("textbox", { name: "Title" }).fill("To be deleted");
+  await expect(page).toHaveURL(/draft=hol_/);
+  const back = page.getByRole("link", { name: "Your hollers" });
+  const writing = await back.boundingBox();
+
+  await page.getByRole("button", { name: "Next: who and when" }).click();
+  const toQuestions = page.getByRole("button", { name: "Back to questions" });
+  await expect(toQuestions).toBeVisible();
+  const sending = await toQuestions.boundingBox();
+  expect(sending?.x).toBe(writing?.x);
+  expect(sending?.y).toBe(writing?.y);
+
+  await toQuestions.click();
+  await expect(page.getByRole("textbox", { name: "Title" })).toHaveValue("To be deleted");
+
+  await page.getByRole("button", { name: "More for this draft" }).click();
+  await page.getByRole("menuitem", { name: "Delete draft" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Delete draft" }).click();
+  await expect(page.getByRole("heading", { name: "Your hollers" })).toBeVisible();
+  await expect(page.getByText("To be deleted")).toHaveCount(0);
 });
