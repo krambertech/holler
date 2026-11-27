@@ -197,6 +197,13 @@
       }
     },
     {
+      "files": ["apps/web/src/client/**"],
+      "excludeFiles": ["apps/web/src/client/design/**"],
+      "rules": {
+        "holler/typed-navigation": "error"
+      }
+    },
+    {
       "files": ["apps/web/src/server/**", "packages/core/src/**"],
       "rules": {
         "holler/no-sql-lower": "error",
