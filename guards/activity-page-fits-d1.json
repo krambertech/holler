@@ -1,0 +1,14 @@
+{
+  "rule": "A page of Activity loads whatever it names, inside D1's 100-value limit",
+  "layer": "test",
+  "past": "#31: a page of role changes naming 100 people looked them all up in one statement, past D1's limit",
+  "check": "cd apps/web && pnpm exec vitest run src/server/services/activity.test.ts -t 'two different people'",
+  "break": [
+    {
+      "file": "apps/web/src/server/batch.ts",
+      "find": "export const BOUND_VALUES_PER_LIST = 90;",
+      "replace": "export const BOUND_VALUES_PER_LIST = 1000;"
+    }
+  ],
+  "fails": "FAIL"
+}

@@ -1,3 +1,4 @@
+import type { ActivityAction } from "@holler/core";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { app } from "../../app";
 import type { Db } from "../../db";
@@ -49,7 +50,7 @@ async function slackAfterSends(workspaceId: string) {
 const stored = (id: string) =>
   db.query.hollers.findFirst({ where: (holler, { eq }) => eq(holler.id, id) });
 
-const activityOn = (id: string, action: string) =>
+const activityOn = (id: string, action: ActivityAction) =>
   db.query.activity.findMany({
     where: (row, { and, eq }) => and(eq(row.subjectId, id), eq(row.action, action)),
   });
@@ -155,7 +156,7 @@ describe("scopes", () => {
     expect(close.status, await close.clone().text()).toBe(200);
     expect(await close.json()).toMatchObject({ id: holler.id, status: "closed" });
     expect((await stored(holler.id))?.status).toBe("closed");
-    for (const action of ["holler.reminded", "holler.closed"]) {
+    for (const action of ["holler.reminded", "holler.closed"] as const) {
       expect(await activityOn(holler.id, action)).toEqual([
         expect.objectContaining({ via: "api", memberId, credentialId: keyId }),
       ]);
