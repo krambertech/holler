@@ -5,6 +5,7 @@ import type {
   OwnAnswer,
   OwnHoller,
   RecipientsOut,
+  RoundsOut,
   Results,
   SettingsMember,
   SettingsWorkspace,
@@ -79,6 +80,12 @@ export const installStatusQuery = queryOptions({
   queryKey: ["install", "status"],
   queryFn: () => api<InstallStatus>("/install/status"),
 });
+
+export const roundsQuery = (id: string) =>
+  queryOptions({
+    queryKey: ["hollers", id, "rounds"],
+    queryFn: () => api<RoundsOut>(`/hollers/${id}/rounds`),
+  });
 
 export const hollerPeopleQuery = (id: string) =>
   queryOptions({
