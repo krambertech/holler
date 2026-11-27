@@ -1,8 +1,18 @@
-import type { RecipientsOut, QuestionResult as Result, RoundsOut } from "@holler/core";
+import type {
+  RecipientsOut,
+  ReportOut,
+  QuestionResult as Result,
+  RoundsOut,
+  SharingOut,
+} from "@holler/core";
+import { useState } from "react";
 import { HollerActions } from "@/components/results/holler-actions";
 import { HollerPeople } from "@/components/results/holler-people";
 import { HollerRounds } from "@/components/results/holler-rounds";
 import { type PersonLookup, QuestionResult } from "@/components/results/question-result";
+import { ReportView } from "@/components/results/report-view";
+import { ShareDialog } from "@/components/results/share-dialog";
+import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/toast";
 import { Variants } from "../frame";
 import type { Group } from "./types";
@@ -114,6 +124,71 @@ const text: Result = {
 };
 
 const note = () => toast.add({ title: "The page calls the API here" });
+
+const sharing: SharingOut = {
+  visibility: "private",
+  viewers: [
+    {
+      slackUserId: "U0JW",
+      name: "Jun Watanabe",
+      avatarUrl: null,
+      member: true,
+      addedAt: inHours(-2),
+    },
+    {
+      slackUserId: "U0KO",
+      name: "Kofi Owusu",
+      avatarUrl: null,
+      member: false,
+      addedAt: inHours(-1),
+    },
+  ],
+  reportUrl: "https://app.holler.team/report/kq3Xw0fJ2nB8yVt5LmR1cZp7HdE4sUaGoN6iTe9QvYx",
+};
+
+function ShareDemo({ start }: { start: SharingOut }) {
+  const [open, setOpen] = useState(false);
+  const [state, setState] = useState(start);
+  return (
+    <>
+      <Button size="sm" onClick={() => setOpen(true)}>
+        Share
+      </Button>
+      <ShareDialog
+        open={open}
+        onOpenChange={setOpen}
+        sharing={state}
+        canMakeLink
+        candidates={named.recipients.map((r) => ({
+          slackUserId: r.slackUserId,
+          name: r.name,
+          avatarUrl: null,
+        }))}
+        onSearch={() => {}}
+        onVisibility={(visibility) => setState({ ...state, visibility })}
+        onAdd={note}
+        onRemove={(id) =>
+          setState({ ...state, viewers: state.viewers.filter((v) => v.slackUserId !== id) })
+        }
+        onMakeLink={() => setState({ ...state, reportUrl: sharing.reportUrl })}
+        onTurnOffLink={() => setState({ ...state, reportUrl: null })}
+      />
+    </>
+  );
+}
+
+const report: ReportOut = {
+  title: "How was your week?",
+  mode: "pulse",
+  anonymous: false,
+  status: "closed",
+  workspaceName: "Northwind",
+  sentAt: inHours(-72),
+  closedAt: inHours(-1),
+  recipientCount: 6,
+  answeredCount: 3,
+  results: { state: "open", responseCount: 3, questions: [scale, text] },
+};
 
 const DAY = 24 * 3600_000;
 const weeksAgo = (n: number) => new Date(NOW.getTime() - n * 7 * DAY).toISOString();
@@ -329,6 +404,42 @@ export const results: Group = {
                   onClose={note}
                 />
               ),
+            },
+          ]}
+        />
+      ),
+    },
+    {
+      slug: "share-dialog",
+      name: "ShareDialog",
+      source: "components/results/share-dialog.tsx",
+      note: "Only the creator shares. Who sees the results, the people added by name, and the report link, in one dialog. Someone added before they ever signed in to Holler sees it once they do.",
+      Demo: () => (
+        <Variants
+          items={[
+            { label: "Shared with two people", render: () => <ShareDemo start={sharing} /> },
+            {
+              label: "Not shared yet",
+              render: () => (
+                <ShareDemo start={{ visibility: "private", viewers: [], reportUrl: null }} />
+              ),
+            },
+          ]}
+        />
+      ),
+    },
+    {
+      slug: "report-view",
+      name: "ReportView",
+      source: "components/results/report-view.tsx",
+      note: "The page a report link opens, for anyone. It names no one: no avatars beside choices and no names beside written answers, and an anonymous Holler keeps its results closed under five answers here too.",
+      Demo: () => (
+        <Variants
+          stack
+          items={[
+            {
+              label: "A closed pulse",
+              render: () => <ReportView report={report} className="px-0 sm:px-0 lg:px-0" />,
             },
           ]}
         />

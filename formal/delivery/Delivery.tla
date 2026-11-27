@@ -15,6 +15,7 @@ CONSTANTS
   Announced,   \* the Hollers have an announceChannelId
   Answering,   \* people answer
   Door,        \* "web" (answerOnWeb) or "slack" (queueOutcome)
+  Sharing,     \* the creator shares each sent Holler's results with its people, and may remove them
 
   \* What protects the code. FALSE brings a mistake back.
   ClaimOneHoller,    \* queueCloseWork claims a Holler just before queueing it
@@ -23,6 +24,7 @@ CONSTANTS
   AnswerRequeues,    \* answerOnWeb queues again after a conflict
   ReadsAgain,        \* postToRecipient stops at answeredAt
   GivesClaimsBack,   \* queueClaimed calls release
+  SharesKeyByRow,    \* postKey names a share's addedAt, not its queuedAt
 
   \* How often the world misbehaves.
   Refusals,          \* sendBatch calls that throw
@@ -43,6 +45,7 @@ Answered(r) == [kind |-> "answered", h |-> r[1], u |-> r[2], tier |-> 0, at |-> 
 Closed(r) == [kind |-> "closed", h |-> r[1], u |-> r[2], tier |-> 0, at |-> 0]
 Announce(h) == [kind |-> "announce", h |-> h, u |-> "", tier |-> 0, at |-> 0]
 CloseNotice(h) == [kind |-> "close_notice", h |-> h, u |-> "", tier |-> 0, at |-> 0]
+Share(r, at) == [kind |-> "shared", h |-> r[1], u |-> r[2], tier |-> 0, at |-> IF SharesKeyByRow THEN 0 ELSE at]
 
 \* postKey: two claims of one reminder are two keys, one message delivered twice is one.
 Key(m) == m
@@ -51,6 +54,7 @@ Identity(m) == [m EXCEPT !.at = 0]
 Identities ==
   { Invite(r) : r \in R } \cup { Reminder(r, t, 0) : r \in R, t \in 1..Tiers }
   \cup { Announce(h) : h \in Hollers } \cup { CloseNotice(h) : h \in Hollers }
+  \cup { Share(r, 0) : r \in R }
 
 VARIABLES
   holler,     \* hollers: status, close_queued_at, announce_ts
@@ -61,11 +65,12 @@ VARIABLES
   dm,         \* Slack: each person's latest DM
   counted,    \* Slack: the answered count on the announcement
   late,       \* a reminder posted to someone who had answered
+  viewer,     \* viewers: the row, notified_at, how often it was claimed, and the creator's addViewers
   sender, run, hand, person,
   left,       \* what is left of the world's misbehaviour
   said
 
-state == <<holler, recipient, keys, queue, posts, dm, counted, late, sender, run, hand, person, left>>
+state == <<holler, recipient, keys, viewer, queue, posts, dm, counted, late, sender, run, hand, person, left>>
 d1 == <<holler, recipient, keys>>
 slack == <<posts, dm, counted, late>>
 workers == <<sender, run, hand, person>>
@@ -82,6 +87,7 @@ Init ==
   /\ dm = [r \in R |-> [n |-> 0, shows |-> "nothing"]]
   /\ counted = [h \in Hollers |-> 0]
   /\ late = FALSE
+  /\ viewer = [r \in R |-> [row |-> FALSE, notified |-> FALSE, claims |-> 0, gone |-> FALSE, pc |-> ""]]
   /\ sender = [h \in Hollers |-> [pc |-> "", unqueued |-> {}]]
   /\ run = [w \in Runs |-> NoRun]
   /\ hand = [c \in Consumers |-> NoHand]
@@ -116,7 +122,7 @@ GoLiveClaims(h) ==
   /\ holler' = [holler EXCEPT ![h].status = "live"]
   /\ sender' = [sender EXCEPT ![h].pc = "insert"]
   /\ said' = <<"goLive marks", h, "live">>
-  /\ UNCHANGED <<recipient, keys, queue, slack, run, hand, person, left>>
+  /\ UNCHANGED <<viewer, recipient, keys, queue, slack, run, hand, person, left>>
 
 GoLiveInserts(h) ==
   /\ sender[h].pc = "insert"
@@ -124,7 +130,7 @@ GoLiveInserts(h) ==
                                          ELSE recipient[r]]
   /\ sender' = [sender EXCEPT ![h].pc = "queue"]
   /\ said' = <<"goLive inserts the recipients of", h, "with invitedAt set">>
-  /\ UNCHANGED <<holler, keys, queue, slack, run, hand, person, left>>
+  /\ UNCHANGED <<viewer, holler, keys, queue, slack, run, hand, person, left>>
 
 GoLiveQueues(h) ==
   /\ sender[h].pc = "queue"
@@ -139,7 +145,7 @@ GoLiveQueues(h) ==
          ELSE [pc |-> "done", unqueued |-> {}]]
     /\ said' = <<HowItWent(chunks, o),
                  IF Announced THEN "goLive's invites and then its announcement for" ELSE "goLive's invites for", h>>
-    /\ UNCHANGED <<d1, slack, run, hand, person>>
+    /\ UNCHANGED <<viewer, d1, slack, run, hand, person>>
 
 ReleaseInvites(unqueued) ==
   recipient' = [r \in R |-> IF Invite(r) \in unqueued /\ recipient[r].dmTs = 0
@@ -150,7 +156,7 @@ GoLiveReleases(h) ==
   /\ ReleaseInvites(sender[h].unqueued)
   /\ sender' = [sender EXCEPT ![h] = [pc |-> "done", unqueued |-> {}]]
   /\ said' = <<"goLive's releaseInvites gives back the claims of", h>>
-  /\ UNCHANGED <<holler, keys, queue, slack, run, hand, person, left>>
+  /\ UNCHANGED <<viewer, holler, keys, queue, slack, run, hand, person, left>>
 
 (* ---------------------------- the cron's passes ---------------------------- *)
 Start(w, pass, pc, todo) == run' = [run EXCEPT ![w] = [NoRun EXCEPT !.pass = pass, !.pc = pc, !.todo = todo]]
@@ -163,7 +169,7 @@ InvitesClaim(w) ==
   /\ recipient' = [r \in R |-> IF r \in DueInvites THEN [recipient[r] EXCEPT !.invited = TRUE] ELSE recipient[r]]
   /\ Start(w, "invites", "queue", { Invite(r) : r \in DueInvites })
   /\ said' = <<"queueDueInvites in", w, "sets invitedAt">>
-  /\ UNCHANGED <<holler, keys, queue, slack, sender, hand, person, left>>
+  /\ UNCHANGED <<viewer, holler, keys, queue, slack, sender, hand, person, left>>
 
 DueReminders == { r \in R : recipient[r].due /\ ~recipient[r].answered /\ recipient[r].dmTs > 0
                             /\ holler[r[1]].status = "live" }
@@ -174,7 +180,7 @@ RemindersClaim(w) ==
   /\ Start(w, "reminders", "queue",
        { Reminder(r, recipient[r].sent + 1, recipient[r].claims + 1) : r \in DueReminders })
   /\ said' = <<"queueDueReminders in", w, "adds one to reminders_sent and clears next_reminder_at">>
-  /\ UNCHANGED <<holler, keys, queue, slack, sender, hand, person, left>>
+  /\ UNCHANGED <<viewer, holler, keys, queue, slack, sender, hand, person, left>>
 
 PassQueues(w) ==
   /\ run[w].pass \in {"invites", "reminders"} /\ run[w].pc = "queue"
@@ -183,7 +189,7 @@ PassQueues(w) ==
     /\ Enqueue(chunks, o)
     /\ IF Refused(chunks, o) /\ GivesClaimsBack THEN run' = [run EXCEPT ![w].pc = "release"] ELSE Stop(w)
     /\ said' = <<HowItWent(chunks, o), IF run[w].pass = "invites" THEN "the invites of" ELSE "the reminders of", w>>
-    /\ UNCHANGED <<d1, slack, sender, hand, person>>
+    /\ UNCHANGED <<viewer, d1, slack, sender, hand, person>>
 
 PassReleases(w) ==
   /\ run[w].pass \in {"invites", "reminders"} /\ run[w].pc = "release"
@@ -193,7 +199,7 @@ PassReleases(w) ==
   /\ Stop(w)
   /\ said' = <<IF run[w].pass = "invites" THEN "releaseInvites gives back the claims of"
                ELSE "queueDueReminders makes the reminders due again in", w>>
-  /\ UNCHANGED <<holler, keys, queue, slack, sender, hand, person, left>>
+  /\ UNCHANGED <<viewer, holler, keys, queue, slack, sender, hand, person, left>>
 
 \* A pass that can do nothing, because the announcement's key is taken, is not explored.
 MissingAnnouncements ==
@@ -206,7 +212,7 @@ AnnouncementsQueue(w) ==
     /\ Possible(chunks, o)
     /\ Enqueue(chunks, o)
     /\ said' = <<HowItWent(chunks, o), "queueMissingAnnouncements in", w>>
-    /\ UNCHANGED <<d1, slack, workers>>
+    /\ UNCHANGED <<viewer, d1, slack, workers>>
 
 (* ---------------------------------- closing -------------------------------- *)
 InHand(h) == \E c \in Consumers : hand[c] # NoHand /\ hand[c].m.h = h
@@ -217,7 +223,7 @@ Closes(h) ==
   /\ "close before they send again" \in Lands \/ ~MidAnswer(h)
   /\ holler' = [holler EXCEPT ![h].status = "closed"]
   /\ said' = <<"closeDueHollers or closeHoller closes", h>>
-  /\ UNCHANGED <<recipient, keys, queue, slack, workers, left>>
+  /\ UNCHANGED <<viewer, recipient, keys, queue, slack, workers, left>>
 
 ToClose == { h \in Hollers : holler[h].status = "closed" /\ ~holler[h].closeQueued }
 \* The cron passes every closed Holler; the creator's Close names one.
@@ -226,7 +232,7 @@ CloseReads(w) ==
     /\ Idle(w) /\ todo # {}
     /\ Start(w, "close", IF ClaimOneHoller THEN "claim" ELSE "claim all", todo)
     /\ said' = <<"queueCloseWork in", w, "reads", Cardinality(todo), "closed and not queued">>
-    /\ UNCHANGED <<d1, queue, slack, sender, hand, person, left>>
+    /\ UNCHANGED <<viewer, d1, queue, slack, sender, hand, person, left>>
 
 \* How it was in #10 before its review: every candidate claimed in one update.
 CloseClaimsAll(w) ==
@@ -235,12 +241,12 @@ CloseClaimsAll(w) ==
      /\ holler' = [h \in Hollers |-> IF h \in won THEN [holler[h] EXCEPT !.closeQueued = TRUE] ELSE holler[h]]
      /\ run' = [run EXCEPT ![w] = IF won = {} THEN NoRun ELSE [@ EXCEPT !.pc = "next", !.todo = won]]
   /\ said' = <<"queueCloseWork in", w, "sets close_queued_at on every one of them">>
-  /\ UNCHANGED <<recipient, keys, queue, slack, sender, hand, person, left>>
+  /\ UNCHANGED <<viewer, recipient, keys, queue, slack, sender, hand, person, left>>
 CloseNext(w, h) ==
   /\ run[w].pass = "close" /\ run[w].pc = "next" /\ h \in run[w].todo
   /\ run' = [run EXCEPT ![w].pc = "waiting", ![w].h = h]
   /\ said' = <<"queueCloseWork in", w, "takes", h>>
-  /\ UNCHANGED <<d1, queue, slack, sender, hand, person, left>>
+  /\ UNCHANGED <<viewer, d1, queue, slack, sender, hand, person, left>>
 
 Rest(w, h) ==
   LET rest == run[w].todo \ {h} IN
@@ -253,14 +259,14 @@ CloseClaims(w, h) ==
      ELSE /\ holler' = [holler EXCEPT ![h].closeQueued = TRUE]
           /\ run' = [run EXCEPT ![w].pc = "waiting", ![w].h = h]
   /\ said' = <<"queueCloseWork in", w, IF holler[h].closeQueued THEN "finds already claimed" ELSE "sets close_queued_at on", h>>
-  /\ UNCHANGED <<recipient, keys, queue, slack, sender, hand, person, left>>
+  /\ UNCHANGED <<viewer, recipient, keys, queue, slack, sender, hand, person, left>>
 
 CloseWaiting(w) ==
   /\ run[w].pass = "close" /\ run[w].pc = "waiting"
   /\ run' = [run EXCEPT ![w].pc = "queue",
        ![w].extra = { Closed(r) : r \in { q \in R : q[1] = run[w].h /\ ~recipient[q].answered /\ recipient[q].dmTs > 0 } }]
   /\ said' = <<"queueCloseWork in", w, "reads who is waiting on", run[w].h>>
-  /\ UNCHANGED <<d1, queue, slack, sender, hand, person, left>>
+  /\ UNCHANGED <<viewer, d1, queue, slack, sender, hand, person, left>>
 
 CloseQueues(w) ==
   /\ run[w].pass = "close" /\ run[w].pc = "queue"
@@ -272,14 +278,14 @@ CloseQueues(w) ==
     /\ IF ~Refused(chunks, o) THEN Rest(w, h)
        ELSE IF GivesClaimsBack THEN run' = [run EXCEPT ![w].pc = "release"] ELSE Stop(w)
     /\ said' = <<HowItWent(chunks, o), "the close work of", h>>
-    /\ UNCHANGED <<d1, slack, sender, hand, person>>
+    /\ UNCHANGED <<viewer, d1, slack, sender, hand, person>>
 
 CloseReleases(w) ==
   /\ run[w].pass = "close" /\ run[w].pc = "release"
   /\ holler' = [holler EXCEPT ![run[w].h].closeQueued = FALSE]
   /\ Stop(w)
   /\ said' = <<"queueCloseWork in", w, "clears close_queued_at on", run[w].h, "and throws, which ends the pass">>
-  /\ UNCHANGED <<recipient, keys, queue, slack, sender, hand, person, left>>
+  /\ UNCHANGED <<viewer, recipient, keys, queue, slack, sender, hand, person, left>>
 
 (* --------------------------------- answering ------------------------------- *)
 NoConsumerOn(r) == \A c \in Consumers : hand[c] = NoHand \/ hand[c].m.h # r[1]
@@ -295,7 +301,7 @@ PersonReads(r) ==
   /\ said' = <<IF person[r] = "error" THEN "the person sends again;" ELSE "", "recordResponse reads", r[1], "for", r[2],
                IF holler[r[1]].status # "live" THEN "and finds it closed, so nothing is queued"
                ELSE IF recipient[r].answered THEN "and finds it answered: conflict" ELSE "and finds it live and unanswered">>
-  /\ UNCHANGED <<d1, queue, slack, sender, run, hand, left>>
+  /\ UNCHANGED <<viewer, d1, queue, slack, sender, run, hand, left>>
 
 PersonClaims(r) ==
   /\ person[r] = "claim"
@@ -303,14 +309,14 @@ PersonClaims(r) ==
   /\ recipient' = [recipient EXCEPT ![r].answered = TRUE]
   /\ person' = [person EXCEPT ![r] = "keep"]
   /\ said' = <<"recordResponse sets answered_at for", r[2], "on", r[1]>>
-  /\ UNCHANGED <<holler, keys, queue, slack, sender, run, hand, left>>
+  /\ UNCHANGED <<viewer, holler, keys, queue, slack, sender, run, hand, left>>
 
 PersonKeeps(r) ==
   /\ person[r] = "keep"
   /\ recipient' = [recipient EXCEPT ![r].kept = TRUE]
   /\ person' = [person EXCEPT ![r] = "queue"]
   /\ said' = <<"recordResponse inserts the response and its answers for", r[2], "on", r[1]>>
-  /\ UNCHANGED <<holler, keys, queue, slack, sender, run, hand, left>>
+  /\ UNCHANGED <<viewer, holler, keys, queue, slack, sender, run, hand, left>>
 
 PersonQueues(r) ==
   /\ person[r] \in {"queue", "queue again"}
@@ -321,13 +327,89 @@ PersonQueues(r) ==
     /\ person' = [person EXCEPT ![r] = IF Refused(chunks, o) THEN "error" ELSE "done"]
     /\ said' = <<HowItWent(chunks, o), IF person[r] = "queue again" THEN "answered, and no announce, for"
                  ELSE "answered and announce for", r[2], "on", r[1]>>
-    /\ UNCHANGED <<d1, slack, sender, run, hand>>
+    /\ UNCHANGED <<viewer, d1, slack, sender, run, hand>>
 
 PersonLeaves(r) ==
   /\ PersonGivesUp /\ person[r] = "error"
   /\ person' = [person EXCEPT ![r] = "done"]
   /\ said' = <<r[2], "saw an error and does not send again">>
-  /\ UNCHANGED <<d1, queue, slack, sender, run, hand, left>>
+  /\ UNCHANGED <<viewer, d1, queue, slack, sender, run, hand, left>>
+
+(* --------------------------------- sharing --------------------------------- *)
+\* addViewers: one batch inserts the viewer with notified_at set and records its Activity.
+\* A second add of the same person finds the row, inserts nothing and queues nothing.
+ShareAdds(r) ==
+  /\ Sharing /\ holler[r[1]].status \in {"live", "closed"}
+  /\ ~viewer[r].row /\ ~viewer[r].gone /\ viewer[r].pc = ""
+  /\ viewer' = [viewer EXCEPT ![r] = [@ EXCEPT !.row = TRUE, !.notified = TRUE, !.claims = @ + 1, !.pc = "queue"]]
+  /\ said' = <<"addViewers inserts", r[2], "as a viewer of", r[1], "with notified_at set">>
+  /\ UNCHANGED <<holler, recipient, keys, queue, slack, workers, left>>
+
+ShareQueues(r) ==
+  /\ viewer[r].pc = "queue"
+  /\ LET chunks == << {Share(r, viewer[r].claims)} >> IN \E o \in Outcomes(chunks) :
+    /\ Possible(chunks, o)
+    /\ Enqueue(chunks, o)
+    /\ viewer' = [viewer EXCEPT ![r].pc = IF Refused(chunks, o) /\ GivesClaimsBack THEN "release" ELSE "done"]
+    /\ said' = <<HowItWent(chunks, o), "the shared-with-you DM of", r[2], "on", r[1]>>
+    /\ UNCHANGED <<d1, slack, workers>>
+
+\* releaseShares clears notified_at where it is still this claim.
+ReleaseShare(r) == [viewer EXCEPT ![r].notified = IF viewer[r].row THEN FALSE ELSE @]
+
+ShareReleases(r) ==
+  /\ viewer[r].pc = "release"
+  /\ viewer' = [ReleaseShare(r) EXCEPT ![r].pc = "done"]
+  /\ said' = <<"addViewers's releaseShares clears notified_at for", r[2], "on", r[1]>>
+  /\ UNCHANGED <<holler, recipient, keys, queue, slack, workers, left>>
+
+\* removeViewer deletes the row. Someone removed is not added again here.
+ShareRemoves(r) ==
+  /\ Sharing /\ viewer[r].row
+  /\ viewer' = [viewer EXCEPT ![r].row = FALSE, ![r].notified = FALSE, ![r].gone = TRUE]
+  /\ said' = <<"removeViewer deletes", r[2], "from the viewers of", r[1]>>
+  /\ UNCHANGED <<holler, recipient, keys, queue, slack, workers, left>>
+
+\* queueShareNotices reads the viewers with no notified_at, then claims and queues them one by one.
+DueShares == { r \in R : viewer[r].row /\ ~viewer[r].notified }
+SharesRead(w) ==
+  /\ Idle(w) /\ DueShares # {}
+  /\ Start(w, "shares", "claim", DueShares)
+  /\ said' = <<"queueShareNotices in", w, "reads", Cardinality(DueShares), "viewers with no notified_at">>
+  /\ UNCHANGED <<viewer, d1, queue, slack, sender, hand, person, left>>
+
+NextShare(w, r) ==
+  LET rest == run[w].todo \ {r} IN
+  run' = [run EXCEPT ![w] = IF rest = {} THEN NoRun ELSE [NoRun EXCEPT !.pass = "shares", !.pc = "claim", !.todo = rest]]
+
+SharesClaim(w, r) ==
+  /\ run[w].pass = "shares" /\ run[w].pc = "claim" /\ r \in run[w].todo
+  /\ IF viewer[r].row /\ ~viewer[r].notified
+     THEN /\ viewer' = [viewer EXCEPT ![r].notified = TRUE, ![r].claims = @ + 1]
+          /\ run' = [run EXCEPT ![w].pc = "queue", ![w].h = r[1], ![w].extra = {Share(r, viewer[r].claims + 1)}]
+     ELSE NextShare(w, r) /\ UNCHANGED viewer
+  /\ said' = <<"queueShareNotices in", w, IF viewer[r].row /\ ~viewer[r].notified THEN "sets notified_at for"
+               ELSE "finds already claimed", r[2], "on", r[1]>>
+  /\ UNCHANGED <<d1, queue, slack, sender, hand, person, left>>
+
+SharesQueue(w) ==
+  /\ run[w].pass = "shares" /\ run[w].pc = "queue"
+  /\ LET chunks == << run[w].extra >>
+         m == CHOOSE s \in run[w].extra : TRUE
+     IN \E o \in Outcomes(chunks) :
+    /\ Possible(chunks, o)
+    /\ Enqueue(chunks, o)
+    /\ IF ~Refused(chunks, o) THEN NextShare(w, <<m.h, m.u>>)
+       ELSE IF GivesClaimsBack THEN run' = [run EXCEPT ![w].pc = "release"] ELSE Stop(w)
+    /\ said' = <<HowItWent(chunks, o), "the shared-with-you DM of", m.u, "on", m.h, "in", w>>
+    /\ UNCHANGED <<viewer, d1, slack, sender, hand, person>>
+
+SharesRelease(w) ==
+  /\ run[w].pass = "shares" /\ run[w].pc = "release"
+  /\ LET m == CHOOSE s \in run[w].extra : TRUE IN viewer' = ReleaseShare(<<m.h, m.u>>)
+  /\ Stop(w)
+  /\ said' = <<"queueShareNotices in", w, "clears notified_at and throws, which ends the pass">>
+  /\ UNCHANGED <<d1, queue, slack, sender, hand, person, left>>
 
 (* ------------------------------- the consumer ------------------------------ *)
 Who(m) == IF m.u = "" THEN m.h ELSE m.u
@@ -340,6 +422,7 @@ Plan(m) ==
        [] m.kind = "answered" -> IF q.row /\ q.answered THEN "edit" ELSE "skip"
        [] m.kind = "closed" -> IF q.row /\ ~q.answered THEN "edit" ELSE "skip"
        [] m.kind = "announce" -> IF ~Announced THEN "skip" ELSE IF h.announceTs THEN "edit" ELSE "post"
+       [] m.kind = "shared" -> IF viewer[<<m.h, m.u>>].row THEN "post" ELSE "skip"
        [] OTHER -> "post"
 CountOf(h) == Cardinality({ u \in People : recipient[<<h, u>>].answered })
 
@@ -357,7 +440,7 @@ Delivers(c, m) ==
                count |-> CountOf(m.h), post |-> 0]]
     /\ said' = <<c, "takes", m.kind, "for", Who(m), IF again THEN "(it will be delivered again)" ELSE "",
                  "and deliver", IF Plan(m) = "skip" THEN "does nothing" ELSE "reads it as due">>
-    /\ UNCHANGED <<d1, slack, sender, run, person>>
+    /\ UNCHANGED <<viewer, d1, slack, sender, run, person>>
 
 PostKeyClaims(c) ==
   /\ hand[c].pc = "key"
@@ -367,7 +450,7 @@ PostKeyClaims(c) ==
           /\ said' = <<c, "finds the post key of", m.kind, "for", Who(m), "taken, and acks">>
      ELSE /\ keys' = keys \cup {Key(m)} /\ hand' = [hand EXCEPT ![c].pc = "post"]
           /\ said' = <<c, "claims the post key of", m.kind, "for", Who(m)>>
-  /\ UNCHANGED <<holler, recipient, queue, slack, sender, run, person, left>>
+  /\ UNCHANGED <<viewer, holler, recipient, queue, slack, sender, run, person, left>>
 
 \* The queue's retry, or the end of max_retries.
 Retry(m) == \/ queue' = queue \cup {m}
@@ -375,7 +458,7 @@ Retry(m) == \/ queue' = queue \cup {m}
 
 Posted(c, m) ==
   /\ posts' = [posts EXCEPT ![Identity(m)] = @ + 1]
-  /\ dm' = IF m.u = "" THEN dm ELSE [dm EXCEPT ![<<m.h, m.u>>] = [n |-> @.n + 1, shows |-> "question"]]
+  /\ dm' = IF m.u = "" \/ m.kind = "shared" THEN dm ELSE [dm EXCEPT ![<<m.h, m.u>>] = [n |-> @.n + 1, shows |-> "question"]]
   /\ counted' = IF m.kind = "announce" THEN [counted EXCEPT ![m.h] = hand[c].count] ELSE counted
   /\ late' = (late \/ (m.kind = "reminder" /\ recipient[<<m.h, m.u>>].answered))
 
@@ -383,10 +466,10 @@ Posts(c) ==
   /\ hand[c].pc = "post"
   /\ LET m == hand[c].m IN
      /\ Posted(c, m)
-     /\ hand' = [hand EXCEPT ![c] = IF m.kind = "close_notice" THEN NoHand
+     /\ hand' = [hand EXCEPT ![c] = IF m.kind \in {"close_notice", "shared"} THEN NoHand
           ELSE [@ EXCEPT !.pc = "store", !.post = IF m.u = "" THEN 0 ELSE dm[<<m.h, m.u>>].n + 1]]
      /\ said' = <<c, "posts", m.kind, "for", Who(m)>>
-  /\ UNCHANGED <<d1, queue, sender, run, person, left>>
+  /\ UNCHANGED <<viewer, d1, queue, sender, run, person, left>>
 
 PostThrows(c) ==
   \E landed \in BOOLEAN :
@@ -399,7 +482,7 @@ PostThrows(c) ==
        /\ said' = <<"Slack", IF landed THEN "posts" ELSE "fails", m.kind, "for", Who(m),
                     IF landed THEN "but the call throws in" ELSE "in", c>>
     /\ left' = [left EXCEPT !.failures = @ - 1]
-    /\ UNCHANGED <<d1, sender, run, person>>
+    /\ UNCHANGED <<viewer, d1, sender, run, person>>
 
 PostKeyReleases(c) ==
   /\ hand[c].pc = "free"
@@ -409,7 +492,7 @@ PostKeyReleases(c) ==
      /\ Retry(m)
      /\ said' = <<c, "gives back the post key of", m.kind, "for", Who(m),
                   IF m \in queue' THEN "and retries" ELSE "but it was the last retry, so the queue drops it">>
-  /\ UNCHANGED <<holler, recipient, slack, sender, run, person, left>>
+  /\ UNCHANGED <<viewer, holler, recipient, slack, sender, run, person, left>>
 
 Stores(c) ==
   /\ hand[c].pc = "store"
@@ -420,7 +503,7 @@ Stores(c) ==
                                             ![<<m.h, m.u>>].due = hand[c].q.sent < Tiers] /\ UNCHANGED holler
      /\ said' = <<c, "stores", IF m.kind = "announce" THEN "announce_ts" ELSE "dm_ts and next_reminder_at", "for", Who(m)>>
   /\ hand' = [hand EXCEPT ![c] = NoHand]
-  /\ UNCHANGED <<keys, queue, slack, sender, run, person, left>>
+  /\ UNCHANGED <<viewer, keys, queue, slack, sender, run, person, left>>
 
 Edits(c) ==
   /\ hand[c].pc = "edit"
@@ -433,7 +516,7 @@ Edits(c) ==
                          THEN [dm EXCEPT ![<<m.h, m.u>>].shows = shows] ELSE dm
         /\ said' = <<c, "edits", m.kind, "into Slack for", Who(m)>>
   /\ hand' = [hand EXCEPT ![c] = NoHand]
-  /\ UNCHANGED <<d1, queue, posts, late, sender, run, person, left>>
+  /\ UNCHANGED <<viewer, d1, queue, posts, late, sender, run, person, left>>
 
 EditThrows(c) ==
   /\ hand[c].pc = "edit" /\ left.failures > 0
@@ -442,29 +525,36 @@ EditThrows(c) ==
                IF hand[c].m \in queue' THEN "and the queue retries" ELSE "and it was the last retry, so the queue drops it">>
   /\ hand' = [hand EXCEPT ![c] = NoHand]
   /\ left' = [left EXCEPT !.failures = @ - 1]
-  /\ UNCHANGED <<d1, slack, sender, run, person>>
+  /\ UNCHANGED <<viewer, d1, slack, sender, run, person>>
 
 (* ------------------------- the Worker dies between two steps ---------------- *)
 MayDie(f) == f \in CrashIn /\ left.crashes > 0
 Dies == left' = [left EXCEPT !.crashes = @ - 1]
+ShareDies(r) ==
+  /\ MayDie("addViewers") /\ viewer[r].pc \in {"queue", "release"} /\ Dies
+  /\ viewer' = [viewer EXCEPT ![r].pc = "done"]
+  /\ said' = <<"the Worker dies in addViewers for", r[2], "on", r[1]>>
+  /\ UNCHANGED <<d1, queue, slack, workers>>
 GoLiveDies(h) ==
   /\ MayDie("goLive") /\ sender[h].pc \in {"insert", "queue", "release"} /\ Dies
   /\ sender' = [sender EXCEPT ![h] = [pc |-> "done", unqueued |-> {}]]
   /\ said' = <<"the Worker dies in goLive for", h>>
-  /\ UNCHANGED <<d1, queue, slack, run, hand, person>>
+  /\ UNCHANGED <<viewer, d1, queue, slack, run, hand, person>>
 RunDies(w) ==
   /\ \/ MayDie("queueDueInvites") /\ run[w].pass = "invites"
      \/ MayDie("queueDueReminders") /\ run[w].pass = "reminders"
      \/ MayDie("queueCloseWork") /\ run[w].pass = "close"
+     \/ MayDie("queueShareNotices") /\ run[w].pass = "shares"
   /\ Dies /\ Stop(w)
   /\ said' = <<"the Worker dies in", IF run[w].pass = "invites" THEN "queueDueInvites"
-               ELSE IF run[w].pass = "reminders" THEN "queueDueReminders" ELSE "queueCloseWork", "in", w>>
-  /\ UNCHANGED <<d1, queue, slack, sender, hand, person>>
+               ELSE IF run[w].pass = "reminders" THEN "queueDueReminders"
+               ELSE IF run[w].pass = "shares" THEN "queueShareNotices" ELSE "queueCloseWork", "in", w>>
+  /\ UNCHANGED <<viewer, d1, queue, slack, sender, hand, person>>
 PersonDies(r) ==
   /\ MayDie("recordResponse") /\ person[r] \in {"keep", "queue"} /\ Dies
   /\ person' = [person EXCEPT ![r] = "error"]
   /\ said' = <<"the Worker dies in recordResponse for", r[2], "on", r[1]>>
-  /\ UNCHANGED <<d1, queue, slack, sender, run, hand>>
+  /\ UNCHANGED <<viewer, d1, queue, slack, sender, run, hand>>
 ConsumerDies(c) ==
   /\ \/ MayDie("postOnce") /\ hand[c].pc \in {"post", "free"}
      \/ MayDie("postToRecipient") /\ hand[c].pc = "store" /\ hand[c].m.kind # "announce"
@@ -473,13 +563,16 @@ ConsumerDies(c) ==
   /\ queue' = queue \cup {hand[c].m}
   /\ hand' = [hand EXCEPT ![c] = NoHand]
   /\ said' = <<"the Worker dies in", c, "before its ack, so the queue delivers", hand[c].m.kind, "again">>
-  /\ UNCHANGED <<d1, slack, sender, run, person>>
+  /\ UNCHANGED <<viewer, d1, slack, sender, run, person>>
 
 Next ==
   \/ \E h \in Hollers : GoLiveClaims(h) \/ GoLiveInserts(h) \/ GoLiveQueues(h) \/ GoLiveReleases(h) \/ Closes(h) \/ GoLiveDies(h)
   \/ \E w \in Runs : InvitesClaim(w) \/ RemindersClaim(w) \/ PassQueues(w) \/ PassReleases(w) \/ AnnouncementsQueue(w)
                      \/ CloseReads(w) \/ CloseClaimsAll(w) \/ CloseWaiting(w) \/ CloseQueues(w) \/ CloseReleases(w) \/ RunDies(w)
   \/ \E w \in Runs, h \in Hollers : CloseClaims(w, h) \/ CloseNext(w, h)
+  \/ \E w \in Runs : SharesRead(w) \/ SharesQueue(w) \/ SharesRelease(w)
+  \/ \E w \in Runs, r \in R : SharesClaim(w, r)
+  \/ \E r \in R : ShareAdds(r) \/ ShareQueues(r) \/ ShareReleases(r) \/ ShareRemoves(r) \/ ShareDies(r)
   \/ \E r \in R : PersonReads(r) \/ PersonClaims(r) \/ PersonKeeps(r) \/ PersonQueues(r) \/ PersonLeaves(r) \/ PersonDies(r)
   \/ \E c \in Consumers, m \in queue : Delivers(c, m)
   \/ \E c \in Consumers : PostKeyClaims(c) \/ Posts(c) \/ PostThrows(c) \/ PostKeyReleases(c) \/ Stores(c)
@@ -494,8 +587,8 @@ Quiet ==
   /\ \A c \in Consumers : hand[c] = NoHand
   /\ \A w \in Runs : Idle(w)
   /\ \A h \in Hollers : sender[h].pc \in {"", "done"}
-  /\ \A r \in R : person[r] \in {"", "done"}
-  /\ DueInvites = {} /\ DueReminders = {} /\ ToClose = {} /\ MissingAnnouncements = {}
+  /\ \A r \in R : person[r] \in {"", "done"} /\ viewer[r].pc \in {"", "done"}
+  /\ DueInvites = {} /\ DueReminders = {} /\ ToClose = {} /\ MissingAnnouncements = {} /\ DueShares = {}
 Sent(h) == holler[h].status \in {"live", "closed"}
 
 NothingPostsTwice == \A i \in Identities : posts[i] <= 1
@@ -515,6 +608,7 @@ ClaimedWorkIsNeverLost ==
          /\ posts[Invite(r)] >= 1
          /\ ~recipient[r].answered => /\ recipient[r].dmTs = dm[r].n
                                       /\ \A t \in 1..Tiers : posts[Reminder(r, t, 0)] >= 1
+    /\ \A u \in People : viewer[<<h, u>>].row => posts[Share(<<h, u>>, 0)] >= 1
 
 KeptAnswersReachSlack ==
   Quiet => \A r \in R : recipient[r].answered =>

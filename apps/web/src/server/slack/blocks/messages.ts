@@ -342,6 +342,27 @@ export function closeNoticeMessage(holler: SlackHoller, counts: Counts, resultsU
   } satisfies Message;
 }
 
+export function sharedMessage(holler: SlackHoller, sharedBy: string, resultsUrl: string): Message {
+  return {
+    text: `<@${sharedBy}> shared the results of ${holler.title} with you.`,
+    blocks: [
+      section(`<@${sharedBy}> shared the results of ${italic(holler)} with you.`),
+      {
+        type: "actions",
+        block_id: `shared:${holler.id}`,
+        elements: [
+          {
+            type: "button",
+            action_id: actionIds.resultsLink,
+            text: plain("See results"),
+            url: resultsUrl,
+          },
+        ],
+      },
+    ],
+  };
+}
+
 /** To the creator when the cron could not send their scheduled Holler. */
 export function sendFailedMessage(holler: SlackHoller, reason: string, editUrl: string): Message {
   return {

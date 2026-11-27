@@ -257,3 +257,38 @@ export function anonymousTime(at: Date): Date {
   rounded.setUTCMinutes(0, 0, 0);
   return rounded;
 }
+
+const byText = (x: { text: string }, y: { text: string }) =>
+  x.text < y.text ? -1 : x.text > y.text ? 1 : 0;
+
+export function withoutNames(results: Results): Results {
+  if (results.state === "gated") return results;
+  const unnamed = (list: WrittenAnswer[]) =>
+    list.map((a) => ({ text: a.text, slackUserId: null })).sort(byText);
+  return {
+    ...results,
+    questions: results.questions.map((q): QuestionResult => {
+      switch (q.type) {
+        case "single":
+        case "multi":
+          return {
+            ...q,
+            options: q.options.map((o) => ({ ...o, slackUserIds: [] })),
+            notes: unnamed(q.notes),
+            otherTexts: unnamed(q.otherTexts),
+          };
+        case "text":
+          return { ...q, texts: unnamed(q.texts) };
+        case "number":
+          return {
+            ...q,
+            values: q.values
+              .map((v) => ({ value: v.value, slackUserId: null }))
+              .sort((x, y) => x.value - y.value),
+          };
+        case "person":
+          return { ...q, people: q.people.map((p) => ({ ...p, pickedBy: [] })) };
+      }
+    }),
+  };
+}
