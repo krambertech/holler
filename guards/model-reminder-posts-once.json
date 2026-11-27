@@ -6,8 +6,8 @@
   "break": [
     {
       "file": "formal/delivery/model.json",
-      "find": "\"PostKeys\": [\"invite\", \"reminder\", \"announce\", \"close_notice\"]",
-      "replace": "\"PostKeys\": [\"invite\", \"announce\", \"close_notice\"]"
+      "find": "\"PostKeys\": [\"invite\", \"reminder\", \"announce\", \"close_notice\", \"shared\"]",
+      "replace": "\"PostKeys\": [\"invite\", \"announce\", \"close_notice\", \"shared\"]"
     }
   ],
   "fails": "delivery/sending: the current design breaks NothingPostsTwice"

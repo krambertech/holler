@@ -8,6 +8,7 @@ export const postings: Partial<Record<SlackSend["kind"], Posting>> = {
   announce: "at most once",
   close_notice: "at most once",
   send_failed: "at most once",
+  shared: "at most once",
 };
 
 export interface KnownWindow {

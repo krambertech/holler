@@ -1,0 +1,14 @@
+{
+  "rule": "A shared-with-you DM posts once, however often its viewer is claimed and queued",
+  "layer": "test",
+  "past": "#27: the share's post key named its queuedAt, so a share the queue took while its reply was lost, and the cron claimed again, would post twice",
+  "check": "cd apps/web && pnpm exec vitest run src/server/services/sharing.test.ts -t 'takes it and then throws'",
+  "break": [
+    {
+      "file": "apps/web/src/server/services/delivery.ts",
+      "find": "      return `post:shared:${send.hollerId}:${send.slackUserId}:${send.addedAt}`;",
+      "replace": "      return `post:shared:${send.hollerId}:${send.slackUserId}:${send.queuedAt}`;"
+    }
+  ],
+  "fails": "FAIL"
+}

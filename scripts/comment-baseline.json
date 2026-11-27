@@ -147,7 +147,7 @@
   "packages/core/src/api.ts": 17,
   "packages/core/src/results.ts": 22,
   "packages/core/src/schema/activity.ts": 8,
-  "packages/core/src/schema/hollers.ts": 43,
+  "packages/core/src/schema/hollers.ts": 42,
   "packages/core/src/types.ts": 58,
   "packages/design/scripts/colour.mjs": 10,
   "packages/design/src/index.ts": 9,

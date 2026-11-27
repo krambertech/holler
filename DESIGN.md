@@ -156,7 +156,8 @@ Numbers in tables and counts use `tabular`.
 | `EmptyState`, `ErrorState` | `components/empty-state.tsx`, `error-state.tsx` | Nothing yet, nothing matched, or a failure. Sizes `sm`, `md`, `lg` follow the space; `plate`, `dashed` for no results, `bare` inside a surface |
 | `Illustration` | `components/illustration.tsx` | A spot drawing from the set in `packages/design/src/illustrations.ts`, sized and toned by the state around it |
 | `Notice`, `Skeleton` | `components/notice.tsx`, `skeleton.tsx` | An inline message, the shape of what is loading |
-| `HollerPeople`, `QuestionResult`, `HollerActions` | `components/results/` | A Holler's page: waiting first with when Holler reminds them next, bars on the chart ramp, Export and Close now |
+| `HollerPeople`, `QuestionResult`, `HollerActions` | `components/results/` | A Holler's page: waiting first with when Holler reminds them next, bars in one colour, Share, Export and Close now |
+| `ShareDialog`, `ReportView` | `components/results/` | Who sees the results, the people added by name, and the report link; the report page, which names no one |
 | `LimitReached`                    | `components/billing/limit-reached.tsx` | Beside Send when a send returns `402`: upgrade for owners, whom to ask for senders |
 
 Every interactive component has default, hover, focus, active, disabled and pending states. Loading is a skeleton in the shape of what loads, never a spinner in the middle of a page. Errors say what happened and what to do, beside the thing at fault.

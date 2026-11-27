@@ -132,7 +132,7 @@ Breaks KeptAnswersReachSlack: A person marked answered has a response, their lat
 
 Slack fails for longer than max_retries: 6 retries and about ten minutes in apps/web/wrangler.jsonc. The queue drops the message, there is no dead-letter queue, and the claim (invited_at, reminders_sent, close_queued_at) stays, so no pass sends it again.
 
-Breaks ClaimedWorkIsNeverLost: Whatever was claimed is queued and posted, or given back for the cron to claim again.
+Breaks ClaimedWorkIsNeverLost: Whatever was claimed is queued and posted, or given back for the cron to claim again, a viewer's shared-with-you DM included.
 
 1. the Holler is a draft
 2. goLive marks Holler 1 live
@@ -147,7 +147,7 @@ Breaks ClaimedWorkIsNeverLost: Whatever was claimed is queued and posted, or giv
 
 Slack posts and the reply is lost or is a 5xx page. postOnce cannot tell this from a failed post, gives the key back and posts again.
 
-Breaks NothingPostsTwice: Nothing posts twice: one invite and one reminder of each tone to a person, one announcement and one close notice.
+Breaks NothingPostsTwice: Nothing posts twice: one invite and one reminder of each tone to a person, one announcement, one close notice and one shared-with-you DM to each viewer.
 
 1. the Holler is a draft
 2. goLive marks Holler 1 live
@@ -165,7 +165,7 @@ Breaks NothingPostsTwice: Nothing posts twice: one invite and one reminder of ea
 
 sendBatch queues the reminders and then throws. queueDueReminders gives the claims back and claims again with a new queuedAt, so the same reminder has two post keys and posts twice.
 
-Breaks NothingPostsTwice: Nothing posts twice: one invite and one reminder of each tone to a person, one announcement and one close notice.
+Breaks NothingPostsTwice: Nothing posts twice: one invite and one reminder of each tone to a person, one announcement, one close notice and one shared-with-you DM to each viewer.
 
 1. the Holler is a draft
 2. goLive marks Holler 1 live
@@ -211,7 +211,7 @@ Breaks KeptAnswersReachSlack: A person marked answered has a response, their lat
 
 The Worker dies in goLive after marking the Holler live. It is live with no recipients, or with recipients claimed and never invited, and no pass looks for either.
 
-Breaks ClaimedWorkIsNeverLost: Whatever was claimed is queued and posted, or given back for the cron to claim again.
+Breaks ClaimedWorkIsNeverLost: Whatever was claimed is queued and posted, or given back for the cron to claim again, a viewer's shared-with-you DM included.
 
 1. the Holler is a draft
 2. goLive marks Holler 1 live
@@ -221,7 +221,7 @@ Breaks ClaimedWorkIsNeverLost: Whatever was claimed is queued and posted, or giv
 
 The Worker dies in queueDueInvites between setting invited_at and sendBatch. Those people are never invited.
 
-Breaks ClaimedWorkIsNeverLost: Whatever was claimed is queued and posted, or given back for the cron to claim again.
+Breaks ClaimedWorkIsNeverLost: Whatever was claimed is queued and posted, or given back for the cron to claim again, a viewer's shared-with-you DM included.
 
 1. the Holler is a draft
 2. goLive marks Holler 1 live
@@ -235,7 +235,7 @@ Breaks ClaimedWorkIsNeverLost: Whatever was claimed is queued and posted, or giv
 
 The Worker dies in queueDueReminders between clearing next_reminder_at and sendBatch. Those people never get that reminder or a later one.
 
-Breaks ClaimedWorkIsNeverLost: Whatever was claimed is queued and posted, or given back for the cron to claim again.
+Breaks ClaimedWorkIsNeverLost: Whatever was claimed is queued and posted, or given back for the cron to claim again, a viewer's shared-with-you DM included.
 
 1. the Holler is a draft
 2. goLive marks Holler 1 live
@@ -291,7 +291,7 @@ Breaks KeptAnswersReachSlack: A person marked answered has a response, their lat
 
 A consumer dies between claiming a post key and posting. The queue delivers the message again, the key is taken, and it is acked without a post.
 
-Breaks ClaimedWorkIsNeverLost: Whatever was claimed is queued and posted, or given back for the cron to claim again.
+Breaks ClaimedWorkIsNeverLost: Whatever was claimed is queued and posted, or given back for the cron to claim again, a viewer's shared-with-you DM included.
 
 1. the Holler is a draft
 2. goLive marks Holler 1 live
@@ -307,7 +307,7 @@ Breaks ClaimedWorkIsNeverLost: Whatever was claimed is queued and posted, or giv
 
 A consumer dies between posting a DM and storing dm_ts. The person has the DM, but Holler never reminds them, thanks them in it or shows it closed.
 
-Breaks ClaimedWorkIsNeverLost: Whatever was claimed is queued and posted, or given back for the cron to claim again.
+Breaks ClaimedWorkIsNeverLost: Whatever was claimed is queued and posted, or given back for the cron to claim again, a viewer's shared-with-you DM included.
 
 1. the Holler is a draft
 2. goLive marks Holler 1 live
@@ -324,7 +324,7 @@ Breaks ClaimedWorkIsNeverLost: Whatever was claimed is queued and posted, or giv
 
 A consumer dies between posting the announcement and storing announce_ts. The channel keeps a count that never moves and never closes.
 
-Breaks ClaimedWorkIsNeverLost: Whatever was claimed is queued and posted, or given back for the cron to claim again.
+Breaks ClaimedWorkIsNeverLost: Whatever was claimed is queued and posted, or given back for the cron to claim again, a viewer's shared-with-you DM included.
 
 1. the Holler is a draft
 2. goLive marks Holler 1 live
@@ -340,6 +340,44 @@ Breaks ClaimedWorkIsNeverLost: Whatever was claimed is queued and posted, or giv
 12. the Worker dies in consumer 2 before its ack, so the queue delivers announce again
 13. consumer 1 takes announce for Holler 1 and deliver reads it as due
 14. consumer 1 finds the post key of announce for Holler 1 taken, and acks
+
+## delivery/worker-dies-in-add-viewers
+
+The Worker dies in addViewers between inserting the viewer with notified_at and sendBatch. The cron reads only viewers with no notified_at, so that person never gets the shared-with-you DM.
+
+Breaks ClaimedWorkIsNeverLost: Whatever was claimed is queued and posted, or given back for the cron to claim again, a viewer's shared-with-you DM included.
+
+1. the Holler is a draft
+2. goLive marks Holler 1 live
+3. goLive inserts the recipients of Holler 1 with invitedAt set
+4. SLACK_SENDS takes goLive's invites for Holler 1
+5. addViewers inserts UA as a viewer of Holler 1 with notified_at set
+6. the Worker dies in addViewers for UA on Holler 1
+7. consumer 1 takes invite for UA and deliver reads it as due
+8. consumer 1 claims the post key of invite for UA
+9. consumer 1 posts invite for UA
+10. consumer 1 stores dm_ts and next_reminder_at for UA
+
+## delivery/worker-dies-in-queue-share-notices
+
+The Worker dies in queueShareNotices between setting notified_at and sendBatch. That person never gets the shared-with-you DM.
+
+Breaks ClaimedWorkIsNeverLost: Whatever was claimed is queued and posted, or given back for the cron to claim again, a viewer's shared-with-you DM included.
+
+1. the Holler is a draft
+2. goLive marks Holler 1 live
+3. goLive inserts the recipients of Holler 1 with invitedAt set
+4. SLACK_SENDS takes goLive's invites for Holler 1
+5. addViewers inserts UA as a viewer of Holler 1 with notified_at set
+6. SLACK_SENDS refuses the shared-with-you DM of UA on Holler 1
+7. addViewers's releaseShares clears notified_at for UA on Holler 1
+8. queueShareNotices in run 1 reads 1 viewers with no notified_at
+9. queueShareNotices in run 1 sets notified_at for UA on Holler 1
+10. the Worker dies in queueShareNotices in run 1
+11. consumer 1 takes invite for UA and deliver reads it as due
+12. consumer 1 claims the post key of invite for UA
+13. consumer 1 posts invite for UA
+14. consumer 1 stores dm_ts and next_reminder_at for UA
 
 ## rounds/worker-dies-in-go-live
 
@@ -416,7 +454,7 @@ Breaks ClosedIsToldOnce: Once a Holler closes, everyone with an unanswered DM se
 
 #10 posted a queued reminder without claiming a post key, so a reminder delivered twice posted twice.
 
-Breaks NothingPostsTwice: Nothing posts twice: one invite and one reminder of each tone to a person, one announcement and one close notice.
+Breaks NothingPostsTwice: Nothing posts twice: one invite and one reminder of each tone to a person, one announcement, one close notice and one shared-with-you DM to each viewer.
 
 1. the Holler is a draft
 2. goLive marks Holler 1 live
@@ -437,7 +475,7 @@ Breaks NothingPostsTwice: Nothing posts twice: one invite and one reminder of ea
 
 #10 had no pass for an announcement the queue refused, so the channel never got it.
 
-Breaks ClaimedWorkIsNeverLost: Whatever was claimed is queued and posted, or given back for the cron to claim again.
+Breaks ClaimedWorkIsNeverLost: Whatever was claimed is queued and posted, or given back for the cron to claim again, a viewer's shared-with-you DM included.
 
 1. the Holler is a draft
 2. goLive marks Holler 1 live
@@ -495,7 +533,7 @@ No past bug, but the promise fails without them.
 
 queueClaimed does not give claims back when the queue refuses them.
 
-Breaks ClaimedWorkIsNeverLost: Whatever was claimed is queued and posted, or given back for the cron to claim again.
+Breaks ClaimedWorkIsNeverLost: Whatever was claimed is queued and posted, or given back for the cron to claim again, a viewer's shared-with-you DM included.
 
 1. the Holler is a draft
 2. goLive marks Holler 1 live
@@ -523,6 +561,27 @@ Breaks NoReminderAfterAnswer: No reminder posts to someone who has answered.
 13. consumer 1 takes reminder for UA and deliver reads it as due
 14. consumer 1 claims the post key of reminder for UA
 15. consumer 1 posts reminder for UA
+
+## delivery/share-keyed-by-queue-time
+
+postKey names a share's queuedAt, so a share the queue took while its reply was lost, and the cron claimed again, has two post keys and posts twice.
+
+Breaks NothingPostsTwice: Nothing posts twice: one invite and one reminder of each tone to a person, one announcement, one close notice and one shared-with-you DM to each viewer.
+
+1. the Holler is a draft
+2. goLive marks Holler 1 live
+3. addViewers inserts UA as a viewer of Holler 1 with notified_at set
+4. SLACK_SENDS takes, but the call throws, for the shared-with-you DM of UA on Holler 1
+5. addViewers's releaseShares clears notified_at for UA on Holler 1
+6. queueShareNotices in run 1 reads 1 viewers with no notified_at
+7. queueShareNotices in run 1 sets notified_at for UA on Holler 1
+8. SLACK_SENDS takes the shared-with-you DM of UA on Holler 1 in run 1
+9. consumer 1 takes shared for UA and deliver reads it as due
+10. consumer 1 claims the post key of shared for UA
+11. consumer 1 posts shared for UA
+12. consumer 1 takes shared for UA and deliver reads it as due
+13. consumer 1 claims the post key of shared for UA
+14. consumer 1 posts shared for UA
 
 ## rounds/stops-in-two-statements
 

@@ -38,13 +38,19 @@ const { hollers, questions, options, recipients, members, slackPeople } = schema
 
 /** A Holler the member may see: their own, one shared with the workspace, or one shared with them. */
 export function visibleTo(ctx: ServiceContext, memberId: string) {
+  const slackUserId = "slackUserId" in ctx.actor ? ctx.actor.slackUserId : "";
   return and(
     eq(hollers.workspaceId, ctx.workspaceId),
     or(
       eq(hollers.creatorId, memberId),
-      and(eq(hollers.visibility, "workspace"), ne(hollers.status, "draft")),
-      // Spelled out, because Drizzle's relational queries re-alias every column in a sql`` to the outer table.
-      sql`exists (select 1 from viewers v where v.holler_id = ${hollers.id} and v.member_id = ${memberId})`,
+      and(
+        ne(hollers.status, "draft"),
+        or(
+          eq(hollers.visibility, "workspace"),
+          // Spelled out, because Drizzle's relational queries re-alias every column in a sql`` to the outer table.
+          sql`exists (select 1 from viewers v where v.holler_id = ${hollers.id} and v.slack_user_id = ${slackUserId})`,
+        ),
+      ),
     ),
   );
 }
