@@ -142,3 +142,24 @@ test("a list opened inside the send dialog leaves the page behind it where it wa
   await expect(page.getByRole("option", { name: "After 1 week" })).toBeVisible();
   expect(await page.evaluate(() => window.scrollY)).toBe(before);
 });
+
+test("a dialog's pinned title and buttons never cover its fields", async ({ page }, info) => {
+  test.skip(
+    info.project.name !== "chromium",
+    "On a phone the dialog is a sheet with no pinned header",
+  );
+  await signInAs(page, "lead");
+  await expect(page.getByRole("heading", { name: "Your hollers" })).toBeVisible();
+  await page.goto("/new?mode=pulse");
+  await page.getByRole("button", { name: "More for this draft" }).click();
+  await page.getByRole("menuitem", { name: "Tags" }).click();
+  const dialog = page.getByRole("dialog", { name: "Tags" });
+  await expect(dialog.getByRole("combobox", { name: "Add a tag" })).toBeVisible();
+  const box = async (slot: string) =>
+    (await page.locator(`[data-slot="${slot}"]`).boundingBox()) ?? { y: 0, height: 0 };
+  const header = await box("dialog-header");
+  const field = await box("holler-editor-tags-field");
+  const footer = await box("dialog-footer");
+  expect(header.y + header.height).toBeLessThanOrEqual(field.y);
+  expect(field.y + field.height).toBeLessThanOrEqual(footer.y);
+});

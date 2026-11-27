@@ -1,0 +1,14 @@
+{
+  "rule": "A desktop dialog's pinned title and buttons are offset by its padding, so they never cover the fields between them",
+  "layer": "browser",
+  "past": "#61: the Tags dialog's field lost its top and bottom edges, because the sticky header and footer stuck 20 px inside the dialog's padding and sat over it",
+  "check": "pnpm exec playwright test --project=chromium --retries=0 -g 'pinned title and buttons never cover its fields'",
+  "break": [
+    {
+      "file": "apps/web/src/client/components/ui/dialog.tsx",
+      "find": "\"sticky -top-5 z-(--z-sticky)",
+      "replace": "\"sticky top-0 z-(--z-sticky)"
+    }
+  ],
+  "fails": "pinned title and buttons never cover its fields"
+}
