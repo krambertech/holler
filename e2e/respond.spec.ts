@@ -39,7 +39,8 @@ test("a recipient answers every question type, with a follow-up after some answe
   await expectAccessible(page);
 
   await page.getByRole("button", { name: "Send answers" }).click();
-  await expect(page.getByText("7 questions above still need your answer.")).toBeVisible();
+  await expect(page.getByText("0 of 8 answered")).toHaveCount(0);
+  await expect(page.getByText("7 questions still need an answer.")).toBeVisible();
   await expect(
     question(page, "Will you fly?").getByText("This question needs an answer."),
   ).toBeVisible();
@@ -53,8 +54,9 @@ test("a recipient answers every question type, with a follow-up after some answe
   await where.getByRole("radio", { name: "Tallinn" }).click();
   await expect(why).toBeVisible();
   await where.getByRole("radio", { name: "Other" }).click();
-  await expect(where.getByLabel("If Other, what?")).toBeFocused();
-  await where.getByLabel("If Other, what?").fill("Helsinki");
+  await expect(where.getByLabel("Your own answer")).toBeFocused();
+  await where.getByLabel("Your own answer").fill("Helsinki");
+  await expect(where.getByRole("radio", { name: "Other" })).toBeChecked();
   await why.fill("Close to everyone");
 
   const weeks = question(page, "Which weeks work for you?");
@@ -79,6 +81,7 @@ test("a recipient answers every question type, with a follow-up after some answe
     /Marta Kowalska/,
   );
 
+  await expect(page.getByText("7 of 8 answered")).toBeVisible();
   await page.getByRole("button", { name: "Send answers" }).click();
   await expect(page.getByRole("heading", { name: "Your answers are in" })).toBeVisible();
   await expect(page.getByText("Thank you. Mira sees them with everyone else's.")).toBeVisible();
@@ -96,8 +99,9 @@ test("a recipient answers every question type, with a follow-up after some answe
 test("an anonymous Holler says what the sender will and will not see", async ({ page }) => {
   const { url } = await webSurvey(true);
   await page.goto(url);
-  await expect(page.getByText("Anonymous", { exact: true })).toBeVisible();
-  await expect(page.getByText(/Your name is not kept with your answers/)).toBeVisible();
+  await expect(
+    page.getByText("Anonymous. Mira sees how many people answered, never who said what."),
+  ).toBeVisible();
   await expectAccessible(page);
 });
 

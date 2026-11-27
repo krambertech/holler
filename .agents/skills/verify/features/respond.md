@@ -8,7 +8,7 @@ A Holler Slack cannot show, such as one with a follow-up only after some answers
 
 ## Drive
 
-[`respond.mjs`](respond.mjs) as `lead`: open the link, press **Send answers** with nothing answered, then answer every question, checking the follow-up shows after Tallinn and Other and not after Lisbon, and send.
+[`respond.mjs`](respond.mjs) as `lead`: open the link, press **Send answers** with nothing answered and see each problem under its prompt, then answer every question, checking the follow-up shows after Tallinn and Other and not after Lisbon, that picking Other turns its row into the box for their own answer, and that the count in the footer reads 7 of 8 answered, and send.
 
 ## End state
 

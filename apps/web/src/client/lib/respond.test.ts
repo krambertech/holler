@@ -1,7 +1,9 @@
 import type { RespondQuestion } from "@holler/core";
 import { describe, expect, it } from "vitest";
 import {
+  answeredCount,
   emptyAnswer,
+  isAnswered,
   noteShown,
   otherShown,
   problemsOf,
@@ -118,5 +120,22 @@ describe("toggleOption", () => {
     expect(draft.optionIds).toEqual(["d0", "d2"]);
     expect(toggleOption(days, draft, "d3", true).optionIds).toEqual(["d0", "d2"]);
     expect(toggleOption(days, draft, "d2", false).optionIds).toEqual(["d0"]);
+  });
+});
+
+describe("answered", () => {
+  it("counts a question once something is picked or written, even before it is valid", () => {
+    expect(isAnswered(where, emptyAnswer())).toBe(false);
+    expect(isAnswered(where, { ...emptyAnswer(), optionIds: ["oth"] })).toBe(true);
+    expect(isAnswered(nights, { ...emptyAnswer(), number: "  " })).toBe(false);
+    expect(isAnswered(nights, { ...emptyAnswer(), number: "12" })).toBe(true);
+  });
+
+  it("counts across the questions, reading drafts that were never touched as empty", () => {
+    const drafts = {
+      q1: { ...emptyAnswer(), optionIds: ["lis"] },
+      q3: { ...emptyAnswer(), number: "3" },
+    };
+    expect(answeredCount([where, days, nights], drafts)).toBe(2);
   });
 });

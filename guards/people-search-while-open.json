@@ -5,7 +5,7 @@
   "check": "pnpm exec playwright test --project=chromium -g 'a recipient answers every question type'",
   "break": [
     {
-      "file": "apps/web/src/client/components/respond/answer-question.tsx",
+      "file": "apps/web/src/client/components/respond/answer-pickers.tsx",
       "find": "usePeopleSearch(searchPeople, query.trim(), open)",
       "replace": "usePeopleSearch(searchPeople, query.trim(), true)"
     }

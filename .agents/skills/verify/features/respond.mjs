@@ -15,7 +15,10 @@ export default async function drive({ page, step, api, post, expect }) {
 
   await step("Sending with nothing answered puts each problem beside its question", async () => {
     await page.getByRole("button", { name: "Send answers" }).click();
-    await expect(page.getByText("7 questions above still need your answer.")).toBeVisible();
+    await expect(page.getByText("7 questions still need an answer.")).toBeVisible();
+    await expect(
+      question("Will you fly?").getByText("This question needs an answer."),
+    ).toBeVisible();
     const before = await survey();
     expect(before.answered).toBe(0);
     return before;
@@ -29,7 +32,8 @@ export default async function drive({ page, step, api, post, expect }) {
     await where.getByRole("radio", { name: "Tallinn" }).click();
     await expect(why).toBeVisible();
     await where.getByRole("radio", { name: "Other" }).click();
-    await where.getByLabel("If Other, what?").fill("Helsinki");
+    await expect(where.getByLabel("Your own answer")).toBeFocused();
+    await where.getByLabel("Your own answer").fill("Helsinki");
     await why.fill("Close to everyone");
   });
 
@@ -49,6 +53,7 @@ export default async function drive({ page, step, api, post, expect }) {
     await page.getByRole("combobox", { name: "Search people" }).fill("Marta");
     await page.getByRole("option", { name: "Marta Kowalska" }).click();
     await page.keyboard.press("Escape");
+    await expect(page.getByText("7 of 8 answered")).toBeVisible();
   });
 
   await step("Send, and the thank-you replaces the form", async () => {

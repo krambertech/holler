@@ -104,3 +104,14 @@ export function toggleOption(
 export function atPickLimit(question: RespondQuestion, draft: DraftAnswer): boolean {
   return question.maxChoices !== null && draft.optionIds.length >= question.maxChoices;
 }
+
+export function isAnswered(question: RespondQuestion, draft: DraftAnswer): boolean {
+  if (isChoice(question.type)) return draft.optionIds.length > 0;
+  if (question.type === "text") return draft.text.trim() !== "";
+  if (question.type === "number") return draft.number.trim() !== "";
+  return draft.people.length > 0;
+}
+
+export function answeredCount(questions: readonly RespondQuestion[], drafts: Drafts): number {
+  return questions.filter((q) => isAnswered(q, draftOf(drafts, q.id))).length;
+}
