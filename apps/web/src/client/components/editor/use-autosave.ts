@@ -107,7 +107,15 @@ export function useAutosave({ draft, id, enabled, save, onSaved, beacon }: Optio
     }
   }, []);
 
-  const flush = useCallback(() => run(), [run]);
+  const flush = useCallback(
+    (next?: EditorDraft) => {
+      if (next) {
+        latest.current = { ...latest.current, draft: next, json: JSON.stringify(toPayload(next)) };
+      }
+      return run();
+    },
+    [run],
+  );
 
   return { state: dirty && state === "saved" ? ("saving" as const) : state, dirty, flush };
 }

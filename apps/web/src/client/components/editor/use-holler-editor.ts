@@ -16,7 +16,9 @@ import { type Reach, senderZoneFor } from "./send/send-logic";
 import { useNow } from "./send/use-now";
 import { useAutosave } from "./use-autosave";
 
-export type EditorStage = "compose" | "send";
+export type SendOutcome = "sent" | "scheduled" | "problems" | "failed";
+
+type Problem = HollerOut["problems"][number];
 
 export interface EditorIo {
   save: (payload: HollerDraftInput, id: string | null) => Promise<HollerOut>;
@@ -30,7 +32,6 @@ interface Options {
   io: EditorIo;
   initial: EditorDraft;
   saved: HollerOut | null;
-  onStageChange: (stage: EditorStage) => void;
   onCreated?: ((holler: HollerOut) => void) | undefined;
   onSent?: ((holler: HollerOut) => void) | undefined;
   onDeleted?: (() => void) | undefined;
@@ -65,7 +66,6 @@ export function useHollerEditor({
   io,
   initial,
   saved: savedAtStart,
-  onStageChange,
   onCreated,
   onSent,
   onDeleted,
@@ -133,37 +133,37 @@ export function useHollerEditor({
 
   const pickTemplate = (template: HollerTemplate) => setDraft((d) => applyTemplate(d, template));
 
-  const goTo = (next: EditorStage) => {
-    onStageChange(next);
-    window.scrollTo({ top: 0 });
-  };
-
-  const saveFirst = async (): Promise<HollerOut | null | undefined> => {
+  const saveFirst = async (next: EditorDraft): Promise<HollerOut | null | undefined> => {
     try {
-      return (await autosave.flush()) ?? holler;
+      return (await autosave.flush(next)) ?? holler;
     } catch {
       setSendError("We could not save your last changes. Check your connection and try again.");
       return undefined;
     }
   };
 
-  const send = async () => {
+  const send = async (
+    patch: Partial<EditorDraft> = {},
+  ): Promise<{ outcome: SendOutcome; problems: Problem[] }> => {
     setSendError(null);
     setLimit(null);
-    const out = await saveFirst();
-    if (out === undefined) return;
-    if (!out || out.problems.length > 0) {
-      setShowProblems(true);
-      if (out && composeProblems(out.problems).length > 0) goTo("compose");
-      return;
-    }
-    if (out.status === "scheduled") return;
+    const next = { ...draft, ...patch };
+    setDraft(next);
     setSending(true);
     try {
+      const out = await saveFirst(next);
+      if (out === undefined) return { outcome: "failed", problems: [] };
+      if (!out || out.problems.length > 0) {
+        setShowProblems(true);
+        return { outcome: "problems", problems: out?.problems ?? [] };
+      }
+      if (out.status === "scheduled") return { outcome: "scheduled", problems: [] };
       onSent?.(await io.send(out.id));
+      return { outcome: "sent", problems: [] };
     } catch (error) {
       if (error instanceof ApiError && error.status === 402) setLimit(error.message);
       else setSendError(failure(error, "We could not send it. Try again."));
+      return { outcome: "failed", problems: [] };
     } finally {
       setSending(false);
     }
@@ -198,7 +198,6 @@ export function useHollerEditor({
     title,
     changeMode,
     pickTemplate,
-    goTo,
     send,
     sending,
     sendError,

@@ -10,7 +10,7 @@ test("a lead starts a Holler from the start screen", async ({ page }) => {
 
   await page.getByRole("button", { name: /^Weekly pulse/ }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Write a pulse" })).toBeAttached();
-  await expect(page.getByRole("button", { name: "Mode: Pulse" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "New pulse" })).toBeVisible();
   await expect(page.getByLabel("Question 1", { exact: true })).toHaveValue("How was your week?");
   await expect(page.getByText("Slack DM")).toBeVisible();
   await page.getByRole("button", { name: "Why people answer here" }).click();
@@ -41,21 +41,29 @@ test("a lead writes a survey, it saves as a draft, and Send names what is missin
     "Which bet should we make first?",
   );
 
-  await page.getByRole("button", { name: "Next: share" }).click();
-  await expect(page.getByRole("heading", { level: 1, name: "Send “Q1 planning”" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Who gets it" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Settings" })).toBeVisible();
-  await expect(page.getByRole("switch", { name: "Anonymous answers" })).toBeVisible();
-  await page.getByRole("button", { name: /^Tags/ }).click();
-  await page.getByRole("combobox", { name: "Add a tag" }).fill("planning,q1");
-  await page.getByRole("combobox", { name: "Add a tag" }).press("Enter");
-  await expect(page.getByRole("list", { name: "Tags" }).getByRole("listitem")).toHaveText([
+  await expect(page.getByRole("region", { name: "Audience" })).toBeVisible();
+  await expect(page.getByRole("switch", { name: "Anonymous" })).toBeVisible();
+  await page.getByRole("button", { name: "More for this draft" }).click();
+  await page.getByRole("menuitem", { name: "Tags" }).click();
+  const tags = page.getByRole("dialog", { name: "Tags" });
+  await tags.getByRole("combobox", { name: "Add a tag" }).fill("planning,q1");
+  await tags.getByRole("combobox", { name: "Add a tag" }).press("Enter");
+  await expect(tags.getByRole("list", { name: "Tags" }).getByRole("listitem")).toHaveText([
     "planning",
     "q1",
   ]);
   await expectAccessible(page);
+  await tags.getByRole("button", { name: "Done" }).click();
 
-  await page.locator('[data-slot="send-bar"]').getByRole("button", { name: "Send" }).click();
+  await page
+    .locator('[data-slot="send-bar"]')
+    .getByRole("button", { name: "Send", exact: true })
+    .click();
+  const send = page.getByRole("dialog", { name: "Send “Q1 planning”" });
+  await expect(send.getByRole("switch", { name: "Reminders" })).toBeChecked();
+  await expectAccessible(page);
+  await send.getByRole("button", { name: "Send", exact: true }).click();
+  await expect(send).toBeHidden();
   await expect(page.getByText("Choose who to send it to.").first()).toBeVisible();
   await expectAccessible(page);
 });
@@ -94,24 +102,22 @@ test("leaving the editor straight after typing keeps the draft", async ({ page }
   expect(((await draft.json()) as { title: string }).title).toBe("Left in a hurry");
 });
 
-test("the back link keeps its place, and a draft is deleted from its menu", async ({ page }) => {
+test("Schedule asks for the day and time, and a draft is deleted from its menu", async ({
+  page,
+}) => {
   await signInAs(page, "lead");
   await expect(page.getByRole("heading", { name: "Your hollers" })).toBeVisible();
   await page.goto("/new?mode=survey");
   await page.getByRole("textbox", { name: "Title" }).fill("To be deleted");
   await expect(page).toHaveURL(/draft=hol_/);
-  const back = page.getByRole("link", { name: "Your hollers" });
-  const writing = await back.boundingBox();
 
-  await page.getByRole("button", { name: "Next: share" }).click();
-  const toQuestions = page.getByRole("button", { name: "Back to questions" });
-  await expect(toQuestions).toBeVisible();
-  const sending = await toQuestions.boundingBox();
-  expect(sending?.x).toBe(writing?.x);
-  expect(sending?.y).toBe(writing?.y);
-
-  await toQuestions.click();
-  await expect(page.getByRole("textbox", { name: "Title" })).toHaveValue("To be deleted");
+  await page.getByRole("button", { name: "More ways to send" }).click();
+  await page.getByRole("menuitem", { name: "Schedule…" }).click();
+  const schedule = page.getByRole("dialog", { name: "Schedule “To be deleted”" });
+  await expect(schedule.getByRole("combobox", { name: "Time zone" })).toBeVisible();
+  await expect(schedule.getByRole("button", { name: "Schedule" })).toBeVisible();
+  await schedule.getByRole("button", { name: "Cancel" }).click();
+  await expect(schedule).toBeHidden();
 
   await page.getByRole("button", { name: "More for this draft" }).click();
   await page.getByRole("menuitem", { name: "Delete draft" }).click();

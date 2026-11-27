@@ -6,7 +6,7 @@ import { z } from "zod";
 import { blankDraft, draftFromHoller, draftFromTemplate } from "@/components/editor/draft";
 import { HollerEditor } from "@/components/editor/holler-editor";
 import {
-  BackLabel,
+  BackArrow,
   backLinkClassName,
   HollerEditorTop,
 } from "@/components/editor/holler-editor-top";
@@ -21,7 +21,6 @@ const searchSchema = z.object({
   mode: z.enum(modes).optional(),
   template: z.string().optional(),
   draft: z.string().optional(),
-  stage: z.enum(["compose", "send"]).optional(),
 });
 
 export const Route = createFileRoute("/_app/new")({
@@ -31,14 +30,14 @@ export const Route = createFileRoute("/_app/new")({
 
 function BackLink() {
   return (
-    <Link to="/" className={backLinkClassName}>
-      <BackLabel />
+    <Link to="/" aria-label="Your hollers" className={backLinkClassName}>
+      <BackArrow />
     </Link>
   );
 }
 
 function NewHoller() {
-  const { mode, template, draft, stage = "compose" } = Route.useSearch();
+  const { mode, template, draft } = Route.useSearch();
   const navigate = Route.useNavigate();
   const [templatesOpen, setTemplatesOpen] = useState(false);
   const fromTemplate = template ? hollerTemplates.find((t) => t.id === template) : undefined;
@@ -46,13 +45,17 @@ function NewHoller() {
   const fresh = Boolean(mode || fromTemplate);
   if (fresh && !draft) startedHere.current = true;
 
-  if (draft && !startedHere.current) return <SavedDraft id={draft} stage={stage} />;
+  if (draft && !startedHere.current) return <SavedDraft id={draft} />;
 
   if (!fresh) {
     return (
       <>
         <div className="flex flex-col gap-3">
-          <HollerEditorTop back={<BackLink />} saveState="idle" />
+          <HollerEditorTop
+            back={<BackLink />}
+            heading={<span className="px-2 text-ink">New holler</span>}
+            saveState="idle"
+          />
           <StartScreen
             onPickMode={(next) => navigate({ search: { mode: next } })}
             onPickTemplate={(id) => navigate({ search: { template: id } })}
@@ -72,12 +75,11 @@ function NewHoller() {
     <Editor
       key={template ?? mode}
       initial={fromTemplate ? draftFromTemplate(fromTemplate) : blankDraft(mode ?? "survey")}
-      stage={stage}
     />
   );
 }
 
-function SavedDraft({ id, stage }: { id: string; stage: "compose" | "send" }) {
+function SavedDraft({ id }: { id: string }) {
   const holler = useQuery(hollerQuery(id));
   const [ids, setIds] = useState<string[] | null>(null);
   if (holler.data && ids === null) {
@@ -112,7 +114,6 @@ function SavedDraft({ id, stage }: { id: string; stage: "compose" | "send" }) {
       initial={draftFromHoller(holler.data)}
       saved={holler.data}
       known={known.data}
-      stage={stage}
     />
   );
 }
@@ -121,12 +122,10 @@ function Editor({
   initial,
   saved,
   known,
-  stage,
 }: {
   initial: ReturnType<typeof blankDraft>;
   saved?: Parameters<typeof HollerEditor>[0]["saved"];
   known?: Parameters<typeof HollerEditor>[0]["known"];
-  stage: "compose" | "send";
 }) {
   const navigate = Route.useNavigate();
   const queryClient = useQueryClient();
@@ -139,8 +138,6 @@ function Editor({
       initial={initial}
       saved={saved}
       known={known}
-      stage={stage}
-      onStageChange={(next) => navigate({ search: (prev) => ({ ...prev, stage: next }) })}
       sender={me.data?.member.name ?? "You"}
       timeZone={me.data?.member.timeZone}
       workspaceSize={workspace.data?.people ?? null}

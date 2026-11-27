@@ -11,6 +11,12 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/cn";
 
+const newLabel: Record<Mode, string> = {
+  pulse: "New pulse",
+  survey: "New survey",
+  chase: "New chase",
+};
+
 interface Props extends Omit<ComponentProps<"button">, "onChange"> {
   mode: Mode;
   onChange: (mode: Mode) => void;
@@ -18,23 +24,18 @@ interface Props extends Omit<ComponentProps<"button">, "onChange"> {
 }
 
 function ModePicker({ mode, onChange, questionCount, className, ...props }: Props) {
-  const Icon = modeIcons[mode];
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
         {...props}
         data-slot="mode-picker"
         className={cn(
-          "relative -ms-1 inline-flex h-8 items-center gap-2 rounded-control ps-1 pe-2 text-ink outline-none transition-colors focus-visible:ring-2 focus-visible:ring-focus hoverable:hover:bg-hover data-popup-open:bg-hover pointer-coarse:before:absolute pointer-coarse:before:-inset-y-1.5 pointer-coarse:before:inset-x-0 pointer-coarse:before:content-['']",
+          "relative inline-flex h-9 min-w-0 items-center gap-1.5 rounded-control px-2 text-ink outline-none transition-colors focus-visible:ring-2 focus-visible:ring-focus hoverable:hover:bg-hover data-popup-open:bg-hover pointer-coarse:before:absolute pointer-coarse:before:-inset-y-1 pointer-coarse:before:inset-x-0 pointer-coarse:before:content-['']",
           className,
         )}
       >
-        <span className="grid size-6 place-items-center rounded-glyph bg-tint text-tint-ink">
-          <Icon aria-hidden size={14} strokeWidth={2} />
-        </span>
-        <span className="sr-only">Mode: </span>
-        {modeLabels[mode]}
-        <ChevronDown aria-hidden size={16} strokeWidth={2} className="text-muted" />
+        <span className="truncate">{newLabel[mode]}</span>
+        <ChevronDown aria-hidden size={16} strokeWidth={2} className="shrink-0 text-muted" />
       </DropdownMenuTrigger>
       <DropdownMenuContent aria-label="What you are sending" align="start" className="w-[24rem]">
         <DropdownMenuRadioGroup value={mode} onValueChange={(next) => onChange(next as Mode)}>

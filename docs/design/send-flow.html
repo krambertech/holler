@@ -1,0 +1,503 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Send flow</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geologica:wght@300;330;400;500;600&display=swap">
+<style>
+
+:root {
+  --canvas: oklch(0.974 0.003 67.8); --plate: oklch(1 0 0); --well: oklch(0.956 0.006 84.6); --track: oklch(0.941 0.007 80.7);
+  --hover: oklch(0.426 0.134 337.6 / 0.06); --edge: oklch(0.2 0.029 60.5 / 0.1); --edge-2: oklch(0.2 0.029 60.5 / 0.14); --edge-3: oklch(0.2 0.029 60.5 / 0.26);
+  --divider: oklch(0.2 0.029 60.5 / 0.08);
+  --float: 0 0 0 1px oklch(0.2 0.029 60.5 / 0.12), 0 12px 32px -12px oklch(0.2 0.029 60.5 / 0.28);
+  --ink: oklch(0.2 0.016 53.5); --ink-2: oklch(0.379 0.016 55.9); --muted: oklch(0.495 0.019 52.3); --faint: oklch(0.604 0.017 54.8);
+  --primary: oklch(0.426 0.134 337.6); --primary-hover: oklch(0.38 0.125 337.6); --on-primary: oklch(1 0 0);
+  --tint: oklch(0.929 0.028 334.9); --tint-ink: oklch(0.347 0.113 337.5); --focus: oklch(0.426 0.134 337.6);
+  --live-dot: oklch(0.628 0.196 349.5);
+  --waiting: oklch(0.944 0.049 86.4); --waiting-ink: oklch(0.434 0.09 79.3);
+  --danger: oklch(0.932 0.028 25.9); --danger-ink: oklch(0.424 0.149 28.5);
+  --slack-bg: oklch(1 0 0); --slack-ink: oklch(0.22 0.01 300); --slack-muted: oklch(0.5 0.01 300); --slack-edge: oklch(0.88 0.005 300); --slack-green: oklch(0.52 0.12 160);
+  --weight-body: 300;
+  --font: "Geologica", ui-sans-serif, system-ui, sans-serif;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  color-scheme: dark; --weight-body: 330;
+  --canvas: oklch(0.187 0.013 338.6); --plate: oklch(0.232 0.019 334.1); --well: oklch(0.287 0.025 337.8); --track: oklch(0.3 0.025 337.8);
+  --hover: oklch(0.793 0.122 343 / 0.08); --edge: oklch(1 0 0 / 0.08); --edge-2: oklch(1 0 0 / 0.16); --edge-3: oklch(1 0 0 / 0.28); --divider: oklch(1 0 0 / 0.07);
+  --float: 0 0 0 1px oklch(1 0 0 / 0.12), 0 18px 40px -16px oklch(0 0 0 / 0.6);
+  --ink: oklch(0.954 0.007 340.4); --ink-2: oklch(0.86 0.012 338); --muted: oklch(0.762 0.017 335.2); --faint: oklch(0.55 0.017 335);
+  --primary: oklch(0.793 0.122 343); --primary-hover: oklch(0.83 0.11 343); --on-primary: oklch(0.266 0.081 337.9);
+  --tint: oklch(0.33 0.07 338); --tint-ink: oklch(0.89 0.06 343); --focus: oklch(0.793 0.122 343); --live-dot: oklch(0.793 0.122 343);
+  --waiting: oklch(0.32 0.045 80); --waiting-ink: oklch(0.89 0.09 85);
+  --danger: oklch(0.31 0.06 28); --danger-ink: oklch(0.87 0.07 28);
+  --slack-bg: oklch(0.2 0.005 300); --slack-ink: oklch(0.92 0.005 300); --slack-muted: oklch(0.7 0.005 300); --slack-edge: oklch(0.35 0.005 300); --slack-green: oklch(0.7 0.12 160);
+} }
+:root[data-theme="dark"] {
+  color-scheme: dark; --weight-body: 330;
+  --canvas: oklch(0.187 0.013 338.6); --plate: oklch(0.232 0.019 334.1); --well: oklch(0.287 0.025 337.8); --track: oklch(0.3 0.025 337.8);
+  --hover: oklch(0.793 0.122 343 / 0.08); --edge: oklch(1 0 0 / 0.08); --edge-2: oklch(1 0 0 / 0.16); --edge-3: oklch(1 0 0 / 0.28); --divider: oklch(1 0 0 / 0.07);
+  --float: 0 0 0 1px oklch(1 0 0 / 0.12), 0 18px 40px -16px oklch(0 0 0 / 0.6);
+  --ink: oklch(0.954 0.007 340.4); --ink-2: oklch(0.86 0.012 338); --muted: oklch(0.762 0.017 335.2); --faint: oklch(0.55 0.017 335);
+  --primary: oklch(0.793 0.122 343); --primary-hover: oklch(0.83 0.11 343); --on-primary: oklch(0.266 0.081 337.9);
+  --tint: oklch(0.33 0.07 338); --tint-ink: oklch(0.89 0.06 343); --focus: oklch(0.793 0.122 343); --live-dot: oklch(0.793 0.122 343);
+  --waiting: oklch(0.32 0.045 80); --waiting-ink: oklch(0.89 0.09 85);
+  --danger: oklch(0.31 0.06 28); --danger-ink: oklch(0.87 0.07 28);
+  --slack-bg: oklch(0.2 0.005 300); --slack-ink: oklch(0.92 0.005 300); --slack-muted: oklch(0.7 0.005 300); --slack-edge: oklch(0.35 0.005 300); --slack-green: oklch(0.7 0.12 160);
+}
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--canvas); color: var(--ink); font-family: var(--font); font-weight: var(--weight-body); font-size: 15px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+::selection { background: var(--tint); color: var(--tint-ink); }
+button, input, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+svg.i { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.tabular { font-variant-numeric: tabular-nums; }
+
+/* Mockup chrome: not part of the product. */
+.ctl { position: sticky; top: 0; z-index: 50; background: var(--canvas); border-bottom: 1px solid var(--divider); }
+.ctl-in { max-width: 1280px; margin: 0 auto; padding: 10px 16px; display: flex; flex-direction: column; gap: 8px; }
+.ctl-row { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; }
+.grp { display: inline-flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.grp > span { font-size: 12px; color: var(--muted); margin-inline-end: 4px; }
+.grp button { border: 1px solid var(--edge-2); background: var(--plate); border-radius: 999px; padding: 3px 11px; font-size: 13px; font-weight: 400; }
+.grp button[aria-pressed="true"] { background: var(--ink); color: var(--canvas); border-color: transparent; }
+.why { font-size: 13.5px; color: var(--ink-2); max-width: 110ch; }
+.why b { font-weight: 400; color: var(--ink); }
+.stage { padding: 24px 16px 80px; display: flex; justify-content: center; }
+.frame { width: min(1280px, 100%); container-type: inline-size; background: var(--canvas); border-radius: 18px; box-shadow: 0 0 0 1px var(--edge-2); position: relative; overflow: clip; min-height: 820px; }
+.frame.phone { width: 375px; min-height: 812px; }
+
+/* Product */
+.app-h { display: flex; align-items: center; justify-content: space-between; padding: 18px 24px 0; max-width: 928px; margin: 0 auto; }
+.wide .app-h { max-width: 1088px; }
+.logo { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 19px; letter-spacing: -0.02em; }
+.mark { width: 28px; height: 28px; border-radius: 8px; background: oklch(0.426 0.134 337.6); display: grid; place-items: center; color: white; font-weight: 600; font-size: 16px; }
+.me { display: flex; align-items: center; gap: 14px; color: var(--ink-2); font-size: 14px; }
+.av { width: 24px; height: 24px; border-radius: 999px; display: inline-grid; place-items: center; font-size: 11px; font-weight: 400; background: oklch(0.932 0.027 148.8); color: oklch(0.401 0.083 157.9); flex: none; }
+.av.b { background: oklch(0.93 0.03 250); color: oklch(0.42 0.09 255); }
+.page { max-width: 928px; margin: 0 auto; padding: 22px 24px 140px; }
+.wide .page { max-width: 1088px; }
+@container (max-width: 520px) { .app-h { padding: 14px 16px 0; } .page { padding: 16px 16px 150px; } .hide-sm { display: none !important; } }
+
+.toprow { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 32px; }
+.back { display: inline-flex; align-items: center; gap: 6px; color: var(--ink-2); font-size: 14px; }
+.saved { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); }
+.saved .i { width: 14px; height: 14px; }
+.icon-btn { width: 32px; height: 32px; border-radius: 9px; border: 0; background: none; color: var(--ink-2); display: inline-grid; place-items: center; }
+.icon-btn:hover { background: var(--hover); }
+
+.modes { display: inline-flex; padding: 3px; border-radius: 12px; background: var(--track); gap: 2px; margin-top: 18px; }
+.modes button { display: inline-flex; align-items: center; gap: 7px; padding: 5px 13px 5px 10px; border-radius: 9px; border: 0; background: none; color: var(--ink-2); font-weight: 400; font-size: 14px; }
+.modes button .i { width: 15px; height: 15px; color: var(--muted); }
+.modes button.on { background: var(--plate); color: var(--ink); box-shadow: 0 0 0 1px var(--edge); }
+.modes button.on .i { color: var(--tint-ink); }
+.titlewrap { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-top: 14px; }
+.title { font-size: 27px; font-weight: 400; letter-spacing: -0.025em; line-height: 1.2; margin: 0; }
+.title.ph { color: var(--faint); }
+.context { margin-top: 6px; color: var(--ink-2); font-size: 15px; }
+.context.ph { color: var(--muted); }
+.answered-in { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); margin-top: 10px; }
+
+.plate { background: var(--plate); border-radius: 16px; box-shadow: 0 0 0 1px var(--edge); }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: var(--plate); box-shadow: 0 0 0 1px var(--edge-2); font-weight: 500; font-size: 15px; white-space: nowrap; color: var(--ink); }
+.btn.sm { height: 34px; padding: 0 12px; font-size: 14px; }
+.btn.primary { background: var(--primary); color: var(--on-primary); box-shadow: none; }
+.btn.ghost { box-shadow: none; background: transparent; color: var(--ink-2); }
+.btn .i { width: 16px; height: 16px; }
+.lnk { background: none; border: 0; padding: 0; color: var(--tint-ink); font-weight: 400; font-size: 13.5px; white-space: nowrap; }
+.muted { color: var(--muted); }
+
+/* Question cards: kept as built. */
+.qs { display: flex; flex-direction: column; gap: 8px; margin-top: 22px; }
+.q { padding: 14px 16px 16px; position: relative; }
+.q-h { display: flex; align-items: center; gap: 8px; }
+.grip { position: absolute; inset-inline-start: -2px; top: 19px; color: var(--faint); }
+.grip .i { width: 14px; height: 14px; }
+.num { width: 24px; height: 24px; border-radius: 7px; background: var(--well); color: var(--ink-2); font-size: 12px; display: grid; place-items: center; }
+.typesel { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 8px 0 9px; border-radius: 9px; box-shadow: 0 0 0 1px var(--edge-2); font-size: 13.5px; font-weight: 400; color: var(--ink); background: var(--plate); border: 0; }
+.typesel .i { width: 14px; height: 14px; }
+.typesel .i.c { color: var(--muted); }
+.sp { flex: 1; }
+.req { display: inline-flex; align-items: center; gap: 8px; font-size: 13.5px; color: var(--ink-2); }
+.sw { width: 36px; height: 20px; border-radius: 99px; background: var(--edge-3); position: relative; flex: none; }
+.sw::after { content: ""; position: absolute; top: 2px; inset-inline-start: 2px; width: 16px; height: 16px; border-radius: 99px; background: white; transition: inset-inline-start 150ms var(--ease-out); }
+.sw.on { background: var(--primary); }
+.sw.on::after { inset-inline-start: 18px; background: var(--on-primary); }
+.prompt { font-size: 17px; font-weight: 400; letter-spacing: -0.01em; margin: 12px 0 0; }
+.desc { font-size: 13.5px; color: var(--muted); margin-top: 2px; }
+.opts { display: flex; flex-direction: column; gap: 6px; margin-top: 12px; }
+.opt { display: flex; align-items: center; gap: 10px; height: 40px; padding: 0 12px; border-radius: 10px; box-shadow: 0 0 0 1px var(--edge-2); font-size: 15px; }
+.opt i { width: 16px; height: 16px; border-radius: 99px; box-shadow: inset 0 0 0 1.5px var(--edge-3); flex: none; }
+.opt.add { box-shadow: none; color: var(--muted); padding-inline-start: 10px; gap: 8px; height: 34px; }
+.textans { display: flex; align-items: center; gap: 8px; margin-top: 12px; height: 40px; padding: 0 12px; border-radius: 10px; background: var(--well); color: var(--muted); font-size: 14px; }
+.textans .i { width: 14px; height: 14px; }
+.scale { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; margin-top: 12px; }
+.scale span { height: 40px; border-radius: 10px; box-shadow: 0 0 0 1px var(--edge-2); display: grid; place-items: center; font-size: 15px; font-variant-numeric: tabular-nums; }
+.scale-ends { display: flex; justify-content: space-between; font-size: 13px; color: var(--muted); margin-top: 6px; }
+.addq { display: flex; align-items: center; justify-content: center; gap: 8px; height: 44px; border-radius: 14px; border: 1px dashed var(--edge-3); background: none; color: var(--ink-2); font-size: 14px; font-weight: 400; width: 100%; }
+
+/* Send flow mockup */
+.ctl-in { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 14px; }
+.why { padding: 0 16px; margin: 14px auto 0; max-width: 1280px; }
+.frame { height: 880px; min-height: 0; overflow: hidden; }
+.frame.phone { height: 800px; min-height: 0; }
+.scroll { height: 100%; overflow-y: auto; display: flex; flex-direction: column; }
+.scroll > .app-h, .scroll > .bar { width: 100%; }
+.page { padding-bottom: 40px; flex: 1; width: 100%; }
+button.sw { border: 0; padding: 0; }
+.sw.sm { width: 32px; height: 18px; }
+.sw.sm::after { width: 14px; height: 14px; }
+.sw.sm[aria-checked="true"]::after { inset-inline-start: 16px; }
+.sw[aria-checked="true"] { background: var(--primary); }
+.sw[aria-checked="true"]::after { inset-inline-start: 18px; background: var(--on-primary); }
+
+/* The envelope: what it is, who gets it, and whether answers carry names, in one card. */
+.env { margin-top: 20px; }
+.env-row { display: grid; grid-template-columns: 64px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 8px 14px 8px 16px; min-height: 52px; }
+.env-row + .env-row { border-top: 1px solid var(--divider); }
+.env-row.one { grid-template-columns: 28px minmax(0, 1fr) auto auto auto; }
+.env-foot { display: flex; align-items: center; gap: 12px; min-height: 42px; padding: 6px 14px 6px 16px; border-top: 1px solid var(--divider); background: var(--well); border-radius: 0 0 16px 16px; }
+.env-row:not(.one) { grid-template-columns: 44px minmax(0, 1fr); }
+.env .modeline { justify-self: start; margin-inline-start: -5px; }
+.lead { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.newline { display: flex; align-items: center; gap: 4px; }
+.newline[data-head] { display: flex; }
+[data-headv="a"] .newline { display: none; }
+.backbtn { margin-inline-start: -8px; width: 36px; height: 36px; }
+.backbtn .i { width: 18px; height: 18px; }
+.new { font-size: 15px; color: var(--ink-2); margin-inline: 2px 1px; }
+.newmode { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 8px; border: 0; background: none; border-radius: 9px; font-size: 15px; font-weight: 400; color: var(--ink); }
+.newmode:hover { background: var(--hover); }
+.newmode .i { width: 15px; height: 15px; color: var(--muted); }
+.dotsep { width: 1px; height: 18px; background: var(--edge-2); }
+[data-headv="a"] [data-head="b"], [data-headv="b"] [data-head="a"] { display: none; }
+.env-lab { font-size: 14px; color: var(--muted); }
+.env-n { font-size: 13.5px; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.modeline { display: inline-flex; align-items: center; gap: 8px; border: 0; background: none; height: 34px; padding: 0 8px 0 5px; border-radius: 9px; font-size: 14.5px; font-weight: 400; color: var(--ink); }
+.modeline:hover { background: var(--hover); }
+.modeline .g { width: 24px; height: 24px; border-radius: 7px; background: var(--tint); color: var(--tint-ink); display: grid; place-items: center; }
+.modeline .g .i { width: 13px; height: 13px; }
+.modeline > .i { width: 14px; height: 14px; color: var(--muted); }
+.modeline .sub { color: var(--muted); font-size: 13.5px; }
+.anon { display: inline-flex; align-items: center; gap: 10px; font-size: 14px; color: var(--ink-2); cursor: pointer; user-select: none; }
+.anon .i { width: 15px; height: 15px; color: var(--muted); }
+.to { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; min-width: 0; }
+.to input { border: 0; outline: 0; background: none; flex: 1; min-width: 14ch; height: 30px; padding: 0 4px; }
+.to input::placeholder { color: var(--muted); }
+.pchip { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 2px 0 4px; border-radius: 999px; background: var(--well); font-size: 14px; font-weight: 400; }
+.pchip .gi { width: 22px; height: 22px; border-radius: 99px; background: var(--tint); color: var(--tint-ink); display: grid; place-items: center; }
+.pchip .gi .i { width: 12px; height: 12px; }
+.pchip .av { width: 22px; height: 22px; font-size: 11px; }
+.pchip .n { color: var(--muted); font-size: 13px; }
+.pchip button { width: 24px; height: 24px; border-radius: 99px; border: 0; background: none; color: var(--muted); display: grid; place-items: center; }
+.pchip button:hover { background: var(--edge); color: var(--ink); }
+.pchip button .i { width: 13px; height: 13px; }
+.title { margin-top: 28px; }
+.qs { margin-top: 20px; }
+@container (max-width: 520px) {
+  .env-row { padding-inline: 14px 12px; }
+  .env-row:has(.to) { grid-template-columns: auto minmax(0, 1fr); padding-block: 10px; }
+  .env-row:has(.to) .to { grid-column: 1 / -1; grid-row: 2; }
+  .env-row.one { grid-template-columns: auto minmax(0, 1fr) auto auto; }
+  .env-foot { padding-inline: 14px 12px; }
+  .env-n { justify-self: end; }
+  .modeline .sub { display: none; }
+}
+
+/* Bar */
+.bar { position: sticky; bottom: 0; z-index: 4; margin-top: auto; background: var(--canvas); border-top: 1px solid var(--divider); }
+.bar-in { max-width: 928px; margin: 0 auto; display: flex; align-items: center; gap: 10px; padding: 12px 24px; }
+.where { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; color: var(--ink-2); flex: 1; min-width: 0; }
+.where .i { color: var(--muted); }
+.sched { display: none; align-items: center; gap: 8px; font-size: 14px; color: var(--ink-2); flex: 1; min-width: 0; }
+.sched .i { color: var(--tint-ink); }
+.sched b { font-weight: 400; color: var(--ink); }
+[data-state="scheduled"] .sched { display: inline-flex; }
+[data-state="scheduled"] .where { display: none; }
+.split { display: inline-flex; position: relative; }
+.split .btn.primary:first-child { border-radius: 10px 0 0 10px; padding-inline: 18px 14px; }
+.split .more { width: 36px; padding: 0; border-radius: 0 10px 10px 0; box-shadow: inset 1px 0 0 oklch(1 0 0 / 0.22); }
+.split .more:hover, .split .btn.primary:first-child:hover { background: var(--primary-hover); }
+.menu { position: absolute; z-index: 6; bottom: 46px; inset-inline-end: 0; width: 260px; background: var(--plate); border-radius: 14px; box-shadow: var(--float); padding: 5px; }
+.menu[hidden] { display: none; }
+.mi { display: grid; grid-template-columns: 16px minmax(0, 1fr); gap: 1px 10px; align-items: center; width: 100%; padding: 9px 10px; border: 0; background: none; border-radius: 9px; text-align: start; font-size: 14.5px; font-weight: 400; color: var(--ink); }
+.mi:hover { background: var(--hover); }
+.mi .i { width: 16px; height: 16px; color: var(--muted); }
+.mi small { grid-column: 2; font-size: 13px; color: var(--muted); }
+@container (max-width: 520px) { .bar-in { padding: 10px 16px; } .bar-in .hide-sm { display: none; } }
+
+/* Dialog */
+.scrim { position: absolute; inset: 0; z-index: 10; background: oklch(0.2 0.03 340 / 0.28); backdrop-filter: blur(2px); }
+.dlg { position: absolute; z-index: 11; top: 96px; left: 50%; transform: translateX(-50%); width: 500px; max-width: calc(100% - 32px); background: var(--plate); border-radius: 20px; box-shadow: var(--float); overflow: hidden; }
+.scrim[hidden], .dlg[hidden] { display: none; }
+.dlg-h { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 14px; align-items: start; padding: 22px 22px 18px; }
+.dlg-h h2 { font-size: 20px; font-weight: 400; letter-spacing: -0.02em; margin: 0; line-height: 1.3; text-wrap: balance; }
+.who { display: flex; align-items: center; gap: 10px; margin-top: 10px; font-size: 14px; color: var(--ink-2); }
+.stack { display: flex; }
+.stack > * { width: 24px; height: 24px; border-radius: 99px; box-shadow: 0 0 0 2px var(--plate); display: grid; place-items: center; font-size: 11px; }
+.stack > * + * { margin-inline-start: -6px; }
+.stack .gi { background: var(--tint); color: var(--tint-ink); }
+.stack .gi .i { width: 12px; height: 12px; }
+.dlg-h .icon-btn { margin: -4px -6px 0 0; }
+
+.when { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 8px; padding: 0 22px 18px; }
+.fld { display: grid; gap: 6px; }
+.fld > span { font-size: 13.5px; color: var(--muted); }
+.field { height: 42px; width: 100%; padding: 0 12px; border-radius: 10px; border: 0; background: var(--well); font: inherit; color: var(--ink); }
+.field:focus-visible { outline: 2px solid var(--focus); outline-offset: 0; }
+
+.sets { border-top: 1px solid var(--divider); }
+.set { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 16px; align-items: center; padding: 14px 22px; }
+.set + .set { border-top: 1px solid var(--divider); }
+.set b { font-weight: 400; display: block; }
+.set small { display: block; font-size: 13.5px; color: var(--muted); }
+.set .extra { grid-column: 1 / -1; padding-top: 10px; }
+.set .extra[hidden] { display: none; }
+.sel { position: relative; display: inline-flex; }
+.sel select { appearance: none; -webkit-appearance: none; height: 34px; padding: 0 30px 0 11px; border-radius: 9px; border: 0; background: var(--well); font: inherit; font-size: 14px; font-weight: 400; color: var(--ink); cursor: pointer; }
+.sel select:hover { background: var(--track); }
+.sel .i { position: absolute; inset-inline-end: 10px; top: 10px; width: 14px; height: 14px; color: var(--muted); pointer-events: none; }
+.dlg-f { display: flex; align-items: center; gap: 8px; padding: 14px 22px; background: var(--well); }
+.dlg-f .note { flex: 1; font-size: 13.5px; color: var(--muted); }
+@container (max-width: 520px) {
+  .dlg { top: auto; bottom: 0; left: 0; transform: none; width: 100%; max-width: 100%; border-radius: 20px 20px 0 0; }
+  .dlg-h, .set, .dlg-f { padding-inline: 16px; }
+  .when { padding-inline: 16px; grid-template-columns: minmax(0, 1fr) minmax(0, 0.8fr); }
+  .dlg-f { flex-wrap: wrap; padding-bottom: 18px; }
+  .dlg-f .note { flex-basis: 100%; }
+  .dlg-f .btn { flex: 1; }
+}
+[data-mode="pulse"] .survey-only, [data-mode="survey"] .pulse-only { display: none; }
+</style>
+</head>
+<body data-mode="survey" data-headv="a">
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="chev" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+  <symbol id="x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+  <symbol id="check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+  <symbol id="left" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></symbol>
+  <symbol id="eye" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="eyeoff" viewBox="0 0 24 24"><path d="M10.7 5.1A10 10 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-2.2 3.2M6.6 6.6A17 17 0 0 0 2 12s3.5 7 10 7a9.7 9.7 0 0 0 5.4-1.6M2 2l20 20M9.9 9.9a3 3 0 0 0 4.2 4.2"/></symbol>
+  <symbol id="help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3M12 17h.01"/></symbol>
+  <symbol id="dots" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></symbol>
+  <symbol id="hash" viewBox="0 0 24 24"><path d="M4 9h16M4 15h16M10 3 8 21M16 3l-2 18"/></symbol>
+  <symbol id="list" viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></symbol>
+  <symbol id="zap" viewBox="0 0 24 24"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></symbol>
+  <symbol id="send" viewBox="0 0 24 24"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></symbol>
+  <symbol id="clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></symbol>
+  <symbol id="grip" viewBox="0 0 24 24"><circle cx="9" cy="6" r="1"/><circle cx="15" cy="6" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="9" cy="18" r="1"/><circle cx="15" cy="18" r="1"/></symbol>
+  <symbol id="plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+</svg>
+
+<div class="ctl"><div class="ctl-in">
+  <div class="grp" data-set="state"><span>Show</span>
+    <button aria-pressed="true" data-v="write">Writing</button>
+    <button aria-pressed="false" data-v="send">Send dialog</button>
+    <button aria-pressed="false" data-v="schedule">Schedule dialog</button>
+    <button aria-pressed="false" data-v="scheduled">Scheduled</button>
+  </div>
+  <div class="grp" data-set="head"><span>Header</span>
+    <button aria-pressed="true" data-v="a">A · Mode in the card</button>
+    <button aria-pressed="false" data-v="b">B · New survey ▾ in the top row</button>
+  </div>
+  <div class="grp" data-set="mode"><span>Mode</span>
+    <button aria-pressed="true" data-v="survey">Survey</button>
+    <button aria-pressed="false" data-v="pulse">Pulse</button>
+  </div>
+  <div class="grp" data-set="width"><span>Width</span>
+    <button aria-pressed="true" data-v="desk">1280</button>
+    <button aria-pressed="false" data-v="phone">375</button>
+  </div>
+  <div class="grp" data-set="theme"><span>Theme</span>
+    <button aria-pressed="true" data-v="light">Day</button>
+    <button aria-pressed="false" data-v="dark">Night</button>
+  </div>
+</div></div>
+<p class="why">Anonymous sits under To. Two places for the mode: as the first row of the card, or in the top row as “New survey”, after a back arrow. Send opens a short dialog with three settings; the arrow beside it schedules instead. Every control here works.</p>
+
+<div class="stage"><div class="frame" id="frame" data-state="write">
+  <div class="scroll">
+    <div class="app-h"><div class="logo"><span class="mark">h</span>holler</div><div class="me hide-sm"><span class="av">KP</span></div></div>
+    <div class="page">
+      <div class="toprow">
+        <span class="lead"><span class="back" data-head="a"><svg class="i"><use href="#left"/></svg>Your hollers</span><span class="newline" data-head="b"><button class="icon-btn backbtn" aria-label="Your hollers"><svg class="i"><use href="#left"/></svg></button><button class="newmode" aria-label="Change the mode"><span class="survey-only">New survey</span><span class="pulse-only">New pulse</span><svg class="i"><use href="#chev"/></svg></button></span></span>
+        <span style="display:flex;align-items:center;gap:6px"><span class="saved"><svg class="i"><use href="#check"/></svg>Draft saved</span><button class="icon-btn" aria-label="More"><svg class="i"><use href="#dots"/></svg></button></span>
+      </div>
+
+      <div class="plate env" data-head="a">
+        <div class="env-row">
+          <span class="env-lab">Mode</span>
+          <button class="modeline"><span class="g"><svg class="i survey-only"><use href="#list"/></svg><svg class="i pulse-only"><use href="#zap"/></svg></span><span class="survey-only">Survey</span><span class="pulse-only">Pulse</span><svg class="i"><use href="#chev"/></svg></button>
+        </div>
+        <div class="env-row">
+          <span class="env-lab">To</span>
+          <div class="to">
+            <span class="pchip"><span class="gi"><svg class="i"><use href="#hash"/></svg></span>design<span class="n">8</span><button aria-label="Remove #design"><svg class="i"><use href="#x"/></svg></button></span>
+            <span class="pchip"><span class="av b">MT</span>Mira Tamm<button aria-label="Remove Mira Tamm"><svg class="i"><use href="#x"/></svg></button></span>
+            <input placeholder="Add people, groups or channels" aria-label="Add people">
+          </div>
+        </div>
+        <div class="env-foot">
+          <span class="env-n">10 people</span>
+          <span class="sp"></span>
+          <label class="anon">Anonymous<button class="sw sm" role="switch" aria-checked="false" aria-label="Anonymous answers" data-anon></button></label>
+        </div>
+      </div>
+
+      <div class="plate env" data-head="b">
+        <div class="env-row">
+          <span class="env-lab">To</span>
+          <div class="to">
+            <span class="pchip"><span class="gi"><svg class="i"><use href="#hash"/></svg></span>design<span class="n">8</span><button aria-label="Remove #design"><svg class="i"><use href="#x"/></svg></button></span>
+            <span class="pchip"><span class="av b">MT</span>Mira Tamm<button aria-label="Remove Mira Tamm"><svg class="i"><use href="#x"/></svg></button></span>
+            <input placeholder="Add people, groups or channels" aria-label="Add people">
+          </div>
+        </div>
+        <div class="env-foot">
+          <span class="env-n">10 people</span>
+          <span class="sp"></span>
+          <label class="anon">Anonymous<button class="sw sm" role="switch" aria-checked="false" aria-label="Anonymous answers" data-anon></button></label>
+        </div>
+      </div>
+      <h1 class="title survey-only">Q1 planning</h1>
+      <div class="context survey-only">Help us pick where the team starts next quarter.</div>
+      <h1 class="title pulse-only">How was your week?</h1>
+
+      <div class="qs">
+        <div class="plate q survey-only">
+          <span class="grip"><svg class="i"><use href="#grip"/></svg></span>
+          <div class="q-h"><span class="num">1</span><button class="typesel"><svg class="i c"><use href="#list"/></svg>Single choice<svg class="i c"><use href="#chev"/></svg></button><span class="sp"></span><span class="req">Required <span class="sw on"></span></span></div>
+          <p class="prompt">Which bet should we make first?</p>
+          <div class="opts"><div class="opt"><i></i>Faster onboarding</div><div class="opt"><i></i>Billing clean-up</div><div class="opt add"><svg class="i"><use href="#plus"/></svg>Add option</div></div>
+        </div>
+        <div class="plate q survey-only">
+          <span class="grip"><svg class="i"><use href="#grip"/></svg></span>
+          <div class="q-h"><span class="num">2</span><button class="typesel"><svg class="i c"><use href="#list"/></svg>Text<svg class="i c"><use href="#chev"/></svg></button><span class="sp"></span><span class="req">Required <span class="sw"></span></span></div>
+          <p class="prompt">What would make that bet easier?</p>
+          <div class="textans">People write a few words</div>
+        </div>
+        <div class="plate q pulse-only">
+          <div class="q-h"><span class="num">1</span><button class="typesel"><svg class="i c"><use href="#list"/></svg>Scale 1–5<svg class="i c"><use href="#chev"/></svg></button></div>
+          <p class="prompt">How was your week?</p>
+          <div class="scale"><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span></div>
+          <div class="scale-ends"><span>Rough</span><span>Great</span></div>
+        </div>
+        <button class="addq survey-only"><svg class="i"><use href="#plus"/></svg>Add question</button>
+      </div>
+    </div>
+
+    <div class="bar"><div class="bar-in">
+      <span class="where"><svg class="i"><use href="#send"/></svg><span class="survey-only">Slack form</span><span class="pulse-only">Slack DM</span><svg class="i"><use href="#help"/></svg></span>
+      <span class="sched"><svg class="i"><use href="#clock"/></svg><span>Sends <b>Mon 30 Nov, 9:00</b><span class="hide-sm"> in each person’s time zone</span></span></span>
+      <button class="btn ghost"><svg class="i"><use href="#eye"/></svg><span class="hide-sm">Preview</span></button>
+      <span class="split" data-split-send>
+        <button class="btn primary" data-go="send">Send</button>
+        <button class="btn primary more" aria-label="More ways to send" data-open="send-menu"><svg class="i"><use href="#chev"/></svg></button>
+        <div class="menu" id="send-menu" hidden role="menu">
+          <button class="mi" data-go="schedule"><svg class="i"><use href="#clock"/></svg>Schedule…<small>Pick a day and time</small></button>
+        </div>
+      </span>
+      <span data-split-sched style="display:none"><button class="btn" data-go="schedule">Change</button></span>
+    </div></div>
+  </div>
+
+  <div class="scrim" hidden data-close></div>
+  <div class="dlg" hidden role="dialog" aria-labelledby="dlg-t">
+    <div class="dlg-h">
+      <div>
+        <h2 id="dlg-t"><span data-only="send">Send “Q1 planning”</span><span data-only="schedule">Schedule “Q1 planning”</span></h2>
+        <div class="who"><span class="stack"><span class="gi"><svg class="i"><use href="#hash"/></svg></span><span class="av b">MT</span></span><span data-who>10 people · named answers</span></div>
+      </div>
+      <button class="icon-btn" aria-label="Close" data-close><svg class="i"><use href="#x"/></svg></button>
+    </div>
+    <div class="when" data-only="schedule">
+      <label class="fld"><span>Day</span><input class="field" type="date" value="2026-11-30"></label>
+      <label class="fld"><span>Time</span><input class="field" type="time" value="09:00"></label>
+    </div>
+    <div class="sets">
+      <div class="set" data-only="schedule">
+        <div><b>Time zone</b><small data-tz>9:00 wherever each person is</small></div>
+        <span class="sel"><select aria-label="Time zone" data-tz-sel><option value="theirs">Each person’s own</option><option value="mine">Yours, Tallinn</option></select><svg class="i"><use href="#chev"/></svg></span>
+      </div>
+      <div class="set">
+        <div><b>Reminders</b><small data-rem>A day in and three days in, to anyone still waiting</small></div>
+        <button class="sw" role="switch" aria-checked="true" aria-label="Reminders" data-rem-sw></button>
+      </div>
+      <div class="set">
+        <div><b>Closes</b><small>No answers after that</small></div>
+        <span class="sel"><select aria-label="Closes"><option>After 1 day</option><option selected>After 3 days</option><option>After a week</option><option>On a day you pick</option></select><svg class="i"><use href="#chev"/></svg></span>
+      </div>
+      <div class="set">
+        <div><b>Live count</b><small>Post how many have answered in a channel</small></div>
+        <button class="sw" role="switch" aria-checked="false" aria-label="Live count" data-count></button>
+        <div class="extra" hidden data-count-field><input class="field" value="#design" aria-label="Channel"></div>
+      </div>
+    </div>
+    <div class="dlg-f">
+      <span class="note" data-only="send">It goes out in Slack right away.</span>
+      <span class="note" data-only="schedule">You can change this until it sends.</span>
+      <button class="btn" data-close>Cancel</button>
+      <button class="btn primary" data-confirm><span data-only="send">Send now</span><span data-only="schedule">Schedule</span></button>
+    </div>
+  </div>
+</div></div>
+
+<script>
+const frame = document.getElementById("frame");
+const scrim = document.querySelector(".scrim"), dlg = document.querySelector(".dlg");
+let scheduled = false;
+function setState(s) {
+  frame.dataset.state = s;
+  const open = s === "send" || s === "schedule";
+  scrim.hidden = dlg.hidden = !open;
+  dlg.querySelectorAll("[data-only]").forEach((el) => { el.style.display = el.dataset.only === s ? "" : "none"; });
+  document.querySelector("[data-split-send]").style.display = s === "scheduled" ? "none" : "";
+  document.querySelector("[data-split-sched]").style.display = s === "scheduled" ? "" : "none";
+  document.querySelectorAll(".menu").forEach((m) => (m.hidden = true));
+  document.querySelectorAll('[data-set="state"] button').forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.v === s)));
+  sync();
+}
+function sync() {
+  const anon = document.querySelector("[data-anon]").getAttribute("aria-checked") === "true";
+  document.querySelector("[data-who]").textContent = `10 people · ${anon ? "anonymous" : "named"} answers`;
+  const rem = document.querySelector("[data-rem-sw]").getAttribute("aria-checked") === "true";
+  document.querySelector("[data-rem]").textContent = rem ? "A day in and three days in, to anyone still waiting" : "Nobody gets a reminder";
+  document.querySelector("[data-count-field]").hidden = document.querySelector("[data-count]").getAttribute("aria-checked") !== "true";
+  document.querySelector("[data-tz]").textContent = document.querySelector("[data-tz-sel]").value === "theirs" ? "9:00 wherever each person is" : "9:00 in Tallinn for everyone";
+}
+document.querySelectorAll(".grp").forEach((grp) => grp.addEventListener("click", (e) => {
+  const b = e.target.closest("button"); if (!b) return;
+  grp.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+  const v = b.dataset.v, set = grp.dataset.set;
+  if (set === "state") setState(v);
+  if (set === "mode") document.body.dataset.mode = v;
+  if (set === "head") document.body.dataset.headv = v;
+  if (set === "width") frame.classList.toggle("phone", v === "phone");
+  if (set === "theme") document.documentElement.dataset.theme = v;
+}));
+frame.addEventListener("click", (e) => {
+  const sw = e.target.closest('[role="switch"]');
+  if (sw) {
+    e.preventDefault();
+    const next = String(sw.getAttribute("aria-checked") !== "true");
+    (sw.hasAttribute("data-anon") ? document.querySelectorAll("[data-anon]") : [sw]).forEach((x) => x.setAttribute("aria-checked", next));
+    sync(); return;
+  }
+  const opener = e.target.closest("[data-open]");
+  if (opener) { const m = document.getElementById(opener.dataset.open); m.hidden = !m.hidden; return; }
+  const go = e.target.closest("[data-go]"); if (go) { setState(go.dataset.go); return; }
+  if (e.target.closest("[data-close]")) { setState(scheduled ? "scheduled" : "write"); return; }
+  if (e.target.closest("[data-confirm]")) { scheduled = frame.dataset.state === "schedule"; setState(scheduled ? "scheduled" : "write"); return; }
+  if (!e.target.closest(".menu")) document.querySelectorAll(".menu").forEach((x) => (x.hidden = true));
+});
+frame.addEventListener("change", sync);
+setState("write");
+</script>
+</body>
+</html>

@@ -14,7 +14,7 @@ import { Field, FieldLabel } from "@/components/ui/field";
 import { peopleLabel } from "@/lib/format";
 import { type DirectoryGroup, type DirectorySearch, useDirectory } from "./directory";
 
-function SendSettingsChannel({
+function SendDialogChannel({
   channel,
   onChannel,
   search,
@@ -76,4 +76,4 @@ function SendSettingsChannel({
   );
 }
 
-export { SendSettingsChannel };
+export { SendDialogChannel };

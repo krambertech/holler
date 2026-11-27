@@ -1,30 +1,23 @@
 import { answerSurface } from "@holler/core";
+import { CalendarClock, Send } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { AudiencePicker, type AudienceSummary } from "@/components/editor/send/audience-picker";
+import { AudiencePicker } from "@/components/editor/send/audience-picker";
 import type { DirectorySearch } from "@/components/editor/send/directory";
-import { SendBar, SendButton } from "@/components/editor/send/send-bar";
+import { SendBar, SendSplit } from "@/components/editor/send/send-bar";
 import {
   answeredInLabel,
-  closeTime,
   composeBarSummary,
-  dayTime,
-  type Reach,
   type SendFields,
-  sendActionLabel,
   sendBarSummary,
-  sendWindow,
 } from "@/components/editor/send/send-logic";
-import { SendSettings } from "@/components/editor/send/send-settings";
 import { type PreviewHoller, SlackPreview } from "@/components/editor/send/slack-preview";
-import { useNow } from "@/components/editor/send/use-now";
-import { Button } from "@/components/ui/button";
+import { Field, FieldLabel } from "@/components/ui/field";
+import { Switch } from "@/components/ui/switch";
 import { Variants } from "../frame";
 import {
   type Audience,
-  big,
   chase,
   defaults,
-  everyone,
   failingSearch,
   four,
   fridayFive,
@@ -54,23 +47,52 @@ function ComposeBarDemo({ problem }: { problem?: string }) {
       className="w-full"
       description={summary.description}
       tone={summary.tone}
-      action={<Button variant="primary">Next: share</Button>}
+      action={<SplitDemo />}
     >
       {summary.title}
     </SendBar>
   );
 }
 
-function SendBarDemo({
-  audience = four,
-  start,
-}: {
-  audience?: Audience | undefined;
-  start?: Partial<SendFields> | undefined;
-}) {
-  const [sent, setSent] = useState(false);
+function SplitDemo({ scheduled = false }: { scheduled?: boolean | undefined }) {
+  const [said, setSaid] = useState<string | null>(null);
+  return (
+    <div className="flex items-center gap-3">
+      {said && <span className="text-muted text-sm">{said}</span>}
+      <SendSplit
+        onClick={() => setSaid(scheduled ? "Schedule updated" : "Send dialog opens")}
+        options={
+          scheduled
+            ? [
+                {
+                  label: "Change the time",
+                  icon: <CalendarClock aria-hidden />,
+                  onSelect: () => setSaid("Schedule dialog opens"),
+                },
+                {
+                  label: "Send now instead",
+                  icon: <Send aria-hidden />,
+                  onSelect: () => setSaid("Send dialog opens"),
+                },
+              ]
+            : [
+                {
+                  label: "Schedule…",
+                  icon: <CalendarClock aria-hidden />,
+                  onSelect: () => setSaid("Schedule dialog opens"),
+                },
+              ]
+        }
+      >
+        {scheduled ? "Update schedule" : "Send"}
+      </SendSplit>
+    </div>
+  );
+}
+
+function ScheduledBarDemo({ start }: { start: Partial<SendFields> }) {
   const fields = { ...defaults, ...start };
-  const send = sendFor(audience, fields);
+  const send = sendFor(four, fields);
   const context = {
     now: new Date(),
     senderZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
@@ -84,27 +106,20 @@ function SendBarDemo({
       secondary={
         <SlackPreview holler={pulse} sender="Mira" closesAt={fridayFive} variant="ghost" />
       }
-      action={
-        <SendButton send={send} onSend={() => setSent(true)}>
-          {sendActionLabel(send.reach, send.scheduled)}
-        </SendButton>
-      }
+      action={<SplitDemo scheduled />}
     >
-      {sent ? "Sent. It is on its way." : summary.title}
+      {summary.title}
     </SendBar>
   );
 }
 
-function SendButtonDemo({ audience, start }: { audience: Audience; start?: Partial<SendFields> }) {
-  const [sent, setSent] = useState(false);
-  const send = sendFor(audience, { ...defaults, ...start });
+function AnonymousDemo() {
+  const [on, setOn] = useState(false);
   return (
-    <div className="flex items-center gap-3">
-      <SendButton send={send} onSend={() => setSent(true)}>
-        {sendActionLabel(send.reach, send.scheduled)}
-      </SendButton>
-      {sent && <span className="text-muted text-sm">Sent</span>}
-    </div>
+    <Field orientation="horizontal" className="w-auto gap-2.5">
+      <FieldLabel className="font-normal text-ink-2 text-sm">Anonymous</FieldLabel>
+      <Switch size="sm" checked={on} onCheckedChange={setOn} />
+    </Field>
   );
 }
 
@@ -148,82 +163,8 @@ function PickerDemo({
       resolve={resolve}
       defaultInputValue={query}
       inline
+      aside={<AnonymousDemo />}
     />
-  );
-}
-
-function SendStageDemo() {
-  const [audience, setAudience] = useState<Audience>(four);
-  const [fields, setFields] = useState<SendFields>(defaults);
-  const [summary, setSummary] = useState<AudienceSummary | null>(null);
-  const reach: Reach = summary?.reach ?? { count: 0, exact: true, everyone: false, unknown: false };
-  const zones = summary?.zones ?? [];
-  const now = useNow();
-  const senderZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  const bar = sendBarSummary(reach, fields, { now, senderZone, zones });
-  const window = sendWindow({
-    sendAt: fields.sendAt,
-    inRecipientTimeZone: fields.sendInRecipientTimeZone,
-    senderZone,
-    zones,
-    now,
-  });
-  const empty = reach.count === 0 && !reach.everyone;
-  return (
-    <div className="h-[34rem] w-full overflow-y-auto rounded-md bg-canvas edge">
-      <div className="mx-auto grid max-w-[45rem] gap-8 px-4 pt-6">
-        <h1 className="text-4xl tracking-title">Send “How was your week?”</h1>
-        <AudiencePicker
-          value={audience}
-          onValueChange={setAudience}
-          problem={empty ? "Choose who to send it to." : undefined}
-          known={known}
-          workspaceSize={WORKSPACE}
-          search={search}
-          onSummaryChange={setSummary}
-        />
-        <SendSettings
-          now={now}
-          value={fields}
-          onValueChange={setFields}
-          reach={reach}
-          zones={zones}
-          tagSuggestions={["weekly", "design"]}
-          search={search}
-        />
-        <SendBar
-          tone={empty ? "danger" : "neutral"}
-          description={empty ? null : bar.description}
-          secondary={
-            <SlackPreview
-              holler={pulse}
-              sender="Mira"
-              recipient="Jonas"
-              closesAt={closeTime(fields, window)}
-              sendsAt={fields.sendAt}
-              variant="ghost"
-            />
-          }
-          action={
-            <SendButton
-              disabled={empty}
-              onSend={() => {}}
-              send={{
-                title: "How was your week?",
-                reach,
-                chosen: summary?.chosen ?? [],
-                when: fields.sendAt ? dayTime(fields.sendAt) : "now",
-                scheduled: Boolean(fields.sendAt),
-              }}
-            >
-              {sendActionLabel(reach, Boolean(fields.sendAt))}
-            </SendButton>
-          }
-        >
-          {empty ? "Choose who to send it to." : bar.title}
-        </SendBar>
-      </div>
-    </div>
   );
 }
 
@@ -253,13 +194,13 @@ const surfaceNote = (holler: PreviewHoller) => answeredInLabel(answerSurface(hol
 export const sending: Group = {
   slug: "sending",
   title: "Sending",
-  lede: "The page that sends a Holler: who gets it, what they see in Slack, and the bar that sends it. When it goes out and what happens next have their own page.",
+  lede: "Sending a Holler: who gets it, what they see in Slack, and the bar that sends it. The questions Send asks last have their own page.",
   entries: [
     {
       slug: "audience-picker",
       name: "AudiencePicker",
       source: "components/editor/send/audience-picker.tsx",
-      note: "One field, like Slack's To line: chips for who is in, then a place to type. Typing lists matches at once, best first: a name that starts with it, then people this sender sends to often. @ searches handles and # channels. Up and Down move, Enter, Tab or a comma adds, Backspace on an empty field reaches the last chip and a second Backspace removes it, with Undo. A pasted list adds every name, handle and email it can match. Here the list sits in the page; in the editor it floats under the field.",
+      note: "The card at the top of the editor, like an email's To line: chips for who is in, then a place to type, and a strip below with how many it reaches and the Anonymous switch. Away from the field, many chips fold to one line ending in +N more; a click opens them all again. Typing lists matches at once, best first: a name that starts with it, then people this sender sends to often. @ searches handles and # channels. Up and Down move, Enter, Tab or a comma adds, Backspace on an empty field reaches the last chip and a second Backspace removes it, with Undo. A pasted list adds every name, handle and email it can match. Here the list sits in the page; in the editor it floats under the field.",
       Demo: () => (
         <Variants
           stack
@@ -326,7 +267,7 @@ export const sending: Group = {
             },
             {
               label: "Many chips",
-              note: "The field grows, then scrolls.",
+              note: "Folded to one line until you click in; then the field grows, then scrolls.",
               render: () => (
                 <PickerDemo
                   start={{
@@ -387,62 +328,34 @@ export const sending: Group = {
       slug: "send-bar",
       name: "SendBar",
       source: "components/editor/send/send-bar.tsx",
-      note: "The bar at the bottom of both editor pages. It sits at the bottom of the window and stays in the page's flow, so it never covers the last row. It is raised only while content scrolls under it, and flat when it rests at the end. Its children say what the next press does, and the action slot holds the one plum button.",
+      note: "The bar at the bottom of the editor. It sits at the bottom of the window and stays in the page's flow, so it never covers the last row. It is raised only while content scrolls under it, and flat when it rests at the end. Its children say where people answer, or what to fix, and the action slot holds the one plum button.",
       Demo: () => (
         <Variants
           stack
           items={[
             { label: "While writing", render: () => <ComposeBarDemo /> },
             {
-              label: "While writing, with something to fix",
+              label: "With something to fix",
               render: () => <ComposeBarDemo problem="Give the second question a prompt." />,
             },
-            { label: "On the sending page", render: () => <SendBarDemo /> },
             {
-              label: "On the sending page, scheduled",
-              render: () => <SendBarDemo start={{ sendAt: mondayNine }} />,
-            },
-            {
-              label: "On the sending page, a big send",
-              note: "Press it: more than 50 people asks once more.",
-              render: () => <SendBarDemo audience={big} />,
-            },
-            {
-              label: "On a page",
-              note: "The whole sending page. Scroll inside: the bar floats at the bottom and never covers the last row.",
-              render: () => <SendStageDemo />,
+              label: "Scheduled",
+              render: () => <ScheduledBarDemo start={{ sendAt: mondayNine }} />,
             },
           ]}
         />
       ),
     },
     {
-      slug: "send-button",
-      name: "SendButton",
+      slug: "send-split",
+      name: "SendSplit",
       source: "components/editor/send/send-bar.tsx",
-      note: "The plum button that sends. Its words name the reach. Everyone, or more than 50 people, asks once more in a dialog that says who it reaches and when; a smaller send goes at once.",
+      note: "The plum button that sends, with an arrow for the other ways to send. Send and Schedule each open the send dialog; once scheduled, the button updates the schedule and the arrow changes the time or sends now instead.",
       Demo: () => (
         <Variants
           items={[
-            { label: "A few people", render: () => <SendButtonDemo audience={four} /> },
-            {
-              label: "More than 50",
-              note: "Groups make the count approximate, and the dialog says so.",
-              render: () => <SendButtonDemo audience={big} />,
-            },
-            {
-              label: "A channel of unknown size",
-              note: "Holler cannot tell how many it reaches, so it asks.",
-              render: () => (
-                <SendButtonDemo
-                  audience={{ people: ["U0JB"], groups: ["C0NEW"], everyone: false }}
-                />
-              ),
-            },
-            {
-              label: "Everyone, scheduled",
-              render: () => <SendButtonDemo audience={everyone} start={{ sendAt: mondayNine }} />,
-            },
+            { label: "A draft", render: () => <SplitDemo /> },
+            { label: "Scheduled", render: () => <SplitDemo scheduled /> },
           ]}
         />
       ),

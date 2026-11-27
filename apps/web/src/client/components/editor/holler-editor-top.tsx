@@ -1,4 +1,4 @@
-import { ArrowLeft, Check, CircleAlert, Ellipsis, LoaderCircle, Trash2 } from "lucide-react";
+import { Check, ChevronLeft, CircleAlert, Ellipsis, LoaderCircle, Tag, Trash2 } from "lucide-react";
 import { type ComponentProps, type ReactNode, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,7 +20,7 @@ import { cn } from "@/lib/cn";
 import type { SaveState } from "./use-autosave";
 
 export const backLinkClassName =
-  "relative inline-flex w-fit items-center gap-1.5 rounded-sm py-1 text-ink-2 outline-none focus-visible:ring-2 focus-visible:ring-focus hoverable:hover:text-ink pointer-coarse:before:absolute pointer-coarse:before:-inset-2 pointer-coarse:before:content-['']";
+  "relative -ms-2 grid size-9 shrink-0 place-items-center rounded-control text-ink-2 outline-none transition-colors hoverable:hover:bg-hover hoverable:hover:text-ink focus-visible:ring-2 focus-visible:ring-focus pointer-coarse:before:absolute pointer-coarse:before:-inset-1 pointer-coarse:before:content-['']";
 
 function SaveStatus({ state }: { state: SaveState }) {
   if (state === "idle") return null;
@@ -48,38 +48,39 @@ function SaveStatus({ state }: { state: SaveState }) {
   );
 }
 
-interface BackProps extends ComponentProps<"button"> {
-  children: ReactNode;
-}
-
-function HollerEditorBack({ children, className, ...props }: BackProps) {
-  return (
-    <button type="button" className={cn(backLinkClassName, className)} {...props}>
-      <ArrowLeft aria-hidden size={16} strokeWidth={2} />
-      {children}
-    </button>
-  );
-}
-
 interface Props extends ComponentProps<"div"> {
   back: ReactNode;
+  heading: ReactNode;
   saveState: SaveState;
+  onTags?: (() => void) | undefined;
   onDelete?: (() => Promise<boolean>) | undefined;
   deleting?: boolean | undefined;
 }
 
-function HollerEditorTop({ back, saveState, onDelete, deleting, className, ...props }: Props) {
+function HollerEditorTop({
+  back,
+  heading,
+  saveState,
+  onTags,
+  onDelete,
+  deleting,
+  className,
+  ...props
+}: Props) {
   const [asking, setAsking] = useState(false);
   return (
     <div
       data-slot="holler-editor-top"
-      className={cn("flex min-h-9 items-center justify-between gap-4", className)}
+      className={cn("flex min-h-10 items-center justify-between gap-3", className)}
       {...props}
     >
-      {back}
-      <div className="flex items-center gap-2">
+      <div className="flex min-w-0 items-center gap-1">
+        {back}
+        {heading}
+      </div>
+      <div className="flex shrink-0 items-center gap-2">
         <SaveStatus state={saveState} />
-        {onDelete && (
+        {(onTags || onDelete) && (
           <DropdownMenu>
             <DropdownMenuTrigger
               render={<Button variant="ghost" size="icon-sm" aria-label="More for this draft" />}
@@ -87,10 +88,18 @@ function HollerEditorTop({ back, saveState, onDelete, deleting, className, ...pr
               <Ellipsis aria-hidden />
             </DropdownMenuTrigger>
             <DropdownMenuContent aria-label="This draft" align="end">
-              <DropdownMenuItem tone="danger" onClick={() => setAsking(true)}>
-                <Trash2 aria-hidden />
-                Delete draft
-              </DropdownMenuItem>
+              {onTags && (
+                <DropdownMenuItem onClick={onTags}>
+                  <Tag aria-hidden />
+                  Tags
+                </DropdownMenuItem>
+              )}
+              {onDelete && (
+                <DropdownMenuItem tone="danger" onClick={() => setAsking(true)}>
+                  <Trash2 aria-hidden />
+                  Delete draft
+                </DropdownMenuItem>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         )}
@@ -123,13 +132,8 @@ function HollerEditorTop({ back, saveState, onDelete, deleting, className, ...pr
   );
 }
 
-function BackLabel() {
-  return (
-    <>
-      <ArrowLeft aria-hidden size={16} strokeWidth={2} />
-      Your hollers
-    </>
-  );
+function BackArrow() {
+  return <ChevronLeft aria-hidden size={20} strokeWidth={2} />;
 }
 
-export { BackLabel, HollerEditorBack, HollerEditorTop };
+export { BackArrow, HollerEditorTop };

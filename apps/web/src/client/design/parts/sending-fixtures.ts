@@ -10,10 +10,8 @@ import {
   personEntry,
   type Resolved,
 } from "@/components/editor/send/directory";
-import type { BigSend } from "@/components/editor/send/send-bar";
 import {
   audienceReach,
-  dayTime,
   type SendFields,
   type ZoneCount,
 } from "@/components/editor/send/send-logic";
@@ -250,22 +248,9 @@ export const chase: PreviewHoller = {
   questions: [],
 };
 
-export function sendFor(audience: Audience, fields: SendFields): BigSend {
-  const chosen = [
-    ...audience.groups.map((id) => {
-      const group = groups.find((g) => g.slackId === id) as DirectoryGroup;
-      return { kind: "group" as const, id, group };
-    }),
-    ...audience.people.map((id) => {
-      const p = team.find((t) => t.slackUserId === id) as DirectoryPerson;
-      return { kind: "person" as const, id, person: p };
-    }),
-  ];
+export function sendFor(audience: Audience, fields: SendFields) {
   return {
-    title: "How was your week?",
     reach: audienceReach(audience, sizeOf, WORKSPACE),
-    chosen,
-    when: fields.sendAt ? dayTime(fields.sendAt) : "now",
     scheduled: Boolean(fields.sendAt),
   };
 }
