@@ -1,10 +1,13 @@
 import { Combobox } from "@base-ui/react/combobox";
 import type { BaseUIEvent } from "@base-ui/react/types";
+import { EASE_OUT } from "@holler/design";
+import { motion } from "motion/react";
 import {
   type ClipboardEvent,
   type ComponentProps,
   type KeyboardEvent,
   type PointerEvent,
+  type ReactNode,
   useEffect,
   useId,
   useMemo,
@@ -13,8 +16,8 @@ import {
 } from "react";
 import { controlText } from "@/components/ui/input";
 import { cn } from "@/lib/cn";
-import { count } from "@/lib/format";
 import { useControllableState } from "@/lib/use-controllable-state";
+import { useReduceMotion } from "@/lib/use-reduce-motion";
 import {
   chipKeyAction,
   fieldKeyAction,
@@ -24,7 +27,13 @@ import {
   rankEntries,
   resultList,
 } from "./audience-logic";
-import { AudiencePickerChip, AudiencePickerResults } from "./audience-rows";
+import {
+  AudiencePickerChip,
+  AudiencePickerFooter,
+  AudiencePickerMore,
+  AudiencePickerNotes,
+  AudiencePickerResults,
+} from "./audience-rows";
 import {
   type AudienceEntry,
   type DirectoryCount,
@@ -46,6 +55,7 @@ import {
   useAudienceChoice,
   useCloseOnOutside,
 } from "./use-audience-choice";
+import { useChipOverflow } from "./use-chip-overflow";
 
 export type { AudienceSummary };
 
@@ -62,9 +72,36 @@ interface Props extends Omit<ComponentProps<"section">, "defaultValue"> {
   countPeople?: DirectoryCount | undefined;
   defaultInputValue?: string | undefined;
   inline?: boolean | undefined;
+  aside?: ReactNode | undefined;
+  notice?: ReactNode | undefined;
 }
 
 const MAX_ROWS = 30;
+
+function cardClassName(invalid: boolean, className: string | undefined) {
+  return cn(
+    "rounded-plate bg-plate edge transition-[box-shadow] duration-150 has-[[data-slot=audience-field]:focus-within]:edge-2",
+    invalid && "edge-danger has-[[data-slot=audience-field]:focus-within]:edge-danger",
+    className,
+  );
+}
+
+function inputClassName(collapsed: boolean) {
+  return cn(
+    controlText,
+    "h-8 min-w-[8ch] flex-1 bg-transparent px-1.5 text-ink outline-none placeholder:text-muted",
+    collapsed && "sr-only",
+  );
+}
+
+function resultsClassName(inline: boolean) {
+  return cn(
+    "col-span-2 floating flex flex-col overflow-hidden rounded-md text-ink",
+    inline
+      ? "mt-1.5 mb-2.5 max-h-[24rem]"
+      : "absolute inset-x-0 top-full z-(--z-dropdown) mt-1.5 max-h-[min(24rem,55dvh)] origin-top transition-[opacity,translate,scale] duration-140 ease-(--ease-out) starting:-translate-y-1 starting:scale-98 starting:opacity-0 motion-reduce:starting:translate-y-0 motion-reduce:starting:scale-100",
+  );
+}
 
 const nobody: AudienceSelection = { people: [], groups: [], everyone: false };
 
@@ -81,6 +118,8 @@ function AudiencePicker({
   countPeople,
   defaultInputValue = "",
   inline = false,
+  aside,
+  notice,
   className,
   ...props
 }: Props) {
@@ -89,7 +128,6 @@ function AudiencePicker({
     defaultValue,
     onChange: onChangeProp,
   });
-  const headingId = useId();
   const problemId = useId();
   const hintId = useId();
   const noteId = useId();
@@ -104,6 +142,8 @@ function AudiencePicker({
   const directory = useDirectory(search, query, engaged);
   const [note, setNote] = useState<string | null>(null);
   const [pasting, setPasting] = useState<number | null>(null);
+  const [focused, setFocused] = useState(false);
+  const reduce = useReduceMotion();
   const choice = useAudienceChoice({
     value,
     onChange,
@@ -114,6 +154,7 @@ function AudiencePicker({
     input,
   });
   const { seen, remember, chosen, chosenIds, reach, add, remove: removeEntry, restore } = choice;
+  const overflow = useChipOverflow(field, chosen.length);
 
   const fetched = useMemo<AudienceEntry[]>(() => {
     const data = directory.data;
@@ -223,22 +264,16 @@ function AudiencePicker({
   const described = [hintId, problem ? problemId : null, note ? noteId : null]
     .filter(Boolean)
     .join(" ");
+  const collapsed = !focused && !open && overflow.hidden > 0;
 
   return (
     <section
       data-slot="audience-picker"
-      aria-labelledby={headingId}
-      className={cn("grid gap-2.5", className)}
+      data-collapsed={collapsed || undefined}
+      aria-label="Audience"
+      className={cardClassName(Boolean(problem), className)}
       {...props}
     >
-      <div className="flex flex-wrap items-baseline justify-between gap-x-3 px-1">
-        <h2 id={headingId} className="text-lg">
-          Who gets it
-        </h2>
-        <span data-slot="audience-reach" className="text-muted text-sm tabular">
-          {reachLabel(reach)}
-        </span>
-      </div>
       <Combobox.Root<AudienceEntry, true>
         multiple
         items={results}
@@ -267,71 +302,82 @@ function AudiencePicker({
         autoHighlight
         inline
       >
-        <div ref={frame} className="relative">
-          <div
-            ref={field}
-            data-slot="audience-field"
-            onPointerDown={onFieldPointerDown}
-            className={cn(
-              "flex max-h-[min(15rem,45dvh)] min-h-13 cursor-text flex-wrap items-center gap-1.5 overflow-y-auto rounded-plate bg-plate px-2.5 py-2.5 edge transition-[box-shadow] duration-150 focus-within:edge-2",
-              problem && "edge-danger focus-within:edge-danger",
-            )}
+        <div
+          ref={frame}
+          className="relative grid grid-cols-[2rem_minmax(0,1fr)] items-start gap-x-2 ps-4 pe-2"
+          onFocus={() => setFocused(true)}
+          onBlur={(event) => {
+            if (!frame.current?.contains(event.relatedTarget as Node | null)) setFocused(false);
+          }}
+        >
+          <span aria-hidden className={cn(controlText, "flex h-12 items-center text-muted")}>
+            To
+          </span>
+          <motion.div
+            initial={false}
+            animate={{ height: collapsed ? overflow.rowBottom + 8 : "auto" }}
+            transition={reduce ? { duration: 0 } : { duration: 0.22, ease: EASE_OUT }}
+            className="min-w-0 overflow-hidden"
           >
-            {chosen.length > 0 && (
-              <ul aria-label="Chosen" className="contents">
-                {chosen.map((entry, index) => (
-                  <AudiencePickerChip
-                    key={entry.id}
-                    entry={entry}
-                    workspaceSize={workspaceSize}
-                    buttonRef={(button) => {
-                      chipButtons.current[index] = button;
-                    }}
-                    onRemove={() => remove(entry)}
-                    onKeyDown={onChipKey(index)}
-                  />
-                ))}
-              </ul>
-            )}
-            <Combobox.Input
-              ref={input}
-              data-slot="audience-input"
-              aria-label={
-                chosen.length > 0
-                  ? "Add more people, groups or channels"
-                  : "Add people, groups or channels"
-              }
-              aria-expanded={open}
-              aria-invalid={problem ? true : undefined}
-              aria-describedby={described}
-              placeholder={placeholder}
-              autoCapitalize="none"
-              autoComplete="off"
-              autoCorrect="off"
-              spellCheck={false}
-              enterKeyHint="done"
-              onKeyDown={onFieldKey}
-              onPaste={onPaste}
-              onFocus={() => {
-                setEngaged(true);
-                field.current?.scrollTo({ top: field.current.scrollHeight });
-              }}
+            <div
+              ref={field}
+              data-slot="audience-field"
+              onPointerDown={onFieldPointerDown}
               className={cn(
-                controlText,
-                "h-8 min-w-[8ch] flex-1 bg-transparent px-1.5 text-ink outline-none placeholder:text-muted",
+                "relative flex min-h-12 cursor-text flex-wrap items-center gap-1.5 py-2",
+                collapsed ? "overflow-hidden" : "max-h-[min(15rem,45dvh)] overflow-y-auto",
               )}
-            />
-          </div>
-          <div
-            data-slot="audience-results"
-            hidden={!open}
-            className={cn(
-              "floating flex flex-col overflow-hidden rounded-md text-ink",
-              inline
-                ? "mt-1.5 max-h-[24rem]"
-                : "absolute inset-x-0 top-full z-(--z-dropdown) mt-1.5 max-h-[min(24rem,55dvh)] origin-top transition-[opacity,translate,scale] duration-140 ease-(--ease-out) starting:-translate-y-1 starting:scale-98 starting:opacity-0 motion-reduce:starting:translate-y-0 motion-reduce:starting:scale-100",
-            )}
-          >
+            >
+              {chosen.length > 0 && (
+                <ul aria-label="Chosen" className="contents">
+                  {chosen.map((entry, index) => (
+                    <AudiencePickerChip
+                      key={entry.id}
+                      entry={entry}
+                      workspaceSize={workspaceSize}
+                      folded={collapsed && index >= overflow.shown}
+                      buttonRef={(button) => {
+                        chipButtons.current[index] = button;
+                      }}
+                      onRemove={() => remove(entry)}
+                      onKeyDown={onChipKey(index)}
+                    />
+                  ))}
+                </ul>
+              )}
+              <AudiencePickerMore
+                overflow={overflow}
+                shown={collapsed}
+                onOpen={() => input.current?.focus()}
+              />
+              <Combobox.Input
+                ref={input}
+                data-slot="audience-input"
+                aria-label={
+                  chosen.length > 0
+                    ? "Add more people, groups or channels"
+                    : "Add people, groups or channels"
+                }
+                aria-expanded={open}
+                aria-invalid={problem ? true : undefined}
+                aria-describedby={described}
+                placeholder={placeholder}
+                autoCapitalize="none"
+                autoComplete="off"
+                autoCorrect="off"
+                spellCheck={false}
+                enterKeyHint="done"
+                onKeyDown={onFieldKey}
+                onPaste={onPaste}
+                onFocus={() => {
+                  setEngaged(true);
+                  field.current?.scrollTo({ top: field.current.scrollHeight });
+                }}
+                className={inputClassName(collapsed)}
+              />
+            </div>
+          </motion.div>
+          <div data-slot="audience-results" hidden={!open} className={resultsClassName(inline)}>
             <AudiencePickerResults
               query={query}
               loading={!directory.current && !directory.isError && matches.length === 0}
@@ -350,21 +396,15 @@ function AudiencePicker({
       <p className="sr-only" role="status">
         {choice.announcement}
       </p>
-      {pasting !== null && (
-        <p className="px-1 text-muted text-sm" role="status">
-          {pasting === 1 ? "Matching 1 name" : `Matching ${count(pasting)} names`}
-        </p>
-      )}
-      {note && (
-        <p id={noteId} data-slot="audience-note" className="px-1 text-ink-2 text-sm text-pretty">
-          {note}
-        </p>
-      )}
-      {problem && (
-        <p id={problemId} className="px-1 text-danger-ink text-sm">
-          {problem}
-        </p>
-      )}
+      <AudiencePickerNotes
+        pasting={pasting}
+        note={note}
+        noteId={noteId}
+        problem={problem}
+        problemId={problemId}
+      />
+      <AudiencePickerFooter reach={reachLabel(reach)}>{aside}</AudiencePickerFooter>
+      {notice}
     </section>
   );
 }

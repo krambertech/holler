@@ -309,12 +309,6 @@ export function closeSummary(
   return { value, description: `${after} after it sends` };
 }
 
-export function answersSummary(anonymous: boolean): RowSummary {
-  return anonymous
-    ? { value: "Anonymous", description: "you see how many answered, never who" }
-    : { value: "Named", description: "you see who said what" };
-}
-
 export function anonymousWarning(anonymous: boolean, reach: Reach): string | null {
   if (
     !anonymous ||
@@ -409,12 +403,6 @@ export function reachLabel(reach: Reach): string {
     return reach.count === 1 ? "About 1 person" : `About ${count(reach.count)} people`;
   }
   return peopleLabel(reach.count);
-}
-
-export const bigSendAbove = 50;
-
-export function isBigSend(reach: Reach): boolean {
-  return reach.everyone || reach.unknown || reach.count > bigSendAbove;
 }
 
 export function sendActionLabel(reach: Reach, scheduled: boolean): string {

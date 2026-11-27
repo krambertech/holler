@@ -1,6 +1,6 @@
 import { Combobox } from "@base-ui/react/combobox";
 import { Building2, Check, Hash, Users, X } from "lucide-react";
-import type { KeyboardEvent } from "react";
+import type { KeyboardEvent, ReactNode } from "react";
 import { Skeleton } from "@/components/skeleton";
 import { Avatar } from "@/components/ui/avatar";
 import {
@@ -13,6 +13,7 @@ import { cn } from "@/lib/cn";
 import { count } from "@/lib/format";
 import { type AudienceEntry, entryName } from "./directory";
 import { isTimeZone, zoneName } from "./send-logic";
+import type { ChipOverflow } from "./use-chip-overflow";
 
 const tile = "grid size-[26px] shrink-0 place-items-center rounded-full bg-tint text-tint-ink";
 
@@ -61,18 +62,27 @@ function addsLabel(size: number): string {
 interface ChipProps {
   entry: AudienceEntry;
   workspaceSize: number | null | undefined;
+  folded?: boolean | undefined;
   buttonRef: (button: HTMLButtonElement | null) => void;
   onRemove: () => void;
   onKeyDown: (event: KeyboardEvent<HTMLButtonElement>) => void;
 }
 
-function AudiencePickerChip({ entry, workspaceSize, buttonRef, onRemove, onKeyDown }: ChipProps) {
+function AudiencePickerChip({
+  entry,
+  workspaceSize,
+  folded = false,
+  buttonRef,
+  onRemove,
+  onKeyDown,
+}: ChipProps) {
   const name = entryName(entry);
   const size = entrySize(entry, workspaceSize);
   return (
     <li
       data-slot="audience-chip"
-      className="group/chip flex h-8 max-w-full items-center gap-1.5 rounded-full bg-well ps-[3px] pe-1 font-normal text-ink text-sm transition-colors duration-150 has-focus-visible:bg-tint has-focus-visible:text-tint-ink has-focus-visible:outline-2 has-focus-visible:outline-focus has-focus-visible:outline-offset-1"
+      data-folded={folded || undefined}
+      className="group/chip flex data-folded:pointer-events-none data-folded:opacity-0 h-8 max-w-full items-center gap-1.5 rounded-full bg-well ps-[3px] pe-1 font-normal text-ink text-sm transition-colors duration-150 has-focus-visible:bg-tint has-focus-visible:text-tint-ink has-focus-visible:outline-2 has-focus-visible:outline-focus has-focus-visible:outline-offset-1"
     >
       <EntryMark entry={entry} />
       <span className="min-w-0 truncate">{name}</span>
@@ -215,4 +225,84 @@ function AudiencePickerResults({
   );
 }
 
-export { AudiencePickerChip, AudiencePickerResults };
+function AudiencePickerMore({
+  overflow,
+  shown,
+  onOpen,
+}: {
+  overflow: ChipOverflow;
+  shown: boolean;
+  onOpen: () => void;
+}) {
+  if (!shown || overflow.moreAt === null) return null;
+  return (
+    <button
+      type="button"
+      tabIndex={-1}
+      aria-hidden
+      data-slot="audience-more"
+      style={{ [overflow.side]: overflow.moreAt, top: overflow.rowBottom - 32 }}
+      onPointerDown={(event) => {
+        event.preventDefault();
+        onOpen();
+      }}
+      className="absolute flex h-8 cursor-pointer items-center whitespace-nowrap rounded-full bg-well px-3 font-normal text-ink-2 text-sm tabular transition-colors duration-150 hoverable:hover:bg-track hoverable:hover:text-ink active:bg-track"
+    >
+      +{count(overflow.hidden)} more
+    </button>
+  );
+}
+
+function AudiencePickerNotes({
+  pasting,
+  note,
+  noteId,
+  problem,
+  problemId,
+}: {
+  pasting: number | null;
+  note: string | null;
+  noteId: string;
+  problem: string | undefined;
+  problemId: string;
+}) {
+  if (pasting === null && !note && !problem) return null;
+  return (
+    <div className="grid gap-1 px-4 pb-3 text-sm">
+      {pasting !== null && (
+        <p className="text-muted" role="status">
+          {pasting === 1 ? "Matching 1 name" : `Matching ${count(pasting)} names`}
+        </p>
+      )}
+      {note && (
+        <p id={noteId} data-slot="audience-note" className="text-pretty text-ink-2">
+          {note}
+        </p>
+      )}
+      {problem && (
+        <p id={problemId} className="text-danger-ink">
+          {problem}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function AudiencePickerFooter({ reach, children }: { reach: string; children?: ReactNode }) {
+  return (
+    <div className="flex min-h-11 flex-wrap items-center justify-between gap-x-4 gap-y-1 border-divider border-t bg-well py-1.5 ps-4 pe-3 last:rounded-b-plate">
+      <span data-slot="audience-reach" className="text-muted text-sm tabular">
+        {reach}
+      </span>
+      {children}
+    </div>
+  );
+}
+
+export {
+  AudiencePickerFooter,
+  AudiencePickerMore,
+  AudiencePickerNotes,
+  AudiencePickerChip,
+  AudiencePickerResults,
+};

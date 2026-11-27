@@ -22,7 +22,7 @@ function itemsFor(suggestions: string[], tags: string[], typed: string): TagItem
   return exists ? matching : [...matching, { tag: typed, create: true }];
 }
 
-function SendSettingsTags({
+function HollerEditorTagsField({
   tags,
   suggestions,
   onTags,
@@ -56,7 +56,7 @@ function SendSettingsTags({
   };
 
   return (
-    <div data-slot="send-settings-tags" className="grid gap-1.5 sm:max-w-md">
+    <div data-slot="holler-editor-tags-field" className="grid gap-1.5 sm:max-w-md">
       <Combobox.Root<TagItem, true>
         multiple
         items={items}
@@ -163,4 +163,4 @@ function SendSettingsTags({
   );
 }
 
-export { SendSettingsTags };
+export { HollerEditorTagsField };

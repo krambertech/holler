@@ -4,7 +4,6 @@ import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/cn";
 import { type EditorDraft, problemFor, questionProblems } from "./draft";
-import { ModePicker } from "./mode-picker";
 import { QuestionList } from "./questions/question-list";
 
 const pageHeading: Record<Mode, string> = {
@@ -79,11 +78,6 @@ function HollerEditorWrite({
     >
       <header className="flex flex-col items-start gap-3">
         <h1 className="sr-only">{pageHeading[draft.mode]}</h1>
-        <ModePicker
-          mode={draft.mode}
-          onChange={onModeChange}
-          questionCount={draft.questions.length}
-        />
         <div className="flex w-full flex-col gap-2">
           <Field invalid={Boolean(titleProblem)}>
             <FieldLabel className="sr-only">Title</FieldLabel>

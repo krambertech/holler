@@ -10,10 +10,11 @@ export default async function drive({ page, step, api, expect }) {
     await expect(page.getByRole("heading", { name: "What do you want to ask?" })).toBeVisible();
   });
 
-  await step("Survey opens the writing page with the mode above the title", async () => {
+  await step("Survey opens the editor with New survey in the top row", async () => {
     await page.getByRole("button", { name: /^Survey/ }).click();
     await expect(page.getByRole("heading", { level: 1, name: "Write a survey" })).toBeAttached();
-    await expect(page.getByRole("button", { name: "Mode: Survey" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "New survey" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Your hollers" })).toBeVisible();
   });
 
   await step("Write a title and a single-choice question, and it saves as a draft", async () => {
@@ -38,29 +39,35 @@ export default async function drive({ page, step, api, expect }) {
     await expect(page.getByLabel("Question 1, option 2")).toHaveValue("Billing clean-up");
   });
 
-  await step("Next opens the sending page, with the back link in the same place", async () => {
-    const before = await page.getByRole("link", { name: "Your hollers" }).boundingBox();
-    await page.getByRole("button", { name: "Next: share" }).click();
-    await expect(page.getByRole("heading", { level: 1, name: `Send “${TITLE}”` })).toBeVisible();
-    const after = await page.getByRole("button", { name: "Back to questions" }).boundingBox();
-    expect(after?.x).toBe(before?.x);
-    expect(after?.y).toBe(before?.y);
-    await expect(page.getByRole("switch", { name: "Anonymous answers" })).toBeVisible();
+  await step("Who gets it and the Anonymous switch sit in one card above the title", async () => {
+    await expect(page.getByRole("region", { name: "Audience" })).toBeVisible();
+    await expect(page.getByRole("switch", { name: "Anonymous" })).toBeVisible();
+    await expect(page.locator('[data-slot="audience-reach"]')).toHaveText("Nobody yet");
   });
 
   await step(
-    "Send later opens the day, the time and the time-zone choice, and the button schedules",
+    "Schedule opens a dialog with the day, the time, the time zone and the three settings",
     async () => {
-      await page.getByRole("button", { name: /Send later/ }).click();
-      await expect(page.getByRole("button", { name: "Schedule" })).toBeVisible();
-      await expect(page.getByRole("checkbox", { name: /own time zone/ })).toBeVisible();
+      await page.getByRole("button", { name: "More ways to send" }).click();
+      await page.getByRole("menuitem", { name: "Schedule…" }).click();
+      const dialog = page.getByRole("dialog", { name: `Schedule “${TITLE}”` });
+      await expect(dialog.getByRole("combobox", { name: "Time zone" })).toBeVisible();
+      await expect(dialog.getByRole("switch", { name: "Reminders" })).toBeChecked();
+      await expect(dialog.getByRole("switch", { name: "Live count" })).not.toBeChecked();
+      await expect(dialog.getByRole("button", { name: "Schedule" })).toBeVisible();
+      await dialog.getByRole("button", { name: "Cancel" }).click();
+      await expect(dialog).toBeHidden();
     },
   );
 
-  await step("Send with nobody chosen names what is missing", async () => {
-    await page.getByRole("button", { name: "Send now instead" }).click();
-    await expect(page.getByRole("checkbox", { name: /own time zone/ })).toHaveCount(0);
-    await page.locator('[data-slot="send-bar"]').getByRole("button", { name: "Send" }).click();
+  await step("Send with nobody chosen closes the dialog and names what is missing", async () => {
+    await page
+      .locator('[data-slot="send-bar"]')
+      .getByRole("button", { name: "Send", exact: true })
+      .click();
+    const dialog = page.getByRole("dialog", { name: `Send “${TITLE}”` });
+    await dialog.getByRole("button", { name: "Send", exact: true }).click();
+    await expect(dialog).toBeHidden();
     await expect(page.getByText("Choose who to send it to.").first()).toBeVisible();
     const id = new URL(page.url()).searchParams.get("draft");
     const holler = await api(`/api/hollers/${id}`);

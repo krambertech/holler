@@ -144,6 +144,7 @@ function AnchoredContent({
   return (
     <MenuPrimitive.Portal>
       <MenuPrimitive.Positioner
+        positionMethod="fixed"
         className="isolate z-(--z-dropdown) outline-none"
         align={align}
         side={side}

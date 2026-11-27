@@ -1,132 +1,55 @@
-import { CircleAlert } from "lucide-react";
+import { ChevronDown, CircleAlert } from "lucide-react";
 import { type ComponentProps, type ReactNode, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/cn";
-import { count, peopleLabel } from "@/lib/format";
-import { type AudienceEntry, entryName } from "./directory";
-import { isBigSend, type Reach } from "./send-logic";
 
-export interface BigSend {
-  title: string;
-  reach: Reach;
-  chosen: AudienceEntry[];
-  when: string;
-  scheduled: boolean;
+export interface SendSplitOption {
+  label: string;
+  icon: ReactNode;
+  onSelect: () => void;
 }
 
-const SHOWN = 8;
-
-function question(send: BigSend) {
-  const { reach } = send;
-  if (reach.everyone) return send.scheduled ? "Schedule it for everyone?" : "Send it to everyone?";
-  if (reach.unknown) {
-    return send.scheduled
-      ? "Schedule it for everyone you chose?"
-      : "Send it to everyone you chose?";
-  }
-  const n = reach.exact ? peopleLabel(reach.count) : `about ${count(reach.count)} people`;
-  return send.scheduled ? `Schedule it for ${n}?` : `Send it to ${n}?`;
-}
-
-function explanation(send: BigSend) {
-  const { reach } = send;
-  let who: string;
-  if (reach.everyone) {
-    who = reach.exact
-      ? `everyone in the workspace, ${peopleLabel(reach.count).toLocaleLowerCase()},`
-      : "everyone in the workspace";
-  } else if (reach.unknown) {
-    who = "everyone you chose";
-  } else {
-    who = reach.exact
-      ? peopleLabel(reach.count).toLocaleLowerCase()
-      : `about ${count(reach.count)} people`;
-  }
-  const sentences = [
-    send.scheduled
-      ? `"${send.title}" goes to ${who} on ${send.when}. Each of them gets a DM.`
-      : `"${send.title}" goes to ${who} now. Each of them gets a DM.`,
-  ];
-  if (!reach.everyone && reach.unknown) {
-    sentences.push("Holler does not know yet how many people are in every group.");
-  }
-  if (!reach.everyone && !reach.exact) sentences.push("Anyone in two groups gets it once.");
-  if (!send.scheduled) sentences.push("A sent Holler cannot be called back.");
-  return sentences.join(" ");
-}
-
-interface SendButtonProps extends Omit<ComponentProps<typeof Button>, "onClick" | "variant"> {
-  send?: BigSend | undefined;
-  onSend: () => void;
+interface SendSplitProps extends Omit<ComponentProps<typeof Button>, "variant"> {
+  options: SendSplitOption[];
+  "aria-label"?: string | undefined;
   children: ReactNode;
 }
 
-function SendButton({ send, onSend, children, ...props }: SendButtonProps) {
-  const [asking, setAsking] = useState(false);
-  const shown = send?.chosen.slice(0, SHOWN) ?? [];
-  const more = (send?.chosen.length ?? 0) - shown.length;
+function SendSplit({ options, children, className, ...props }: SendSplitProps) {
   return (
-    <>
-      <Button
-        data-slot="send-button"
-        variant="primary"
-        onClick={() => (send && isBigSend(send.reach) ? setAsking(true) : onSend())}
-        {...props}
-      >
+    <div data-slot="send-split" className="flex">
+      <Button variant="primary" className={cn("grow rounded-e-none", className)} {...props}>
         {children}
       </Button>
-      {send && (
-        <Dialog open={asking} onOpenChange={setAsking}>
-          <DialogContent size="md">
-            <DialogHeader>
-              <DialogTitle>{question(send)}</DialogTitle>
-              <DialogDescription>{explanation(send)}</DialogDescription>
-            </DialogHeader>
-            {!send.reach.everyone && shown.length > 0 && (
-              <ul aria-label="Who it reaches" className="flex flex-wrap gap-1.5">
-                {shown.map((entry) => (
-                  <li
-                    key={entry.id}
-                    className="inline-flex h-7 items-center gap-1.5 rounded-full bg-well px-2.5 text-ink text-sm"
-                  >
-                    {entryName(entry)}
-                    {entry.kind === "group" && entry.group.memberCount != null && (
-                      <span className="text-muted tabular">{count(entry.group.memberCount)}</span>
-                    )}
-                  </li>
-                ))}
-                {more > 0 && (
-                  <li className="inline-flex h-7 items-center px-1 text-muted text-sm">
-                    {more === 1 ? "and 1 more" : `and ${count(more)} more`}
-                  </li>
-                )}
-              </ul>
-            )}
-            <DialogFooter>
-              <DialogClose render={<Button variant="ghost">Go back</Button>} />
-              <Button
-                variant="primary"
-                onClick={() => {
-                  setAsking(false);
-                  onSend();
-                }}
-              >
-                {children}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      )}
-    </>
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          render={
+            <Button
+              variant="primary"
+              size="icon"
+              aria-label="More ways to send"
+              className="shrink-0 rounded-s-none border-on-primary/25 border-s"
+            />
+          }
+        >
+          <ChevronDown aria-hidden />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent aria-label="More ways to send" align="end" className="min-w-56">
+          {options.map((option) => (
+            <DropdownMenuItem key={option.label} onClick={option.onSelect}>
+              {option.icon}
+              {option.label}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
   );
 }
 
@@ -174,7 +97,7 @@ function SendBar({
         <div
           className={cn(
             "flex flex-wrap items-center gap-x-3 gap-y-2.5 py-2.5 ps-5 pe-2.5 transition-[background-color,box-shadow,border-radius] duration-200 ease-(--ease-out) max-sm:px-4",
-            resting ? "rounded-none border-divider border-t" : "floating rounded-plate",
+            resting ? "rounded-none" : "floating rounded-plate",
           )}
         >
           <div className="grid min-w-0 flex-1 basis-44 leading-snug" aria-live="polite">
@@ -202,4 +125,4 @@ function SendBar({
   );
 }
 
-export { SendBar, SendButton };
+export { SendBar, SendSplit };

@@ -1,5 +1,6 @@
 import { Clock } from "lucide-react";
 import { type ComponentProps, useId, useMemo, useRef, useState } from "react";
+import { dayKey } from "@/lib/calendar";
 import { cn } from "@/lib/cn";
 import { parseTimeOfDay, type TimeOfDay, timeKey, timeOptions } from "@/lib/time-of-day";
 import { useControllableState } from "@/lib/use-controllable-state";
@@ -13,8 +14,8 @@ import {
   ComboboxTrigger,
   ComboboxValue,
 } from "./combobox";
+import { DatePicker } from "./date-picker";
 import { FieldItems, useField, useFieldControl } from "./field";
-import { controlBase, controlSize } from "./input";
 
 const pad = (n: number) => String(n).padStart(2, "0");
 const dayValue = (at: Date) => `${at.getFullYear()}-${pad(at.getMonth() + 1)}-${pad(at.getDate())}`;
@@ -109,6 +110,7 @@ interface Props extends Omit<ComponentProps<"div">, "onChange" | "defaultValue">
   min?: Date | undefined;
   dayLabel?: string | undefined;
   timeLabel?: string | undefined;
+  inline?: boolean | undefined;
   id?: string | undefined;
   disabled?: boolean | undefined;
 }
@@ -120,6 +122,7 @@ function DateTimeInput({
   min,
   dayLabel = "Day",
   timeLabel = "Time",
+  inline = false,
   id: idProp,
   "aria-describedby": describedBy,
   "aria-invalid": invalid,
@@ -153,32 +156,37 @@ function DateTimeInput({
     if (!y || !m || !d) return;
     setValue(new Date(y, m - 1, d, nextTime.hour, nextTime.minute));
   };
-  const box = cn(controlBase, controlSize, "px-3.5 tabular");
+  const label = cn("text-ink-2 text-sm", inline && "sr-only");
   return (
     <div
       data-slot="date-time-input"
-      className={cn("@container w-full max-w-sm", className)}
+      className={cn(inline ? "w-auto" : "@container w-full max-w-sm", className)}
       {...props}
     >
-      <div className="grid gap-3 @[18rem]:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
+      <div
+        className={cn(
+          "grid gap-3",
+          inline
+            ? "grid-cols-[minmax(0,9.5rem)_minmax(0,7rem)] gap-2"
+            : "@[18rem]:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]",
+        )}
+      >
         <div className="grid gap-1.5">
-          <label htmlFor={dayId} className="text-ink-2 text-sm">
+          <label htmlFor={dayId} className={label}>
             {dayLabel}
           </label>
-          <input
+          <DatePicker
             id={dayId}
-            type="date"
-            value={day}
-            min={min ? dayValue(min) : undefined}
+            value={value}
+            min={min}
             disabled={disabled}
             aria-invalid={a11y["aria-invalid"]}
             aria-describedby={a11y["aria-describedby"]}
-            onChange={(e) => commit(e.target.value, time ?? { hour: 9, minute: 0 })}
-            className={box}
+            onValueChange={(picked) => commit(dayKey(picked), time ?? { hour: 9, minute: 0 })}
           />
         </div>
         <div className="grid gap-1.5">
-          <label htmlFor={timeId} className="text-ink-2 text-sm">
+          <label htmlFor={timeId} className={label}>
             {timeLabel}
           </label>
           <TimePicker

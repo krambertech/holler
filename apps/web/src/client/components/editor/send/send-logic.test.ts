@@ -8,7 +8,6 @@ import {
   composeBarSummary,
   countedReach,
   durationLabel,
-  isBigSend,
   landingTimes,
   reachLabel,
   remindersBeforeClose,
@@ -256,13 +255,6 @@ describe("reach", () => {
     expect(
       reachLabel(audienceReach({ people: [], groups: [], everyone: true }, sizeOf, null)),
     ).toBe("Everyone in the workspace");
-  });
-
-  it("asks once more before everyone or more than 50 people", () => {
-    expect(isBigSend({ count: 50, exact: true, everyone: false, unknown: false })).toBe(false);
-    expect(isBigSend({ count: 2, exact: false, everyone: false, unknown: true })).toBe(true);
-    expect(isBigSend({ count: 51, exact: false, everyone: false, unknown: false })).toBe(true);
-    expect(isBigSend({ count: 3, exact: true, everyone: true, unknown: false })).toBe(true);
   });
 
   it("names the reach on the button", () => {

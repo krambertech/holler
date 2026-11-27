@@ -1,6 +1,7 @@
 import { Search } from "lucide-react";
 import { useState } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
+import { DatePicker } from "@/components/ui/date-picker";
 import { DateTimeInput } from "@/components/ui/date-time-input";
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input, InputGroup } from "@/components/ui/input";
@@ -32,6 +33,19 @@ function SwitchDemo() {
       <FieldLabel>Anonymous</FieldLabel>
       <Switch checked={on} onCheckedChange={setOn} />
     </Field>
+  );
+}
+
+function DatePickerDemo({ start }: { start: Date | null }) {
+  const [value, setValue] = useState<Date | null>(start);
+  return (
+    <DatePicker
+      aria-label="Day"
+      className="w-56"
+      value={value}
+      min={new Date()}
+      onValueChange={({ year, month, day }) => setValue(new Date(year, month, day, 9))}
+    />
   );
 }
 
@@ -122,16 +136,34 @@ export const forms: Group = {
       ),
     },
     {
+      slug: "date-picker",
+      name: "DatePicker",
+      source: "components/ui/date-picker.tsx",
+      note: "A day, picked from a month. The box shows the day in words; the calendar opens under it with the chosen day tinted and today ringed, and days before min cannot be picked. Arrows move a day or a week, Page Up and Page Down a month, Home and End the week's ends, Enter picks.",
+      Demo: () => (
+        <Variants
+          items={[
+            { label: "A day", render: () => <DatePickerDemo start={mondayNine} /> },
+            { label: "Nothing picked", render: () => <DatePickerDemo start={null} /> },
+          ]}
+        />
+      ),
+    },
+    {
       slug: "date-time-input",
       name: "DateTimeInput",
       source: "components/ui/date-time-input.tsx",
-      note: "A day and a time. The day is the browser's own date box; the time is Holler's list in 15-minute steps, and typing 9:30, 930 or 9pm picks any minute. Give it value and onValueChange, or a defaultValue to let it keep its own.",
+      note: "A day and a time. The day opens Holler's calendar; the time is Holler's list in 15-minute steps, and typing 9:30, 930 or 9pm picks any minute. Give it value and onValueChange, or a defaultValue to let it keep its own. inline hides the labels and sits the two boxes side by side, for a row that names them itself.",
       Demo: () => (
         <Variants
           items={[
             {
               label: "A time",
               render: () => <DateTimeInput defaultValue={mondayNine} min={new Date()} />,
+            },
+            {
+              label: "Inline, for a row",
+              render: () => <DateTimeInput inline defaultValue={mondayNine} min={new Date()} />,
             },
             {
               label: "In a Field with an error",

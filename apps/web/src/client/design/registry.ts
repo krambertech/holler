@@ -21,12 +21,12 @@ import { overlays } from "./parts/overlays";
 import { people } from "./parts/people";
 import { questions } from "./parts/questions";
 import { results } from "./parts/results";
+import { sendDialog } from "./parts/send-dialog";
 import { sending } from "./parts/sending";
 import { settings } from "./parts/settings";
 import { states } from "./parts/states";
 import { surfaces } from "./parts/surfaces";
 import type { Group } from "./parts/types";
-import { whenAndHow } from "./parts/when-and-how";
 import { Space } from "./space";
 import { Typography } from "./typography";
 import { Voice } from "./voice";
@@ -94,7 +94,7 @@ export const GROUPS: Group[] = [
   feedback,
   navigation,
   sending,
-  whenAndHow,
+  sendDialog,
   settings,
   billing,
   apiAccess,
