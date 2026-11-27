@@ -1,0 +1,14 @@
+{
+  "rule": "Send reminder wakes up when the wait between reminders ends, without a reload",
+  "layer": "browser",
+  "past": "#21: the button stayed disabled after the four-hour wait until the page was reloaded",
+  "check": "pnpm exec playwright test --project=chromium --retries=1 -g 'Send reminder wakes up'",
+  "break": [
+    {
+      "file": "apps/web/src/client/components/results/holler-people.tsx",
+      "find": "  useWakeAt(fixedNow ? null : reminderAt);",
+      "replace": "  useWakeAt(null);"
+    }
+  ],
+  "fails": "toBeEnabled"
+}
