@@ -277,21 +277,19 @@ function EmptyList({
 
 function ListSkeleton() {
   return (
-    <section aria-busy aria-label="Loading your hollers">
-      <Plate>
-        {[0, 1, 2].map((i) => (
-          <div
-            key={i}
-            className="flex items-center gap-3 border-divider border-t px-5 py-[13px] first:border-t-0"
-          >
-            <Skeleton className="size-[38px] rounded-glyph" />
-            <span className="flex flex-1 flex-col gap-2">
-              <Skeleton className="h-3.5 w-2/5 rounded-full" />
-              <Skeleton className="h-3 w-1/4 rounded-full" />
-            </span>
-          </div>
-        ))}
-      </Plate>
-    </section>
+    <Plate role="status" aria-busy aria-label="Loading your hollers">
+      {[0, 1, 2].map((i) => (
+        <div
+          key={i}
+          className="flex items-center gap-3 border-divider border-t px-5 py-[13px] first:border-t-0"
+        >
+          <Skeleton className="size-[38px] rounded-glyph" />
+          <span className="flex flex-1 flex-col gap-2">
+            <Skeleton className="h-3.5 w-2/5 rounded-full" />
+            <Skeleton className="h-3 w-1/4 rounded-full" />
+          </span>
+        </div>
+      ))}
+    </Plate>
   );
 }

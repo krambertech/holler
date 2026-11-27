@@ -13,7 +13,6 @@
   "apps/web/src/client/components/api-keys/connected-apps-section.tsx": 4,
   "apps/web/src/client/components/api-keys/parts.tsx": 4,
   "apps/web/src/client/components/api-keys/queries.ts": 1,
-  "apps/web/src/client/components/app-header.tsx": 4,
   "apps/web/src/client/components/billing/billing-queries.ts": 9,
   "apps/web/src/client/components/billing/limit-reached.tsx": 7,
   "apps/web/src/client/components/billing/plan-plate.tsx": 5,

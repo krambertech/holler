@@ -94,19 +94,17 @@ function CheckoutReturn({ onTeam }: { onTeam: boolean }) {
 
 function PlanSkeleton() {
   return (
-    <section aria-busy aria-label="Loading the plan">
-      <Plate>
-        <div className="flex flex-col gap-2 px-5 py-4">
-          <Skeleton className="h-4 w-24 rounded-full" />
-          <Skeleton className="h-3.5 w-3/5 rounded-full" />
-        </div>
-        <div className="flex flex-col gap-3 border-divider border-t px-5 py-4">
-          <Skeleton className="h-6 w-2/5 rounded-full" />
-          <Skeleton className="h-1.5 w-full rounded-full" />
-        </div>
-        <div className="h-[60px] bg-tint" />
-      </Plate>
-    </section>
+    <Plate role="status" aria-busy aria-label="Loading the plan">
+      <div className="flex flex-col gap-2 px-5 py-4">
+        <Skeleton className="h-4 w-24 rounded-full" />
+        <Skeleton className="h-3.5 w-3/5 rounded-full" />
+      </div>
+      <div className="flex flex-col gap-3 border-divider border-t px-5 py-4">
+        <Skeleton className="h-6 w-2/5 rounded-full" />
+        <Skeleton className="h-1.5 w-full rounded-full" />
+      </div>
+      <div className="h-[60px] bg-tint" />
+    </Plate>
   );
 }
 

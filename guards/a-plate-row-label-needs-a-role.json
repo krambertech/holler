@@ -1,0 +1,14 @@
+{
+  "rule": "Every Plate part is held to the label rule, not only Plate and PlateStrip",
+  "layer": "lint",
+  "past": "#60: the new API key row named a PlateRow with aria-labelledby, which label-needs-role did not cover",
+  "check": "pnpm exec oxlint apps/web/src/client",
+  "break": [
+    {
+      "file": "apps/web/src/client/components/api-keys/api-keys-section.tsx",
+      "find": "<PlateRow role=\"group\" className=\"flex flex-col gap-3 px-5 py-4\" aria-labelledby={id}>",
+      "replace": "<PlateRow className=\"flex flex-col gap-3 px-5 py-4\" aria-labelledby={id}>"
+    }
+  ],
+  "fails": "holler(label-needs-role)"
+}

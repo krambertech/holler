@@ -84,7 +84,7 @@ async function connectClient(scope = "read write offline_access") {
 
   const decided = await request("/api/auth/oauth2/consent", {
     method: "POST",
-    headers: { "content-type": "application/json", cookie },
+    headers: { "content-type": "application/json", cookie, origin },
     body: JSON.stringify({ accept: true, oauth_query: consentPage.search.slice(1) }),
   });
   expect(decided.status, await decided.clone().text()).toBe(200);

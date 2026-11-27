@@ -36,14 +36,20 @@
       "error",
       {
         "allowForKnownSafeCalls": [
-          { "from": "package", "package": "node:test", "name": ["test", "it", "describe"] }
+          {
+            "from": "package",
+            "package": "node:test",
+            "name": ["test", "it", "describe"]
+          }
         ]
       }
     ],
     "typescript/no-misused-promises": [
       "error",
       {
-        "checksVoidReturn": { "attributes": false }
+        "checksVoidReturn": {
+          "attributes": false
+        }
       }
     ],
     "typescript/no-duplicate-type-constituents": "off",
@@ -161,7 +167,7 @@
       "files": ["apps/web/src/client/**"],
       "rules": {
         "holler/no-effect-expression-body": "error",
-        "holler/name-needs-a-role": "error"
+        "holler/label-needs-role": "error"
       }
     },
     {

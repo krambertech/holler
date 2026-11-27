@@ -1,0 +1,14 @@
+{
+  "rule": "Sign-out and every auth write work from any local port while dev routes are on",
+  "layer": "test",
+  "past": "#29: Sign out did nothing in e2e and on a second dev server, because Better Auth trusted only PRODUCT_URL's port",
+  "check": "cd apps/web && pnpm exec vitest run src/server/routes/local-origins.test.ts -t 'any local port'",
+  "break": [
+    {
+      "file": "apps/web/src/server/env.ts",
+      "find": "export const localOrigins = [\"http://localhost:*\"];",
+      "replace": "export const localOrigins: string[] = [];"
+    }
+  ],
+  "fails": "FAIL"
+}
