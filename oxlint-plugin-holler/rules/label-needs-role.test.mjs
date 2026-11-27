@@ -34,5 +34,20 @@ testRule("label-needs-role", {
       code: 'const a = <span aria-label="3 answered">3</span>;',
       errors: ['aria-label="3 answered"'],
     },
+    {
+      filename,
+      code: "const a = <PlateRow aria-labelledby={id} />;",
+      errors: ["aria-labelledby={id}"],
+    },
+    {
+      filename,
+      code: 'const a = <Underplate aria-label="Shared with" />;',
+      errors: ['aria-label="Shared with"'],
+    },
+    {
+      filename,
+      code: 'const a = <Skeleton aria-label="Loading" />;',
+      errors: ['aria-label="Loading"'],
+    },
   ],
 });
