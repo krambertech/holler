@@ -251,6 +251,9 @@ function WorkspaceDataSection() {
       description="Holler keeps hollers and answers until an owner deletes them. When Holler is removed from Slack, it deletes everything 90 days later."
     >
       <DeleteWorkspace workspace={workspace.data} onDelete={onDelete} error={error} />
+    </Section>
+  );
+}
 
 function ActivitySection() {
   const activity = useInfiniteQuery({
