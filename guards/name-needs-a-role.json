@@ -1,0 +1,14 @@
+{
+  "rule": "Only an element with a role carries aria-label or aria-labelledby, so axe never finds a name on a div, a span or a Plate",
+  "layer": "lint",
+  "past": "#29: CI run 46022609414 failed Sign out on webkit-phone with aria-prohibited-attr, because axe reached the home page while its loading skeleton, a Plate with aria-label, was showing; the billing skeleton and the new API key row had the same mistake",
+  "check": "pnpm exec oxlint apps/web/src/client",
+  "break": [
+    {
+      "file": "apps/web/src/client/components/api-keys/api-keys-section.tsx",
+      "find": "<PlateRow role=\"group\" className=\"flex flex-col gap-3 px-5 py-4\" aria-labelledby={id}>",
+      "replace": "<PlateRow className=\"flex flex-col gap-3 px-5 py-4\" aria-labelledby={id}>"
+    }
+  ],
+  "fails": "holler(name-needs-a-role)"
+}

@@ -160,7 +160,8 @@
     {
       "files": ["apps/web/src/client/**"],
       "rules": {
-        "holler/no-effect-expression-body": "error"
+        "holler/no-effect-expression-body": "error",
+        "holler/name-needs-a-role": "error"
       }
     },
     {
