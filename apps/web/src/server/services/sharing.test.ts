@@ -300,10 +300,7 @@ describe("visibility", () => {
     const changes = (await activity(holler.id)).filter(
       (a) => a.action === "holler.visibility_changed",
     );
-    expect(changes.map((a) => a.data)).toEqual([
-      { visibility: "workspace" },
-      { visibility: "private" },
-    ]);
+    expect(changes.map((a) => a.data)).toEqual([{ to: "workspace" }, { to: "private" }]);
   });
 });
 

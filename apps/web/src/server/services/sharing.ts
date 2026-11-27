@@ -110,7 +110,7 @@ export async function setVisibility(
         action: "holler.visibility_changed",
         subjectType: "holler",
         subjectId: holler.id,
-        data: { visibility },
+        data: { to: visibility },
       }),
       ctx.db
         .update(hollers)
@@ -137,7 +137,11 @@ export async function addViewers(
   if (wanted.length === 0) return sharingOf(ctx, env, holler.id);
 
   const people = await ctx.db
-    .select({ slackUserId: slackPeople.slackUserId })
+    .select({
+      slackUserId: slackPeople.slackUserId,
+      name: slackPeople.name,
+      displayName: slackPeople.displayName,
+    })
     .from(slackPeople)
     .where(
       and(
@@ -148,8 +152,8 @@ export async function addViewers(
         inArray(slackPeople.slackUserId, wanted),
       ),
     );
-  const known = new Set(people.map((p) => p.slackUserId));
-  if (wanted.some((u) => !known.has(u))) {
+  const names = new Map(people.map((p) => [p.slackUserId, p.displayName || p.name]));
+  if (wanted.some((u) => !names.has(u))) {
     throw new ServiceError(
       "invalid",
       "Someone you chose is not in this workspace's Slack. Choose them again from the list.",
@@ -167,7 +171,7 @@ export async function addViewers(
           action: "viewer.added",
           subjectType: "holler",
           subjectId: holler.id,
-          data: { slackUserId },
+          data: { slackUserId, name: names.get(slackUserId) },
         }),
         ctx.db
           .insert(viewers)
@@ -230,13 +234,19 @@ export async function removeViewer(
   slackUserId: string,
 ): Promise<SharingOut> {
   const holler = await creatorsHoller(ctx, id, "change who sees it");
+  const [person] = await ctx.db
+    .select({ name: slackPeople.name, displayName: slackPeople.displayName })
+    .from(slackPeople)
+    .where(
+      and(eq(slackPeople.workspaceId, ctx.workspaceId), eq(slackPeople.slackUserId, slackUserId)),
+    );
   await recordChange(
     ctx,
     activityOf(ctx, {
       action: "viewer.removed",
       subjectType: "holler",
       subjectId: holler.id,
-      data: { slackUserId },
+      data: { slackUserId, name: person ? person.displayName || person.name : undefined },
     }),
     ctx.db
       .delete(viewers)

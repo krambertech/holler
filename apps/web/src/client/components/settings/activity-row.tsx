@@ -112,6 +112,47 @@ const sentences: Record<ActivityAction, (entry: ActivityEntry) => ReactNode> = {
       {who(e)} stopped <HollerTitle entry={e} /> repeating.
     </>
   ),
+  "holler.visibility_changed": (e) =>
+    e.detail.to === "workspace" ? (
+      <>
+        {who(e)} shared the results of <HollerTitle entry={e} /> with everyone in the workspace.
+      </>
+    ) : (
+      <>
+        {who(e)} stopped sharing the results of <HollerTitle entry={e} /> with the workspace.
+      </>
+    ),
+  "viewer.added": (e) =>
+    e.detail.name ? (
+      <>
+        {who(e)} shared the results of <HollerTitle entry={e} /> with <Name>{e.detail.name}</Name>.
+      </>
+    ) : (
+      <>
+        {who(e)} shared the results of <HollerTitle entry={e} /> with one more person.
+      </>
+    ),
+  "viewer.removed": (e) =>
+    e.detail.name ? (
+      <>
+        {who(e)} stopped sharing the results of <HollerTitle entry={e} /> with{" "}
+        <Name>{e.detail.name}</Name>.
+      </>
+    ) : (
+      <>
+        {who(e)} stopped sharing the results of <HollerTitle entry={e} /> with one person.
+      </>
+    ),
+  "report_link.made": (e) => (
+    <>
+      {who(e)} made a report link for <HollerTitle entry={e} last />
+    </>
+  ),
+  "report_link.turned_off": (e) => (
+    <>
+      {who(e)} turned off the report link for <HollerTitle entry={e} last />
+    </>
+  ),
   "reminder.snoozed": (e) => (
     <>
       Someone put off a reminder for <HollerTitle entry={e} last />
