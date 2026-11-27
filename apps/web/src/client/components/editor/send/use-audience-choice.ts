@@ -1,16 +1,20 @@
 import type { HollerDraft } from "@holler/core";
-import { type RefObject, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { type RefObject, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "@/components/ui/toast";
 import {
   type AudienceEntry,
+  audienceKey,
+  countAudience,
+  type DirectoryCount,
   type DirectoryGroup,
   type DirectoryPerson,
   entryName,
   everyoneEntry,
   groupEntry,
   personEntry,
+  useAudienceCount,
 } from "./directory";
-import { audienceReach, type Reach, reachLabel, type ZoneCount } from "./send-logic";
+import { audienceReach, countedReach, type Reach, reachLabel, type ZoneCount } from "./send-logic";
 
 export type AudienceSelection = HollerDraft["audience"];
 
@@ -26,6 +30,7 @@ interface Options {
   known?: { people?: DirectoryPerson[]; groups?: DirectoryGroup[] } | undefined;
   workspaceSize?: number | null | undefined;
   onSummaryChange?: ((summary: AudienceSummary) => void) | undefined;
+  countPeople?: DirectoryCount | undefined;
   input: RefObject<HTMLInputElement | null>;
 }
 
@@ -102,12 +107,39 @@ function withRestored(
   return { people, groups, everyone: false };
 }
 
+function useReach(
+  value: AudienceSelection,
+  seen: ReadonlyMap<string, AudienceEntry>,
+  chosen: readonly AudienceEntry[],
+  workspaceSize: number | null | undefined,
+  count: DirectoryCount,
+) {
+  const needsSlack = value.everyone || value.groups.length > 0;
+  const counted = useAudienceCount(count, value, needsSlack);
+  const exact = needsSlack ? counted.data : undefined;
+  const reach = useMemo(() => {
+    if (exact) return countedReach(value.everyone, exact.people);
+    return audienceReach(
+      value,
+      (id) => {
+        const entry = seen.get(id);
+        return entry?.kind === "group" ? entry.group.memberCount : null;
+      },
+      workspaceSize,
+    );
+  }, [exact, value, seen, workspaceSize]);
+  const zones = useMemo(() => exact?.zones ?? zonesOf(chosen), [exact, chosen]);
+  const settled = !needsSlack || exact !== undefined || counted.isError;
+  return { reach, zones, settled };
+}
+
 export function useAudienceChoice({
   value,
   onChange,
   known,
   workspaceSize,
   onSummaryChange,
+  countPeople = countAudience,
   input,
 }: Options) {
   const { seen, remember } = useSeen(known);
@@ -122,20 +154,7 @@ export function useAudienceChoice({
   }, [value, seen]);
   const chosenIds = useMemo(() => new Set(chosen.map((entry) => entry.id)), [chosen]);
 
-  const reachOf = useCallback(
-    (next: AudienceSelection) =>
-      audienceReach(
-        next,
-        (id) => {
-          const entry = seen.get(id);
-          return entry?.kind === "group" ? entry.group.memberCount : null;
-        },
-        workspaceSize,
-      ),
-    [seen, workspaceSize],
-  );
-  const reach = useMemo(() => reachOf(value), [reachOf, value]);
-  const zones = useMemo(() => zonesOf(chosen), [chosen]);
+  const { reach, zones, settled } = useReach(value, seen, chosen, workspaceSize, countPeople);
 
   const report = useRef(onSummaryChange);
   report.current = onSummaryChange;
@@ -148,9 +167,16 @@ export function useAudienceChoice({
   const lastRemoved = useRef<{ entry: AudienceEntry; index: number } | null>(null);
   const undoToast = useRef<string | null>(null);
 
+  const [unsaid, setUnsaid] = useState<{ key: string; said: string } | null>(null);
+  useEffect(() => {
+    if (!unsaid || !settled || unsaid.key !== audienceKey(value)) return;
+    setUnsaid(null);
+    setAnnouncement(`${unsaid.said} ${reachLabel(reach)}.`);
+  }, [unsaid, value, reach, settled]);
+
   const commit = (next: AudienceSelection, said: string) => {
+    setUnsaid({ key: audienceKey(next), said });
     onChange(next);
-    setAnnouncement(`${said} ${reachLabel(reachOf(next))}.`);
   };
 
   const add = (entries: readonly AudienceEntry[], said: string) =>

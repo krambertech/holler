@@ -6,6 +6,7 @@ import {
   audienceReach,
   closeSummary,
   composeBarSummary,
+  countedReach,
   durationLabel,
   landingTimes,
   reachLabel,
@@ -269,6 +270,15 @@ describe("reach", () => {
     expect(sendActionLabel({ count: 0, exact: true, everyone: false, unknown: false }, false)).toBe(
       "Send",
     );
+  });
+
+  it("drops about once Slack has counted the people in the groups", () => {
+    const counted = countedReach(false, 9);
+    expect(reachLabel(counted)).toBe("9 people");
+    expect(sendActionLabel(counted, false)).toBe("Send to 9 people");
+    expect(sendActionLabel(countedReach(false, 1), true)).toBe("Schedule for 1 person");
+    expect(reachLabel(countedReach(true, 48))).toBe("48 people");
+    expect(sendActionLabel(countedReach(true, 48), false)).toBe("Send to everyone");
   });
 
   it("warns an anonymous Holler under five people", () => {

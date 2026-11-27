@@ -286,6 +286,22 @@ export const directoryResolveOutSchema = z.object({
 });
 export type DirectoryOut = z.infer<typeof directoryOutSchema>;
 
+export const directoryReachInSchema = audienceSchema;
+
+export const directoryReachOutSchema = z.object({
+  people: z
+    .number()
+    .int()
+    .nonnegative()
+    .describe("How many people the audience reaches, each counted once however they were chosen."),
+  zones: z
+    .array(z.object({ zone: z.string().nullable(), people: z.number().int().positive() }))
+    .describe(
+      "How many of those people are in each time zone. A null zone is people Slack has no zone for.",
+    ),
+});
+export type DirectoryReachOut = z.infer<typeof directoryReachOutSchema>;
+
 export const meOutSchema = z.object({
   member: z.object({
     id: z.string(),

@@ -36,6 +36,7 @@ import {
 } from "./audience-rows";
 import {
   type AudienceEntry,
+  type DirectoryCount,
   type DirectoryGroup,
   type DirectoryPerson,
   type DirectoryResolve,
@@ -68,6 +69,7 @@ interface Props extends Omit<ComponentProps<"section">, "defaultValue"> {
   onSummaryChange?: ((summary: AudienceSummary) => void) | undefined;
   search?: DirectorySearch | undefined;
   resolve?: DirectoryResolve | undefined;
+  countPeople?: DirectoryCount | undefined;
   defaultInputValue?: string | undefined;
   inline?: boolean | undefined;
   aside?: ReactNode | undefined;
@@ -113,6 +115,7 @@ function AudiencePicker({
   onSummaryChange,
   search = searchDirectory,
   resolve = resolveDirectory,
+  countPeople,
   defaultInputValue = "",
   inline = false,
   aside,
@@ -147,6 +150,7 @@ function AudiencePicker({
     known,
     workspaceSize,
     onSummaryChange,
+    countPeople,
     input,
   });
   const { seen, remember, chosen, chosenIds, reach, add, remove: removeEntry, restore } = choice;

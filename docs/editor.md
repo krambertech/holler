@@ -48,7 +48,8 @@ Confirming hands the dialog's fields to `send`, which saves them with the draft 
 - Groups come first in the field, then people, and Undo puts a removed chip back in that order.
 - Everyone already holds every person, so a pick after Everyone narrows the audience to that pick. `asksForEveryone` puts Everyone first once two letters or more start its name; one letter starts too many names.
 - After a search the list steps aside for the next name. While browsing with nothing typed, it stays open.
-- The reach is approximate once groups are in it, because groups can overlap. The time-zone preview counts only people picked by name: members of groups are not known until it sends.
+- The count is exact. Holler stores only each group's size, so once a user group, a channel or Everyone is in the audience, `useAudienceCount` posts it to `POST /api/directory/reach`, which asks Slack who is in each group and counts each person once, however many ways they were chosen. The answer also says how many people are in each time zone, so the time-zone preview counts people inside groups too. People picked only by name are counted in the browser with no request.
+- While that count loads, or when Slack does not answer, the picker adds up the group sizes and says **About**, and so does the send button; the guard `the-send-button-never-claims-an-exact-count` holds the button to it. The status line that announces a change waits for the exact count before it speaks.
 
 **Pasting.** `parsePastedList` splits a list on lines, commas, semicolons or tabs; handles, channels and emails also split on spaces. One name is a search. One email is a list of one, because the search does not read emails. Pasting into a name half typed is part of that name.
 

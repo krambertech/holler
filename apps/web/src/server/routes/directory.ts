@@ -1,8 +1,9 @@
-import { directoryResolveInSchema } from "@holler/core";
+import { directoryReachInSchema, directoryResolveInSchema } from "@holler/core";
 import { sValidator } from "@hono/standard-validator";
 import { Hono } from "hono";
 import { z } from "zod";
 import type { AppEnv } from "../app";
+import { reachOf } from "../services/audience";
 import { lookupDirectory, resolveDirectory, searchDirectory } from "../services/directory";
 import { requireMember } from "./context";
 
@@ -24,4 +25,7 @@ export const directoryRoutes = new Hono<AppEnv>()
   )
   .post("/resolve", sValidator("json", directoryResolveInSchema), async (c) =>
     c.json(await resolveDirectory(requireMember(c), c.req.valid("json").terms)),
+  )
+  .post("/reach", sValidator("json", directoryReachInSchema), async (c) =>
+    c.json(await reachOf(requireMember(c), c.env, c.req.valid("json"))),
   );

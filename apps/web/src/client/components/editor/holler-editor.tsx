@@ -201,6 +201,7 @@ function HollerEditor({
           workspaceSize={workspaceSize}
           onSummaryChange={editor.setSummary}
           search={io.search}
+          countPeople={io.countPeople}
           aside={<AnonymousSwitch editor={editor} />}
           notice={<AnonymousNotice editor={editor} />}
         />

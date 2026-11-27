@@ -37,7 +37,7 @@ export async function devSlack(db: Db, workspaceId: string): Promise<FakeSlack> 
     }),
     db.query.slackGroups.findMany({ where: eq(schema.slackGroups.workspaceId, workspaceId) }),
   ]);
-  const ids = people.map((person) => person.slackUserId);
+  const ids = people.map((person) => person.slackUserId).sort();
   const fake = new FakeSlack(
     people.map((person) => ({
       id: person.slackUserId,
@@ -50,7 +50,7 @@ export async function devSlack(db: Db, workspaceId: string): Promise<FakeSlack> 
         id: group.slackId,
         name: group.name,
         handle: group.handle ?? "",
-        members: ids,
+        members: group.memberCount == null ? ids : ids.slice(0, group.memberCount),
       })),
     groups
       .filter((group) => group.kind === "channel")

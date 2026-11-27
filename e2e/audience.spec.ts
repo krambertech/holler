@@ -31,7 +31,8 @@ test("a lead types who to send to, adds by keyboard, and takes one out with Back
   await page.keyboard.press("Tab");
   await expect(chips).toHaveText([/@design/, /Tomás Ruiz/]);
   await expect(field).toBeFocused();
-  await expect(page.locator('[data-slot="audience-reach"]')).toHaveText("About 7 people");
+  const reach = page.locator('[data-slot="audience-reach"]');
+  await expect(reach).toHaveText("7 people");
 
   await page.keyboard.press("Backspace");
   await expect(page.getByRole("button", { name: "Remove Tomás Ruiz" })).toBeFocused();
@@ -40,10 +41,18 @@ test("a lead types who to send to, adds by keyboard, and takes one out with Back
   await page.keyboard.press("Backspace");
   await expect(chips).toHaveText([/@design/]);
   await expect(field).toBeFocused();
-  await expect(status).toHaveText("Removed Tomás Ruiz. About 6 people.");
+  await expect(status).toHaveText("Removed Tomás Ruiz. 6 people.");
 
   await page.getByRole("button", { name: "Undo" }).click();
   await expect(chips).toHaveText([/@design/, /Tomás Ruiz/]);
+
+  await field.click();
+  await field.pressSequentially("amara");
+  await expect(page.getByRole("option", { name: /Amara Thompson/ })).toBeVisible();
+  await page.keyboard.press("Enter");
+  await expect(chips).toHaveText([/@design/, /Tomás Ruiz/, /Amara Thompson/]);
+  await expect(status).toHaveText("Added Amara Thompson. 7 people.");
+  await expect(reach).toHaveText("7 people");
 
   await field.click();
   await field.pressSequentially("ka");
@@ -53,7 +62,7 @@ test("a lead types who to send to, adds by keyboard, and takes one out with Back
   await field.fill("");
   await page.keyboard.press("Escape");
   await page.keyboard.press("Escape");
-  await expect(chips).toHaveCount(2);
+  await expect(chips).toHaveCount(3);
   await expect(page.locator('[data-slot="toast-close"]')).toHaveCount(0);
   await expectAccessible(page);
 });

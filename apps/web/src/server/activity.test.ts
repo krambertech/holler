@@ -295,6 +295,7 @@ const unrecordedRoutes: Record<string, string> = {
   "PUT /api/hollers/:id": "a draft saves itself while it is written; its send is recorded",
   "PUT /api/v1/hollers/:id": "a draft saves itself while it is written; its send is recorded",
   "POST /api/directory/resolve": "reads the directory to match pasted names; it changes nothing",
+  "POST /api/directory/reach": "counts who an audience reaches, asking Slack; it changes nothing",
   "POST /api/respond/:id": "an answer is the response itself, and Activity never says who answered",
   "POST /api/billing/checkout":
     "opens Polar; its webhook changes the plan, through applyPolarEvent",

@@ -2,7 +2,7 @@ import { answerSurface } from "@holler/core";
 import { CalendarClock, Send } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { AudiencePicker } from "@/components/editor/send/audience-picker";
-import type { DirectorySearch } from "@/components/editor/send/directory";
+import type { DirectoryCount, DirectorySearch } from "@/components/editor/send/directory";
 import { SendBar, SendSplit } from "@/components/editor/send/send-bar";
 import {
   answeredInLabel,
@@ -17,7 +17,9 @@ import { Variants } from "../frame";
 import {
   type Audience,
   chase,
+  countPeople,
   defaults,
+  failingCount,
   failingSearch,
   four,
   fridayFive,
@@ -132,6 +134,7 @@ function PickerDemo({
   query,
   paste,
   searchWith = search,
+  countWith = countPeople,
   withKnown = true,
 }: {
   start: Audience;
@@ -139,6 +142,7 @@ function PickerDemo({
   query?: string;
   paste?: string;
   searchWith?: DirectorySearch;
+  countWith?: DirectoryCount;
   withKnown?: boolean;
 }) {
   const [empty, setEmpty] = useState(isEmpty(start));
@@ -161,6 +165,7 @@ function PickerDemo({
       workspaceSize={WORKSPACE}
       search={searchWith}
       resolve={resolve}
+      countPeople={countWith}
       defaultInputValue={query}
       inline
       aside={<AnonymousDemo />}
@@ -258,6 +263,16 @@ export const sending: Group = {
               render: () => (
                 <PickerDemo
                   start={{ people: ["U0JB", "U0AT"], groups: ["S0DES", "C0LDS"], everyone: false }}
+                />
+              ),
+            },
+            {
+              label: "Groups, Slack not answering",
+              note: "Without Slack's member lists the count is an estimate, so it says about.",
+              render: () => (
+                <PickerDemo
+                  start={{ people: ["U0JB"], groups: ["S0DES"], everyone: false }}
+                  countWith={failingCount}
                 />
               ),
             },

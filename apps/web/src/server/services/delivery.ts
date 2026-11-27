@@ -35,6 +35,7 @@ import {
   sharedMessage,
 } from "../slack/blocks/messages";
 import { type PostMessage, SlackApiError, type SlackClient } from "../slack/client";
+import { membersFromSlack, resolveAudience } from "./audience";
 import { activityOf, recordChange, takeBack } from "./audit";
 import { type ServiceContext, ServiceError } from "./context";
 import { getHoller, presentQuestion, sendProblems } from "./hollers";
@@ -271,51 +272,6 @@ export async function sendHoller(
 }
 
 /**
- * Who a Holler goes to: people by name, the members of user groups and channels, or everyone.
- * Only people in the directory who are not bots and have not left. The first way a person was
- * chosen is kept, so `added_via` gives the most specific reason.
- */
-async function resolveAudience(
-  db: Db,
-  slack: SlackClient,
-  workspaceId: string,
-  audience: HollerDetail["audience"],
-): Promise<Map<string, string>> {
-  const chosen = new Map<string, string>();
-  const add = (slackUserId: string, via: string) => {
-    if (!chosen.has(slackUserId)) chosen.set(slackUserId, via);
-  };
-  for (const person of audience.people) add(person, "person");
-  for (const group of audience.groups) {
-    // User group ids start with S; anything else is a channel.
-    if (group.startsWith("S")) {
-      for (const person of await slack.userGroupMembers(group)) add(person, `group:${group}`);
-      continue;
-    }
-    let cursor: string | undefined;
-    do {
-      const page = await slack.channelMembers(group, cursor);
-      for (const person of page.members) add(person, `group:${group}`);
-      cursor = page.nextCursor || undefined;
-    } while (cursor);
-  }
-  const directory = await db
-    .select({ slackUserId: slackPeople.slackUserId })
-    .from(slackPeople)
-    .where(
-      and(
-        eq(slackPeople.workspaceId, workspaceId),
-        eq(slackPeople.isBot, false),
-        eq(slackPeople.isDeleted, false),
-      ),
-    );
-  const reachable = new Set(directory.map((row) => row.slackUserId));
-  if (audience.everyone) for (const person of reachable) add(person, "everyone");
-  for (const person of chosen.keys()) if (!reachable.has(person)) chosen.delete(person);
-  return chosen;
-}
-
-/**
  * Resolves the audience, writes the recipients, marks the Holler live and queues the invites due
  * now. The status guard means two sends at once go out once: the loser gets `conflict`.
  */
@@ -336,7 +292,12 @@ async function goLive(
 ): Promise<void> {
   const now = ctx.now();
   const slack = await slackFor(env, ctx.db, ctx.workspaceId);
-  const audience = await resolveAudience(ctx.db, slack, ctx.workspaceId, holler.audience);
+  const audience = await resolveAudience(
+    ctx.db,
+    membersFromSlack(slack),
+    ctx.workspaceId,
+    holler.audience,
+  );
   if (audience.size === 0) {
     throw new ServiceError(
       "invalid",
@@ -344,17 +305,9 @@ async function goLive(
       "audience",
     );
   }
-  const zones = new Map<string, string | null>();
-  if (holler.sendInRecipientTimeZone) {
-    const rows = await ctx.db
-      .select({ slackUserId: slackPeople.slackUserId, timeZone: slackPeople.timeZone })
-      .from(slackPeople)
-      .where(eq(slackPeople.workspaceId, ctx.workspaceId));
-    for (const row of rows) zones.set(row.slackUserId, row.timeZone);
-  }
   const theirTime = (at: Date, slackUserId: string) =>
     holler.sendInRecipientTimeZone
-      ? sameWallClockIn(at, creatorZone, zones.get(slackUserId) ?? null)
+      ? sameWallClockIn(at, creatorZone, audience.get(slackUserId)?.timeZone ?? null)
       : at;
   const sendAtFor = (slackUserId: string) => {
     if (!holler.sendInRecipientTimeZone || !holler.sendAt) return now;
@@ -362,7 +315,7 @@ async function goLive(
     // Someone whose time already passed gets it at once.
     return new Date(Math.max(theirs.getTime(), now.getTime()));
   };
-  const rows = [...audience].map(([slackUserId, addedVia]) => {
+  const rows = [...audience].map(([slackUserId, { addedVia }]) => {
     const sendAt = sendAtFor(slackUserId);
     return { slackUserId, addedVia, sendAt, invitedAt: sendAt <= now ? now : null };
   });
