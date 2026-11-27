@@ -76,7 +76,7 @@ export const knownWindows: KnownWindow[] = [
   {
     operation: "sendDueHollers",
     failure:
-      "killed after insert hollers + insert questions + insert options + update hollers: status + insert activity + delete hollers",
+      "killed after insert hollers + insert questions + insert options + update hollers: status, send_at + insert activity + delete hollers",
     breaks: ["invited"],
   },
   {

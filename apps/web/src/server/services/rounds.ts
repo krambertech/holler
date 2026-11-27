@@ -1,10 +1,30 @@
-import { newId, nextRoundAt, type RoundOut, type RoundsOut } from "@holler/core";
-import { and, type BatchItem, desc, eq, inArray, isNotNull, not, or, sql } from "@holler/core/db";
+import {
+  newId,
+  nextRoundAt,
+  type RepeatEvery,
+  type RoundOut,
+  type RoundsOut,
+  repeatDays,
+  repeatEvery,
+} from "@holler/core";
+import {
+  and,
+  type BatchItem,
+  desc,
+  eq,
+  inArray,
+  isNotNull,
+  not,
+  or,
+  type SQL,
+  sql,
+} from "@holler/core/db";
 import { schema } from "../db";
 import { activityOf, recordChange } from "./audit";
 import { memberOf, type ServiceContext, ServiceError } from "./context";
 import { getHoller, visibleTo } from "./hollers";
 import { resultsFor } from "./responses";
+import { creatorOf, goesLiveAt } from "./send-clock";
 
 const { hollers, questions, options, recipients } = schema;
 
@@ -79,7 +99,13 @@ export async function nextRound(
       ? source
       : await ctx.db.query.hollers.findFirst({ where: eq(hollers.id, seriesId) });
   const thisRound = source.sendAt && source.sendAt > now ? source.sendAt : now;
-  const sendAt = nextRoundAt(first?.sendAt ?? thisRound, source.repeatRule, timeZone, thisRound);
+  const at = Object.fromEntries(
+    repeatEvery.map((every) => [
+      every,
+      nextRoundAt(first?.sendAt ?? thisRound, every, timeZone, thisRound),
+    ]),
+  ) as Record<RepeatEvery, Date>;
+  const sendAt = at[source.repeatRule];
   const id = newId("holler");
   const row = roundOf(source, {
     id,
@@ -121,6 +147,8 @@ export async function nextRound(
     }
   }
   const stillRepeating = sql`exists (select 1 from hollers s where s.id = ${seriesId} and s.repeat_rule is not null)`;
+  const seriesRule = sql`(select s.repeat_rule from hollers s where s.id = ${seriesId})`;
+  const onSeriesRule = sql`case ${seriesRule} when 'fortnight' then ${at.fortnight.getTime()} else ${at.week.getTime()} end`;
   const schedule = () =>
     recordChange(
       ctx,
@@ -132,7 +160,7 @@ export async function nextRound(
       }),
       ctx.db
         .update(hollers)
-        .set({ status: "scheduled" })
+        .set({ status: "scheduled", repeatRule: seriesRule, sendAt: onSeriesRule })
         .where(and(eq(hollers.id, id), stillRepeating)),
       {
         before: [ctx.db.insert(hollers).values(row), ...asked],
@@ -186,6 +214,122 @@ export async function stopRepeating(ctx: ServiceContext, hollerId: string) {
     },
   );
   return getHoller(ctx, seriesId);
+}
+
+const openTooLong: Record<RepeatEvery, string> = {
+  week: "Each round stays open for longer than a week. Edit the next round so it closes within a week, then repeat it every week.",
+  fortnight:
+    "Each round stays open for longer than a fortnight. Edit the next round so it closes within a fortnight, then repeat it every fortnight.",
+};
+
+export async function changeRepeat(ctx: ServiceContext, hollerId: string, every: RepeatEvery) {
+  const memberId = memberOf(ctx);
+  const holler = await ctx.db.query.hollers.findFirst({
+    where: and(eq(hollers.id, hollerId), eq(hollers.workspaceId, ctx.workspaceId)),
+  });
+  if (!holler || holler.creatorId !== memberId) {
+    throw new ServiceError(
+      "not_found",
+      "That Holler does not exist, or only the person who wrote it can change how often it repeats.",
+    );
+  }
+  const seriesId = holler.repeatOfId ?? holler.id;
+  const first = await repeatingFirst(ctx, seriesId);
+  if (first.repeatRule === every) return getHoller(ctx, seriesId);
+  const inSeries = and(
+    eq(hollers.workspaceId, ctx.workspaceId),
+    or(eq(hollers.id, seriesId), eq(hollers.repeatOfId, seriesId)),
+  );
+  const series = await ctx.db
+    .select({
+      id: hollers.id,
+      status: hollers.status,
+      sendAt: hollers.sendAt,
+      closesAt: hollers.closesAt,
+      closeAfterHours: hollers.closeAfterHours,
+    })
+    .from(hollers)
+    .where(inSeries);
+  const upcoming = series.find((round) => round.status === "scheduled");
+  if (upcoming && upcoming.closeAfterHours > repeatDays[every] * 24) {
+    throw new ServiceError("invalid", openTooLong[every], "closeAfterHours");
+  }
+  const now = ctx.now();
+  const timeZone = (await creatorOf(ctx.db, first)).timeZone;
+  const latest = Math.max(
+    now.getTime(),
+    ...series
+      .filter((round) => round.status !== "scheduled")
+      .map((round) => round.sendAt?.getTime() ?? 0),
+  );
+  const sendAt = nextRoundAt(first.sendAt ?? now, every, timeZone, new Date(latest));
+  const liveAt = goesLiveAt(
+    { sendAt, sendInRecipientTimeZone: first.sendInRecipientTimeZone },
+    timeZone,
+  );
+  if (
+    series.some(
+      (round) => round.status === "live" && round.closesAt && liveAt && round.closesAt > liveAt,
+    )
+  ) {
+    throw new ServiceError(
+      "conflict",
+      "The round that is out now stays open past when the next one would go out. Close it first, then change how often it repeats.",
+    );
+  }
+  const moves = upcoming && upcoming.id !== seriesId ? upcoming : null;
+  const unchanged: SQL = upcoming
+    ? sql`exists (select 1 from hollers u where u.id = ${upcoming.id} and u.status = 'scheduled')`
+    : sql`not exists (select 1 from hollers u where (u.id = ${seriesId} or u.repeat_of_id = ${seriesId}) and u.status = 'scheduled')`;
+  const changed = await recordChange(
+    ctx,
+    activityOf(ctx, {
+      action: "holler.repeat_changed",
+      subjectType: "holler",
+      subjectId: seriesId,
+      data: { from: first.repeatRule, to: every, ...(moves && { sendAt: sendAt.toISOString() }) },
+    }),
+    ctx.db
+      .update(hollers)
+      .set({ repeatRule: every, updatedAt: now })
+      .where(and(inSeries, eq(hollers.repeatRule, first.repeatRule), unchanged))
+      .returning({ id: hollers.id }),
+    {
+      after: moves
+        ? [
+            ctx.db
+              .update(hollers)
+              .set({ sendAt, updatedAt: now })
+              .where(
+                and(
+                  eq(hollers.id, moves.id),
+                  eq(hollers.status, "scheduled"),
+                  eq(hollers.repeatRule, every),
+                ),
+              ),
+          ]
+        : [],
+    },
+  );
+  if (changed.length === 0 && (await repeatingFirst(ctx, seriesId)).repeatRule !== every) {
+    throw new ServiceError(
+      "conflict",
+      "A round of this pulse went out while you changed it. Look at the rounds again, then try once more.",
+    );
+  }
+  return getHoller(ctx, seriesId);
+}
+
+async function repeatingFirst(ctx: ServiceContext, seriesId: string) {
+  const first = await ctx.db.query.hollers.findFirst({ where: eq(hollers.id, seriesId) });
+  if (!first?.repeatRule) {
+    throw new ServiceError(
+      "invalid",
+      "This pulse no longer repeats. Duplicate it to start a new one.",
+      "repeat",
+    );
+  }
+  return { ...first, repeatRule: first.repeatRule };
 }
 
 export async function listRounds(ctx: ServiceContext, hollerId: string): Promise<RoundsOut> {

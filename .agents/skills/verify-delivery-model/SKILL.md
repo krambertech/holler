@@ -16,6 +16,7 @@ Two TLA+ models check every order in which these steps can happen, within bounds
 | `KeptAnswersReachSlack`: whoever is marked answered has a response, a thank-you and a place in the count | Their DM asks for an answer Holler has, or thanks them for one it lost |
 | `NothingGoesOutAfterStop` | A pulse goes on after Stop repeating said it stopped |
 | `OneNextRound` | A pulse stops without a word, or goes out twice |
+| `NextRoundKeepsRule` | A pulse changed to every fortnight still goes out the next week |
 
 ## Does a change touch the models
 
@@ -63,8 +64,8 @@ A break you cannot fix in this change becomes a `finding` run with one plain sen
 
 ## What it covers, and what it does not
 
-- **Bounds.** `delivery`: one Holler and one person with two overlapping cron passes, two consumers, one reminder, and one each of a queue refusal, a Slack failure and a duplicate delivery; or two Hollers closing over two passes with one consumer. `rounds`: four rounds, two overlapping sends, one Stop repeating.
+- **Bounds.** `delivery`: one Holler and one person with two overlapping cron passes, two consumers, one reminder, and one each of a queue refusal, a Slack failure and a duplicate delivery; or two Hollers closing over two passes with one consumer. `rounds`: four rounds, two overlapping sends, one Stop repeating and one change of how often it repeats.
 - **Assumed in the current design, off until a finding turns it on.** No Worker dies (`CrashIn`). No answer or close lands between a consumer's read and its last write, and no Holler closes while someone has an unsent retry (`Lands`). Slack recovers before `max_retries` runs out (`QueueGivesUp`). A call that throws did nothing (`SlackLosesReply`, `QueueLosesReply`, `D1Fails`). People told to try again do (`PersonGivesUp`).
-- **Time.** A reminder, a close time and a due round can come at any moment. The day a close or a missing announcement is retried for, the pruning of post keys, time zones and the reminder rhythm are left out.
+- **Time.** A reminder, a close time and a due round can come at any moment. A round that is already due when the rule changes goes out at the time it had; the rounds after it follow the new rule. The day a close or a missing announcement is retried for, the pruning of post keys, time zones and the reminder rhythm are left out.
 - **One step here, more in the code.** `deliver`'s reads (`loadSlackHoller`, `recipientFor`) are one read. Batches of more than 100 sends are two at most. A duplicate message is a second copy, acked on its own.
 - **Left out.** Send reminder (`remindWaiting`), snoozes, notes, permanent Slack failures, `send_failed` notices, `sendHoller`'s checks, the announcement's final count at close, Activity rows, uninstalls, and deleting or editing a Holler.

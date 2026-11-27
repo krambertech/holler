@@ -7,6 +7,7 @@ import {
   listHollersQuerySchema,
   okOutSchema,
   recipientsOutSchema,
+  repeatInputSchema,
   resultsOutSchema,
   sendPreviewOutSchema,
 } from "@holler/core";
@@ -30,7 +31,7 @@ import {
   updateDraft,
 } from "../services/hollers";
 import { resultsFor } from "../services/responses";
-import { stopRepeating } from "../services/rounds";
+import { changeRepeat, stopRepeating } from "../services/rounds";
 import { checkSendConfirmToken, previewSend, sendConfirmToken } from "../services/send-preview";
 
 /** What one MCP request runs as. Built from the verified access token, never from the body. */
@@ -252,6 +253,23 @@ export function buildMcpServer(mcp: McpPrincipal): McpServer {
       ...writeTool({ idempotent: true, overwrites: true }),
     },
     ({ hollerId }) => write(async () => result(hollerOut(await stopRepeating(ctx, hollerId)))),
+  );
+
+  server.registerTool(
+    "change_repeat",
+    {
+      title: "Change how often a pulse repeats",
+      description:
+        "Repeat a pulse every week or every fortnight from now on, and move its next round, which has not gone out, to match. Rounds already sent stay as they are. Needs write access.",
+      inputSchema: z.object({
+        hollerId: z.string().min(1),
+        repeat: repeatInputSchema.shape.repeat,
+      }),
+      outputSchema: hollerOutSchema,
+      ...writeTool({ idempotent: true, overwrites: true }),
+    },
+    ({ hollerId, repeat }) =>
+      write(async () => result(hollerOut(await changeRepeat(ctx, hollerId, repeat)))),
   );
 
   server.registerTool(

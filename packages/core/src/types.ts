@@ -325,6 +325,11 @@ export type BillingRedirect = z.infer<typeof billingRedirectSchema>;
 export const visibilitySchema = z.enum(["private", "workspace"]);
 export const visibilityInputSchema = z.object({ visibility: visibilitySchema });
 
+export const repeatInputSchema = z.object({
+  repeat: z.enum(repeatEvery).describe("How often a new round goes out."),
+});
+export type RepeatInput = z.input<typeof repeatInputSchema>;
+
 export const viewersInputSchema = z.object({
   slackUserIds: z.array(z.string().min(1).max(32)).min(1).max(50),
 });

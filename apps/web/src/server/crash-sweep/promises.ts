@@ -1,4 +1,4 @@
-import { quietBeforeCloseHours, reminderTiers } from "@holler/core";
+import { quietBeforeCloseHours, reminderTiers, repeatDays } from "@holler/core";
 import { eq } from "@holler/core/db";
 import { schema } from "../db";
 import { loadSlackHoller } from "../services/delivery";
@@ -15,7 +15,7 @@ export const promises = {
   reminderNow: "the creator's Send reminder reaches everyone waiting",
   notice: "a closed Holler's creator gets the notice",
   told: "a creator hears that their scheduled Holler could not go out",
-  rounds: "a repeating series has exactly one next round, and none once stopped",
+  rounds: "a repeating series has exactly one next round, on its rule, and none once stopped",
   announced: "the channel gets the announcement",
   counted: "the announcement shows what is stored",
   thanked: "the DM of a person who answered says so",
@@ -115,7 +115,7 @@ export async function brokenPromises(
     }
   }
 
-  const { answerBy, snoozedTs, stopped, noted } = world.wishes;
+  const { answerBy, snoozedTs, stopped, noted, repeatsEvery } = world.wishes;
   if (answerBy) {
     keep(
       "answer",
@@ -136,8 +136,13 @@ export async function brokenPromises(
       (holler) => holler.id === root.id || holler.repeatOfId === root.id,
     );
     if (root.repeatRule === null && series.length === 1 && !stopped) continue;
-    const next = series.filter((holler) => holler.status === "scheduled").length;
-    keep("rounds", next === (root.repeatRule ? 1 : 0) && !(stopped && root.repeatRule));
+    const next = series.filter((holler) => holler.status === "scheduled");
+    keep("rounds", next.length === (root.repeatRule ? 1 : 0) && !(stopped && root.repeatRule));
+    keep(
+      "rounds",
+      next.every((round) => onRule(root, round)),
+    );
+    if (repeatsEvery) keep("rounds", root.repeatRule === repeatsEvery);
   }
 
   const happened = (action: string, subjectId?: string) =>
@@ -163,9 +168,17 @@ export async function brokenPromises(
     keep("activity", happened("reminder.snoozed") > 0);
   }
   if (stopped) keep("activity", happened("holler.repeat_stopped") > 0);
+  if (repeatsEvery) keep("activity", happened("holler.repeat_changed") === 1);
   if (noted && state.notes.length > 0) keep("activity", happened("response.noted") > 0);
 
   return [...broken];
+}
+
+function onRule(root: Holler, round: Holler): boolean {
+  if (!root.repeatRule || !root.sendAt || !round.sendAt) return false;
+  const apart = round.sendAt.getTime() - root.sendAt.getTime();
+  const step = repeatDays[root.repeatRule] * 24 * HOUR;
+  return round.repeatRule === root.repeatRule && apart > 0 && apart % step === 0;
 }
 
 function hasResponse(state: Stored, holler: Holler, slackUserId: string): boolean {

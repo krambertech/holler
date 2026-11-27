@@ -2,6 +2,7 @@ import {
   exportFormatSchema,
   hollerDraftSchema,
   listHollersQuerySchema,
+  repeatInputSchema,
   viewersInputSchema,
   visibilityInputSchema,
 } from "@holler/core";
@@ -22,7 +23,7 @@ import {
   updateDraft,
 } from "../services/hollers";
 import { resultsFor } from "../services/responses";
-import { listRounds, stopRepeating } from "../services/rounds";
+import { changeRepeat, listRounds, stopRepeating } from "../services/rounds";
 import { previewSend } from "../services/send-preview";
 import {
   addViewers,
@@ -69,6 +70,13 @@ export const hollerRoutes = new Hono<AppEnv>()
   .get("/:id/rounds", async (c) => c.json(await listRounds(requireMember(c), c.req.param("id"))))
   .post("/:id/stop-repeating", async (c) =>
     c.json(hollerOut(await stopRepeating(requireMember(c), c.req.param("id")))),
+  )
+  .put("/:id/repeat", sValidator("json", repeatInputSchema), async (c) =>
+    c.json(
+      hollerOut(
+        await changeRepeat(requireMember(c), c.req.param("id"), c.req.valid("json").repeat),
+      ),
+    ),
   )
   .post("/:id/remind", async (c) =>
     c.json(hollerOut(await remindWaiting(requireMember(c), c.env, c.req.param("id")))),

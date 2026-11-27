@@ -1,4 +1,4 @@
-import type { HollerDraftInput } from "@holler/core";
+import type { HollerDraftInput, RepeatEvery } from "@holler/core";
 import { runCronPass } from "../cron";
 import { createDb, type Db } from "../db";
 import type { Bindings } from "../env";
@@ -45,6 +45,7 @@ export interface Wishes {
   answerBy?: { hollerId: string; slackUserId: string };
   reminderNowAt?: Date;
   stopped?: boolean;
+  repeatsEvery?: RepeatEvery;
   noted?: boolean;
   snoozedTs?: string;
 }
