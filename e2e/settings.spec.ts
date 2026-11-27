@@ -5,7 +5,8 @@ test("a lead opens Settings from the header and sees the workspace and its membe
   page,
 }) => {
   await signInAs(page, "lead");
-  await page.getByRole("link", { name: /Settings/ }).click();
+  await page.getByRole("button", { name: /, account$/ }).click();
+  await page.getByRole("menuitem", { name: "Settings" }).click();
   await expect(page.getByRole("heading", { name: "Settings", level: 1 })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Workspace" })).toBeVisible();
   await expect(page.getByText("Northwind", { exact: true })).toBeVisible();
