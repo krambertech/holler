@@ -40,4 +40,27 @@ function PlateStrip({ className, ...props }: ComponentProps<"div">) {
   );
 }
 
-export { Plate, PlateRow, PlateStrip };
+function Underplate({ className, ...props }: ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="underplate"
+      className={cn("flex flex-col rounded-plate bg-tint edge", className)}
+      {...props}
+    />
+  );
+}
+
+function UnderplateStrip({ className, ...props }: ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="underplate-strip"
+      className={cn(
+        "flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-5 py-3 font-normal text-tint-ink",
+        className,
+      )}
+      {...props}
+    />
+  );
+}
+
+export { Plate, PlateRow, PlateStrip, Underplate, UnderplateStrip };
