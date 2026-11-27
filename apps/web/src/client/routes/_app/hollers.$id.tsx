@@ -219,7 +219,7 @@ function HollerPage() {
       )}
 
       {rounds.data && rounds.data.rounds.length > 1 && (
-        <HollerRounds rounds={rounds.data} currentId={h.id} />
+        <HollerRounds rounds={rounds.data} currentId={h.id} canEdit={isCreator} />
       )}
 
       {results.data && (

@@ -247,6 +247,7 @@ Decided on 2026-11-27. The agreed mockup is [`docs/design/holler-page.html`](doc
 | Charts | One row per answer in one colour, for choices, scales, yes or no, people and numbers. A scale leads with its average and writes its end words beside the first and last step. A number leads with its average, median, lowest and highest, then a row per value, or per range when the values spread wide | A scale as one bar split by step on the plum ramp, with a legend; a number as a dot plot; a yes or no as one split bar |
 | Written answers | The answer first, signed under it with a small avatar and the name. Notes and Other write-ins sit in a quiet panel under the bars | The avatar beside the answer with the name above it; notes under a plain heading |
 | Your answers | In the account menu, above Settings | A link in the header |
+| Rounds | A repeating pulse's rounds sit in a plate with the repeat icon, after the people. The creator gets **Edit next round**, which opens the scheduled round in the editor; changing how often it repeats is not built yet. Every round but this one opens with a chevron, and this round's bar sits on white so it reads on the tint | A grey bar on the tinted row; editing only through the round's own row |
 | Copying | **Duplicate** in the Holler's menu, the same word the editor uses for a question | Copy into a new draft |
 
 ## Still open
