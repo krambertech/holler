@@ -28,8 +28,8 @@ function SendDialogChannel({
   const directory = useDirectory(search, query, open);
   const channels = (directory.data?.groups ?? []).filter((g) => g.kind === "channel");
   return (
-    <Field className="sm:max-w-sm">
-      <FieldLabel>Channel</FieldLabel>
+    <Field>
+      <FieldLabel className="sr-only">Channel for the live count</FieldLabel>
       <Combobox<DirectoryGroup>
         items={channels}
         filter={null}

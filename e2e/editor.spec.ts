@@ -125,3 +125,20 @@ test("Schedule asks for the day and time, and a draft is deleted from its menu",
   await expect(page.getByRole("heading", { name: "Your hollers" })).toBeVisible();
   await expect(page.getByText("To be deleted")).toHaveCount(0);
 });
+
+test("a list opened inside the send dialog leaves the page behind it where it was", async ({
+  page,
+}) => {
+  await signInAs(page, "lead");
+  await expect(page.getByRole("heading", { name: "Your hollers" })).toBeVisible();
+  await page.goto("/new?template=retro");
+  await expect(page).toHaveURL(/draft=hol_/);
+  await page.getByRole("button", { name: "More ways to send" }).click();
+  await page.getByRole("menuitem", { name: "Schedule…" }).click();
+  const dialog = page.getByRole("dialog", { name: "Schedule “Retro”" });
+  await expect(dialog).toBeVisible();
+  const before = await page.evaluate(() => window.scrollY);
+  await dialog.getByRole("combobox", { name: "Closes" }).click();
+  await expect(page.getByRole("option", { name: "After 1 week" })).toBeVisible();
+  expect(await page.evaluate(() => window.scrollY)).toBe(before);
+});

@@ -236,7 +236,9 @@ function AudiencePickerMore({
 }) {
   if (!shown || overflow.moreAt === null) return null;
   return (
-    <span
+    <button
+      type="button"
+      tabIndex={-1}
       aria-hidden
       data-slot="audience-more"
       style={{ [overflow.side]: overflow.moreAt, top: overflow.rowBottom - 32 }}
@@ -244,10 +246,10 @@ function AudiencePickerMore({
         event.preventDefault();
         onOpen();
       }}
-      className="absolute flex h-8 items-center whitespace-nowrap rounded-full px-2.5 text-ink-2 text-sm tabular hoverable:hover:bg-hover"
+      className="absolute flex h-8 cursor-pointer items-center whitespace-nowrap rounded-full bg-well px-3 font-normal text-ink-2 text-sm tabular transition-colors duration-150 hoverable:hover:bg-track hoverable:hover:text-ink active:bg-track"
     >
       +{count(overflow.hidden)} more
-    </span>
+    </button>
   );
 }
 

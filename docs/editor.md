@@ -31,7 +31,7 @@ Under the top row, `AudiencePicker` is the To card, and `HollerEditorWrite` hold
 
 ## The send bar and the send dialog
 
-The bar sits at the bottom of the window. It stays in the page's flow, so it never covers the last row, and on a short page the editor fills the window so the bar still sits at the bottom. It is a raised plate only while content scrolls under it; resting at the end it is a flat row under a hairline. `SendBarAnsweredIn` names where people answer, with a question mark whose popover says why (`webReason` for the web page). A problem from the last send takes its place, until the sender fixes it.
+The bar sits at the bottom of the window. It stays in the page's flow, so it never covers the last row, and on a short page the editor fills the window so the bar still sits at the bottom. It is a raised plate only while content scrolls under it; resting at the end it is a flat row with no line above it. `SendBarAnsweredIn` names where people answer, with a question mark whose popover says why (`webReason` for the web page). A problem from the last send takes its place, until the sender fixes it.
 
 `SendSplit` is the one plum button: **Send**, with an arrow whose menu offers **Schedule…**. Once a Holler is scheduled it reads **Update schedule**, and the arrow offers **Change the time** and **Send now instead**. Every choice opens `SendDialog`, which works on its own copy of the send fields, so Cancel keeps nothing. Its button names the reach (`sendActionLabel`), approximate once groups are in it.
 
@@ -58,7 +58,7 @@ Confirming hands the dialog's fields to `send`, which saves them with the draft 
 
 ## When and how: the dialog's settings
 
-**Schedule…** starts at the next working morning (`tomorrowMorning`) when nothing is scheduled. Reminders and Live count are switches, Closes is a choice of presets or a day you pick, and a live count asks for its channel before it can be confirmed.
+**Schedule…** starts at the next working morning (`tomorrowMorning`) when nothing is scheduled. Every setting is a row with its control at the end: Sends (day and time), Time zone, whose per-zone times stay folded behind **See when each person gets it**, Reminders and Live count as switches, and Closes as a choice of presets or a day you pick. A live count asks for its channel before it can be confirmed. The dialog's title and buttons stay in place while the rows scroll.
 
 - **The sender's clock.** It is the sender's Slack time zone, which `/api/me` returns, because delivery reads a send time there (`senderZoneFor`). Only when Slack has no zone for them does the editor use the browser's.
 - **Sending in each person's own time.** `landingTimes` reads `sendAt` as a wall-clock time on the sender's clock and finds that time in each zone, with the conversion delivery uses (`sameWallClockIn`), so the preview and the send agree. A person with no time zone in Slack counts as UTC, as in delivery. Times at one moment sort west to east, so the local times read in clock order. `atWallClock` corrects twice, so a time either side of a daylight-saving change lands on the right hour, and a time the change skips moves forward.
@@ -69,7 +69,7 @@ Confirming hands the dialog's fields to `send`, which saves them with the draft 
 
 ## Date and time input
 
-`DateTimeInput` uses the browser's own date box, which every keyboard, screen reader and phone knows, and Holler's own time list, because the browser's time box paints its parts in the system's colours. A half-cleared day keeps the last whole value. The time list opens on the chosen time, and a chosen time off the steps keeps its row. Enter takes a row only once something is typed, so it never picks midnight by accident. The `Field` around the input names the day box, and the time list has its own label.
+`DateTimeInput` pairs Holler's calendar (`DatePicker`) with Holler's time list. The calendar is a grid of day buttons with one tab stop: arrows move a day or a week, Page Up and Page Down a month, Home and End the week's ends, and days before `min` cannot be picked. Inside a dialog it opens in the dialog's own layer, so it is never drawn under it. The time list opens on the chosen time, and a chosen time off the steps keeps its row. Enter takes a row only once something is typed, so it never picks midnight by accident. `inline` hides the two labels for a row that names them itself, as the send dialog's Sends row does. Every list is placed against the window (`positionMethod="fixed"`), so opening one inside a dialog never scrolls the page behind it.
 
 ## The Slack preview
 

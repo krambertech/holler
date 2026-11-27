@@ -97,7 +97,7 @@ function SendBar({
         <div
           className={cn(
             "flex flex-wrap items-center gap-x-3 gap-y-2.5 py-2.5 ps-5 pe-2.5 transition-[background-color,box-shadow,border-radius] duration-200 ease-(--ease-out) max-sm:px-4",
-            resting ? "rounded-none border-divider border-t" : "floating rounded-plate",
+            resting ? "rounded-none" : "floating rounded-plate",
           )}
         >
           <div className="grid min-w-0 flex-1 basis-44 leading-snug" aria-live="polite">

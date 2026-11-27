@@ -49,18 +49,18 @@ function SendDialogRow({ label, description, tone, control, children }: RowProps
   return (
     <div
       data-slot="send-dialog-row"
-      className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-0.5 py-3.5"
+      className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 py-3.5"
     >
-      <span id={labelId} className="font-normal text-ink">
-        {label}
+      <span className="grid min-w-44 flex-1 gap-0.5">
+        <span id={labelId} className="font-normal text-ink">
+          {label}
+        </span>
+        <span id={descriptionId} className={cn("text-pretty text-sm", toneText[tone ?? "neutral"])}>
+          {description}
+        </span>
       </span>
-      <span className="row-span-2 self-center">
-        {control({ label: labelId, description: descriptionId })}
-      </span>
-      <span id={descriptionId} className={cn("text-pretty text-sm", toneText[tone ?? "neutral"])}>
-        {description}
-      </span>
-      {children && <div className="col-span-2 pt-2.5">{children}</div>}
+      {control({ label: labelId, description: descriptionId })}
+      {children && <div className="basis-full">{children}</div>}
     </div>
   );
 }
@@ -90,6 +90,7 @@ interface Props {
   onChannel: (channel: DirectoryGroup) => void;
   channelProblem?: string | undefined;
   search: DirectorySearch;
+  before?: ReactNode | undefined;
 }
 
 function SendDialogRows({
@@ -103,6 +104,7 @@ function SendDialogRows({
   onChannel,
   channelProblem,
   search,
+  before,
 }: Props) {
   const { now, senderZone, zones } = context;
   const reminders = remindersSummary(value.remindersEnabled, openHours(value, context));
@@ -122,6 +124,7 @@ function SendDialogRows({
       data-slot="send-dialog-rows"
       className="grid divide-y divide-divider border-divider border-y"
     >
+      {before}
       <SendDialogRow
         label="Reminders"
         description={sentence(reminders.description)}
@@ -150,7 +153,11 @@ function SendDialogRows({
               )
             }
           >
-            <SelectTrigger aria-labelledby={ids.label} aria-describedby={ids.description}>
+            <SelectTrigger
+              aria-labelledby={ids.label}
+              aria-describedby={ids.description}
+              className="w-auto"
+            >
               <SelectValue />
             </SelectTrigger>
             <SelectContent aria-label="When it closes">
@@ -165,6 +172,8 @@ function SendDialogRows({
       >
         {value.closesAt && (
           <DateTimeInput
+            inline
+            className="ms-auto w-fit"
             dayLabel="Day it closes"
             timeLabel="Time it closes"
             value={toPicker(value.closesAt, senderZone)}

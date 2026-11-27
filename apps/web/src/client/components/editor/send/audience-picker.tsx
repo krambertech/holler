@@ -306,7 +306,7 @@ function AudiencePicker({
             if (!frame.current?.contains(event.relatedTarget as Node | null)) setFocused(false);
           }}
         >
-          <span aria-hidden className="pt-3.5 text-muted">
+          <span aria-hidden className={cn(controlText, "flex h-12 items-center text-muted")}>
             To
           </span>
           <motion.div
@@ -320,7 +320,7 @@ function AudiencePicker({
               data-slot="audience-field"
               onPointerDown={onFieldPointerDown}
               className={cn(
-                "relative flex min-h-13 cursor-text flex-wrap items-center gap-1.5 py-2",
+                "relative flex min-h-12 cursor-text flex-wrap items-center gap-1.5 py-2",
                 collapsed ? "overflow-hidden" : "max-h-[min(15rem,45dvh)] overflow-y-auto",
               )}
             >

@@ -87,24 +87,40 @@ function ScheduleWhen({
   problem?: string | undefined;
 }) {
   const { now, senderZone, zones } = context;
+  const [landing, setLanding] = useState(false);
   if (!value.sendAt) return null;
   const when = sendSummary(value, context, problem);
   const items = zoneItems(senderZone);
   return (
-    <div data-slot="send-dialog-when" className="grid gap-1">
-      <DateTimeInput
-        value={toPicker(value.sendAt, senderZone)}
-        min={toPicker(now, senderZone)}
-        onValueChange={(picked) => onChange({ sendAt: fromPicker(picked, senderZone) })}
-        aria-invalid={when.tone === "danger" || undefined}
+    <>
+      <SendDialogRow
+        label="Sends"
+        description={when.tone === "danger" ? when.description : sentence(when.description)}
+        tone={when.tone === "danger" ? "danger" : undefined}
+        control={(ids) => (
+          <DateTimeInput
+            inline
+            dayLabel="Day it sends"
+            timeLabel="Time it sends"
+            value={toPicker(value.sendAt ?? now, senderZone)}
+            min={toPicker(now, senderZone)}
+            onValueChange={(picked) => onChange({ sendAt: fromPicker(picked, senderZone) })}
+            aria-describedby={ids.description}
+            aria-invalid={when.tone === "danger" || undefined}
+          />
+        )}
       />
-      {when.tone === "danger" && <p className="text-danger-ink text-sm">{when.description}</p>}
       <SendDialogRow
         label="Time zone"
         description={
-          value.sendInRecipientTimeZone
-            ? "That time wherever each person is"
-            : "That time where you are, for everyone"
+          <button
+            type="button"
+            aria-expanded={landing}
+            onClick={() => setLanding((open) => !open)}
+            className="relative rounded-sm text-start text-tint-ink outline-none focus-visible:ring-2 focus-visible:ring-focus hoverable:hover:underline pointer-coarse:before:absolute pointer-coarse:before:-inset-2 pointer-coarse:before:content-['']"
+          >
+            {landing ? "Hide when each person gets it" : "See when each person gets it"}
+          </button>
         }
         control={(ids) => (
           <Select
@@ -112,7 +128,7 @@ function ScheduleWhen({
             items={items}
             onValueChange={(next) => onChange({ sendInRecipientTimeZone: next === "theirs" })}
           >
-            <SelectTrigger aria-labelledby={ids.label} aria-describedby={ids.description}>
+            <SelectTrigger aria-labelledby={ids.label} className="w-auto">
               <SelectValue />
             </SelectTrigger>
             <SelectContent aria-label="Time zone">
@@ -125,18 +141,22 @@ function ScheduleWhen({
           </Select>
         )}
       >
-        <SendDialogLanding
-          sendAt={value.sendAt}
-          inRecipientTimeZone={value.sendInRecipientTimeZone}
-          senderZone={senderZone}
-          zones={zones}
-          reach={reach}
-          now={now}
-        />
+        {landing && (
+          <SendDialogLanding
+            sendAt={value.sendAt}
+            inRecipientTimeZone={value.sendInRecipientTimeZone}
+            senderZone={senderZone}
+            zones={zones}
+            reach={reach}
+            now={now}
+          />
+        )}
       </SendDialogRow>
-    </div>
+    </>
   );
 }
+
+const sentence = (text: string) => text.charAt(0).toLocaleUpperCase() + text.slice(1);
 
 function SendDialogBody({
   kind,
@@ -178,16 +198,18 @@ function SendDialogBody({
         <DialogTitle>{scheduling ? `Schedule “${title}”` : `Send “${title}”`}</DialogTitle>
         <DialogDescription>{whoLine(reach, value.anonymous)}</DialogDescription>
       </DialogHeader>
-      {scheduling && (
-        <ScheduleWhen
-          value={fields}
-          onChange={change}
-          context={context}
-          reach={reach}
-          problem={problems.sendAt}
-        />
-      )}
       <SendDialogRows
+        before={
+          scheduling && (
+            <ScheduleWhen
+              value={fields}
+              onChange={change}
+              context={context}
+              reach={reach}
+              problem={problems.sendAt}
+            />
+          )
+        }
         value={fields}
         onChange={change}
         context={context}
@@ -208,11 +230,6 @@ function SendDialogBody({
       />
       {problems.limit != null && <LimitReached fallbackMessage={problems.limit} />}
       {problems.failed && <p className="text-danger-ink text-sm">{problems.failed}</p>}
-      <p className="text-muted text-sm">
-        {scheduling
-          ? "You can change it until it sends."
-          : "It goes out in Slack right away. A sent Holler cannot be called back."}
-      </p>
       <DialogFooter>
         <DialogClose render={<Button variant="ghost">Cancel</Button>} />
         <Button variant="primary" pending={pending} onClick={confirm}>
@@ -226,7 +243,7 @@ function SendDialogBody({
 function SendDialog({ open, onOpenChange, ...props }: Props) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent data-slot="send-dialog" size="md">
+      <DialogContent data-slot="send-dialog" size="lg">
         <SendDialogBody {...props} />
       </DialogContent>
     </Dialog>
