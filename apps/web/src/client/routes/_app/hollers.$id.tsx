@@ -36,6 +36,10 @@ const statusWord = {
   draft: "Draft",
 } as const;
 
+function wasSent(h: HollerOut | undefined) {
+  return h?.status === "live" || h?.status === "closed";
+}
+
 async function copyResultsAsMarkdown(id: string) {
   try {
     const response = await fetch(`/api/hollers/${id}/export?format=md`, {
@@ -60,7 +64,7 @@ function HollerPage() {
     queryKey: ["hollers", id],
     queryFn: () => api<HollerOut>(`/hollers/${id}`),
   });
-  const sent = holler.data?.status === "live" || holler.data?.status === "closed";
+  const sent = wasSent(holler.data);
   const results = useQuery({ ...resultsQuery(id), enabled: sent });
   const people = useQuery({ ...hollerPeopleQuery(id), enabled: sent });
   const isCreator = holler.data?.isCreator ?? false;

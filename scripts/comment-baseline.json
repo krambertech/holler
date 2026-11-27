@@ -120,7 +120,7 @@
   "apps/web/src/server/services/fixtures.ts": 2,
   "apps/web/src/server/services/holler-people.ts": 7,
   "apps/web/src/server/services/hollers.test.ts": 4,
-  "apps/web/src/server/services/hollers.ts": 52,
+  "apps/web/src/server/services/hollers.ts": 53,
   "apps/web/src/server/services/lifecycle.ts": 4,
   "apps/web/src/server/services/members.ts": 28,
   "apps/web/src/server/services/reminders.ts": 11,
