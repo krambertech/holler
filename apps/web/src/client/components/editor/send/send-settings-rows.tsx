@@ -4,6 +4,9 @@ import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/cn";
 import type { RowSummary } from "./send-logic";
 
+export const rowLinkClassName =
+  "relative w-fit rounded-sm text-sm text-tint-ink outline-none focus-visible:ring-2 focus-visible:ring-focus hoverable:hover:underline pointer-coarse:before:absolute pointer-coarse:before:-inset-3 pointer-coarse:before:content-['']";
+
 const rowGrid =
   "grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-0.5 px-5 py-3.5 text-start sm:grid-cols-[6rem_minmax(0,1fr)_auto]";
 

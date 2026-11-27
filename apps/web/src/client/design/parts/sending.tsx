@@ -17,7 +17,6 @@ import {
 import { SendSettings } from "@/components/editor/send/send-settings";
 import { type PreviewHoller, SlackPreview } from "@/components/editor/send/slack-preview";
 import { useNow } from "@/components/editor/send/use-now";
-import { WhenPicker } from "@/components/editor/send/when-picker";
 import { Button } from "@/components/ui/button";
 import { Variants } from "../frame";
 import {
@@ -182,13 +181,6 @@ function SendStageDemo() {
           workspaceSize={WORKSPACE}
           search={search}
           onSummaryChange={setSummary}
-        />
-        <WhenPicker
-          now={now}
-          value={fields}
-          onValueChange={(when) => setFields({ ...fields, ...when })}
-          reach={reach}
-          zones={zones}
         />
         <SendSettings
           now={now}

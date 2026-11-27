@@ -1,6 +1,5 @@
 import { TriangleAlert } from "lucide-react";
 import { type ComponentProps, useId, useState } from "react";
-import { Button } from "@/components/ui/button";
 import { Chip } from "@/components/ui/chip";
 import { DateTimeInput } from "@/components/ui/date-time-input";
 import { Field, FieldLabel } from "@/components/ui/field";
@@ -10,7 +9,7 @@ import { cn } from "@/lib/cn";
 import { count } from "@/lib/format";
 import { useControllableState } from "@/lib/use-controllable-state";
 import { type DirectoryGroup, type DirectorySearch, searchDirectory } from "./directory";
-import { fromPicker, nextWholeHour, toPicker } from "./picker-time";
+import { fromPicker, nextWholeHour, toPicker, tomorrowMorning } from "./picker-time";
 import {
   anonymousWarning,
   answersSummary,
@@ -21,15 +20,17 @@ import {
   type Reach,
   remindersSummary,
   type SendFields,
+  sendSummary,
   sendWindow,
   type ZoneCount,
 } from "./send-logic";
 import { SendSettingsChannel } from "./send-settings-channel";
-import { SendSettingsRow, SendSettingsSwitchRow } from "./send-settings-rows";
+import { rowLinkClassName, SendSettingsRow, SendSettingsSwitchRow } from "./send-settings-rows";
+import { SendSettingsSend } from "./send-settings-send";
 import { SendSettingsTags } from "./send-settings-tags";
 import { useNow } from "./use-now";
 
-export type SettingsRowId = "close" | "announce" | "tags";
+export type SettingsRowId = "send" | "close" | "announce" | "tags";
 type Row = SettingsRowId;
 
 const fresh: SendFields = {
@@ -47,7 +48,7 @@ interface Props extends Omit<ComponentProps<"section">, "defaultValue"> {
   value?: SendFields | undefined;
   defaultValue?: SendFields | undefined;
   onValueChange?: ((value: SendFields) => void) | undefined;
-  problems?: { closesAt?: string | undefined } | undefined;
+  problems?: { sendAt?: string | undefined; closesAt?: string | undefined } | undefined;
   reach: Reach;
   zones?: ZoneCount[] | undefined;
   tagSuggestions?: string[] | undefined;
@@ -65,6 +66,8 @@ interface RowsProps {
   onChange: (patch: Partial<SendFields>) => void;
   context: { now: Date; senderZone: string; zones: ZoneCount[] };
   closeProblem: string | undefined;
+  sendProblem: string | undefined;
+  reach: Reach;
   open: Row | null;
   setOpen: (row: Row | null) => void;
   channel: DirectoryGroup | null;
@@ -147,6 +150,8 @@ function SettingsRows({
   onChange,
   context,
   closeProblem,
+  sendProblem,
+  reach,
   open,
   setOpen,
   channel,
@@ -157,8 +162,33 @@ function SettingsRows({
   const toggle = (row: Row) => setOpen(open === row ? null : row);
   const announceId = value.announceChannelId;
   const tagsOpen = open === "tags";
+  const send = sendSummary(value, context, sendProblem);
   return (
     <>
+      <SendSettingsRow
+        label="Sends"
+        summary={send}
+        action={open === "send" ? "Done" : value.sendAt ? "Change" : "Send later"}
+        open={open === "send"}
+        onToggle={() => {
+          if (!value.sendAt && open !== "send") {
+            onChange({ sendAt: tomorrowMorning(context.now, context.senderZone) });
+          }
+          toggle("send");
+        }}
+      >
+        <SendSettingsSend
+          value={value}
+          onChange={onChange}
+          context={context}
+          reach={reach}
+          invalid={send.tone === "danger"}
+          onSendNow={() => {
+            onChange({ sendAt: null, sendInRecipientTimeZone: false });
+            setOpen(null);
+          }}
+        />
+      </SendSettingsRow>
       <SendSettingsRow
         label="Closes"
         summary={closeSummary(value, context, closeProblem)}
@@ -202,19 +232,16 @@ function SettingsRows({
         </p>
         <SendSettingsChannel channel={channel} search={search} onChannel={onChannel} />
         {announceId && (
-          <div>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="-ms-3"
-              onClick={() => {
-                onChange({ announceChannelId: null });
-                setOpen(null);
-              }}
-            >
-              Post it nowhere
-            </Button>
-          </div>
+          <button
+            type="button"
+            className={rowLinkClassName}
+            onClick={() => {
+              onChange({ announceChannelId: null });
+              setOpen(null);
+            }}
+          >
+            Don't post a count
+          </button>
         )}
       </SendSettingsRow>
       <SendSettingsRow
@@ -295,6 +322,8 @@ function SendSettings({
           onChange={(patch) => setValue({ ...value, ...patch })}
           context={context}
           closeProblem={problems?.closesAt}
+          sendProblem={problems?.sendAt}
+          reach={reach}
           open={open}
           setOpen={setOpen}
           channel={channel}

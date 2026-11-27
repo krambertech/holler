@@ -5,7 +5,6 @@ import { type EditorDraft, problemFor } from "./draft";
 import { AudiencePicker, type AudienceSummary } from "./send/audience-picker";
 import type { DirectoryGroup, DirectoryPerson, DirectorySearch } from "./send/directory";
 import { SendSettings } from "./send/send-settings";
-import { WhenPicker } from "./send/when-picker";
 
 type Problem = { message: string; field: string | null };
 
@@ -56,19 +55,11 @@ function HollerEditorSend({
         onSummaryChange={onSummaryChange}
         search={search}
       />
-      <WhenPicker
-        value={draft}
-        onValueChange={(when) => onUpdate(when)}
-        problem={problemFor(problems, "sendAt")}
-        reach={summary.reach}
-        zones={summary.zones}
-        now={now}
-        timeZone={timeZone}
-      />
       <SendSettings
         value={draft}
         onValueChange={(fields) => onUpdate(fields)}
         problems={{
+          sendAt: problemFor(problems, "sendAt"),
           closesAt: problemFor(problems, "closesAt") ?? problemFor(problems, "closeAfterHours"),
         }}
         reach={summary.reach}

@@ -44,7 +44,6 @@ test("a lead writes a survey, it saves as a draft, and Send names what is missin
   await page.getByRole("button", { name: "Next: share" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Send “Q1 planning”" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Who gets it" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "When it goes out" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Settings" })).toBeVisible();
   await expect(page.getByRole("switch", { name: "Anonymous answers" })).toBeVisible();
   await expectAccessible(page);

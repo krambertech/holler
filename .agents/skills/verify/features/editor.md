@@ -8,7 +8,7 @@ The editor: the start screen, the writing page (title and questions) and the sen
 
 ## Drive
 
-[`editor.mjs`](editor.mjs) as `lead`: pick Survey on the start screen, write a title and a single-choice question with two options, wait for the draft to save, reload, move to the sending page and check the back link kept its place, pick Later and see the day, time and whose clock open under it, go back to Now, and press Send with nobody chosen.
+[`editor.mjs`](editor.mjs) as `lead`: pick Survey on the start screen, write a title and a single-choice question with two options, wait for the draft to save, reload, move to the sending page and check the back link kept its place, press Send later and see the day, time and time-zone choice open in the Sends row, press Send now instead, and press Send with nobody chosen.
 
 ## End state
 

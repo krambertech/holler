@@ -267,7 +267,7 @@ describe("reach", () => {
   it("names the reach on the button", () => {
     expect(
       sendActionLabel({ count: 14, exact: false, everyone: false, unknown: false }, false),
-    ).toBe("Send to 14 people");
+    ).toBe("Send to about 14 people");
     expect(sendActionLabel({ count: 1, exact: true, everyone: false, unknown: false }, true)).toBe(
       "Schedule for 1 person",
     );

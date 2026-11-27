@@ -416,8 +416,10 @@ export function isBigSend(reach: Reach): boolean {
 export function sendActionLabel(reach: Reach, scheduled: boolean): string {
   if (reach.everyone) return scheduled ? "Schedule for everyone" : "Send to everyone";
   if (reach.count === 0 || reach.unknown) return scheduled ? "Schedule" : "Send";
-  if (reach.count === 1) return scheduled ? "Schedule for 1 person" : "Send to 1 person";
   const n = count(reach.count);
+  if (!reach.exact)
+    return scheduled ? `Schedule for about ${n} people` : `Send to about ${n} people`;
+  if (reach.count === 1) return scheduled ? "Schedule for 1 person" : "Send to 1 person";
   return scheduled ? `Schedule for ${n} people` : `Send to ${n} people`;
 }
 

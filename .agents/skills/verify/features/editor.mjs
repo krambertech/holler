@@ -49,17 +49,17 @@ export default async function drive({ page, step, api, expect }) {
   });
 
   await step(
-    "Later opens the day, the time and whose clock, and the button schedules",
+    "Send later opens the day, the time and the time-zone choice, and the button schedules",
     async () => {
-      await page.getByRole("radio", { name: "Later" }).click();
+      await page.getByRole("button", { name: /Send later/ }).click();
       await expect(page.getByRole("button", { name: "Schedule" })).toBeVisible();
-      await expect(page.getByLabel("Whose clock")).toBeVisible();
+      await expect(page.getByRole("checkbox", { name: /own time zone/ })).toBeVisible();
     },
   );
 
   await step("Send with nobody chosen names what is missing", async () => {
-    await page.getByRole("radio", { name: "Now" }).click();
-    await expect(page.getByLabel("Whose clock")).toHaveCount(0);
+    await page.getByRole("button", { name: "Send now instead" }).click();
+    await expect(page.getByRole("checkbox", { name: /own time zone/ })).toHaveCount(0);
     await page.locator('[data-slot="send-bar"]').getByRole("button", { name: "Send" }).click();
     await expect(page.getByText("Choose who to send it to.").first()).toBeVisible();
     const id = new URL(page.url()).searchParams.get("draft");

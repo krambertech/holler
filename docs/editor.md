@@ -18,7 +18,7 @@ A template fills the editor and leaves no link behind: from then on it is an ord
 
 The writing page has no visible title of its own; its `h1` is visually hidden ("Write a survey"), and the Holler's title field is the largest text. A pulse's title field shows its first question in grey, the title it gets when the sender types none. Every mode has an optional description under its title.
 
-The sending page reads top to bottom: `AudiencePicker`, `WhenPicker`, then `SendSettings`. `WhenPicker` puts Now and Later on one line, and Later's day, time and clock sit right under it. `SendSettings` shows every setting as a row; a new setting is one more row.
+The sending page reads top to bottom: `AudiencePicker`, then `SendSettings`, which shows every setting as a row, when it sends first. A new setting is one more row.
 
 ## Autosave
 
@@ -56,7 +56,7 @@ The bar sits at the bottom of the window. It stays in the page's flow, so it nev
 
 ## When and how: send settings
 
-`WhenPicker` chooses now or later. Later starts at the next working morning (`tomorrowMorning`). In `SendSettings` each setting is a row whose whole line is the button, with an action word that says what a press does. **Change** opens one row at a time, so the defaults need no clicks. An open row grows to its content's own height, and nothing inside a shut row can be reached.
+In `SendSettings` **Send later** starts at the next working morning (`tomorrowMorning`). Each setting is a row whose whole line is the button, with an action word that says what a press does. **Change** opens one row at a time, so the defaults need no clicks. An open row grows to its content's own height, and nothing inside a shut row can be reached.
 
 - **The sender's clock.** It is the sender's Slack time zone, which `/api/me` returns, because delivery reads a send time there (`senderZoneFor`). Only when Slack has no zone for them does the editor use the browser's.
 - **Sending in each person's own time.** `landingTimes` reads `sendAt` as a wall-clock time on the sender's clock and finds that time in each zone, with the conversion delivery uses (`sameWallClockIn`), so the preview and the send agree. A person with no time zone in Slack counts as UTC, as in delivery. Times at one moment sort west to east, so the local times read in clock order. `atWallClock` corrects twice, so a time either side of a daylight-saving change lands on the right hour, and a time the change skips moves forward.

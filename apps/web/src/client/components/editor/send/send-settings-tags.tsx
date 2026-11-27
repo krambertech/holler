@@ -9,6 +9,8 @@ import {
   ComboboxList,
   ComboboxTrigger,
 } from "@/components/ui/combobox";
+import { controlBase } from "@/components/ui/input";
+import { cn } from "@/lib/cn";
 
 const MAX_TAGS = 10;
 
@@ -35,8 +37,14 @@ function SendSettingsTags({
   }, [suggestions, tags, typed]);
   const full = tags.length >= MAX_TAGS;
   return (
-    <div className="grid gap-2">
-      <div className="flex flex-wrap items-center gap-1.5">
+    <div className="grid gap-1.5 sm:max-w-sm">
+      <span className="text-ink-2 text-sm">Tags</span>
+      <div
+        className={cn(
+          controlBase,
+          "flex min-h-11 flex-wrap items-center gap-1.5 p-1.5 md:min-h-10",
+        )}
+      >
         {tags.length > 0 && (
           <ul aria-label="Tags" className="contents">
             {tags.map((tag) => (
@@ -75,7 +83,7 @@ function SendSettingsTags({
         >
           <ComboboxTrigger
             variant="chip"
-            className="relative inline-flex h-8 items-center gap-1.5 rounded-full ps-2 pe-3 text-muted text-sm outline-none transition-colors hoverable:hover:bg-hover hoverable:hover:text-ink focus-visible:outline-2 focus-visible:outline-focus disabled:opacity-50 data-popup-open:bg-hover data-popup-open:text-ink pointer-coarse:before:absolute pointer-coarse:before:-inset-y-1.5 pointer-coarse:before:inset-x-0 pointer-coarse:before:content-['']"
+            className="relative inline-flex h-8 items-center gap-1.5 rounded-sm px-1.5 text-muted outline-none transition-colors hoverable:hover:bg-hover hoverable:hover:text-ink focus-visible:outline-2 focus-visible:outline-focus disabled:opacity-50 data-popup-open:bg-hover data-popup-open:text-ink pointer-coarse:before:absolute pointer-coarse:before:-inset-y-1.5 pointer-coarse:before:inset-x-0 pointer-coarse:before:content-['']"
           >
             <Plus className="size-4" aria-hidden />
             Add a tag
@@ -97,11 +105,7 @@ function SendSettingsTags({
           </ComboboxContent>
         </Combobox>
       </div>
-      <p className="text-muted text-sm">
-        {full
-          ? "That is the most tags one Holler can have."
-          : "Tags group hollers on Home. Up to 10."}
-      </p>
+      {full && <p className="text-muted text-sm">That is the most tags one Holler can have.</p>}
     </div>
   );
 }

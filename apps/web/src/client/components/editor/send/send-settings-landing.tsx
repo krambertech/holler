@@ -63,7 +63,14 @@ function LandingRow({
   );
 }
 
-function WhenPickerLanding({ sendAt, inRecipientTimeZone, senderZone, zones, reach, now }: Props) {
+function SendSettingsLanding({
+  sendAt,
+  inRecipientTimeZone,
+  senderZone,
+  zones,
+  reach,
+  now,
+}: Props) {
   const rows = landingTimes({ sendAt, inRecipientTimeZone, senderZone, zones, now });
   const inGroups = reach.everyone || !reach.exact;
   if (rows.length === 0 && !inGroups) return null;
@@ -74,7 +81,7 @@ function WhenPickerLanding({ sendAt, inRecipientTimeZone, senderZone, zones, rea
   const noZone = zones.some((z) => !z.zone);
   return (
     <div
-      data-slot="when-picker-landing"
+      data-slot="send-settings-landing"
       className="grid gap-2 rounded-md bg-well px-3.5 py-3 text-sm"
     >
       {rows.length > 0 && (
@@ -118,4 +125,4 @@ function WhenPickerLanding({ sendAt, inRecipientTimeZone, senderZone, zones, rea
   );
 }
 
-export { WhenPickerLanding };
+export { SendSettingsLanding };
