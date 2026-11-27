@@ -1,0 +1,14 @@
+{
+  "rule": "A round scheduled while how often the pulse repeats changes goes out on the new rule",
+  "layer": "test",
+  "past": "preventive: nextRound worked out the next round's time from the rule it read before goLive, so a change that landed in between left the next round on the old rule",
+  "check": "cd apps/web && pnpm exec vitest run src/server/services/change-repeat.test.ts -t 'while it is being scheduled'",
+  "break": [
+    {
+      "file": "apps/web/src/server/services/rounds.ts",
+      "find": "        .set({ status: \"scheduled\", repeatRule: seriesRule, sendAt: onSeriesRule })",
+      "replace": "        .set({ status: \"scheduled\" })"
+    }
+  ],
+  "fails": "while it is being scheduled"
+}
