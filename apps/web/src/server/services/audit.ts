@@ -1,11 +1,11 @@
-import { newId } from "@holler/core";
+import { type ActivityAction, type activitySubjectTypes, newId } from "@holler/core";
 import { type BatchItem, eq, getTableColumns, sql } from "@holler/core/db";
 import { type Db, schema } from "../db";
 import type { ServiceContext } from "./context";
 
 export interface AuditEntry {
-  action: string;
-  subjectType: "holler" | "workspace" | "member" | "api_key" | "connected_app";
+  action: ActivityAction;
+  subjectType: (typeof activitySubjectTypes)[number];
   subjectId: string;
   data?: Record<string, unknown>;
 }
