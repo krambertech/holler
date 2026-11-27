@@ -107,7 +107,7 @@ function HollerActions({
           <DropdownMenuContent aria-label="This Holler" align="end">
             <DropdownMenuItem onClick={onCopyIntoDraft}>
               <Copy />
-              Copy into a new draft
+              Duplicate
             </DropdownMenuItem>
             {repeats && onStopRepeating && (
               <DropdownMenuItem onClick={() => setStoppingRepeat(true)}>

@@ -43,7 +43,7 @@ test("Close now asks first and can be put off", async ({ page }) => {
     .getByRole("link", { name: "Offsite: which dates work?" })
     .click();
   await page.getByRole("button", { name: "More for this Holler" }).click();
-  await expect(page.getByRole("menuitem", { name: "Copy into a new draft" })).toBeVisible();
+  await expect(page.getByRole("menuitem", { name: "Duplicate" })).toBeVisible();
   await page.getByRole("menuitem", { name: "Close now" }).click();
   const dialog = page.getByRole("dialog", { name: "Close this Holler?" });
   await expect(dialog).toBeVisible();
@@ -67,14 +67,14 @@ test("Export downloads every response as CSV", async ({ page }) => {
   expect(file.suggestedFilename()).toMatch(/^holler-hol_.+\.csv$/);
 });
 
-test("Copy into a new draft opens the copy in the editor", async ({ page }) => {
+test("Duplicate opens the copy in the editor as a new draft", async ({ page }) => {
   await signInAs(page, "lead");
   const live = page.getByRole("region", { name: /^Live \d+$/ });
   await live.getByRole("link", { name: "Offsite: which dates work?" }).click();
   await page.getByRole("button", { name: "More for this Holler" }).click();
-  await page.getByRole("menuitem", { name: "Copy into a new draft" }).click();
+  await page.getByRole("menuitem", { name: "Duplicate" }).click();
   await expect(page).toHaveURL(/\/new\?draft=hol_/);
-  await expect(page.getByText("Copied into a new draft.")).toBeVisible();
+  await expect(page.getByText("Duplicated as a new draft.")).toBeVisible();
   await expect(page.getByRole("textbox", { name: "Title" })).toHaveValue(/Offsite/);
 });
 

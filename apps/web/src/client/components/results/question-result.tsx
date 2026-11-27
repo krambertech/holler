@@ -156,11 +156,6 @@ function Body({
           />
         ))}
       </ul>
-      {question.type === "multi" && (
-        <p className="mt-3 text-muted text-sm">
-          People could pick more than one, so the shares can add up to more than 100%.
-        </p>
-      )}
       {question.otherTexts.length > 0 && (
         <Aside heading="Written beside Other" texts={question.otherTexts} people={people} />
       )}
@@ -304,23 +299,17 @@ function WrittenList({
             // oxlint-disable-next-line react/no-array-index-key -- written answers have no id of their own and never reorder
             key={index}
             className={cn(
-              "flex items-start gap-3 border-t first:border-t-0",
+              "grid gap-1.5 border-t first:border-t-0",
               size === "sm" ? "border-edge py-2.5" : "border-divider py-3",
             )}
           >
+            <q className="text-pretty before:content-none after:content-none">{answer.text}</q>
             {by && answer.slackUserId && (
-              <Avatar
-                name={by.name}
-                seed={answer.slackUserId}
-                src={by.avatarUrl}
-                size={size === "sm" ? "sm" : "md"}
-                className="mt-0.5"
-              />
+              <span className="flex items-center gap-2 text-muted text-sm">
+                <Avatar name={by.name} seed={answer.slackUserId} src={by.avatarUrl} size="sm" />
+                {by.name}
+              </span>
             )}
-            <span className="grid min-w-0 gap-0.5">
-              {by && <span className="text-muted text-sm">{by.name}</span>}
-              <q className="text-pretty before:content-none after:content-none">{answer.text}</q>
-            </span>
           </li>
         );
       })}

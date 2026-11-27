@@ -305,7 +305,7 @@ export const results: Group = {
       slug: "holler-actions",
       name: "HollerActions",
       source: "components/results/holler-actions.tsx",
-      note: "Export for anyone who can see the Holler; Copy into a new draft and Close now for its creator. Close asks once. Export is locked while an anonymous Holler's results are still closed.",
+      note: "Export for anyone who can see the Holler; Duplicate and Close now for its creator. Close asks once. Export is locked while an anonymous Holler's results are still closed.",
       Demo: () => (
         <Variants
           items={[
