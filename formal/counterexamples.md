@@ -402,7 +402,7 @@ Breaks NothingGoesOutAfterStop: Once Stop repeating returns, no later round goes
 3. nextRound in run 1 reads round 1 and its repeat_rule
 4. goLive in run 1 marks live round 1
 5. goLive in run 1 inserts the recipients of round 1
-6. goLive's batch in run 1 schedules round 2
+6. goLive's batch in run 1 schedules round 2 every week
 7. sendDueHollers in run 1 reads that round 2 is due
 8. nextRound in run 1 reads round 2 and its repeat_rule
 9. goLive in run 1 marks live round 2
@@ -520,9 +520,9 @@ Breaks NothingGoesOutAfterStop: Once Stop repeating returns, no later round goes
 5. goLive in run 1 inserts the recipients of round 1
 6. stopRepeating reads the series
 7. stopRepeating deletes every scheduled round after the first and clears every repeat_rule, in one batch, and returns
-8. goLive's batch in run 1 schedules round 2
+8. goLive's batch in run 1 schedules round 2 with no repeat_rule
 9. sendDueHollers in run 1 reads that round 2 is due
-10. nextRound in run 1 reads round 2 and its repeat_rule
+10. nextRound in run 1 reads round 2 with no repeat_rule
 11. goLive in run 1 marks live round 2
 
 # Protections the models also check
@@ -596,7 +596,7 @@ Breaks NothingGoesOutAfterStop: Once Stop repeating returns, no later round goes
 5. goLive in run 1 inserts the recipients of round 1
 6. stopRepeating reads the series
 7. stopRepeating deletes every scheduled round after the first
-8. goLive's batch in run 1 schedules round 2
+8. goLive's batch in run 1 schedules round 2 every week
 9. sendDueHollers in run 1 reads that round 2 is due
 10. nextRound in run 1 reads round 2 and its repeat_rule
 11. stopRepeating clears every repeat_rule, and returns
@@ -613,15 +613,65 @@ Breaks OneNextRound: A series that repeats has exactly one next round.
 3. nextRound in run 1 reads round 1 and its repeat_rule
 4. goLive in run 1 marks live round 1
 5. goLive in run 1 inserts the recipients of round 1
-6. goLive's batch in run 1 schedules round 2
+6. goLive's batch in run 1 schedules round 2 every week
 7. sendDueHollers in run 1 reads that round 2 is due
 8. nextRound in run 1 reads round 2 and its repeat_rule
 9. sendDueHollers in run 2 reads that round 2 is due
 10. goLive in run 1 marks live round 2
 11. goLive in run 1 inserts the recipients of round 2
-12. goLive's batch in run 1 schedules round 3
+12. goLive's batch in run 1 schedules round 3 every week
 13. nextRound in run 2 reads round 2 and its repeat_rule
 14. goLive in run 2 marks live round 2
 15. goLive in run 2 inserts the recipients of round 2
 16. goLive's batch in run 2 throws on hollers_round for round 3
 17. goLive in run 2 undoes its send, which sets back to scheduled round 2
+
+## rounds/schedules-on-the-rule-it-read
+
+nextRound schedules the next round on the rule it read before goLive, instead of the series' rule when its batch runs.
+
+Breaks NextRoundKeepsRule: Once how often a pulse repeats changes, its next round goes out on the new rule.
+
+1. round 1 is scheduled and repeats
+2. sendDueHollers in run 1 reads that round 1 is due
+3. nextRound in run 1 reads round 1 and its repeat_rule
+4. goLive in run 1 marks live round 1
+5. goLive in run 1 inserts the recipients of round 1
+6. changeRepeat reads the series, repeating every week with no round scheduled
+7. changeRepeat's batch makes the series repeat every fortnight
+8. goLive's batch in run 1 schedules round 2 every week
+
+## rounds/changes-without-checking
+
+changeRepeat writes the new rule whatever round is scheduled by then, instead of only while the round it read is still the scheduled one.
+
+Breaks NextRoundKeepsRule: Once how often a pulse repeats changes, its next round goes out on the new rule.
+
+1. round 1 is scheduled and repeats
+2. sendDueHollers in run 1 reads that round 1 is due
+3. nextRound in run 1 reads round 1 and its repeat_rule
+4. goLive in run 1 marks live round 1
+5. goLive in run 1 inserts the recipients of round 1
+6. changeRepeat reads the series, repeating every week with no round scheduled
+7. goLive's batch in run 1 schedules round 2 every week
+8. changeRepeat's batch makes the series repeat every fortnight
+
+## rounds/changes-after-stop
+
+changeRepeat writes the new rule on every row of the series, instead of only on rows that still have the rule it read.
+
+Breaks NothingGoesOutAfterStop: Once Stop repeating returns, no later round goes out.
+
+1. round 1 is scheduled and repeats
+2. sendDueHollers in run 1 reads that round 1 is due
+3. nextRound in run 1 reads round 1 and its repeat_rule
+4. goLive in run 1 marks live round 1
+5. goLive in run 1 inserts the recipients of round 1
+6. stopRepeating reads the series
+7. changeRepeat reads the series, repeating every week with no round scheduled
+8. stopRepeating deletes every scheduled round after the first and clears every repeat_rule, in one batch, and returns
+9. changeRepeat's batch makes the series repeat every fortnight
+10. goLive's batch in run 1 schedules round 2 every fortnight
+11. sendDueHollers in run 1 reads that round 2 is due
+12. nextRound in run 1 reads round 2 and its repeat_rule
+13. goLive in run 1 marks live round 2

@@ -11,6 +11,7 @@ export const activityActions = [
   "holler.reminded",
   "holler.closed",
   "holler.repeat_stopped",
+  "holler.repeat_changed",
   "holler.visibility_changed",
   "viewer.added",
   "viewer.removed",

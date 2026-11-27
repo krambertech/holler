@@ -137,7 +137,7 @@ export const results: Group = {
       slug: "holler-rounds",
       name: "HollerRounds",
       source: "components/results/holler-rounds.tsx",
-      note: "Every round of a repeating pulse, newest first, so the rounds read side by side. Each bar is the round's average on its first scale question. The round on screen is tinted and every other round opens its own page. An anonymous round under five answers shows its count only.",
+      note: "Every round of a repeating pulse, newest first, so the rounds read side by side. Its creator gets Edit next round and a menu that repeats it every week or every fortnight, or stops it after asking once. Each bar is the round's average on its first scale question. The round on screen is tinted and every other round opens its own page. An anonymous round under five answers shows its count only.",
       Demo: () => (
         <Variants
           stack
@@ -146,6 +146,20 @@ export const results: Group = {
               label: "Weekly, with the next round",
               render: () => (
                 <HollerRounds className="w-full" rounds={weekly} currentId="r4" now={NOW} />
+              ),
+            },
+            {
+              label: "Its creator, who can edit the next round and change how often it repeats",
+              render: () => (
+                <HollerRounds
+                  className="w-full"
+                  rounds={weekly}
+                  currentId="r4"
+                  now={NOW}
+                  canEdit
+                  onRepeatChange={note}
+                  onStopRepeating={note}
+                />
               ),
             },
             {
@@ -321,24 +335,6 @@ export const results: Group = {
                   onCopyAsMarkdown={note}
                   onCopyIntoDraft={note}
                   onClose={note}
-                />
-              ),
-            },
-            {
-              label: "Creator of a repeating pulse",
-              render: () => (
-                <HollerActions
-                  hollerId="hol_design"
-                  status="live"
-                  isCreator
-                  canExport
-                  waitingCount={3}
-                  onCopyAsMarkdown={note}
-                  onCopyIntoDraft={note}
-                  onClose={note}
-                  repeats
-                  nextRoundAt={new Date(NOW.getTime() + 6 * DAY).toISOString()}
-                  onStopRepeating={note}
                 />
               ),
             },

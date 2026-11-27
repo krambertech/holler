@@ -1,4 +1,4 @@
-import { Copy, Download, Ellipsis, FileText, Lock, Repeat, UserPlus } from "lucide-react";
+import { Copy, Download, Ellipsis, FileText, Lock, UserPlus } from "lucide-react";
 import { type ComponentProps, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,7 +19,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/cn";
-import { count, shortDate } from "@/lib/format";
+import { count } from "@/lib/format";
 
 interface Props extends ComponentProps<"div"> {
   hollerId: string;
@@ -33,10 +33,6 @@ interface Props extends ComponentProps<"div"> {
   onShare?: (() => void) | undefined;
   copying?: boolean | undefined;
   closing?: boolean | undefined;
-  repeats?: boolean | undefined;
-  nextRoundAt?: string | null | undefined;
-  onStopRepeating?: (() => void) | undefined;
-  stopping?: boolean | undefined;
 }
 
 function HollerActions({
@@ -51,15 +47,10 @@ function HollerActions({
   onShare,
   copying = false,
   closing = false,
-  repeats = false,
-  nextRoundAt = null,
-  onStopRepeating,
-  stopping = false,
   className,
   ...props
 }: Props) {
   const [confirming, setConfirming] = useState(false);
-  const [stoppingRepeat, setStoppingRepeat] = useState(false);
   const exportHref = (format: "csv" | "md") => `/api/hollers/${hollerId}/export?format=${format}`;
   return (
     <div
@@ -109,12 +100,6 @@ function HollerActions({
               <Copy />
               Duplicate
             </DropdownMenuItem>
-            {repeats && onStopRepeating && (
-              <DropdownMenuItem onClick={() => setStoppingRepeat(true)}>
-                <Repeat />
-                Stop repeating
-              </DropdownMenuItem>
-            )}
             {status === "live" && (
               <>
                 <DropdownMenuSeparator />
@@ -127,31 +112,6 @@ function HollerActions({
           </DropdownMenuContent>
         </DropdownMenu>
       )}
-      <Dialog open={stoppingRepeat} onOpenChange={setStoppingRepeat}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Stop repeating this pulse?</DialogTitle>
-            <DialogDescription>
-              {nextRoundAt
-                ? `The next round, on ${shortDate(nextRoundAt)}, is deleted. Every round so far and its answers stay.`
-                : "No more rounds go out. Every round so far and its answers stay."}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <DialogClose render={<Button variant="ghost">Keep repeating</Button>} />
-            <Button
-              variant="primary"
-              pending={stopping}
-              onClick={() => {
-                onStopRepeating?.();
-                setStoppingRepeat(false);
-              }}
-            >
-              Stop repeating
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
       <Dialog open={confirming} onOpenChange={setConfirming}>
         <DialogContent>
           <DialogHeader>

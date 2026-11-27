@@ -43,6 +43,7 @@ All paths are under `https://app.holler.team/api/v1`.
 | POST   | `/hollers/{id}/close`    | Stops taking answers now                                     |
 | POST   | `/hollers/{id}/remind`   | Reminds everyone who has not answered                        |
 | POST   | `/hollers/{id}/stop-repeating` | Stops a repeating pulse: deletes the next round, keeps every answer |
+| PUT    | `/hollers/{id}/repeat` | Changes how often a pulse repeats and moves its next round to match |
 | GET    | `/hollers/{id}/people`   | Who it went to and who answered                              |
 | GET    | `/hollers/{id}/results`  | Counts, scale averages and text answers                      |
 | GET    | `/hollers/{id}/export`   | `format=csv`: every response, one row each. `format=md`: the results summary, naming no one |
@@ -78,7 +79,7 @@ curl https://app.holler.team/api/v1/hollers \
 - Every Holler comes back with `displayTitle` (a pulse with no title shows its first question), `answeredIn` (`dm`, `slack`, `web` or `chase`) and `problems`: each reason it cannot be sent yet, with a `field` such as `questions.0.options.2`.
 - `audience` takes Slack user ids in `people` and user group or channel ids in `groups`. Find them with `GET /directory?q=`.
 - To keep a question or option when you update, send its `id` back. Leave one out to remove it.
-- A pulse with a `sendAt` can repeat: `"repeat": "week"` or `"fortnight"`. When a round goes out, the next round is scheduled for the same day and time as the first, in the creator's time zone, as its own Holler with `repeatOfId` naming the first round. Each round must close within the interval (`closeAfterHours` up to 168 or 336, and no fixed `closesAt`). `POST /hollers/{id}/stop-repeating` (or MCP `stop_repeating`) on any round deletes the round that has not gone out yet and keeps every answer.
+- A pulse with a `sendAt` can repeat: `"repeat": "week"` or `"fortnight"`. When a round goes out, the next round is scheduled for the same day and time as the first, in the creator's time zone, as its own Holler with `repeatOfId` naming the first round. Each round must close within the interval (`closeAfterHours` up to 168 or 336, and no fixed `closesAt`). `POST /hollers/{id}/stop-repeating` (or MCP `stop_repeating`) on any round deletes the round that has not gone out yet and keeps every answer. `PUT /hollers/{id}/repeat` with `{"repeat": "fortnight"}` (or MCP `change_repeat`) on any round changes the rule for the whole series and moves the round that has not gone out yet to the next week or fortnight from the first round's day; it answers 400 while each round stays open longer than the new interval, and 409 while the round that is out stays open past the new next round, or when a round went out during the change.
 
 ## Retry safely with Idempotency-Key
 

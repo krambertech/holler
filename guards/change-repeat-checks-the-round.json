@@ -1,0 +1,14 @@
+{
+  "rule": "Changing how often a pulse repeats changes nothing when a round goes out between its read and its write",
+  "layer": "test",
+  "past": "preventive: without the check, the new rule lands on a series whose next round was just scheduled on the old one",
+  "check": "cd apps/web && pnpm exec vitest run src/server/services/change-repeat.test.ts -t 'between its read and its write'",
+  "break": [
+    {
+      "file": "apps/web/src/server/services/rounds.ts",
+      "find": "      .where(and(inSeries, eq(hollers.repeatRule, first.repeatRule), unchanged))",
+      "replace": "      .where(and(inSeries, eq(hollers.repeatRule, first.repeatRule)))"
+    }
+  ],
+  "fails": "between its read and its write"
+}

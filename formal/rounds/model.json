@@ -2,7 +2,8 @@
   "spec": "Rounds.tla",
   "promises": {
     "NothingGoesOutAfterStop": "Once Stop repeating returns, no later round goes out.",
-    "OneNextRound": "A series that repeats has exactly one next round."
+    "OneNextRound": "A series that repeats has exactly one next round.",
+    "NextRoundKeepsRule": "Once how often a pulse repeats changes, its next round goes out on the new rule."
   },
   "constants": {
     "Last": 4,
@@ -10,37 +11,71 @@
     "UnlessStillRepeating": true,
     "GoLiveGuard": true,
     "OneBatch": true,
+    "RuleAtBatch": true,
+    "ChangeChecks": true,
+    "ChangeKeepsStop": true,
     "CrashIn": [],
     "D1Fails": 0
   },
   "runs": {
     "repeating": {
-      "says": "Two overlapping sends and one Stop repeating, over four rounds."
+      "says": "Two overlapping sends, one Stop repeating and one change of how often it repeats, over four rounds."
     },
     "inserts-without-checking": {
       "past": "#32 inserted the next round whatever its series said by then, so a pulse went on after Stop repeating returned.",
       "breaks": "NothingGoesOutAfterStop",
-      "constants": { "UnlessStillRepeating": false }
+      "constants": {
+        "UnlessStillRepeating": false
+      }
     },
     "stops-in-two-statements": {
       "removed": "stopRepeating deletes the scheduled rounds and clears repeat_rule in two statements instead of one batch.",
       "breaks": "NothingGoesOutAfterStop",
-      "constants": { "OneBatch": false }
+      "constants": {
+        "OneBatch": false
+      }
     },
     "goes-live-unguarded": {
       "removed": "goLive marks the Holler live whatever its status, instead of only from draft or scheduled.",
       "breaks": "OneNextRound",
-      "constants": { "GoLiveGuard": false }
+      "constants": {
+        "GoLiveGuard": false
+      }
+    },
+    "schedules-on-the-rule-it-read": {
+      "removed": "nextRound schedules the next round on the rule it read before goLive, instead of the series' rule when its batch runs.",
+      "breaks": "NextRoundKeepsRule",
+      "constants": {
+        "RuleAtBatch": false
+      }
+    },
+    "changes-without-checking": {
+      "removed": "changeRepeat writes the new rule whatever round is scheduled by then, instead of only while the round it read is still the scheduled one.",
+      "breaks": "NextRoundKeepsRule",
+      "constants": {
+        "ChangeChecks": false
+      }
+    },
+    "changes-after-stop": {
+      "removed": "changeRepeat writes the new rule on every row of the series, instead of only on rows that still have the rule it read.",
+      "breaks": "NothingGoesOutAfterStop",
+      "constants": {
+        "ChangeKeepsStop": false
+      }
     },
     "worker-dies-in-go-live": {
       "finding": "The Worker dies after goLive marks the round live and before the batch that schedules the next one. The round is live with no recipients, or with recipients and no next round, so the pulse stops repeating and nobody is told.",
       "breaks": "OneNextRound",
-      "constants": { "CrashIn": ["goLive"] }
+      "constants": {
+        "CrashIn": ["goLive"]
+      }
     },
     "undo-after-stop": {
       "finding": "A D1 batch throws while a later round goes out, and the creator stops repeating before goLive's undo. The undo sets the round back to scheduled without looking, so the next cron run sends it.",
       "breaks": "NothingGoesOutAfterStop",
-      "constants": { "D1Fails": 1 }
+      "constants": {
+        "D1Fails": 1
+      }
     }
   }
 }

@@ -6,6 +6,7 @@ import {
   listHollersQuerySchema,
   okOutSchema,
   recipientsOutSchema,
+  repeatInputSchema,
   resultsOutSchema,
   sendPreviewOutSchema,
 } from "@holler/core";
@@ -24,7 +25,7 @@ import {
   updateDraft,
 } from "../../services/hollers";
 import { resultsFor } from "../../services/responses";
-import { stopRepeating } from "../../services/rounds";
+import { changeRepeat, stopRepeating } from "../../services/rounds";
 import { previewSend } from "../../services/send-preview";
 import { requireMember } from "../context";
 import { describe, input } from "./http";
@@ -193,6 +194,25 @@ export const v1Hollers = new Hono<AppEnv>()
     }),
     input("param", idParam),
     async (c) => c.json(hollerOut(await stopRepeating(requireMember(c), c.req.valid("param").id))),
+  )
+  .put(
+    "/:id/repeat",
+    describe({
+      tags,
+      summary: "Change how often a pulse repeats",
+      description:
+        "Repeats a pulse every week or every fortnight from now on, on the first round's day and time, and moves the next round, which has not gone out, to match. Rounds already sent stay as they are.",
+      ok: { schema: hollerOutSchema, description: "The first round of the series" },
+      errors: [400, 404, 409],
+    }),
+    input("param", idParam),
+    input("json", repeatInputSchema),
+    async (c) =>
+      c.json(
+        hollerOut(
+          await changeRepeat(requireMember(c), c.req.valid("param").id, c.req.valid("json").repeat),
+        ),
+      ),
   )
   .post(
     "/:id/remind",

@@ -114,7 +114,7 @@ test("a repeating pulse shows its rounds from any round, and Stop repeating asks
   await expect(rounds.getByText("Next round", { exact: true })).toBeVisible();
   await expectAccessible(page);
 
-  await page.getByRole("button", { name: "More for this Holler" }).click();
+  await rounds.getByRole("button", { name: "Repeats every week" }).click();
   await page.getByRole("menuitem", { name: "Stop repeating" }).click();
   const dialog = page.getByRole("dialog", { name: "Stop repeating this pulse?" });
   await expect(dialog).toContainText("Every round so far and its answers stay.");
@@ -131,4 +131,35 @@ test("a repeating pulse shows its rounds from any round, and Stop repeating asks
   await first.click();
   await expect(page.getByRole("heading", { level: 1, name: "How was your week?" })).toBeVisible();
   await expect(page.getByRole("region", { name: "Rounds" }).getByText("This round")).toBeVisible();
+});
+
+test("the creator changes how often a pulse repeats from its rounds, then stops it", async ({
+  page,
+}) => {
+  await signInAs(page, "lead");
+  await page
+    .getByRole("region", { name: /^Live \d+$/ })
+    .getByRole("link", { name: "How was your week?" })
+    .click();
+  const rounds = page.getByRole("region", { name: "Rounds" });
+  const next = rounds.getByRole("listitem").filter({ hasText: "Next round" });
+  const weekly = await next.textContent();
+
+  await rounds.getByRole("button", { name: "Repeats every week" }).click();
+  await expect(page.getByRole("menuitemradio", { name: "Every week" })).toBeChecked();
+  await expectAccessible(page);
+  await page.getByRole("menuitemradio", { name: "Every fortnight" }).click();
+  await expect(page.getByText("This pulse now repeats every fortnight.")).toBeVisible();
+  await expect(rounds).toContainText("A new round goes out every fortnight.");
+  await expect(next).not.toHaveText(weekly ?? "");
+
+  await rounds.getByRole("button", { name: "Repeats every fortnight" }).click();
+  await page.getByRole("menuitem", { name: "Stop repeating" }).click();
+  await page
+    .getByRole("dialog", { name: "Stop repeating this pulse?" })
+    .getByRole("button", { name: "Stop repeating" })
+    .click();
+  await expect(rounds).toContainText("This pulse no longer repeats.");
+  await expect(rounds.getByRole("button", { name: /^Repeats/ })).toHaveCount(0);
+  await expect(rounds.getByText("Next round", { exact: true })).toHaveCount(0);
 });

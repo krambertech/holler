@@ -92,6 +92,7 @@ describe("tools", () => {
       [
         "close_holler",
         "copy_holler",
+        "change_repeat",
         "create_holler",
         "delete_draft",
         "export_results",

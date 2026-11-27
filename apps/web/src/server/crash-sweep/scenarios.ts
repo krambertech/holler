@@ -18,7 +18,7 @@ import {
 import { closeDueHollers } from "../services/lifecycle";
 import { queueDueReminders } from "../services/reminders";
 import { answerOnWeb } from "../services/respond";
-import { stopRepeating } from "../services/rounds";
+import { changeRepeat, stopRepeating } from "../services/rounds";
 import { addViewers } from "../services/sharing";
 import { BASE, CHANNEL, hours, minutes, type Side, type World } from "./world";
 
@@ -370,6 +370,19 @@ export const operations: Scenario[] = [
         at: minutes(20),
         redone: "by the person",
         act: (side, at) => stopRepeating(side.sender(at), id),
+      };
+    },
+  },
+  {
+    operation: "changeRepeat",
+    arrange: async (world) => {
+      const { id } = await series(world);
+      await world.cron(minutes(10));
+      world.wishes.repeatsEvery = "fortnight";
+      return {
+        at: minutes(20),
+        redone: "by the person",
+        act: (side, at) => changeRepeat(side.sender(at), id, "fortnight"),
       };
     },
   },

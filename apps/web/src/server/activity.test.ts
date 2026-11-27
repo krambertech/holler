@@ -206,6 +206,9 @@ const hollerRoutes = (base: string): Record<string, Proof> => ({
   [`POST ${base}/:id/stop-repeating`]: proof("holler.repeat_stopped", weekly, (id) =>
     call("POST", `${base}/${id}/stop-repeating`),
   ),
+  [`PUT ${base}/:id/repeat`]: proof("holler.repeat_changed", weekly, (id) =>
+    call("PUT", `${base}/${id}/repeat`, { repeat: "fortnight" }),
+  ),
   [`POST ${base}/:id/remind`]: proof("holler.reminded", live, (id) =>
     call("POST", `${base}/${id}/remind`),
   ),
@@ -321,6 +324,9 @@ const toolProofs: Record<string, Proof> = {
   close_holler: proof("holler.closed", live, (hollerId) => tool("close_holler", { hollerId })),
   stop_repeating: proof("holler.repeat_stopped", weekly, (hollerId) =>
     tool("stop_repeating", { hollerId }),
+  ),
+  change_repeat: proof("holler.repeat_changed", weekly, (hollerId) =>
+    tool("change_repeat", { hollerId, repeat: "fortnight" }),
   ),
   send_reminder: proof("holler.reminded", live, (hollerId) => tool("send_reminder", { hollerId })),
 };

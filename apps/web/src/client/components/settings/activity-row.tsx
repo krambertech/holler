@@ -117,6 +117,16 @@ const sentences: Record<ActivityAction, (entry: ActivityEntry) => ReactNode> = {
       {who(e)} stopped <HollerTitle entry={e} /> repeating.
     </>
   ),
+  "holler.repeat_changed": (e) =>
+    e.detail.to === "fortnight" ? (
+      <>
+        {who(e)} made <HollerTitle entry={e} /> repeat every fortnight.
+      </>
+    ) : (
+      <>
+        {who(e)} made <HollerTitle entry={e} /> repeat every week.
+      </>
+    ),
   "holler.visibility_changed": (e) =>
     e.detail.to === "workspace" ? (
       <>
