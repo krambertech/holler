@@ -4,7 +4,8 @@ export const persona = "lead";
 export default async function drive({ page, step, expect }) {
   await step("Switch to Tom, who was sent the lead's hollers", async () => {
     await page.goto("/api/dev/sign-in?as=sender&to=/");
-    await page.getByRole("link", { name: "Your answers" }).click();
+    await page.getByRole("button", { name: /, account$/ }).click();
+    await page.getByRole("menuitem", { name: "Your answers" }).click();
     await expect(page.getByRole("heading", { level: 1, name: "Your answers" })).toBeVisible();
   });
 

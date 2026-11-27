@@ -17,7 +17,7 @@ export default async function drive({ page, step, api, expect }) {
     await expect(rounds).toContainText("A new round goes out every week.");
     await expect(rounds.getByRole("listitem")).toHaveCount(series.rounds.length);
     await expect(rounds.getByText("This round")).toBeVisible();
-    await expect(rounds.getByText("Next round")).toBeVisible();
+    await expect(rounds.getByText("Next round", { exact: true })).toBeVisible();
     return { repeat: series.repeat, rounds: series.rounds.map((r) => [r.status, r.responseCount]) };
   });
 

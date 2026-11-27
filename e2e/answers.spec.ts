@@ -3,7 +3,8 @@ import { expect, test } from "./fixtures";
 
 test("a person sees every Holler sent to them, grouped by where it stands", async ({ page }) => {
   await signInAs(page, "sender");
-  await page.getByRole("link", { name: "Your answers" }).click();
+  await page.getByRole("button", { name: /, account$/ }).click();
+  await page.getByRole("menuitem", { name: "Your answers" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Your answers" })).toBeVisible();
   await expect(page.getByRole("heading", { name: /^Waiting on you/ })).toBeVisible();
   await expect(page.getByRole("heading", { name: /^Answered/ })).toBeVisible();

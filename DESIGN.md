@@ -147,7 +147,7 @@ Numbers in tables and counts use `tabular`.
 | `Mark`, `Logo`                    | `components/logo.tsx`         | Geometry from `packages/design/src/index.ts`                                                 |
 | `HollerRow`                       | `components/holler-row.tsx`   | Four columns wide, folded on a phone; the whole row is one link                              |
 | `OwnHollerRow`, `GivenAnswers` | `components/answers/` | A Holler on Your answers, and what the person answered, question by question |
-| `AppHeader`                       | `components/app-header.tsx`   | The logo home and the member, who opens Settings                                             |
+| `AppHeader`                       | `components/app-header.tsx`   | The logo home and the member, whose menu holds Your answers, Settings and Sign out          |
 | `UninstalledNotice`               | `components/uninstalled-notice.tsx` | Top of every page while Holler is out of Slack; owners get Add to Slack again          |
 | `MemberRow`, `RoleSelect`         | `components/settings/`        | A member in Settings; owners pick Owner or Sender                                            |
 | `ActivityRow` | `components/settings/activity-row.tsx` | One write as a sentence, then where it came from and when. Owners only, at the end of Settings |
@@ -160,7 +160,7 @@ Numbers in tables and counts use `tabular`.
 | `EmptyState`, `ErrorState` | `components/empty-state.tsx`, `error-state.tsx` | Nothing yet, nothing matched, or a failure. Sizes `sm`, `md`, `lg` follow the space; `plate`, `dashed` for no results, `bare` inside a surface |
 | `Illustration` | `components/illustration.tsx` | A spot drawing from the set in `packages/design/src/illustrations.ts`, sized and toned by the state around it |
 | `Notice`, `Skeleton` | `components/notice.tsx`, `skeleton.tsx` | An inline message, the shape of what is loading |
-| `HollerPeople`, `QuestionResult`, `HollerActions` | `components/results/` | A Holler's page: waiting first with when Holler reminds them next, bars in one colour, Share, Export and Close now |
+| `HollerPeople`, `QuestionResult`, `HollerActions` | `components/results/` | A Holler's page: the count over a full-width bar, up to five people still to chase with Send reminder under them, then one plate per question headed like the editor's card, with a row per answer in one colour. Share, Export and the menu sit beside the title |
 | `ShareDialog`, `ReportView` | `components/results/` | Who sees the results, the people added by name, and the report link; the report page, which names no one |
 | `LimitReached`                    | `components/billing/limit-reached.tsx` | Beside Send when a send returns `402`: upgrade for owners, whom to ask for senders |
 

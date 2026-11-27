@@ -17,6 +17,25 @@ test("a lead sees who is waiting, when Holler reminds them, and the results", as
   await expectAccessible(page);
 });
 
+test("the people plate shows who to chase and opens to everyone", async ({ page }) => {
+  await signInAs(page, "lead");
+  await page
+    .getByRole("region", { name: /^Live \d+$/ })
+    .getByRole("link", { name: "Offsite: which dates work?" })
+    .click();
+  const people = page.getByRole("region", { name: /^\d+ of \d+ answered$/ });
+  const rows = people.getByRole("listitem");
+  await expect(rows.first()).toContainText("Waiting");
+  await expect(people.getByText("Answered", { exact: true })).toHaveCount(0);
+  await people.getByRole("button", { name: "Show everyone" }).click();
+  await expect(people.getByText("Answered", { exact: true }).first()).toBeVisible();
+  await expect(people.getByRole("button", { name: "Show fewer" })).toHaveAttribute(
+    "aria-expanded",
+    "true",
+  );
+  await expectAccessible(page);
+});
+
 test("Close now asks first and can be put off", async ({ page }) => {
   await signInAs(page, "lead");
   await page
@@ -24,7 +43,7 @@ test("Close now asks first and can be put off", async ({ page }) => {
     .getByRole("link", { name: "Offsite: which dates work?" })
     .click();
   await page.getByRole("button", { name: "More for this Holler" }).click();
-  await expect(page.getByRole("menuitem", { name: "Copy into a new draft" })).toBeVisible();
+  await expect(page.getByRole("menuitem", { name: "Duplicate" })).toBeVisible();
   await page.getByRole("menuitem", { name: "Close now" }).click();
   const dialog = page.getByRole("dialog", { name: "Close this Holler?" });
   await expect(dialog).toBeVisible();
@@ -48,14 +67,14 @@ test("Export downloads every response as CSV", async ({ page }) => {
   expect(file.suggestedFilename()).toMatch(/^holler-hol_.+\.csv$/);
 });
 
-test("Copy into a new draft opens the copy in the editor", async ({ page }) => {
+test("Duplicate opens the copy in the editor as a new draft", async ({ page }) => {
   await signInAs(page, "lead");
   const live = page.getByRole("region", { name: /^Live \d+$/ });
   await live.getByRole("link", { name: "Offsite: which dates work?" }).click();
   await page.getByRole("button", { name: "More for this Holler" }).click();
-  await page.getByRole("menuitem", { name: "Copy into a new draft" }).click();
+  await page.getByRole("menuitem", { name: "Duplicate" }).click();
   await expect(page).toHaveURL(/\/new\?draft=hol_/);
-  await expect(page.getByText("Copied into a new draft.")).toBeVisible();
+  await expect(page.getByText("Duplicated as a new draft.")).toBeVisible();
   await expect(page.getByRole("textbox", { name: "Title" })).toHaveValue(/Offsite/);
 });
 
@@ -92,7 +111,7 @@ test("a repeating pulse shows its rounds from any round, and Stop repeating asks
   await expect(rounds).toContainText("A new round goes out every week.");
   await expect(rounds.getByRole("listitem")).toHaveCount(3);
   await expect(rounds.getByText("This round")).toBeVisible();
-  await expect(rounds.getByText("Next round")).toBeVisible();
+  await expect(rounds.getByText("Next round", { exact: true })).toBeVisible();
   await expectAccessible(page);
 
   await page.getByRole("button", { name: "More for this Holler" }).click();
