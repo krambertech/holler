@@ -46,6 +46,13 @@ test("a lead writes a survey, it saves as a draft, and Send names what is missin
   await expect(page.getByRole("heading", { name: "Who gets it" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Settings" })).toBeVisible();
   await expect(page.getByRole("switch", { name: "Anonymous answers" })).toBeVisible();
+  await page.getByRole("button", { name: /^Tags/ }).click();
+  await page.getByRole("combobox", { name: "Add a tag" }).fill("planning,q1");
+  await page.getByRole("combobox", { name: "Add a tag" }).press("Enter");
+  await expect(page.getByRole("list", { name: "Tags" }).getByRole("listitem")).toHaveText([
+    "planning",
+    "q1",
+  ]);
   await expectAccessible(page);
 
   await page.locator('[data-slot="send-bar"]').getByRole("button", { name: "Send" }).click();
