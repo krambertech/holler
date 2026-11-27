@@ -5,7 +5,7 @@ import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { after, test } from "node:test";
-import { foreignServerProblem } from "./own-server.mts";
+import { foreignServerProblem, portForCheckout } from "./own-server.mts";
 
 const checkout = execFileSync("git", ["rev-parse", "--show-toplevel"], {
   cwd: import.meta.dirname,
@@ -16,10 +16,10 @@ const stops = [];
 after(() => stops.forEach((stop) => stop()));
 
 const LISTEN =
-  "const s = require('node:http').createServer().listen(0, '127.0.0.1', () => console.log(s.address().port));";
+  "const s = require('node:http').createServer().listen(Number(process.argv[1]), '127.0.0.1', () => console.log(s.address().port));";
 
-function listenFrom(cwd) {
-  const child = spawn(process.execPath, ["-e", LISTEN], {
+function listenFrom(cwd, port = 0) {
+  const child = spawn(process.execPath, ["-e", LISTEN, String(port)], {
     cwd,
     stdio: ["ignore", "pipe", "inherit"],
   });
@@ -60,4 +60,18 @@ test("accepts a server this checkout runs from a subfolder", async () => {
 
 test("refuses a port it cannot trace to any checkout", async () => {
   assert.match(foreignServerProblem(await freePort(), checkout) ?? "", /cannot tell whose code/);
+});
+
+test("skips a port another checkout holds", async () => {
+  const mine = otherCheckout();
+  const first = portForCheckout(mine);
+  await listenFrom(otherCheckout(), first);
+  assert.notEqual(portForCheckout(mine), first);
+});
+
+test("keeps the port its own server holds", async () => {
+  const mine = otherCheckout();
+  const first = portForCheckout(mine);
+  await listenFrom(mine, first);
+  assert.equal(portForCheckout(mine), first);
 });

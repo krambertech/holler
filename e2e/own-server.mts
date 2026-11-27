@@ -1,5 +1,9 @@
 import { execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { realpathSync } from "node:fs";
+
+const FIRST_CHECKOUT_PORT = 5300;
+const CHECKOUT_PORTS = 600;
 
 function output(command: string, args: string[], cwd?: string | undefined) {
   try {
@@ -41,4 +45,20 @@ export function foreignServerProblem(port: number, checkout: string) {
   const foreign = dirs.map(checkoutOf).find((served) => served !== mine);
   if (!foreign) return null;
   return `Port ${port} serves ${foreign}, not this checkout (${mine}), so every test would run against that code. Stop that server, or set HOLLER_E2E_PORT to a free port, and run again.`;
+}
+
+function heldByAnotherCheckout(port: number, mine: string) {
+  return listenerDirectories(port).some((dir) => checkoutOf(dir) !== mine);
+}
+
+export function portForCheckout(checkout: string) {
+  const mine = realpathSync(checkout);
+  const start = createHash("sha256").update(mine).digest().readUInt32BE(0);
+  for (let step = 0; step < CHECKOUT_PORTS; step += 1) {
+    const port = FIRST_CHECKOUT_PORT + ((start + step) % CHECKOUT_PORTS);
+    if (!heldByAnotherCheckout(port, mine)) return port;
+  }
+  throw new Error(
+    `Other checkouts hold every e2e port from ${FIRST_CHECKOUT_PORT} to ${FIRST_CHECKOUT_PORT + CHECKOUT_PORTS - 1}. Stop the e2e servers you no longer need, or set HOLLER_E2E_PORT to a free port.`,
+  );
 }

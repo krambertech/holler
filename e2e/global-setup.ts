@@ -1,5 +1,5 @@
 import { E2E_CHECKOUT, E2E_PORT } from "./origin";
-import { foreignServerProblem } from "./own-server.mjs";
+import { foreignServerProblem } from "./own-server.mts";
 
 export default function refuseForeignServer() {
   const problem = foreignServerProblem(E2E_PORT, E2E_CHECKOUT);
