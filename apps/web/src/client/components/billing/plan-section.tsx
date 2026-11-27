@@ -94,7 +94,7 @@ function CheckoutReturn({ onTeam }: { onTeam: boolean }) {
 
 function PlanSkeleton() {
   return (
-    <Plate aria-busy aria-label="Loading the plan">
+    <Plate role="status" aria-busy aria-label="Loading the plan">
       <div className="flex flex-col gap-2 px-5 py-4">
         <Skeleton className="h-4 w-24 rounded-full" />
         <Skeleton className="h-3.5 w-3/5 rounded-full" />

@@ -20,6 +20,7 @@ import { closeDueHollers } from "../services/lifecycle";
 import { queueDueReminders } from "../services/reminders";
 import { answerOnWeb } from "../services/respond";
 import { stopRepeating } from "../services/rounds";
+import { addViewers } from "../services/sharing";
 import { BASE, CHANNEL, hours, minutes, type Side, type World } from "./world";
 
 export interface Scenario {
@@ -118,6 +119,12 @@ export const deliveries: Delivery[] = [
     const { id } = await world.live();
     const side = world.side();
     await closeHoller(side.sender(minutes(10)), side.env, id);
+    return { at: minutes(10) };
+  }),
+  delivery("shared", async (world) => {
+    const { id } = await world.live();
+    const side = world.side();
+    await addViewers(side.sender(minutes(10)), side.env, id, { slackUserIds: ["UB"] });
     return { at: minutes(10) };
   }),
   delivery("send_failed", async (world) => {

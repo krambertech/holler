@@ -277,7 +277,7 @@ function EmptyList({
 
 function ListSkeleton() {
   return (
-    <Plate aria-busy aria-label="Loading your hollers">
+    <Plate role="status" aria-busy aria-label="Loading your hollers">
       {[0, 1, 2].map((i) => (
         <div
           key={i}

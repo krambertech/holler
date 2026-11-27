@@ -3,6 +3,7 @@ export type ProductPath =
   | "/consent"
   | "/hollers/$id"
   | "/install"
+  | "/report/$token"
   | "/respond/$id"
   | "/settings"
   | "/sign-in";

@@ -119,14 +119,20 @@ export const recipientOutSchema = z.object({
   avatarUrl: z.string().nullable(),
   /** Null on an anonymous Holler: its sender sees how many answered, never who. */
   answered: z.boolean().nullable(),
+  invited: z.boolean(),
+  unreachable: z.boolean(),
 });
+export type RecipientOut = z.infer<typeof recipientOutSchema>;
 
 export const recipientsOutSchema = z.object({
   recipientCount: z.number().int(),
   answeredCount: z.number().int(),
   waitingCount: z.number().int(),
   recipients: z.array(recipientOutSchema),
+  nextReminderAt: timestamp.nullable(),
+  reminderAvailableAt: timestamp.nullable(),
 });
+export type RecipientsOut = z.infer<typeof recipientsOutSchema>;
 
 const writtenSchema = z.object({ text: z.string(), slackUserId: z.string().nullable() });
 
@@ -210,6 +216,32 @@ export const resultsOutSchema = z.discriminatedUnion("state", [
 type Same<A, B> = [A] extends [B] ? ([B] extends [A] ? true : never) : never;
 export const resultsMatchSchema: Same<Results, z.infer<typeof resultsOutSchema>> = true;
 
+export const roundOutSchema = z.object({
+  id: z.string(),
+  status: hollerStatusSchema,
+  sendAt: timestamp.nullable(),
+  recipientCount: z.number().int(),
+  responseCount: z.number().int(),
+  gated: z.boolean().describe("An anonymous round under five responses: counts only."),
+  scores: z
+    .array(
+      z.object({
+        position: z.number().int(),
+        prompt: z.string(),
+        average: z.number().nullable(),
+        top: z.number().int().describe("The scale's highest score."),
+      }),
+    )
+    .describe("The mean of each scale question, in question order."),
+});
+export type RoundOut = z.infer<typeof roundOutSchema>;
+
+export const roundsOutSchema = z.object({
+  repeat: z.enum(repeatEvery).nullable().describe("The series' rule; null once it stopped."),
+  rounds: z.array(roundOutSchema).describe("Newest first, the next scheduled round included."),
+});
+export type RoundsOut = z.infer<typeof roundsOutSchema>;
+
 export const directoryOutSchema = z.object({
   people: z.array(
     z.object({
@@ -230,6 +262,7 @@ export const directoryOutSchema = z.object({
     }),
   ),
 });
+export type DirectoryOut = z.infer<typeof directoryOutSchema>;
 
 export const meOutSchema = z.object({
   member: z.object({
@@ -360,3 +393,31 @@ export const respondPersonSchema = z.object({
   avatarUrl: z.string().nullable(),
 });
 export type RespondPerson = z.infer<typeof respondPersonSchema>;
+export const sharingOutSchema = z.object({
+  visibility: z.enum(["private", "workspace"]),
+  viewers: z.array(
+    z.object({
+      slackUserId: z.string(),
+      name: z.string(),
+      avatarUrl: z.string().nullable(),
+      member: z.boolean(),
+      addedAt: timestamp,
+    }),
+  ),
+  reportUrl: z.url().nullable().describe("The read-only report link, or null while there is none."),
+});
+export type SharingOut = z.infer<typeof sharingOutSchema>;
+
+export const reportOutSchema = z.object({
+  title: z.string(),
+  mode: z.enum(modes),
+  anonymous: z.boolean(),
+  status: z.enum(["live", "closed"]),
+  workspaceName: z.string(),
+  sentAt: timestamp.nullable(),
+  closedAt: timestamp.nullable(),
+  recipientCount: z.number().int(),
+  answeredCount: z.number().int(),
+  results: resultsOutSchema,
+});
+export type ReportOut = z.infer<typeof reportOutSchema>;

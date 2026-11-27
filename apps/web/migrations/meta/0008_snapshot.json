@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "7b1c9c39-0762-4271-ae6e-10b31cf3d75f",
+  "id": "b1836351-7824-4c68-b75d-3e4e3cf61428",
   "prevId": "63d01077-347e-4b72-ab7e-a79cbe7765a2",
   "tables": {
     "activity": {
@@ -2606,8 +2606,8 @@
           "notNull": true,
           "autoincrement": false
         },
-        "member_id": {
-          "name": "member_id",
+        "slack_user_id": {
+          "name": "slack_user_id",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
@@ -2636,7 +2636,22 @@
           "autoincrement": false
         }
       },
-      "indexes": {},
+      "indexes": {
+        "viewers_slack_user": {
+          "name": "viewers_slack_user",
+          "columns": [
+            "slack_user_id"
+          ],
+          "isUnique": false
+        },
+        "viewers_unnotified": {
+          "name": "viewers_unnotified",
+          "columns": [
+            "notified_at"
+          ],
+          "isUnique": false
+        }
+      },
       "foreignKeys": {
         "viewers_holler_id_hollers_id_fk": {
           "name": "viewers_holler_id_hollers_id_fk",
@@ -2644,19 +2659,6 @@
           "tableTo": "hollers",
           "columnsFrom": [
             "holler_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "viewers_member_id_members_id_fk": {
-          "name": "viewers_member_id_members_id_fk",
-          "tableFrom": "viewers",
-          "tableTo": "members",
-          "columnsFrom": [
-            "member_id"
           ],
           "columnsTo": [
             "id"
@@ -2679,12 +2681,12 @@
         }
       },
       "compositePrimaryKeys": {
-        "viewers_holler_id_member_id_pk": {
+        "viewers_holler_id_slack_user_id_pk": {
           "columns": [
             "holler_id",
-            "member_id"
+            "slack_user_id"
           ],
-          "name": "viewers_holler_id_member_id_pk"
+          "name": "viewers_holler_id_slack_user_id_pk"
         }
       },
       "uniqueConstraints": {},
@@ -3027,73 +3029,6 @@
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "checkConstraints": {}
-    },
-    "slack_homes": {
-      "name": "slack_homes",
-      "columns": {
-        "workspace_id": {
-          "name": "workspace_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "slack_user_id": {
-          "name": "slack_user_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "opened_at": {
-          "name": "opened_at",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "queued_at": {
-          "name": "queued_at",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "published_at": {
-          "name": "published_at",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "slack_homes_workspace_id_workspaces_id_fk": {
-          "name": "slack_homes_workspace_id_workspaces_id_fk",
-          "tableFrom": "slack_homes",
-          "tableTo": "workspaces",
-          "columnsFrom": [
-            "workspace_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {
-        "slack_homes_workspace_id_slack_user_id_pk": {
-          "columns": [
-            "workspace_id",
-            "slack_user_id"
-          ],
-          "name": "slack_homes_workspace_id_slack_user_id_pk"
-        }
-      },
       "uniqueConstraints": {},
       "checkConstraints": {}
     },

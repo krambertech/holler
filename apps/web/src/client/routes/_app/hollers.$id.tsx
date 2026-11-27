@@ -1,43 +1,129 @@
-import type { QuestionResult } from "@holler/core";
+import type { HollerOut, Results, SharingOut } from "@holler/core";
 import { anonymousThreshold, modeLabels } from "@holler/core";
-import { useQuery } from "@tanstack/react-query";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
+import { useDeferredValue, useMemo, useState } from "react";
 import { ErrorState } from "@/components/error-state";
 import { ModeGlyph } from "@/components/mode-glyph";
+import { HollerActions } from "@/components/results/holler-actions";
+import { HollerPeople } from "@/components/results/holler-people";
+import { HollerRounds } from "@/components/results/holler-rounds";
+import { type PersonLookup, QuestionResult } from "@/components/results/question-result";
+import { ShareDialog } from "@/components/results/share-dialog";
 import { Skeleton } from "@/components/skeleton";
-import { Chip, StatusChip } from "@/components/ui/chip";
-import { Plate, PlateRow } from "@/components/ui/plate";
-import { ProgressBar } from "@/components/ui/progress";
+import { StatusChip } from "@/components/ui/chip";
+import { Plate } from "@/components/ui/plate";
+import { toast } from "@/components/ui/toast";
 import { api } from "@/lib/api";
-import { closesLabel, count, percent } from "@/lib/format";
-import { resultsQuery } from "@/lib/queries";
+import { closesLabel, count, dayAndTime, momentLabel } from "@/lib/format";
+import {
+  directoryQuery,
+  hollerPeopleQuery,
+  resultsQuery,
+  roundsQuery,
+  sharingQuery,
+} from "@/lib/queries";
 
-/**
- * A Holler's page: who answered and the results. The results, exports and sharing work fills this
- * in; the foundations draw the frame, the counts and one bar chart per question.
- */
 export const Route = createFileRoute("/_app/hollers/$id")({
   component: HollerPage,
 });
 
-interface Holler {
-  id: string;
-  mode: "pulse" | "survey" | "chase";
-  status: "draft" | "scheduled" | "live" | "closed";
-  title: string;
-  anonymous: boolean;
-  closesAt: string | null;
-  tags: string[];
+const statusWord = {
+  live: "Live",
+  closed: "Closed",
+  scheduled: "Scheduled",
+  draft: "Draft",
+} as const;
+
+function wasSent(h: HollerOut | undefined) {
+  return h?.status === "live" || h?.status === "closed";
+}
+
+async function copyResultsAsMarkdown(id: string) {
+  try {
+    const response = await fetch(`/api/hollers/${id}/export?format=md`, {
+      credentials: "same-origin",
+    });
+    if (!response.ok) throw new Error("We could not copy the results. Try again.");
+    await navigator.clipboard.writeText(await response.text());
+    toast.add({ title: "Copied the results as Markdown." });
+  } catch (error) {
+    toast.add({
+      tone: "danger",
+      title: error instanceof Error ? error.message : "We could not copy the results.",
+    });
+  }
 }
 
 function HollerPage() {
   const { id } = Route.useParams();
+  const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const holler = useQuery({
     queryKey: ["hollers", id],
-    queryFn: () => api<Holler>(`/hollers/${id}`),
+    queryFn: () => api<HollerOut>(`/hollers/${id}`),
   });
-  const results = useQuery({ ...resultsQuery(id), enabled: holler.data?.status !== "draft" });
+  const sent = wasSent(holler.data);
+  const results = useQuery({ ...resultsQuery(id), enabled: sent });
+  const people = useQuery({ ...hollerPeopleQuery(id), enabled: sent });
+  const isCreator = holler.data?.isCreator ?? false;
+  const [sharingOpen, setSharingOpen] = useState(false);
+  const rounds = useQuery({
+    ...roundsQuery(id),
+    enabled: holler.data !== undefined && holler.data.status !== "draft",
+  });
+  const nextRound = rounds.data?.rounds.find((round) => round.status === "scheduled");
+
+  const refresh = () => queryClient.invalidateQueries({ queryKey: ["hollers"] });
+  const remind = useMutation({
+    mutationFn: () => api<HollerOut>(`/hollers/${id}/remind`, { method: "POST" }),
+    onSuccess: () => {
+      const waiting = people.data?.waitingCount ?? 0;
+      toast.add({
+        title:
+          waiting === 1
+            ? "Reminder sent to the 1 person still waiting."
+            : `Reminder sent to the ${count(waiting)} people still waiting.`,
+      });
+      void refresh();
+    },
+    onError: (error) => toast.add({ tone: "danger", title: error.message }),
+  });
+  const close = useMutation({
+    mutationFn: () => api<HollerOut>(`/hollers/${id}/close`, { method: "POST" }),
+    onSuccess: () => {
+      toast.add({ title: "Closed. It takes no more answers." });
+      void refresh();
+    },
+    onError: (error) => toast.add({ tone: "danger", title: error.message }),
+  });
+  const stopRepeating = useMutation({
+    mutationFn: () => api<HollerOut>(`/hollers/${id}/stop-repeating`, { method: "POST" }),
+    onSuccess: () => {
+      toast.add({ title: "This pulse no longer repeats. Every answer stays." });
+      void refresh();
+    },
+    onError: (error) => toast.add({ tone: "danger", title: error.message }),
+  });
+  const copy = useMutation({
+    mutationFn: () => api<{ id: string }>(`/hollers/${id}/copy`, { method: "POST" }),
+    onSuccess: (draft) => {
+      void queryClient.invalidateQueries({ queryKey: ["hollers"], refetchType: "none" });
+      toast.add({ title: "Copied into a new draft." });
+      void navigate({ to: "/hollers/$id", params: { id: draft.id } });
+    },
+    onError: (error) => toast.add({ tone: "danger", title: error.message }),
+  });
+  const copyAsMarkdown = () => copyResultsAsMarkdown(id);
+
+  const lookup = useMemo(() => {
+    const map = new Map<string, PersonLookup>();
+    for (const r of people.data?.recipients ?? []) {
+      map.set(r.slackUserId, { name: r.name, avatarUrl: r.avatarUrl });
+    }
+    return map;
+  }, [people.data]);
 
   if (holler.isPending) return <HollerSkeleton />;
   if (holler.isError) {
@@ -51,122 +137,201 @@ function HollerPage() {
     );
   }
   const h = holler.data;
+  const live = h.status === "live";
 
   return (
     <>
-      <Link
-        to="/"
-        className="relative inline-flex w-fit items-center gap-1.5 rounded-sm py-1 text-ink-2 hoverable:hover:text-ink pointer-coarse:before:absolute pointer-coarse:before:-inset-2 pointer-coarse:before:content-['']"
-      >
-        <ArrowLeft aria-hidden size={16} strokeWidth={2} />
-        Your hollers
-      </Link>
+      <div className="flex items-center justify-between gap-3">
+        <Link
+          to="/"
+          className="relative inline-flex w-fit items-center gap-1.5 rounded-sm py-1 text-ink-2 hoverable:hover:text-ink pointer-coarse:before:absolute pointer-coarse:before:-inset-2 pointer-coarse:before:content-['']"
+        >
+          <ArrowLeft aria-hidden size={16} strokeWidth={2} />
+          Your hollers
+        </Link>
+        {sent && (
+          <HollerActions
+            hollerId={h.id}
+            status={h.status}
+            isCreator={isCreator}
+            canExport={results.data?.state === "open"}
+            waitingCount={people.data?.waitingCount ?? 0}
+            onCopyAsMarkdown={() => void copyAsMarkdown()}
+            onCopyIntoDraft={() => copy.mutate()}
+            onClose={() => close.mutate()}
+            onShare={() => setSharingOpen(true)}
+            copying={copy.isPending}
+            closing={close.isPending}
+            repeats={rounds.data?.repeat != null}
+            nextRoundAt={nextRound?.sendAt ?? null}
+            onStopRepeating={() => stopRepeating.mutate()}
+            stopping={stopRepeating.isPending}
+          />
+        )}
+      </div>
+      {isCreator && sent && (
+        <HollerSharing
+          hollerId={h.id}
+          canMakeLink={sent}
+          open={sharingOpen}
+          onOpenChange={setSharingOpen}
+        />
+      )}
       <header className="flex items-start gap-4">
-        <ModeGlyph mode={h.mode} quiet={h.status !== "live"} />
+        <ModeGlyph mode={h.mode} quiet={!live} />
         <div className="min-w-0 flex-1">
-          <h1 className="text-4xl tracking-title">{h.title || "Untitled"}</h1>
-          <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-muted">
+          <h1 className="text-pretty text-4xl tracking-title">{h.displayTitle || "Untitled"}</h1>
+          <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-muted text-sm">
             {/* Only a live Holler is calling; scheduled, draft and closed are all quiet. */}
-            <StatusChip status={h.status === "live" ? "live" : "closed"}>
-              {h.status === "live"
-                ? "Live"
-                : h.status === "closed"
-                  ? "Closed"
-                  : h.status === "scheduled"
-                    ? "Scheduled"
-                    : "Draft"}
-            </StatusChip>
-            <span>{modeLabels[h.mode]}</span>
-            {h.anonymous && <Chip variant="tint">Anonymous</Chip>}
-            {h.status === "live" && h.closesAt && <span>Closes {closesLabel(h.closesAt)}</span>}
+            <StatusChip status={live ? "live" : "closed"}>{statusWord[h.status]}</StatusChip>
+            <span>{metaLine(h, live)}</span>
           </div>
         </div>
       </header>
 
-      {results.data?.state === "gated" && (
-        <Plate className="px-6 py-5">
-          <h2 className="text-lg">Results open at {anonymousThreshold} answers</h2>
-          <p className="mt-1 max-w-[60ch] text-ink-2">
-            This Holler is anonymous, so its results stay closed until enough people answered that
-            no one can be picked out.{" "}
-            {results.data.needed === 1
-              ? "One more answer opens them."
-              : `${results.data.needed} more answers open them.`}
-          </p>
-        </Plate>
+      <ScheduledNotice holler={h} />
+
+      {people.data && (
+        <HollerPeople
+          people={people.data}
+          anonymous={h.anonymous}
+          live={live}
+          canRemind={isCreator}
+          onRemind={() => remind.mutate()}
+          reminding={remind.isPending}
+        />
       )}
 
-      {results.data?.state === "open" &&
-        results.data.questions.map((question) => (
-          <QuestionPlate key={question.id} question={question} />
-        ))}
+      {rounds.data && rounds.data.rounds.length > 1 && (
+        <HollerRounds rounds={rounds.data} currentId={h.id} />
+      )}
+
+      {results.data && (
+        <HollerResults results={results.data} people={h.anonymous ? new Map() : lookup} />
+      )}
     </>
   );
 }
 
-function QuestionPlate({ question }: { question: QuestionResult }) {
+function HollerSharing({
+  hollerId,
+  canMakeLink,
+  open,
+  onOpenChange,
+}: {
+  hollerId: string;
+  canMakeLink: boolean;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const queryClient = useQueryClient();
+  const [search, setSearch] = useState("");
+  const query = useDeferredValue(search);
+  const sharing = useQuery({ ...sharingQuery(hollerId), enabled: open });
+  const directory = useQuery({ ...directoryQuery(query), enabled: open });
+  const change = (path: string, method: string, body?: unknown) =>
+    api<SharingOut>(`/hollers/${hollerId}${path}`, { method, json: body });
+  const settle = {
+    onSuccess: (next: SharingOut) => {
+      queryClient.setQueryData(sharingQuery(hollerId).queryKey, next);
+    },
+    onError: (error: Error) => toast.add({ tone: "danger", title: error.message }),
+  };
+  const visibility = useMutation({
+    mutationFn: (value: SharingOut["visibility"]) =>
+      change("/visibility", "PUT", { visibility: value }),
+    ...settle,
+  });
+  const add = useMutation({
+    mutationFn: (slackUserId: string) =>
+      change("/viewers", "POST", { slackUserIds: [slackUserId] }),
+    ...settle,
+  });
+  const remove = useMutation({
+    mutationFn: (slackUserId: string) =>
+      change(`/viewers/${encodeURIComponent(slackUserId)}`, "DELETE"),
+    ...settle,
+  });
+  const link = useMutation({
+    mutationFn: (on: boolean) => change("/report-link", on ? "POST" : "DELETE"),
+    ...settle,
+  });
   return (
-    <Plate>
-      <div className="flex items-baseline justify-between gap-4 px-5 pt-4 pb-3">
-        <h2 className="text-lg">{question.prompt}</h2>
-        <span className="shrink-0 text-sm text-muted tabular">
-          {count(question.answeredCount)} answered
-        </span>
-      </div>
-      {question.type === "text" ? (
-        question.texts.length === 0 ? (
-          <PlateRow className="px-5 py-3 text-muted">No written answers yet.</PlateRow>
-        ) : (
-          question.texts.map((answer, index) => (
-            // oxlint-disable-next-line react/no-array-index-key -- text answers have no id of their own and never reorder
-            <PlateRow key={index} className="px-5 py-3 text-ink-2">
-              <q className="before:content-none after:content-none">{answer.text}</q>
-            </PlateRow>
-          ))
-        )
-      ) : question.type === "number" ? (
-        <PlateRow className="px-5 py-3 text-ink-2 tabular">
-          {question.average === null
-            ? "No answers yet."
-            : `Average ${question.average} · median ${question.median} · from ${question.min} to ${question.max}`}
-        </PlateRow>
-      ) : question.type === "person" ? (
-        question.people.length === 0 ? (
-          <PlateRow className="px-5 py-3 text-muted">No one picked yet.</PlateRow>
-        ) : (
-          question.people.map((person) => (
-            <PlateRow
-              key={person.slackUserId}
-              className="flex justify-between gap-3 px-5 py-3 text-base"
-            >
-              <span>{person.name}</span>
-              <span className="text-muted tabular">
-                {count(person.count)} · {percent(person.share)}
-              </span>
-            </PlateRow>
-          ))
-        )
-      ) : (
-        <div className="flex flex-col gap-3 px-5 pb-5">
-          {question.average !== null && <Chip variant="tint">Average {question.average}</Chip>}
-          {question.options.map((option) => (
-            <div key={option.id}>
-              <div className="flex items-baseline justify-between gap-3 text-base">
-                <span>{option.label}</span>
-                <span className="text-muted tabular">
-                  {count(option.count)} · {percent(option.share)}
-                </span>
-              </div>
-              <ProgressBar value={option.share} className="mt-1.5 h-2" />
-            </div>
-          ))}
-        </div>
-      )}
+    <ShareDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      sharing={sharing.data}
+      canMakeLink={canMakeLink}
+      candidates={(directory.data?.people ?? []).map((p) => ({
+        slackUserId: p.slackUserId,
+        name: p.displayName || p.name,
+        avatarUrl: p.avatarUrl,
+      }))}
+      onSearch={setSearch}
+      onVisibility={(value) => visibility.mutate(value)}
+      onAdd={(slackUserId) => add.mutate(slackUserId)}
+      onRemove={(slackUserId) => remove.mutate(slackUserId)}
+      onMakeLink={() => link.mutate(true)}
+      onTurnOffLink={() => link.mutate(false)}
+      adding={add.isPending}
+      linking={link.isPending}
+    />
+  );
+}
+
+function ScheduledNotice({ holler }: { holler: HollerOut }) {
+  if (holler.status !== "scheduled" || !holler.sendAt) return null;
+  return (
+    <Plate className="px-6 py-5">
+      <h2 className="text-lg">Sends {momentLabel(holler.sendAt)}</h2>
+      <p className="mt-1 max-w-[60ch] text-ink-2">
+        Who answered and the results show here once it goes out.
+      </p>
     </Plate>
   );
 }
 
-/** The page's shape while it loads: the title, its chips, and two question plates. */
+interface HollerResultsProps {
+  results: Results;
+  people: Map<string, PersonLookup>;
+}
+
+function HollerResults({ results, people }: HollerResultsProps) {
+  if (results.state === "gated") {
+    return (
+      <Plate className="px-6 py-5">
+        <h2 className="text-lg">Results open at {anonymousThreshold} answers</h2>
+        <p className="mt-1 max-w-[60ch] text-ink-2">
+          This Holler is anonymous, so its results stay closed until enough people answered that no
+          one can be picked out.{" "}
+          {results.needed === 1
+            ? "One more answer opens them."
+            : `${results.needed} more answers open them.`}
+        </p>
+      </Plate>
+    );
+  }
+  if (results.questions.length === 0) return null;
+  return (
+    <section aria-labelledby="results-heading" className="flex flex-col gap-4">
+      <h2 id="results-heading" className="text-xl">
+        Results
+      </h2>
+      {results.questions.map((question, index) => (
+        <QuestionResult key={question.id} question={question} number={index + 1} people={people} />
+      ))}
+    </section>
+  );
+}
+
+function metaLine(h: HollerOut, live: boolean): string {
+  const parts = [modeLabels[h.mode]];
+  if (h.anonymous) parts.push("Anonymous");
+  if (live && h.closesAt) parts.push(`Closes ${closesLabel(h.closesAt)}`);
+  if (h.status === "closed" && h.closedAt) parts.push(`Closed ${dayAndTime(h.closedAt)}`);
+  return parts.join(" · ");
+}
+
 function HollerSkeleton() {
   return (
     <section aria-busy aria-label="Loading this Holler" className="flex flex-col gap-6">
@@ -178,7 +343,7 @@ function HollerSkeleton() {
           <Skeleton className="h-6 w-48 rounded-full" />
         </div>
       </div>
-      {[0, 1].map((i) => (
+      {[0, 1, 2].map((i) => (
         <Plate key={i} className="grid gap-3 px-5 py-5">
           <Skeleton className="h-5 w-2/5 rounded-full" />
           <Skeleton className="h-2 w-full rounded-full" />

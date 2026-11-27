@@ -5,7 +5,8 @@ test("a lead opens Settings from the header and sees the workspace and its membe
   page,
 }) => {
   await signInAs(page, "lead");
-  await page.getByRole("link", { name: /Settings/ }).click();
+  await page.getByRole("button", { name: /, account$/ }).click();
+  await page.getByRole("menuitem", { name: "Settings" }).click();
   await expect(page.getByRole("heading", { name: "Settings", level: 1 })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Workspace" })).toBeVisible();
   await expect(page.getByText("Northwind", { exact: true })).toBeVisible();
@@ -41,6 +42,24 @@ test("a sender sees the roles but cannot change them", async ({ page }) => {
   await expect(page.getByRole("combobox", { name: /^Role for/ })).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Reinstall" })).toHaveCount(0);
   await expectAccessible(page);
+});
+
+test("an owner reads Activity, a sender does not see it", async ({ page }) => {
+  await signInAs(page, "lead", "/settings");
+  const draft = await page.request.post("/api/hollers", {
+    data: { mode: "pulse", title: "Activity draft" },
+  });
+  expect(draft.ok()).toBe(true);
+  await page.reload();
+  const activity = page.getByRole("list", { name: "Activity" });
+  await expect(activity.getByRole("listitem").first()).toContainText(
+    "Mira started the draft Activity draft.",
+  );
+  await expectAccessible(page);
+
+  await signInAs(page, "sender", "/settings");
+  await expect(page.getByRole("heading", { name: "Members" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Activity" })).toHaveCount(0);
 });
 
 test("someone signed out can add Holler to Slack", async ({ page }) => {

@@ -74,6 +74,7 @@ describe("dev routes", () => {
       "live",
       "live",
       "scheduled",
+      "scheduled",
     ]);
     expect(week(s)).toMatchObject({ answered: 7 });
   });

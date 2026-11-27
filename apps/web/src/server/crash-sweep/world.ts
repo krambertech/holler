@@ -258,6 +258,7 @@ export class World {
 export function isTo(send: SlackSend, hollerId: string, slackUserId: string): boolean {
   return (
     "hollerId" in send &&
+    send.kind !== "shared" &&
     "slackUserId" in send &&
     send.hollerId === hollerId &&
     send.slackUserId === slackUserId

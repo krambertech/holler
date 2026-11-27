@@ -833,12 +833,28 @@ describe("every send that posts, posts once", () => {
       announce: { kind: "announce", hollerId: holler.id },
       close_notice: { kind: "close_notice", hollerId: holler.id },
       send_failed: { kind: "send_failed", hollerId: holler.id, reason: "It broke.", queuedAt },
+      shared: {
+        kind: "shared",
+        hollerId: holler.id,
+        slackUserId: "UD",
+        addedAt: queuedAt,
+        queuedAt,
+      },
     };
+    await db.insert(schema.viewers).values({
+      hollerId: holler.id,
+      slackUserId: "UD",
+      addedById: s.memberId,
+      addedAt: NOW,
+      notifiedAt: NOW,
+    });
     return { ...s, sends };
   }
   const posting = Object.fromEntries(
     Object.entries(sendEffects).filter(([, effect]) => effect === "posts"),
-  ) as { [K in "invite" | "reminder" | "announce" | "close_notice" | "send_failed"]: "posts" };
+  ) as {
+    [K in "invite" | "reminder" | "announce" | "close_notice" | "send_failed" | "shared"]: "posts";
+  };
 
   it("has a case for every kind sendEffects says posts", async () => {
     const { sends } = await fixtures();

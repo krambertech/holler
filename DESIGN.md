@@ -86,7 +86,7 @@ The colours above are generated from `packages/design/tokens.css` by `node scrip
 ## Rules every screen follows
 
 1. **One column, no sidebar.** A slim header, then the page, at most 880 px wide. Holler is a small tool and looks like one.
-2. **Warm canvas, white plates.** Rows that belong together share one `Plate`, with a hairline between them (`PlateRow`). A tinted `PlateStrip` can close a plate: "9 people still to answer". A plate's depth is one hairline edge: no drop shadows, no gradients. Only what floats over the page (menus, popovers, dialogs, toasts) adds one soft shadow, `shadow-float`.
+2. **Warm canvas, white plates.** Rows that belong together share one `Plate`, with a hairline between them (`PlateRow`). A tinted `PlateStrip` can close a plate: "9 people still to answer". When what comes next has its own action, such as Send reminder under a Holler's people, it sits on an `Underplate`: a tinted layer under the plate that shows below it. A plate's depth is one hairline edge: no drop shadows, no gradients. Only what floats over the page (menus, popovers, dialogs, toasts) adds one soft shadow, `shadow-float`.
 3. **One plum button per screen.** It is the main action: `Button` with `variant="primary"`. Every other button is white with a hairline. At night soft pink takes plum's job, with deep plum text on it.
 4. **Pink means live.** Pink is the voice: the logo's sound lines, and in the interface only what is out and calling right now, the Live chip and its dot (`live`, `live-ink`, `live-dot`). Pink never carries body text, and at night soft pink also takes plum's job.
 5. **Status always has a word.** `StatusChip` and `StatusDot` pair a colour with Live, Answered, Waiting, Away, Closed or Not sent. Colour is never the only signal.
@@ -134,7 +134,7 @@ Numbers in tables and counts use `tabular`.
 | Component                         | File                          | Notes                                                                                        |
 | --------------------------------- | ----------------------------- | -------------------------------------------------------------------------------------------- |
 | `Button` | `components/ui/button.tsx` | `primary`, `secondary`, `ghost`; sizes `sm`, `md`, `lg`, `icon-sm`, `icon`; `render` for links; `pending` blocks every further press |
-| `Plate`, `PlateRow`, `PlateStrip` | `components/ui/plate.tsx`     | The surface system                                                                           |
+| `Plate`, `PlateRow`, `PlateStrip`, `Underplate`, `UnderplateStrip` | `components/ui/plate.tsx`     | The surface system                                                                           |
 | `Chip`, `StatusChip`, `StatusDot` | `components/ui/chip.tsx`      | Pills; a status always has its word                                                          |
 | `Avatar`, `AvatarStack`           | `components/ui/avatar.tsx`    | Waiting people are greyed in a stack; the stack carries one `aria-label`                     |
 | `ProgressBar`                     | `components/ui/progress.tsx`  | Decorative; the count beside it carries the meaning                                          |
@@ -146,6 +146,7 @@ Numbers in tables and counts use `tabular`.
 | `AppHeader`                       | `components/app-header.tsx`   | The logo home and the member, who opens Settings                                             |
 | `UninstalledNotice`               | `components/uninstalled-notice.tsx` | Top of every page while Holler is out of Slack; owners get Add to Slack again          |
 | `MemberRow`, `RoleSelect`         | `components/settings/`        | A member in Settings; owners pick Owner or Sender                                            |
+| `ActivityRow` | `components/settings/activity-row.tsx` | One write as a sentence, then where it came from and when. Owners only, at the end of Settings |
 | `WorkspaceIcon`                   | `components/settings/workspace-icon.tsx` | The Slack workspace's icon, or its initials on a tint tile                        |
 | `Field`, `Input`, `Textarea` | `components/ui/field.tsx`, `input.tsx`, `textarea.tsx` | One box for every text control; label above, description or error below, wired by context |
 | `Checkbox`, `Switch`, `RadioGroup` | `components/ui/` | Checkbox applies on save; Switch acts at once; RadioGroup for a few visible choices |
@@ -155,6 +156,8 @@ Numbers in tables and counts use `tabular`.
 | `EmptyState`, `ErrorState` | `components/empty-state.tsx`, `error-state.tsx` | Nothing yet, nothing matched, or a failure. Sizes `sm`, `md`, `lg` follow the space; `plate`, `dashed` for no results, `bare` inside a surface |
 | `Illustration` | `components/illustration.tsx` | A spot drawing from the set in `packages/design/src/illustrations.ts`, sized and toned by the state around it |
 | `Notice`, `Skeleton` | `components/notice.tsx`, `skeleton.tsx` | An inline message, the shape of what is loading |
+| `HollerPeople`, `QuestionResult`, `HollerActions` | `components/results/` | A Holler's page: waiting first with when Holler reminds them next, bars in one colour, Share, Export and Close now |
+| `ShareDialog`, `ReportView` | `components/results/` | Who sees the results, the people added by name, and the report link; the report page, which names no one |
 | `LimitReached`                    | `components/billing/limit-reached.tsx` | Beside Send when a send returns `402`: upgrade for owners, whom to ask for senders |
 
 Every interactive component has default, hover, focus, active, disabled and pending states. Loading is a skeleton in the shape of what loads, never a spinner in the middle of a page. Errors say what happened and what to do, beside the thing at fault.

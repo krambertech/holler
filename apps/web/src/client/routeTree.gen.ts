@@ -15,6 +15,7 @@ import { Route as InstallRouteImport } from './routes/install'
 import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
 import { Route as AppSettingsRouteImport } from './routes/_app/settings'
+import { Route as ReportTokenRouteImport } from './routes/report.$token'
 import { Route as RespondIdRouteImport } from './routes/respond.$id'
 import { Route as AppAnswersIndexRouteImport } from './routes/_app/answers.index'
 import { Route as AppAnswersIdRouteImport } from './routes/_app/answers.$id'
@@ -49,6 +50,11 @@ const AppSettingsRoute = AppSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => AppRoute,
 } as any)
+const ReportTokenRoute = ReportTokenRouteImport.update({
+  id: '/report/$token',
+  path: '/report/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RespondIdRoute = RespondIdRouteImport.update({
   id: '/respond/$id',
   path: '/respond/$id',
@@ -76,6 +82,7 @@ export interface FileRoutesByFullPath {
   '/install': typeof InstallRoute
   '/sign-in': typeof SignInRoute
   '/settings': typeof AppSettingsRoute
+  '/report/$token': typeof ReportTokenRoute
   '/respond/$id': typeof RespondIdRoute
   '/answers/$id': typeof AppAnswersIdRoute
   '/hollers/$id': typeof AppHollersIdRoute
@@ -86,6 +93,7 @@ export interface FileRoutesByTo {
   '/install': typeof InstallRoute
   '/sign-in': typeof SignInRoute
   '/settings': typeof AppSettingsRoute
+  '/report/$token': typeof ReportTokenRoute
   '/respond/$id': typeof RespondIdRoute
   '/': typeof AppIndexRoute
   '/answers/$id': typeof AppAnswersIdRoute
@@ -99,6 +107,7 @@ export interface FileRoutesById {
   '/install': typeof InstallRoute
   '/sign-in': typeof SignInRoute
   '/_app/settings': typeof AppSettingsRoute
+  '/report/$token': typeof ReportTokenRoute
   '/respond/$id': typeof RespondIdRoute
   '/_app/': typeof AppIndexRoute
   '/_app/answers/$id': typeof AppAnswersIdRoute
@@ -113,6 +122,7 @@ export interface FileRouteTypes {
     | '/install'
     | '/sign-in'
     | '/settings'
+    | '/report/$token'
     | '/respond/$id'
     | '/answers/$id'
     | '/hollers/$id'
@@ -123,6 +133,7 @@ export interface FileRouteTypes {
     | '/install'
     | '/sign-in'
     | '/settings'
+    | '/report/$token'
     | '/respond/$id'
     | '/'
     | '/answers/$id'
@@ -135,6 +146,7 @@ export interface FileRouteTypes {
     | '/install'
     | '/sign-in'
     | '/_app/settings'
+    | '/report/$token'
     | '/respond/$id'
     | '/_app/'
     | '/_app/answers/$id'
@@ -147,6 +159,7 @@ export interface RootRouteChildren {
   ConsentRoute: typeof ConsentRoute
   InstallRoute: typeof InstallRoute
   SignInRoute: typeof SignInRoute
+  ReportTokenRoute: typeof ReportTokenRoute
   RespondIdRoute: typeof RespondIdRoute
 }
 
@@ -193,6 +206,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/settings'
       preLoaderRoute: typeof AppSettingsRouteImport
       parentRoute: typeof AppRoute
+    }
+    '/report/$token': {
+      id: '/report/$token'
+      path: '/report/$token'
+      fullPath: '/report/$token'
+      preLoaderRoute: typeof ReportTokenRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/respond/$id': {
       id: '/respond/$id'
@@ -248,6 +268,7 @@ const rootRouteChildren: RootRouteChildren = {
   ConsentRoute: ConsentRoute,
   InstallRoute: InstallRoute,
   SignInRoute: SignInRoute,
+  ReportTokenRoute: ReportTokenRoute,
   RespondIdRoute: RespondIdRoute,
 }
 export const routeTree = rootRouteImport
