@@ -5,7 +5,7 @@ import { E2E_ORIGIN } from "./e2e/origin";
 export default defineConfig({
   testDir: "e2e",
   testMatch: "*.spec.ts",
-  globalSetup: process.env.CI ? [] : ["./e2e/global-setup.ts"],
+  globalSetup: "./e2e/global-setup.ts",
   fullyParallel: true,
   forbidOnly: Boolean(process.env.CI),
   failOnFlakyTests: true,
