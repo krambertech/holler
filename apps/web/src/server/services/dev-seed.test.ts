@@ -54,7 +54,7 @@ describe("the dev seed", () => {
     const { workspaceId, memberId } = await workspaceFixture(db, now);
     const seed = (on: Db) => seedLeadHollers(on, workspaceId, memberId, now);
     await seed(afterItsFirstLook(() => seed(db)));
-    expect(await db.query.hollers.findMany()).toHaveLength(7);
+    expect(await db.query.hollers.findMany()).toHaveLength(8);
   });
 
   for (const day of days) {

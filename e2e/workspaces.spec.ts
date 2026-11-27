@@ -3,7 +3,7 @@ import { expect, test } from "./fixtures";
 
 test.describe.configure({ mode: "default" });
 
-const seeded = ["closed", "closed", "closed", "live", "live", "live", "scheduled"];
+const seeded = ["closed", "closed", "closed", "live", "live", "live", "scheduled", "scheduled"];
 
 for (const turn of ["first", "second"]) {
   test(`the ${turn} test to change the workspace starts from the seed`, async ({

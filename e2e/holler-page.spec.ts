@@ -82,3 +82,37 @@ test("Send reminder wakes up when the wait between reminders ends", async ({ pag
   await page.clock.fastForward("01:05");
   await expect(remind).toBeEnabled();
 });
+
+test("a repeating pulse shows its rounds from any round, and Stop repeating asks first", async ({
+  page,
+}) => {
+  await signInAs(page, "lead");
+  await page
+    .getByRole("region", { name: /^Live \d+$/ })
+    .getByRole("link", { name: "How was your week?" })
+    .click();
+  const rounds = page.getByRole("region", { name: "Rounds" });
+  await expect(rounds).toContainText("A new round goes out every week.");
+  await expect(rounds.getByRole("listitem")).toHaveCount(3);
+  await expect(rounds.getByText("This round")).toBeVisible();
+  await expect(rounds.getByText("Next round")).toBeVisible();
+  await expectAccessible(page);
+
+  await page.getByRole("button", { name: "More for this Holler" }).click();
+  await page.getByRole("menuitem", { name: "Stop repeating" }).click();
+  const dialog = page.getByRole("dialog", { name: "Stop repeating this pulse?" });
+  await expect(dialog).toContainText("Every round so far and its answers stay.");
+  await expectAccessible(page);
+  await dialog.getByRole("button", { name: "Keep repeating" }).click();
+  await expect(dialog).toBeHidden();
+
+  const first = rounds.getByRole("link").filter({ hasText: "Closed" });
+  const firstId = (await first.getAttribute("href"))?.split("/").at(-1) ?? "";
+  await page.route(`**/api/hollers/${firstId}`, async (route) => {
+    const response = await route.fetch();
+    await route.fulfill({ response, json: { ...(await response.json()), repeat: null } });
+  });
+  await first.click();
+  await expect(page.getByRole("heading", { level: 1, name: "How was your week?" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Rounds" }).getByText("This round")).toBeVisible();
+});

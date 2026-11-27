@@ -1,0 +1,14 @@
+{
+  "rule": "An aria-label sits only on an element whose role takes a name",
+  "layer": "lint",
+  "past": "Home's and the plan's loading Plates carried aria-label on a plain div; axe refused it in #29's sign-out journey whenever it ran before the list loaded",
+  "check": "pnpm exec oxlint apps/web/src/client",
+  "break": [
+    {
+      "file": "apps/web/src/client/routes/_app/index.tsx",
+      "find": "<Plate role=\"status\" aria-busy aria-label=\"Loading your hollers\">",
+      "replace": "<Plate aria-busy aria-label=\"Loading your hollers\">"
+    }
+  ],
+  "fails": "holler(label-needs-role)"
+}

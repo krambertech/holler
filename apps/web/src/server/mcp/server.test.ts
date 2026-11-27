@@ -1,3 +1,4 @@
+import type { ActivityAction } from "@holler/core";
 import { Client } from "@modelcontextprotocol/client";
 import { InMemoryTransport } from "@modelcontextprotocol/server";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -78,7 +79,7 @@ async function connect(scope: "read" | "write") {
 const statusOf = async (id: string) =>
   (await db.query.hollers.findFirst({ where: (holler, { eq }) => eq(holler.id, id) }))?.status;
 
-const activityOn = (id: string, action: string) =>
+const activityOn = (id: string, action: ActivityAction) =>
   db.query.activity.findMany({
     where: (row, { and, eq }) => and(eq(row.subjectId, id), eq(row.action, action)),
   });
@@ -267,7 +268,7 @@ describe("a live Holler", () => {
     const closed = await callTool("close_holler", { hollerId: holler.id });
     expect(closed.structuredContent).toMatchObject({ id: holler.id, status: "closed" });
     expect(await statusOf(holler.id)).toBe("closed");
-    for (const action of ["holler.reminded", "holler.closed"]) {
+    for (const action of ["holler.reminded", "holler.closed"] as const) {
       expect(await activityOn(holler.id, action)).toEqual([
         expect.objectContaining({ via: "mcp", memberId, credentialId: "client-1" }),
       ]);

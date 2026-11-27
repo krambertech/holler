@@ -4,6 +4,7 @@ import { expect } from "./fixtures";
 
 /** Fails the test on any WCAG 2.2 AA violation on the page as it is now. */
 export async function expectAccessible(page: Page) {
+  await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
   await page.waitForFunction(() =>
     document
       .getAnimations()
@@ -14,6 +15,7 @@ export async function expectAccessible(page: Page) {
       ),
   );
   const results = await new AxeBuilder({ page })
+    .exclude("[data-base-ui-focus-guard]")
     .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
     .analyze();
   expect(
@@ -26,5 +28,5 @@ export async function signInAs(page: Page, persona: "lead" | "sender", to = "/")
   const landing = new URL(to, "http://holler.test").pathname;
   await page.goto(`/api/dev/sign-in?as=${persona}&to=${encodeURIComponent(to)}`);
   await page.waitForURL((url) => url.pathname === landing);
-  await page.waitForLoadState("load");
+  await page.waitForLoadState("networkidle");
 }

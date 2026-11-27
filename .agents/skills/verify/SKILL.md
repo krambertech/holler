@@ -14,6 +14,7 @@ A change is verified when every feature it reaches has been driven in a running 
 | Feature | Entry |
 | --- | --- |
 | Sign in and sign out | [sign-in.md](features/sign-in.md) |
+| Activity in Settings | [activity.md](features/activity.md) |
 | Home | [home.md](features/home.md) |
 | An answer reaches the results | [answer.md](features/answer.md) |
 | A holler closes at its close time | [close-time.md](features/close-time.md) |
@@ -24,6 +25,7 @@ A change is verified when every feature it reaches has been driven in a running 
 | Your answers, named and anonymous | [answers.md](features/answers.md) |
 | The Holler page chases and closes | [holler-page.md](features/holler-page.md) |
 | Delete the workspace's data | [workspace-deletion.md](features/workspace-deletion.md) |
+| A repeating pulse shows its rounds and stops repeating | [rounds.md](features/rounds.md) |
 
 ## Launch
 

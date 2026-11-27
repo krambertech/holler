@@ -1,0 +1,14 @@
+{
+  "rule": "Only workspace owners read Activity",
+  "layer": "test",
+  "past": "preventive: Activity names every member's writes, so a sender must not read it",
+  "check": "cd apps/web && pnpm exec vitest run src/server/services/activity.test.ts -t 'refuses a sender'",
+  "break": [
+    {
+      "file": "apps/web/src/server/services/activity.ts",
+      "find": "  if (member?.role !== \"owner\") {",
+      "replace": "  if (member?.role === \"nobody\") {"
+    }
+  ],
+  "fails": "FAIL"
+}

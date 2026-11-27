@@ -216,6 +216,32 @@ export const resultsOutSchema = z.discriminatedUnion("state", [
 type Same<A, B> = [A] extends [B] ? ([B] extends [A] ? true : never) : never;
 export const resultsMatchSchema: Same<Results, z.infer<typeof resultsOutSchema>> = true;
 
+export const roundOutSchema = z.object({
+  id: z.string(),
+  status: hollerStatusSchema,
+  sendAt: timestamp.nullable(),
+  recipientCount: z.number().int(),
+  responseCount: z.number().int(),
+  gated: z.boolean().describe("An anonymous round under five responses: counts only."),
+  scores: z
+    .array(
+      z.object({
+        position: z.number().int(),
+        prompt: z.string(),
+        average: z.number().nullable(),
+        top: z.number().int().describe("The scale's highest score."),
+      }),
+    )
+    .describe("The mean of each scale question, in question order."),
+});
+export type RoundOut = z.infer<typeof roundOutSchema>;
+
+export const roundsOutSchema = z.object({
+  repeat: z.enum(repeatEvery).nullable().describe("The series' rule; null once it stopped."),
+  rounds: z.array(roundOutSchema).describe("Newest first, the next scheduled round included."),
+});
+export type RoundsOut = z.infer<typeof roundsOutSchema>;
+
 export const directoryOutSchema = z.object({
   people: z.array(
     z.object({

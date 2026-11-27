@@ -1,0 +1,14 @@
+{
+  "rule": "Every Activity action has a sentence in Settings",
+  "layer": "types",
+  "past": "#31: holler.repeat_stopped reached main without a sentence, and the merge only failed at typecheck",
+  "check": "pnpm --filter @holler/web typecheck",
+  "break": [
+    {
+      "file": "apps/web/src/client/components/settings/activity-row.tsx",
+      "find": "  \"holler.repeat_stopped\": (e) => (\n    <>\n      {who(e)} stopped <HollerTitle entry={e} /> repeating.\n    </>\n  ),\n",
+      "replace": ""
+    }
+  ],
+  "fails": "holler.repeat_stopped"
+}

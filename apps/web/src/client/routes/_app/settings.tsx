@@ -1,9 +1,10 @@
-import type { MemberRole, SettingsWorkspace } from "@holler/core";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import type { ActivityOut, MemberRole, SettingsWorkspace } from "@holler/core";
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { ApiAccessSections } from "@/components/api-keys/api-access";
 import { PlanSection } from "@/components/billing/plan-section";
+import { ActivityRow } from "@/components/settings/activity-row";
 import { DeleteWorkspace } from "@/components/settings/delete-workspace";
 import { MemberRow } from "@/components/settings/member-row";
 import { WorkspaceIcon } from "@/components/settings/workspace-icon";
@@ -34,6 +35,7 @@ function Settings() {
       <MembersSection isOwner={isOwner} />
       <PlanSection />
       <ApiAccessSections />
+      {isOwner && <ActivitySection />}
       {isOwner && <WorkspaceDataSection />}
     </>
   );
@@ -249,6 +251,59 @@ function WorkspaceDataSection() {
       description="Holler keeps hollers and answers until an owner deletes them. When Holler is removed from Slack, it deletes everything 90 days later."
     >
       <DeleteWorkspace workspace={workspace.data} onDelete={onDelete} error={error} />
+
+function ActivitySection() {
+  const activity = useInfiniteQuery({
+    queryKey: ["settings", "activity"],
+    queryFn: ({ pageParam }) =>
+      api<ActivityOut>(
+        pageParam
+          ? `/settings/activity?cursor=${encodeURIComponent(pageParam)}`
+          : "/settings/activity",
+      ),
+    initialPageParam: "",
+    getNextPageParam: (last) => last.nextCursor ?? undefined,
+  });
+  const entries = activity.data?.pages.flatMap((page) => page.entries) ?? [];
+  return (
+    <Section
+      id="settings-activity"
+      title="Activity"
+      description="Every change in this workspace and who made it, newest first. Only owners see this. It never shows what anyone answered."
+    >
+      {activity.isError && entries.length === 0 ? (
+        <Plate className="px-5 py-4 text-danger-ink">
+          Unable to load Activity. Refresh the page to try again.
+        </Plate>
+      ) : activity.data && entries.length === 0 ? (
+        <Plate className="px-5 py-4 text-ink-2">Nothing has happened in this workspace yet.</Plate>
+      ) : activity.data ? (
+        <Plate>
+          <ol aria-label="Activity" className="contents">
+            {entries.map((entry) => (
+              <ActivityRow key={entry.id} entry={entry} />
+            ))}
+          </ol>
+          {activity.hasNextPage && (
+            <PlateStrip>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="-ms-3"
+                pending={activity.isFetchingNextPage}
+                onClick={() => activity.fetchNextPage()}
+              >
+                Show older
+              </Button>
+              {activity.isError && (
+                <span className="text-danger-ink">Unable to load more. Try again.</span>
+              )}
+            </PlateStrip>
+          )}
+        </Plate>
+      ) : (
+        <Plate aria-hidden className="h-[196px] animate-pulse" />
+      )}
     </Section>
   );
 }
