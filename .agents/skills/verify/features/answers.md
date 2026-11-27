@@ -4,7 +4,7 @@ A person's own list of every Holler sent to them and what they answered, anonymo
 
 ## Reach
 
-The **Your answers** link in the header, then `/answers` and `/answers/<holler id>`.
+**Your answers** in the account menu (the avatar at the top right), then `/answers` and `/answers/<holler id>`.
 
 ## Drive
 

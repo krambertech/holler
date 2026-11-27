@@ -1,127 +1,31 @@
-import type {
-  RecipientsOut,
-  ReportOut,
-  QuestionResult as Result,
-  RoundsOut,
-  SharingOut,
-} from "@holler/core";
+import type { ReportOut, RoundsOut, SharingOut } from "@holler/core";
 import { useState } from "react";
 import { HollerActions } from "@/components/results/holler-actions";
 import { HollerPeople } from "@/components/results/holler-people";
 import { HollerRounds } from "@/components/results/holler-rounds";
-import { type PersonLookup, QuestionResult } from "@/components/results/question-result";
+import { QuestionResult } from "@/components/results/question-result";
 import { ReportView } from "@/components/results/report-view";
 import { ShareDialog } from "@/components/results/share-dialog";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/toast";
 import { Variants } from "../frame";
+import {
+  NOW,
+  inHours,
+  named,
+  anonymous,
+  cooling,
+  lookup,
+  scale,
+  plain,
+  number,
+  multi,
+  binary,
+  person,
+  text,
+  unanswered,
+} from "./results-fixtures";
 import type { Group } from "./types";
-
-const NOW = new Date();
-const inHours = (h: number) => new Date(NOW.getTime() + h * 3600_000).toISOString();
-
-const recipient = (
-  slackUserId: string,
-  name: string,
-  answered: boolean | null,
-  extra: { invited?: boolean; unreachable?: boolean } = {},
-) => ({
-  slackUserId,
-  name,
-  avatarUrl: null,
-  answered,
-  invited: extra.invited ?? true,
-  unreachable: extra.unreachable ?? false,
-});
-
-const named: RecipientsOut = {
-  recipientCount: 6,
-  answeredCount: 3,
-  waitingCount: 3,
-  recipients: [
-    recipient("U0MK", "Marta Kowalska", true),
-    recipient("U0JW", "Jun Watanabe", true),
-    recipient("U0LN", "Lena Novak", true),
-    recipient("U0AT", "Amara Thompson", false),
-    recipient("U0TR", "Tomás Ruiz", false, { unreachable: true }),
-    recipient("U0KO", "Kofi Owusu", false, { invited: false }),
-  ],
-  nextReminderAt: inHours(20),
-  reminderAvailableAt: inHours(0),
-};
-
-const anonymous: RecipientsOut = {
-  ...named,
-  recipients: named.recipients.map((r) => ({ ...r, answered: null })),
-};
-
-const cooling: RecipientsOut = { ...named, reminderAvailableAt: inHours(3) };
-
-const lookup = new Map<string, PersonLookup>(
-  named.recipients.map((r) => [r.slackUserId, { name: r.name, avatarUrl: null }]),
-);
-
-const scale: Result = {
-  id: "q1",
-  prompt: "How was your week?",
-  type: "single",
-  style: "scale",
-  answeredCount: 3,
-  average: 3.3,
-  options: ["Rough", "Okay", "Good", "Great"].map((label, i) => ({
-    id: `o${i}`,
-    label,
-    isOther: false,
-    count: [0, 1, 0, 2][i] ?? 0,
-    share: ([0, 1, 0, 2][i] ?? 0) / 3,
-    slackUserIds: [[], ["U0LN"], [], ["U0MK", "U0JW"]][i] ?? [],
-  })),
-  notes: [{ text: "Shipped the pricing page.", slackUserId: "U0MK" }],
-  otherTexts: [],
-};
-
-const plain: Result = {
-  ...scale,
-  id: "q2",
-  prompt: "Where would you rather go?",
-  style: "plain",
-  average: null,
-  notes: [],
-  options: ["Lisbon", "Tallinn", "Other"].map((label, i) => ({
-    id: `p${i}`,
-    label,
-    isOther: label === "Other",
-    count: [2, 0, 1][i] ?? 0,
-    share: ([2, 0, 1][i] ?? 0) / 3,
-    slackUserIds: [],
-  })),
-  otherTexts: [{ text: "Riga, by the sea", slackUserId: null }],
-};
-
-const number: Result = {
-  id: "q3",
-  prompt: "How many nights?",
-  type: "number",
-  style: "plain",
-  answeredCount: 3,
-  average: 3.7,
-  median: 4,
-  min: 2,
-  max: 5,
-  values: [],
-};
-
-const text: Result = {
-  id: "q4",
-  prompt: "Anything in your way?",
-  type: "text",
-  style: "plain",
-  answeredCount: 2,
-  texts: [
-    { text: "Waiting on the pricing copy before I can ship the page.", slackUserId: "U0MK" },
-    { text: "Nothing this week.", slackUserId: "U0JW" },
-  ],
-};
 
 const note = () => toast.add({ title: "The page calls the API here" });
 
@@ -263,7 +167,7 @@ export const results: Group = {
       slug: "holler-people",
       name: "HollerPeople",
       source: "components/results/holler-people.tsx",
-      note: "Waiting first, then anyone Slack would not reach, then not sent yet, then answered. On an anonymous Holler nobody has a status. The strip's button is the screen's one plum button, and only the creator sees it.",
+      note: "The count with a few faces above a full-width bar. A live Holler lists up to five people who still need chasing (waiting, then anyone Slack would not reach, then not sent yet) and folds everyone who answered into one row; a closed one names who did not answer. On an anonymous Holler nobody has a status. The strip's button is the screen's one plum button, and only the creator sees it.",
       Demo: () => (
         <Variants
           stack
@@ -296,6 +200,19 @@ export const results: Group = {
               ),
             },
             {
+              label: "Closed",
+              render: () => (
+                <HollerPeople
+                  className="w-full"
+                  people={named}
+                  anonymous={false}
+                  live={false}
+                  canRemind
+                  now={NOW}
+                />
+              ),
+            },
+            {
               label: "Anonymous",
               render: () => (
                 <HollerPeople
@@ -316,33 +233,68 @@ export const results: Group = {
       slug: "question-result",
       name: "QuestionResult",
       source: "components/results/question-result.tsx",
-      note: "Bars on the chart ramp. A scale steps from pale to deep along its options; a plain question marks its leader in chart-2. Counts and shares are always written beside the bar.",
+      note: "The head matches the editor's card: the number, the question, its type, and the count in the corner (in the type line on a phone). Every choice, scale and number draws one row per answer in chart-2, with who picked it on a named Holler. A scale leads with its average and writes its end words beside the first and last step. Notes and Other write-ins sit in a quiet panel under the bars.",
       Demo: () => (
         <Variants
           stack
           items={[
             {
-              label: "Scale, named",
+              label: "Scale, named, with notes",
               render: () => (
-                <QuestionResult className="w-full" question={scale} number={1} people={lookup} />
+                <QuestionResult
+                  className="w-full"
+                  question={scale}
+                  number={1}
+                  people={lookup}
+                  ends={{ low: "Rough", high: "Great" }}
+                />
               ),
             },
             {
-              label: "Plain, with Other",
+              label: "Single choice, anonymous, with Other",
               render: () => (
                 <QuestionResult className="w-full" question={plain} number={2} people={new Map()} />
               ),
             },
             {
-              label: "Number",
+              label: "Multiple choice",
               render: () => (
-                <QuestionResult className="w-full" question={number} number={3} people={lookup} />
+                <QuestionResult className="w-full" question={multi} number={3} people={lookup} />
               ),
             },
             {
-              label: "Written",
+              label: "Yes or no",
               render: () => (
-                <QuestionResult className="w-full" question={text} number={4} people={lookup} />
+                <QuestionResult className="w-full" question={binary} number={4} people={lookup} />
+              ),
+            },
+            {
+              label: "Number",
+              render: () => (
+                <QuestionResult className="w-full" question={number} number={5} people={lookup} />
+              ),
+            },
+            {
+              label: "Person",
+              render: () => (
+                <QuestionResult className="w-full" question={person} number={6} people={lookup} />
+              ),
+            },
+            {
+              label: "Free text",
+              render: () => (
+                <QuestionResult className="w-full" question={text} number={7} people={lookup} />
+              ),
+            },
+            {
+              label: "No answers yet",
+              render: () => (
+                <QuestionResult
+                  className="w-full"
+                  question={unanswered}
+                  number={8}
+                  people={lookup}
+                />
               ),
             },
           ]}

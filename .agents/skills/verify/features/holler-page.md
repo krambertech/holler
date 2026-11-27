@@ -1,6 +1,6 @@
 # The Holler page chases and closes
 
-A live Holler's page shows who answered with the people still waiting first, says when Holler reminds them next, sends a reminder to everyone waiting with **Send reminder**, exports the results, and closes with **Close now** after asking once. `routes/_app/hollers.$id.tsx` and `components/results/` draw it; `hollerPeople` in `services/holler-people.ts` says who is waiting and when reminders are due; `remindWaiting` and `closeHoller` in `services/delivery.ts` do the work.
+A live Holler's page shows who answered, with up to five people still waiting by name and everyone who answered folded into one row that **Show everyone** opens, says when Holler reminds them next, sends a reminder to everyone waiting with **Send reminder**, exports the results, and closes with **Close now** after asking once. `routes/_app/hollers.$id.tsx` and `components/results/` draw it; `hollerPeople` in `services/holler-people.ts` says who is waiting and when reminders are due; `remindWaiting` and `closeHoller` in `services/delivery.ts` do the work.
 
 ## Reach
 

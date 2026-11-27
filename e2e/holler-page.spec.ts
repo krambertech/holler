@@ -17,6 +17,25 @@ test("a lead sees who is waiting, when Holler reminds them, and the results", as
   await expectAccessible(page);
 });
 
+test("the people plate shows who to chase and opens to everyone", async ({ page }) => {
+  await signInAs(page, "lead");
+  await page
+    .getByRole("region", { name: /^Live \d+$/ })
+    .getByRole("link", { name: "Offsite: which dates work?" })
+    .click();
+  const people = page.getByRole("region", { name: /^\d+ of \d+ answered$/ });
+  const rows = people.getByRole("listitem");
+  await expect(rows.first()).toContainText("Waiting");
+  await expect(people.getByText("Answered", { exact: true })).toHaveCount(0);
+  await people.getByRole("button", { name: "Show everyone" }).click();
+  await expect(people.getByText("Answered", { exact: true }).first()).toBeVisible();
+  await expect(people.getByRole("button", { name: "Show fewer" })).toHaveAttribute(
+    "aria-expanded",
+    "true",
+  );
+  await expectAccessible(page);
+});
+
 test("Close now asks first and can be put off", async ({ page }) => {
   await signInAs(page, "lead");
   await page

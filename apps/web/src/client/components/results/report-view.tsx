@@ -36,7 +36,6 @@ function ReportView({ report, className, ...props }: Props) {
         <span className="truncate text-muted text-sm">{report.workspaceName}</span>
       </div>
       <header>
-        <p className="text-muted text-sm">Results</p>
         <h1 className="text-pretty text-4xl tracking-title">{report.title}</h1>
         <p className="mt-2 text-muted text-sm">{details.join(" · ")}</p>
       </header>
@@ -44,7 +43,7 @@ function ReportView({ report, className, ...props }: Props) {
         <h2 className="text-lg tabular">
           {count(report.answeredCount)} of {count(report.recipientCount)} answered
         </h2>
-        <ProgressBar value={share} className="mt-2" />
+        <ProgressBar value={share} className="mt-3" />
       </Plate>
       {report.results.state === "gated" ? (
         <Plate className="px-6 py-5">
@@ -58,7 +57,10 @@ function ReportView({ report, className, ...props }: Props) {
           </p>
         </Plate>
       ) : (
-        <section aria-label="Results" className="flex flex-col gap-4">
+        <section aria-labelledby="report-results" className="flex flex-col gap-3">
+          <h2 id="report-results" className="text-xl">
+            Results
+          </h2>
           {report.results.questions.map((question, index) => (
             <QuestionResult
               key={question.id}

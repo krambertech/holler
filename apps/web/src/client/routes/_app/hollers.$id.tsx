@@ -4,19 +4,24 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, Navigate, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
 import { useDeferredValue, useMemo, useState } from "react";
+import { EmptyState } from "@/components/empty-state";
 import { ErrorState } from "@/components/error-state";
 import { ModeGlyph } from "@/components/mode-glyph";
 import { HollerActions } from "@/components/results/holler-actions";
 import { HollerPeople } from "@/components/results/holler-people";
 import { HollerRounds } from "@/components/results/holler-rounds";
-import { type PersonLookup, QuestionResult } from "@/components/results/question-result";
+import {
+  type PersonLookup,
+  QuestionResult,
+  type ScaleEnds,
+} from "@/components/results/question-result";
 import { ShareDialog } from "@/components/results/share-dialog";
 import { Skeleton } from "@/components/skeleton";
 import { StatusChip } from "@/components/ui/chip";
 import { Plate } from "@/components/ui/plate";
 import { toast } from "@/components/ui/toast";
 import { api } from "@/lib/api";
-import { closesLabel, count, dayAndTime, momentLabel } from "@/lib/format";
+import { count, dayAndTime, momentLabel } from "@/lib/format";
 import {
   directoryQuery,
   hollerPeopleQuery,
@@ -143,9 +148,30 @@ function HollerPage() {
   if (writtenInEditor(h)) return <Navigate to="/new" search={{ draft: h.id }} replace />;
   const live = h.status === "live";
 
+  const actions = sent && (
+    <HollerActions
+      hollerId={h.id}
+      status={h.status}
+      isCreator={isCreator}
+      canExport={results.data?.state === "open"}
+      waitingCount={people.data?.waitingCount ?? 0}
+      onCopyAsMarkdown={() => void copyAsMarkdown()}
+      onCopyIntoDraft={() => copy.mutate()}
+      onClose={() => close.mutate()}
+      onShare={() => setSharingOpen(true)}
+      copying={copy.isPending}
+      closing={close.isPending}
+      repeats={rounds.data?.repeat != null}
+      nextRoundAt={nextRound?.sendAt ?? null}
+      onStopRepeating={() => stopRepeating.mutate()}
+      stopping={stopRepeating.isPending}
+      className="shrink-0 sm:mt-1"
+    />
+  );
+
   return (
     <>
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-col gap-3">
         <Link
           to="/"
           className="relative inline-flex w-fit items-center gap-1.5 rounded-sm py-1 text-ink-2 hoverable:hover:text-ink pointer-coarse:before:absolute pointer-coarse:before:-inset-2 pointer-coarse:before:content-['']"
@@ -153,25 +179,22 @@ function HollerPage() {
           <ArrowLeft aria-hidden size={16} strokeWidth={2} />
           Your hollers
         </Link>
-        {sent && (
-          <HollerActions
-            hollerId={h.id}
-            status={h.status}
-            isCreator={isCreator}
-            canExport={results.data?.state === "open"}
-            waitingCount={people.data?.waitingCount ?? 0}
-            onCopyAsMarkdown={() => void copyAsMarkdown()}
-            onCopyIntoDraft={() => copy.mutate()}
-            onClose={() => close.mutate()}
-            onShare={() => setSharingOpen(true)}
-            copying={copy.isPending}
-            closing={close.isPending}
-            repeats={rounds.data?.repeat != null}
-            nextRoundAt={nextRound?.sendAt ?? null}
-            onStopRepeating={() => stopRepeating.mutate()}
-            stopping={stopRepeating.isPending}
-          />
-        )}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <header className="flex min-w-0 items-start gap-4">
+            <ModeGlyph mode={h.mode} quiet={!live} />
+            <div className="min-w-0 flex-1">
+              <h1 className="text-pretty text-4xl tracking-title">
+                {h.displayTitle || "Untitled"}
+              </h1>
+              <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-muted text-sm">
+                {/* Only a live Holler is calling; scheduled, draft and closed are all quiet. */}
+                <StatusChip status={live ? "live" : "closed"}>{statusWord[h.status]}</StatusChip>
+                <span>{metaLine(h, live)}</span>
+              </div>
+            </div>
+          </header>
+          {actions}
+        </div>
       </div>
       {isCreator && sent && (
         <HollerSharing
@@ -181,17 +204,6 @@ function HollerPage() {
           onOpenChange={setSharingOpen}
         />
       )}
-      <header className="flex items-start gap-4">
-        <ModeGlyph mode={h.mode} quiet={!live} />
-        <div className="min-w-0 flex-1">
-          <h1 className="text-pretty text-4xl tracking-title">{h.displayTitle || "Untitled"}</h1>
-          <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-muted text-sm">
-            {/* Only a live Holler is calling; scheduled, draft and closed are all quiet. */}
-            <StatusChip status={live ? "live" : "closed"}>{statusWord[h.status]}</StatusChip>
-            <span>{metaLine(h, live)}</span>
-          </div>
-        </div>
-      </header>
 
       <ScheduledNotice holler={h} />
 
@@ -211,7 +223,11 @@ function HollerPage() {
       )}
 
       {results.data && (
-        <HollerResults results={results.data} people={h.anonymous ? new Map() : lookup} />
+        <HollerResults
+          results={results.data}
+          people={h.anonymous ? new Map() : lookup}
+          ends={scaleEnds(h)}
+        />
       )}
     </>
   );
@@ -298,32 +314,51 @@ function ScheduledNotice({ holler }: { holler: HollerOut }) {
 interface HollerResultsProps {
   results: Results;
   people: Map<string, PersonLookup>;
+  ends: ReadonlyMap<string, ScaleEnds>;
 }
 
-function HollerResults({ results, people }: HollerResultsProps) {
+function scaleEnds(h: HollerOut): ReadonlyMap<string, ScaleEnds> {
+  return new Map(h.questions.map((q) => [q.id, { low: q.lowLabel, high: q.highLabel }]));
+}
+
+function HollerResults({ results, people, ends }: HollerResultsProps) {
   if (results.state === "gated") {
     return (
-      <Plate className="px-6 py-5">
-        <h2 className="text-lg">Results open at {anonymousThreshold} answers</h2>
-        <p className="mt-1 max-w-[60ch] text-ink-2">
-          This Holler is anonymous, so its results stay closed until enough people answered that no
-          one can be picked out.{" "}
-          {results.needed === 1
-            ? "One more answer opens them."
-            : `${results.needed} more answers open them.`}
-        </p>
-      </Plate>
+      <EmptyState
+        illustration="locked"
+        title={`Results open at ${anonymousThreshold} answers`}
+        description={
+          results.needed === 1
+            ? "This Holler is anonymous, so its results stay closed until enough people answered that no one can be picked out. One more answer opens them."
+            : `This Holler is anonymous, so its results stay closed until enough people answered that no one can be picked out. ${count(results.needed)} more answers open them.`
+        }
+      />
     );
   }
   if (results.questions.length === 0) return null;
+  const answered = results.questions.some((question) => question.answeredCount > 0);
   return (
-    <section aria-labelledby="results-heading" className="flex flex-col gap-4">
+    <section aria-labelledby="results-heading" className="flex flex-col gap-3">
       <h2 id="results-heading" className="text-xl">
         Results
       </h2>
-      {results.questions.map((question, index) => (
-        <QuestionResult key={question.id} question={question} number={index + 1} people={people} />
-      ))}
+      {!answered && (
+        <EmptyState
+          illustration="results"
+          title="No answers yet"
+          description="Each question's results show here as people answer."
+        />
+      )}
+      {answered &&
+        results.questions.map((question, index) => (
+          <QuestionResult
+            key={question.id}
+            question={question}
+            number={index + 1}
+            people={people}
+            ends={ends.get(question.id)}
+          />
+        ))}
     </section>
   );
 }
@@ -331,7 +366,7 @@ function HollerResults({ results, people }: HollerResultsProps) {
 function metaLine(h: HollerOut, live: boolean): string {
   const parts = [modeLabels[h.mode]];
   if (h.anonymous) parts.push("Anonymous");
-  if (live && h.closesAt) parts.push(`Closes ${closesLabel(h.closesAt)}`);
+  if (live && h.closesAt) parts.push(`Closes ${momentLabel(h.closesAt)}`);
   if (h.status === "closed" && h.closedAt) parts.push(`Closed ${dayAndTime(h.closedAt)}`);
   return parts.join(" · ");
 }

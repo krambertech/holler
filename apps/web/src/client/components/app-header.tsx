@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { LogOut, Settings } from "lucide-react";
+import { Inbox, LogOut, Settings } from "lucide-react";
 import type { ComponentProps } from "react";
 import { cn } from "@/lib/cn";
 import { Logo } from "./logo";
@@ -10,9 +10,11 @@ import {
   DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuLinkItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
+import { TriggerChevron } from "./ui/overlay-list";
 
 interface Member {
   name: string;
@@ -38,24 +40,23 @@ function AppHeader({ me, workspaceName, onSignOut, className, ...props }: Props)
         <Logo />
       </Link>
       {me && (
-        <nav aria-label="You" className="flex items-center gap-1">
-          <Link
-            to="/answers"
-            className="relative rounded-control px-2.5 py-1.5 text-base text-muted transition-colors hoverable:hover:bg-hover hoverable:hover:text-ink data-[status=active]:text-ink pointer-coarse:before:absolute pointer-coarse:before:-inset-1 pointer-coarse:before:content-['']"
-          >
-            Your answers
-          </Link>
+        <nav aria-label="You" className="flex items-center">
           <DropdownMenu>
             <DropdownMenuTrigger className="-me-2 flex min-h-11 items-center gap-2 rounded-control px-2 py-1 text-base text-muted transition-colors hoverable:hover:bg-hover hoverable:hover:text-ink data-popup-open:bg-hover data-popup-open:text-ink">
               <Avatar name={me.name} seed={me.slackUserId} src={me.avatarUrl} />
               <span className="max-sm:sr-only">{me.name}</span>
               <span className="sr-only">, account</span>
+              <TriggerChevron />
             </DropdownMenuTrigger>
             <DropdownMenuContent aria-label="Account" align="end">
               <DropdownMenuGroup>
                 <DropdownMenuLabel>
                   {workspaceName ? `${me.name} in ${workspaceName}` : me.name}
                 </DropdownMenuLabel>
+                <DropdownMenuLinkItem render={<Link to="/answers" />}>
+                  <Inbox />
+                  Your answers
+                </DropdownMenuLinkItem>
                 <DropdownMenuItem onClick={() => navigate({ to: "/settings" })}>
                   <Settings />
                   Settings

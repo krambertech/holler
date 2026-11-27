@@ -1,0 +1,725 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Holler page</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geologica:wght@300;330;400;500;600&display=swap">
+<style>
+:root,
+[data-theme="light"] {
+  color-scheme: light;
+
+  --weight-body: 300;
+
+  --canvas: oklch(0.974 0.003 67.8);
+  --plate: oklch(1 0 0);
+  --well: oklch(0.956 0.006 84.6);
+  --track: oklch(0.941 0.007 80.7);
+  --hover: oklch(0.2 0.01 53.5 / 0.055);
+  --edge: oklch(0.2 0.029 60.5 / 0.1);
+  --edge-2: oklch(0.2 0.029 60.5 / 0.14);
+  --edge-3: oklch(0.2 0.029 60.5 / 0.26);
+  --divider: oklch(0.2 0.029 60.5 / 0.08);
+  --scrim: oklch(0.2 0.03 340 / 0.32);
+  --float: 0 0 0 1px oklch(0.2 0.029 60.5 / 0.12), 0 12px 32px -12px oklch(0.2 0.029 60.5 / 0.28);
+
+  --ink: oklch(0.2 0.016 53.5);
+  --ink-2: oklch(0.379 0.016 55.9);
+  --muted: oklch(0.495 0.019 52.3);
+  --faint: oklch(0.604 0.017 54.8);
+
+  --primary: oklch(0.426 0.134 337.6);
+  --primary-hover: oklch(0.38 0.125 337.6);
+  --on-primary: oklch(1 0 0);
+  --tint: oklch(0.929 0.028 334.9);
+  --tint-ink: oklch(0.347 0.113 337.5);
+  --focus: oklch(0.426 0.134 337.6);
+
+  --plum: oklch(0.426 0.134 337.6);
+  --deep-plum: oklch(0.266 0.081 337.9);
+  --pink: oklch(0.628 0.196 349.5);
+  --soft-pink: oklch(0.793 0.122 343);
+  --slack-red: oklch(0.588 0.222 11.5);
+  --slack-blue: oklch(0.768 0.13 223.2);
+  --slack-green: oklch(0.691 0.142 160.2);
+  --slack-yellow: oklch(0.797 0.152 82.7);
+
+  --live: oklch(0.935 0.035 345);
+  --live-ink: oklch(0.42 0.14 352);
+  --live-dot: oklch(0.628 0.196 349.5);
+
+  --answered: oklch(0.932 0.027 148.8);
+  --answered-ink: oklch(0.401 0.083 157.9);
+  --answered-dot: oklch(0.515 0.11 156.8);
+  --waiting: oklch(0.944 0.049 86.4);
+  --waiting-ink: oklch(0.434 0.09 79.3);
+  --waiting-dot: oklch(0.6 0.13 70);
+  --away: oklch(0.942 0.005 247.9);
+  --away-ink: oklch(0.406 0.031 257.7);
+  --away-dot: oklch(0.619 0.024 252.6);
+  --closed: var(--well);
+  --closed-ink: var(--ink-2);
+  --closed-dot: var(--muted);
+  --toast-action: var(--soft-pink);
+  --danger: oklch(0.932 0.028 25.9);
+  --danger-ink: oklch(0.424 0.149 28.5);
+  --danger-dot: oklch(0.501 0.178 28.7);
+
+  --chart-1: oklch(0.266 0.081 337.9);
+  --chart-2: oklch(0.426 0.134 337.6);
+  --chart-3: oklch(0.566 0.158 340);
+  --chart-4: oklch(0.744 0.124 340.4);
+  --chart-5: oklch(0.892 0.051 340.5);
+
+  --avatar-1: oklch(0.916 0.034 262);
+  --avatar-1-ink: oklch(0.365 0.115 263);
+  --avatar-2: oklch(0.927 0.035 52);
+  --avatar-2-ink: oklch(0.414 0.109 42.7);
+  --avatar-3: oklch(0.921 0.039 303.4);
+  --avatar-3-ink: oklch(0.372 0.168 292.1);
+  --avatar-4: oklch(0.932 0.027 148.8);
+  --avatar-4-ink: oklch(0.401 0.083 157.9);
+  --avatar-5: oklch(0.941 0.059 83.5);
+  --avatar-5-ink: oklch(0.383 0.08 78.5);
+  --avatar-6: oklch(0.931 0.032 3.1);
+  --avatar-6-ink: oklch(0.394 0.125 9.6);
+
+  --illo-grid: var(--edge-2);
+  --illo-object: var(--plate);
+  --illo-bar: oklch(0.912 0.009 72);
+  --illo-line: oklch(0.2 0.029 60.5 / 0.3);
+  --illo-neutral: var(--tint);
+  --illo-neutral-ink: var(--tint-ink);
+  --illo-warning: var(--waiting);
+  --illo-warning-ink: var(--waiting-ink);
+  --illo-danger: var(--danger);
+  --illo-danger-ink: var(--danger-ink);
+}
+
+
+[data-theme="dark"] {
+  color-scheme: dark;
+  --weight-body: 330;
+
+  --canvas: oklch(0.187 0.013 338.6);
+  --plate: oklch(0.232 0.019 334.1);
+  --well: oklch(0.287 0.025 337.8);
+  --track: oklch(0.3 0.025 337.8);
+  --hover: oklch(1 0 0 / 0.07);
+  --edge: oklch(1 0 0 / 0.08);
+  --edge-2: oklch(1 0 0 / 0.16);
+  --edge-3: oklch(1 0 0 / 0.28);
+  --divider: oklch(1 0 0 / 0.07);
+  --float: 0 0 0 1px oklch(1 0 0 / 0.12), 0 18px 40px -16px oklch(0 0 0 / 0.6);
+  --scrim: oklch(0 0 0 / 0.55);
+
+  --ink: oklch(0.954 0.007 340.4);
+  --ink-2: oklch(0.86 0.012 338);
+  --muted: oklch(0.762 0.017 335.2);
+  --faint: oklch(0.55 0.017 335);
+
+  --primary: oklch(0.793 0.122 343);
+  --primary-hover: oklch(0.83 0.11 343);
+  --on-primary: oklch(0.266 0.081 337.9);
+  --tint: oklch(0.33 0.07 338);
+  --tint-ink: oklch(0.89 0.06 343);
+  --focus: oklch(0.793 0.122 343);
+  --live: oklch(0.33 0.07 338);
+  --live-ink: oklch(0.89 0.06 343);
+  --live-dot: oklch(0.793 0.122 343);
+
+  --answered: oklch(0.3 0.04 155);
+  --answered-ink: oklch(0.87 0.08 155);
+  --answered-dot: oklch(0.72 0.13 156);
+  --waiting: oklch(0.32 0.045 80);
+  --waiting-ink: oklch(0.89 0.09 85);
+  --waiting-dot: oklch(0.78 0.14 78);
+  --away: oklch(0.3 0.015 250);
+  --away-ink: oklch(0.87 0.02 250);
+  --away-dot: oklch(0.7 0.025 250);
+  --danger: oklch(0.31 0.06 28);
+  --danger-ink: oklch(0.87 0.07 28);
+  --danger-dot: oklch(0.68 0.17 28);
+  --closed: var(--well);
+  --closed-ink: var(--ink-2);
+  --closed-dot: var(--muted);
+  --toast-action: var(--plum);
+
+  --chart-1: oklch(0.892 0.051 340.5);
+  --chart-2: oklch(0.793 0.122 343);
+  --chart-3: oklch(0.66 0.15 341);
+  --chart-4: oklch(0.52 0.14 339);
+  --chart-5: oklch(0.4 0.1 338);
+
+  --avatar-1: oklch(0.34 0.06 262);
+  --avatar-1-ink: oklch(0.88 0.05 262);
+  --avatar-2: oklch(0.34 0.05 52);
+  --avatar-2-ink: oklch(0.89 0.05 52);
+  --avatar-3: oklch(0.34 0.07 300);
+  --avatar-3-ink: oklch(0.89 0.05 300);
+  --avatar-4: oklch(0.33 0.045 150);
+  --avatar-4-ink: oklch(0.88 0.06 150);
+  --avatar-5: oklch(0.35 0.05 80);
+  --avatar-5-ink: oklch(0.9 0.07 85);
+  --avatar-6: oklch(0.34 0.06 5);
+  --avatar-6-ink: oklch(0.89 0.05 5);
+
+     mid tone with light ink, so it glows rather than sinking into the dark. */
+  --illo-grid: oklch(1 0 0 / 0.16);
+  --illo-object: oklch(0.355 0.024 338);
+  --illo-bar: oklch(0.47 0.026 338);
+  --illo-line: oklch(1 0 0 / 0.24);
+  --illo-neutral: oklch(0.5 0.13 340);
+  --illo-neutral-ink: oklch(0.93 0.045 343);
+  --illo-warning: oklch(0.58 0.11 75);
+  --illo-warning-ink: oklch(0.95 0.06 85);
+  --illo-danger: oklch(0.52 0.14 27);
+  --illo-danger-ink: oklch(0.93 0.05 28);
+}
+
+
+:root { --font: "Geologica", ui-sans-serif, system-ui, sans-serif; --ease-out: cubic-bezier(0.22, 1, 0.36, 1); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { color-scheme: dark; } }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; font-family: var(--font); font-weight: var(--weight-body); font-size: 15px; line-height: 1.45; color: var(--ink); background: var(--canvas); }
+button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+::selection { background: var(--tint); color: var(--tint-ink); }
+.tab { font-variant-numeric: tabular-nums; }
+
+/* The board around the frames */
+.board { padding: 24px 16px 64px; max-width: 1760px; margin: 0 auto; }
+.board-head { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: flex-end; justify-content: space-between; margin-bottom: 16px; }
+.board h1 { font-weight: 400; font-size: 27px; letter-spacing: -0.025em; }
+.board-sub { color: var(--muted); font-size: 13.5px; margin-top: 4px; max-width: 80ch; }
+.controls { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; }
+.seg { display: inline-flex; padding: 3px; gap: 2px; background: var(--track); border-radius: 10px; flex-wrap: wrap; }
+.seg button { padding: 5px 11px; border-radius: 7px; font-size: 13.5px; color: var(--ink-2); white-space: nowrap; }
+.seg button[aria-pressed="true"] { background: var(--plate); color: var(--ink); box-shadow: 0 0 0 1px var(--edge); font-weight: 400; }
+.dir-note { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px 32px; padding: 16px 20px; background: var(--plate); border-radius: 16px; box-shadow: 0 0 0 1px var(--edge); margin-bottom: 20px; }
+.dir-note h2 { font-weight: 400; font-size: 19px; letter-spacing: -0.02em; grid-column: 1 / -1; }
+.dir-note p, .dir-note li { color: var(--ink-2); font-size: 13.5px; }
+.dir-note ul { padding-inline-start: 18px; display: grid; gap: 2px; }
+.dir-note b { font-weight: 400; color: var(--ink); }
+.frames { display: flex; gap: 24px; align-items: flex-start; }
+.frame-wrap { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.frame-wrap.desk { flex: 1 1 auto; }
+.frame-wrap.phone { flex: 0 0 375px; }
+.frame-label { font-size: 12px; color: var(--muted); }
+.frame { background: var(--canvas); border-radius: 12px; box-shadow: 0 0 0 1px var(--edge-2); overflow: hidden; color: var(--ink); font-weight: var(--weight-body); }
+.frame.desk { width: 1280px; transform-origin: 0 0; }
+.frame.phone { width: 375px; }
+.desk-holder { overflow: hidden; }
+.desk-holder { width: 100%; }
+@media (max-width: 1100px) { .frames { flex-direction: column; align-items: stretch; } .frame-wrap.desk { width: 100%; } .frame-wrap.phone { flex-basis: auto; align-self: flex-start; } .dir-note { grid-template-columns: 1fr; } }
+
+/* The app inside a frame */
+.app-header { display: flex; align-items: center; justify-content: space-between; height: 64px; }
+.logo { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; font-size: 19px; letter-spacing: -0.02em; }
+.mark { width: 28px; height: 28px; border-radius: 8px; background: var(--plum); display: grid; place-items: center; }
+.head-right { display: flex; align-items: center; gap: 18px; font-size: 13.5px; color: var(--ink-2); }
+.page { margin: 0 auto; width: 100%; max-width: 880px; padding: 0 80px 64px; display: flex; flex-direction: column; gap: 24px; }
+.phone .page { padding: 0 16px 40px; gap: 20px; }
+.phone .app-header { height: 56px; }
+.phone .head-right .hide-phone { display: none; }
+
+.toprow { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 8px; }
+.back { display: inline-flex; align-items: center; gap: 6px; color: var(--ink-2); font-size: 15px; }
+.actions { display: flex; gap: 8px; }
+.btn { position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 32px; padding: 0 12px; border-radius: 8px; font-size: 13.5px; background: var(--plate); box-shadow: 0 0 0 1px var(--edge-2); color: var(--ink); white-space: nowrap; font-weight: 400; }
+.btn.md { height: 40px; padding: 0 16px; font-size: 15px; border-radius: 10px; }
+.btn.icon { width: 32px; padding: 0; }
+.btn.primary { background: var(--primary); color: var(--on-primary); box-shadow: none; font-weight: 500; }
+.btn.primary[disabled] { opacity: 0.5; cursor: not-allowed; }
+.btn.ghost { background: none; box-shadow: none; color: var(--ink-2); }
+.phone .btn .lbl { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.phone .btn.keep .lbl { position: static; width: auto; height: auto; clip: auto; }
+.phone .btn:has(.lbl):not(.keep) { width: 32px; padding: 0; }
+.ico { width: 16px; height: 16px; flex: none; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.ico.s18 { width: 18px; height: 18px; }
+.ico.s14 { width: 14px; height: 14px; }
+
+.title { display: flex; align-items: flex-start; gap: 16px; }
+.glyph { width: 38px; height: 38px; border-radius: 9px; background: var(--tint); color: var(--tint-ink); display: grid; place-items: center; flex: none; margin-top: 2px; }
+.glyph.quiet { background: var(--well); color: var(--muted); }
+.phone .glyph { width: 32px; height: 32px; }
+.title h1 { font-size: 27px; font-weight: 400; letter-spacing: -0.025em; line-height: 1.2; text-wrap: pretty; }
+.phone .title h1 { font-size: 24px; }
+.meta { margin-top: 8px; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; color: var(--muted); font-size: 13.5px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 10px; border-radius: 999px; font-size: 12px; font-weight: 400; white-space: nowrap; }
+.chip .dot { width: 6px; height: 6px; border-radius: 50%; }
+.chip.live { background: var(--live); color: var(--live-ink); } .chip.live .dot { background: var(--live-dot); }
+.chip.answered { background: var(--answered); color: var(--answered-ink); } .chip.answered .dot { background: var(--answered-dot); }
+.chip.waiting { background: var(--waiting); color: var(--waiting-ink); } .chip.waiting .dot { background: var(--waiting-dot); }
+.chip.closed { background: var(--closed); color: var(--closed-ink); } .chip.closed .dot { background: var(--closed-dot); }
+.chip.danger { background: var(--danger); color: var(--danger-ink); } .chip.danger .dot { background: var(--danger-dot); }
+.chip.tint { background: var(--tint); color: var(--tint-ink); }
+
+.plate { background: var(--plate); border-radius: 16px; box-shadow: 0 0 0 1px var(--edge); overflow: hidden; }
+.under { background: var(--tint); border-radius: 16px; box-shadow: 0 0 0 1px var(--edge); display: flex; flex-direction: column; }
+.under > .plate { box-shadow: 0 0 0 1px var(--edge); }
+.strip { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; padding: 10px 12px 10px 20px; color: var(--tint-ink); font-size: 13.5px; }
+.phone .strip { padding: 10px 12px 12px 16px; }
+.row { border-top: 1px solid var(--divider); }
+.row:first-child { border-top: 0; }
+.px { padding-inline: 20px; } .phone .px { padding-inline: 16px; }
+.h2 { font-size: 17px; font-weight: 400; letter-spacing: -0.01em; }
+.h-section { font-size: 19px; font-weight: 400; letter-spacing: -0.02em; }
+.muted { color: var(--muted); } .ink2 { color: var(--ink-2); } .sm { font-size: 13.5px; } .xs { font-size: 12px; }
+.progress { height: 6px; border-radius: 999px; background: var(--track); overflow: hidden; }
+.progress > i { display: block; height: 100%; border-radius: 999px; background: var(--primary); }
+
+.av { width: 24px; height: 24px; border-radius: 50%; display: inline-grid; place-items: center; font-size: 10px; font-weight: 400; flex: none; }
+.av.sm { width: 20px; height: 20px; font-size: 9px; }
+.av.lg { width: 28px; height: 28px; font-size: 11px; }
+.av.w { opacity: 0.45; filter: grayscale(1); }
+.av1 { background: var(--avatar-1); color: var(--avatar-1-ink); } .av2 { background: var(--avatar-2); color: var(--avatar-2-ink); }
+.av3 { background: var(--avatar-3); color: var(--avatar-3-ink); } .av4 { background: var(--avatar-4); color: var(--avatar-4-ink); }
+.av5 { background: var(--avatar-5); color: var(--avatar-5-ink); } .av6 { background: var(--avatar-6); color: var(--avatar-6-ink); }
+.stack { display: inline-flex; align-items: center; }
+.stack > * { box-shadow: 0 0 0 2px var(--plate); }
+.stack > * + * { margin-inline-start: -6px; }
+.stack .more { background: var(--well); color: var(--ink-2); }
+
+.person { display: flex; align-items: center; gap: 12px; padding-block: 10px; }
+.person .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Question results: the head mirrors the editor's card */
+.q-head { display: flex; gap: 12px; align-items: flex-start; padding: 16px 20px 12px; }
+.phone .q-head { padding: 14px 16px 10px; }
+.num { width: 24px; height: 24px; border-radius: 6px; background: var(--well); color: var(--ink-2); font-size: 12px; display: grid; place-items: center; flex: none; margin-top: 1px; font-variant-numeric: tabular-nums; }
+.q-prompt { font-size: 17px; font-weight: 400; letter-spacing: -0.01em; text-wrap: pretty; line-height: 1.3; }
+.q-meta { margin-top: 4px; display: flex; flex-wrap: wrap; align-items: center; gap: 2px 10px; color: var(--muted); font-size: 13.5px; }
+.q-meta .ty { display: inline-flex; align-items: center; gap: 5px; }
+.q-body { padding: 4px 20px 18px 56px; }
+.phone .q-body { padding: 4px 16px 16px; }
+.figure-big { font-size: 24px; font-weight: 400; letter-spacing: -0.02em; line-height: 1; }
+
+.bars { list-style: none; display: grid; gap: 12px; }
+.bar-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.bar-label { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.bar-val { display: flex; align-items: center; gap: 10px; color: var(--ink-2); flex: none; font-variant-numeric: tabular-nums; font-size: 13.5px; }
+.bar-val b { font-weight: 400; color: var(--ink); }
+.bar { margin-top: 6px; height: 10px; border-radius: 3px; background: var(--well); position: relative; overflow: hidden; }
+.bar > i { position: absolute; inset-block: 0; inset-inline-start: 0; background: var(--chart-2); border-radius: 0 3px 3px 0; }
+.bar.lead > i { background: var(--chart-2); }
+
+.seg-bar { display: flex; gap: 2px; height: 28px; }
+.seg-bar > span { border-radius: 4px; display: flex; align-items: center; padding-inline: 8px; font-size: 12px; font-variant-numeric: tabular-nums; min-width: 0; overflow: visible; white-space: nowrap; }
+.legend { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13.5px; color: var(--ink-2); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+.c1 { background: var(--chart-1); } .c2 { background: var(--chart-2); } .c3 { background: var(--chart-3); } .c4 { background: var(--chart-4); } .c5 { background: var(--chart-5); }
+.on-dark { color: oklch(1 0 0); } .on-light { color: oklch(0.266 0.081 337.9); }
+[data-theme="dark"] .night-flip.on-dark { color: oklch(0.266 0.081 337.9); }
+[data-theme="dark"] .night-flip.on-light { color: oklch(1 0 0); }
+
+.figs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.phone .figs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.figs dt { font-size: 13.5px; color: var(--muted); }
+.figs dd { font-size: 24px; letter-spacing: -0.02em; }
+.dots { margin-top: 14px; display: grid; align-items: end; gap: 2px; }
+.dots .col { display: flex; flex-direction: column-reverse; align-items: center; gap: 3px; }
+.dots .col i { width: 10px; height: 10px; border-radius: 50%; background: var(--chart-2); box-shadow: 0 0 0 2px var(--plate); }
+.dots-axis { border-top: 1px solid var(--edge-2); margin-top: 6px; padding-top: 4px; display: grid; font-size: 12px; color: var(--muted); text-align: center; font-variant-numeric: tabular-nums; }
+
+.written { list-style: none; }
+.written li { padding: 12px 0; border-top: 1px solid var(--divider); display: grid; gap: 4px; }
+.written li:first-child { border-top: 0; }
+.written q { quotes: none; color: var(--ink-2); text-wrap: pretty; }
+.by { display: inline-flex; align-items: center; gap: 8px; color: var(--muted); font-size: 13.5px; }
+.sub-h { font-size: 13.5px; color: var(--muted); margin: 14px 0 2px; }
+.linkish { color: var(--ink-2); font-size: 13.5px; display: inline-flex; align-items: center; gap: 6px; text-decoration: underline; text-decoration-color: var(--edge-3); text-underline-offset: 3px; }
+
+.notice { padding: 20px 24px; }
+.phone .notice { padding: 18px 16px; }
+.empty { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 32px 24px; gap: 4px; }
+.empty .illo { margin-bottom: 10px; }
+
+.tabs { display: inline-flex; padding: 3px; gap: 2px; background: var(--track); border-radius: 10px; }
+.tabs button { padding: 5px 14px; border-radius: 7px; font-size: 13.5px; color: var(--ink-2); display: inline-flex; gap: 6px; align-items: center; }
+.tabs button[aria-selected="true"] { background: var(--plate); color: var(--ink); box-shadow: 0 0 0 1px var(--edge); }
+.tabs .n { color: var(--muted); font-variant-numeric: tabular-nums; }
+
+.ov-row { display: grid; grid-template-columns: 24px minmax(0, 1fr) minmax(0, 220px) 16px; gap: 12px; align-items: center; padding: 12px 20px; width: 100%; text-align: start; }
+.phone .ov-row { grid-template-columns: 24px minmax(0, 1fr) 16px; padding: 12px 16px; }
+.phone .ov-row .ov-viz { grid-column: 2 / 3; grid-row: 2; } .phone .ov-row .chev { grid-column: 3; grid-row: 1; } .phone .ov-row .ov-viz:empty { display: none; }
+.ov-row:hover { background: var(--hover); }
+.ov-prompt { font-weight: 400; }
+.ov-lead { color: var(--ink-2); font-size: 13.5px; margin-top: 2px; font-variant-numeric: tabular-nums; }
+.ov-viz .seg-bar { height: 8px; } .ov-viz .seg-bar > span { border-radius: 999px; padding: 0; }
+.chev { color: var(--muted); transition: transform 150ms var(--ease-out); }
+.open .chev { transform: rotate(180deg); }
+.ov-open { padding: 0 0 4px; }
+
+.rounds li { display: grid; grid-template-columns: 112px minmax(0, 1fr) auto; gap: 8px 20px; align-items: center; padding: 12px 20px; border-top: 1px solid var(--divider); }
+.phone .rounds li { grid-template-columns: minmax(0, 1fr) auto; padding: 12px 16px; }
+.phone .rounds li .rm { grid-column: 1 / -1; order: 3; }
+.rounds li.cur { background: var(--tint); }
+.callout { font-size: 13.5px; color: var(--ink-2); background: var(--plate); box-shadow: 0 0 0 1px var(--edge); border-radius: 12px; padding: 12px 16px; }
+
+/* Revision */
+.acct { position: relative; }
+.acct-btn { display: inline-flex; align-items: center; gap: 8px; padding: 4px 8px; margin-inline-end: -8px; border-radius: 10px; color: var(--muted); font-size: 15px; }
+.acct-btn.open, .acct-btn:hover { background: var(--hover); color: var(--ink); }
+.menu { position: absolute; inset-inline-end: -8px; top: calc(100% + 6px); min-width: 220px; background: var(--plate); border-radius: 12px; padding: 6px; z-index: 10; box-shadow: 0 0 0 1px var(--edge), 0 12px 32px -12px oklch(0.2 0.029 60.5 / 0.28); display: grid; }
+.menu-label { font-size: 12px; color: var(--muted); padding: 6px 10px 4px; }
+.menu button { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 8px; font-size: 15px; text-align: start; }
+.menu button .ico { color: var(--ink-2); }
+.menu button:first-of-type { background: var(--hover); }
+.menu hr { border: 0; border-top: 1px solid var(--divider); margin: 4px 0; }
+.head-group { display: flex; flex-direction: column; gap: 12px; margin-top: 4px; }
+.title-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.title-row .actions { margin-top: 4px; flex: none; }
+.phone .title-row { flex-direction: column; gap: 14px; }
+.phone .title-row .actions { margin-top: 0; }
+.phone .title-row .actions .btn .lbl { position: static; width: auto; height: auto; clip: auto; }
+.phone .title-row .actions .btn:has(.lbl) { width: auto; padding: 0 12px; }
+.results { display: flex; flex-direction: column; gap: 12px; }
+.q-count { margin-inline-start: auto; color: var(--muted); font-size: 13.5px; white-space: nowrap; padding-top: 2px; }
+.q-meta { gap: 2px 0; }
+.phone .row > .ink2.sm { white-space: nowrap; }
+.q-meta > * + *::before { content: "·"; margin-inline: 6px; }
+.avg { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; margin-bottom: 14px; }
+.ends { display: flex; justify-content: space-between; gap: 12px; margin-top: 8px; font-size: 13.5px; color: var(--muted); }
+.seg-bar > span { position: relative; cursor: default; }
+.seg-bar > span:hover, .seg-bar > span:focus-visible { filter: brightness(1.08); outline: none; }
+.seg-bar > span:hover::after, .seg-bar > span:focus-visible::after { content: attr(data-tip); position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%); background: var(--plate); color: var(--ink); font-size: 13.5px; padding: 6px 10px; border-radius: 8px; white-space: nowrap; z-index: 5; box-shadow: 0 0 0 1px var(--edge), 0 12px 32px -12px oklch(0.2 0.029 60.5 / 0.28); }
+.who-rows { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 8px 24px; font-size: 13.5px; color: var(--ink-2); }
+.who-rows > span { display: inline-flex; align-items: center; gap: 8px; }
+.who-rows i { width: 10px; height: 10px; border-radius: 3px; }
+.written li { display: flex; gap: 12px; align-items: flex-start; }
+.written li > div { display: grid; gap: 2px; min-width: 0; }
+.written .who { font-size: 13.5px; color: var(--muted); }
+.written q { color: var(--ink); }
+.aside { margin-top: 16px; background: var(--well); border-radius: 12px; padding: 4px 16px 2px; }
+.aside-h { font-size: 13.5px; color: var(--ink-2); padding-top: 10px; }
+.aside .written li { border-top-color: var(--edge); padding: 10px 0; }
+.aside .av { width: 20px; height: 20px; font-size: 9px; margin-top: 1px; }
+</style>
+</head>
+<body>
+<div class="board">
+  <div class="board-head">
+    <div>
+      <h1>The Holler page</h1>
+      <p class="board-sub">Direction A (chase, then read), with your notes applied. Pick a state, how scales draw, and day or night; each shows at 1280 and 375 px.</p>
+    </div>
+  </div>
+  <div class="controls" style="margin-bottom: 16px">
+    <div class="seg" id="state" role="group" aria-label="State"></div>
+    <div class="seg" id="scales" role="group" aria-label="Scales"></div>
+    <div class="seg" id="menu" role="group" aria-label="Menu"></div>
+    <div class="seg" id="theme" role="group" aria-label="Theme"></div>
+  </div>
+  <div class="dir-note" id="note"></div>
+  <div class="frames">
+    <div class="frame-wrap desk"><span class="frame-label">1280 px</span><div class="desk-holder" id="deskHolder"><div class="frame desk" id="desk"></div></div></div>
+    <div class="frame-wrap phone"><span class="frame-label">375 px</span><div class="frame phone" id="phone"></div></div>
+  </div>
+</div>
+<script>
+const ICONS = {
+  back: '<path d="m12 19-7-7 7-7"/><path d="M19 12H5"/>',
+  share: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/>',
+  download: '<path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/>',
+  more: '<circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>',
+  single: '<circle cx="12" cy="12" r="1"/><circle cx="12" cy="12" r="10"/>',
+  multi: '<rect width="18" height="18" x="3" y="3" rx="2"/><path d="m16 9-5.5 5.5L8 12"/>',
+  binary: '<circle cx="12" cy="12" r="10"/><path d="m16 9-5.5 5.5L8 12"/>',
+  scale: '<path d="m12 14 4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/>',
+  number: '<line x1="4" x2="20" y1="9" y2="9"/><line x1="4" x2="20" y1="15" y2="15"/><line x1="10" x2="8" y1="3" y2="21"/><line x1="16" x2="14" y1="3" y2="21"/>',
+  person: '<circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 0 0-16 0"/>',
+  text: '<path d="M12 4v16"/><path d="M4 7V5a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v2"/><path d="M9 20h6"/>',
+  survey: '<path d="M13 5h8"/><path d="M13 12h8"/><path d="M13 19h8"/><path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/>',
+  pulse: '<path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2"/>',
+  lock: '<rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+  chevron: '<path d="m6 9 6 6 6-6"/>',
+  bell: '<path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/>',
+  inbox: '<polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>',
+  settings: '<path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/><circle cx="12" cy="12" r="3"/>',
+  logout: '<path d="m16 17 5-5-5-5"/><path d="M21 12H9"/><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>',
+};
+const icon = (n, cls = "") => `<svg class="ico ${cls}" viewBox="0 0 24 24" aria-hidden="true">${ICONS[n]}</svg>`;
+const TYPE_LABEL = { single: "Single choice", multi: "Multiple choice", binary: "Yes or no", scale: "Scale", number: "Number", person: "Person", text: "Free text" };
+const pct = (x) => `${Math.round(x * 100)}%`;
+const list = (names) => names.length === 1 ? names[0] : `${names.slice(0, -1).join(", ")} and ${names.at(-1)}`;
+
+const ANSWERED = ["Amara", "Ben", "Dana", "Ilya", "Jun", "Kofi", "Lena", "Marta", "Oskar", "Priya", "Tomás", "Yara", "Tom", "Zoe"];
+const WAITING = ["Emma", "Mira", "Nina", "Raj"];
+const seed = (name) => (name.charCodeAt(0) + name.length) % 6 + 1;
+const av = (name, cls = "", waiting = false) => `<span class="av av${seed(name)} ${cls} ${waiting ? "w" : ""}" aria-hidden="true">${name[0]}</span>`;
+const stack = (names, total, size = "", waitingSet = new Set()) => {
+  const shown = names.slice(0, total > 6 ? 5 : 6);
+  const rest = total - shown.length;
+  return `<span class="stack" role="img" aria-label="${total} people">${shown.map((n) => av(n, size, waitingSet.has(n))).join("")}${rest > 0 ? `<span class="av ${size} more">+${rest}</span>` : ""}</span>`;
+};
+const pick = (from, n, offset) => Array.from({ length: n }, (_, i) => from[(i + offset) % from.length]);
+
+function survey(answered) {
+  const z = answered === 0;
+  const k = (n) => (z ? 0 : n);
+  return [
+    { type: "multi", prompt: "Which weeks could you travel?", answered: k(14), options: [["10 March", k(8)], ["17 March", k(7)], ["24 March", k(6)]] },
+    { type: "single", prompt: "Where would you rather go?", answered: k(14), options: [["Lisbon", k(5)], ["Tallinn", k(4)], ["Kraków", k(3)], ["Other", k(2)]], other: z ? [] : [["Somewhere with a lake", "Kofi"], ["Berlin, it is easy for everyone to reach", "Lena"]] },
+    { type: "scale", prompt: "How useful was the last offsite?", answered: k(14), steps: ["1", "2", "3", "4", "5"], ends: ["Not useful", "Very useful"], counts: z ? [0, 0, 0, 0, 0] : [0, 1, 3, 6, 4], average: 3.9, notes: z ? [] : [["More free time between sessions.", "Priya"], ["The workshops ran long.", "Oskar"]] },
+    { type: "scale", prompt: "The agenda had the right balance of work and time off.", answered: k(14), steps: ["Strongly disagree", "Disagree", "Neutral", "Agree", "Strongly agree"], counts: z ? [0, 0, 0, 0, 0] : [1, 2, 3, 6, 2], average: 3.5 },
+    { type: "binary", prompt: "Can you share a room?", answered: k(14), options: [["Yes", k(9)], ["No", k(5)]] },
+    { type: "number", prompt: "How many nights can you stay?", answered: k(13), values: z ? [] : [[2, 3], [3, 6], [4, 3], [5, 1]], average: 3.2, median: 3, min: 2, max: 5 },
+    { type: "person", prompt: "Who should help plan it?", answered: k(13), options: [["Amara", k(6)], ["Ben", k(4)], ["Dana", k(3)]] },
+    { type: "text", prompt: "Anything we should plan around?", answered: k(7), texts: z ? [] : [["My visa takes three weeks, so I need the dates by February.", "Tom"], ["Nothing on my side.", "Jun"], ["I can't fly the week of 17 March, school holidays.", "Tomás"], ["A day for the people coming from Asia to land would help.", "Priya"], ["Vegetarian food, please.", "Oskar"], ["No early flights on Monday.", "Dana"], ["Nothing this time.", "Yara"]] },
+  ];
+}
+const pulseQs = [
+  { type: "scale", prompt: "How was your week?", answered: 7, steps: ["1", "2", "3", "4", "5"], ends: ["Rough", "Great"], counts: [0, 1, 2, 3, 1], average: 3.6 },
+  { type: "text", prompt: "Anything blocking you?", answered: 4, texts: [["Waiting on the pricing copy before I can ship the page.", "Ben"], ["The staging deploy was flaky again.", "Oskar"], ["Need a decision on onboarding.", "Lena"], ["Nothing this week.", "Jun"]] },
+];
+
+const STATES = {
+  live: { label: "Live, partway", title: "Offsite planning", mode: "survey", status: "live", anonymous: false, answered: 14, total: 18, waiting: WAITING, closes: "Closes Tuesday at 18:00", qs: survey(14), reminder: "Holler reminds them Monday at 09:00." },
+  closed: { label: "Closed", title: "Offsite planning", mode: "survey", status: "closed", anonymous: false, answered: 15, total: 18, waiting: ["Emma", "Nina", "Raj"], closes: "Closed Tuesday at 18:00", qs: survey(15) },
+  anon: { label: "Anonymous", title: "Offsite planning", mode: "survey", status: "live", anonymous: true, answered: 14, total: 18, waiting: WAITING, closes: "Closes Tuesday at 18:00", qs: survey(14), reminder: "Holler reminds them Monday at 09:00." },
+  gated: { label: "Anonymous, under 5", title: "Team health check", mode: "survey", status: "live", anonymous: true, answered: 3, total: 12, waiting: [], closes: "Closes Friday at 18:00", qs: [], gated: 2, reminder: "Holler reminds them tomorrow at 09:00." },
+  empty: { label: "No answers yet", title: "Offsite planning", mode: "survey", status: "live", anonymous: false, answered: 0, total: 12, waiting: ["Amara", "Ben", "Dana", "Emma", "Ilya", "Jun", "Kofi", "Lena", "Mira", "Nina", "Oskar", "Raj"], closes: "Closes Tuesday at 18:00", qs: survey(0), reminder: "You can send the first reminder at 14:30.", remindLater: true },
+  rounds: { label: "Repeating pulse", title: "How was your week?", mode: "pulse", status: "live", anonymous: false, answered: 7, total: 13, waiting: ["Emma", "Mira", "Nina", "Raj", "Tom", "Zoe"], closes: "Closes Sunday at 18:00", qs: pulseQs, reminder: "Holler reminds them tomorrow at 09:00.", rounds: true },
+  scheduled: { label: "Scheduled", title: "Retro: what should we change?", mode: "pulse", status: "scheduled", anonymous: false, answered: 0, total: 9, waiting: [], closes: "Sends Monday at 09:00", qs: [] },
+  draft: { label: "Draft", status: "draft" },
+};
+
+let state = "live", theme = "light", scales = "rows", menu = "closed";
+
+function appHeader(phone) {
+  const open = menu === "open";
+  return `<div class="app-header"><span class="logo"><span class="mark"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.4" stroke-linecap="round"><path d="M7 4v16M7 13c0-3 2-4.5 4.5-4.5S16 10 16 13v7"/><path d="M17 4.5c1 .5 1.6 1.3 1.8 2.3M19.3 2.5c1.4 .9 2.3 2.2 2.5 3.8" stroke="var(--soft-pink)"/></svg></span>holler</span>
+    <span class="acct"><button class="acct-btn ${open ? "open" : ""}">${av("Mira")}<span class="hide-phone">Mira</span>${icon("chevron", "s14 muted")}</button>
+    ${open ? `<div class="menu" role="menu"><p class="menu-label">Mira in Northwind</p><button role="menuitem">${icon("inbox")}Your answers</button><button role="menuitem">${icon("settings")}Settings</button><hr><button role="menuitem">${icon("logout")}Sign out</button></div>` : ""}</span></div>`;
+}
+
+function header(s, phone) {
+  const live = s.status === "live";
+  const chip = live ? `<span class="chip live"><span class="dot"></span>Live</span>` : s.status === "closed" ? `<span class="chip closed"><span class="dot"></span>Closed</span>` : `<span class="chip closed"><span class="dot"></span>Scheduled</span>`;
+  const bits = [s.mode === "survey" ? "Survey" : "Pulse"];
+  if (s.anonymous) bits.push("Anonymous");
+  if (s.rounds) bits.push("Every week");
+  bits.push(s.closes);
+  const sent = s.status === "live" || s.status === "closed";
+  const actions = sent ? `<div class="actions">
+      <button class="btn">${icon("share")}<span class="lbl">Share</span></button>
+      <button class="btn">${icon(s.gated ? "lock" : "download")}<span class="lbl">Export</span></button>
+      <button class="btn icon" aria-label="More for this Holler">${icon("more")}</button>
+    </div>` : "";
+  return `<div class="head-group">
+    <a class="back">${icon("back")}Your hollers</a>
+    <div class="title-row">
+      <header class="title">
+        <span class="glyph ${live ? "" : "quiet"}">${icon(s.mode, "s18")}</span>
+        <div style="min-width:0">
+          <h1>${s.title}</h1>
+          <div class="meta">${chip}<span>${bits.join(" · ")}</span></div>
+        </div>
+      </header>
+      ${actions}
+    </div>
+  </div>`;
+}
+
+function countHead(s) {
+  const share = s.total ? s.answered / s.total : 0;
+  const names = [...s.waiting, ...ANSWERED.slice(0, s.answered)];
+  return `<div class="px" style="padding-block:16px">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:16px"><h2 class="h2 tab" style="white-space:nowrap">${s.answered} of ${s.total} answered</h2>${s.anonymous || !names.length ? "" : stack(names.slice(0, 4), s.total, "", new Set(s.waiting))}</div>
+      <div class="progress" style="margin-top:12px"><i style="width:${share * 100}%"></i></div>
+  </div>`;
+}
+
+function reminderStrip(s) {
+  if (s.status !== "live" || (s.waiting.length === 0 && !s.gated)) return "";
+  const n = s.gated ? s.total - s.answered : s.waiting.length;
+  const who = n === 1 ? "1 person is waiting." : `${n} people are waiting.`;
+  return `<div class="strip"><span>${who} ${s.reminder}</span><button class="btn primary keep" ${s.remindLater ? "disabled" : ""}>${icon("bell")}<span class="lbl">Send reminder</span></button></div>`;
+}
+
+function wrapUnder(s, inner) {
+  const strip = reminderStrip(s);
+  return strip ? `<div class="under"><div class="plate">${inner}</div>${strip}</div>` : `<div class="plate">${inner}</div>`;
+}
+
+function personRow(name) {
+  return `<div class="row px person">${av(name, "", true)}<span class="name">${name}</span><span class="chip waiting"><span class="dot"></span>Waiting</span></div>`;
+}
+
+function people(s) {
+  let inner = countHead(s);
+  if (s.anonymous) inner += `<div class="row px sm ink2" style="padding-block:12px">This Holler is anonymous. You see how many answered, never who.</div>`;
+  else if (s.status === "live") {
+    const shown = s.waiting.slice(0, 5);
+    inner += shown.map(personRow).join("");
+    const rest = s.waiting.length - shown.length;
+    inner += `<div class="row px" style="display:flex;align-items:center;gap:12px;padding-block:10px">
+      ${s.answered ? stack(ANSWERED.slice(0, s.answered), s.answered) : ""}
+      <span class="ink2 sm" style="flex:1">${rest > 0 ? `${rest} more waiting` : ""}${rest > 0 && s.answered ? " · " : ""}${s.answered ? `${s.answered} answered` : ""}</span>
+      <button class="btn ghost">Show everyone</button></div>`;
+  } else {
+    inner += `<div class="row px" style="display:flex;align-items:center;gap:12px;padding-block:10px">
+      ${stack(s.waiting, s.waiting.length, "", new Set(s.waiting))}
+      <span class="ink2 sm" style="flex:1">${list(s.waiting)} did not answer</span>
+      <button class="btn ghost">Show everyone</button></div>`;
+  }
+  return `<section>${wrapUnder(s, inner)}</section>`;
+}
+
+function resultsBlock(s, phone) {
+  if (s.status === "scheduled") return `<div class="plate notice"><h2 class="h2">Sends Monday at 09:00</h2><p class="ink2" style="margin-top:4px;max-width:60ch">Who answered and the results show here once it goes out. Holler sends it to 9 people.</p></div>`;
+  if (s.gated) return `<div class="plate empty">${illo("lock")}<h2 class="h2">Results open at 5 answers</h2><p class="ink2" style="max-width:52ch">This Holler is anonymous, so its results stay closed until enough people answered that no one can be picked out. 2 more answers open them.</p></div>`;
+  if (s.answered === 0) return `<section class="results"><h2 class="h-section">Results</h2><div class="plate empty">${illo("bars")}<h2 class="h2">No answers yet</h2><p class="ink2" style="max-width:48ch">Each question's results show here as people answer. It went out 10 minutes ago.</p></div></section>`;
+  return `<section class="results"><h2 class="h-section">Results</h2>${s.qs.map((q, i) => questionPlate(q, i, s, phone)).join("")}</section>`;
+}
+
+function metaBits(q) {
+  const bits = [`<span class="ty">${icon(q.type, "s14")}${TYPE_LABEL[q.type]}</span>`];
+  if (q.type === "multi") bits.push("<span>People could pick more than one</span>");
+  if (q.type === "scale" && q.ends) bits.push(`<span>1 to ${q.steps.length}</span>`);
+  return bits.join("");
+}
+
+function questionPlate(q, i, s, phone) {
+  return `<section class="plate">
+    <div class="q-head"><span class="num">${i + 1}</span>
+      <div style="min-width:0;flex:1"><h3 class="q-prompt">${q.prompt}</h3><div class="q-meta">${metaBits(q)}${phone ? `<span class="tab">${q.answered} answered</span>` : ""}</div></div>
+      ${phone ? "" : `<span class="q-count tab">${q.answered} answered</span>`}</div>
+    ${qBody(q, s)}
+  </section>`;
+}
+
+function qBody(q, s) {
+  const named = !s.anonymous;
+  if (q.type === "text") return `<div class="q-body">${written(q.texts.slice(0, 4), named)}${q.texts.length > 4 ? `<button class="btn ghost" style="margin-inline-start:-12px;margin-top:4px">Show all ${q.texts.length}</button>` : ""}</div>`;
+  if (q.type === "number") {
+    return `<div class="q-body"><p class="avg"><span class="figure-big tab">${q.average}</span><span class="ink2">average</span><span class="muted sm">Median ${q.median} · Lowest ${q.min} · Highest ${q.max}</span></p>
+      <ul class="bars">${q.values.map(([v, n], j) => bar(String(v), n, q.answered, named ? pick(ANSWERED, n, j * 4) : [])).join("")}</ul></div>`;
+  }
+  if (q.type === "scale") {
+    const avgLine = `<p class="avg"><span class="figure-big tab">${q.average}</span><span class="ink2">average, out of ${q.steps.length}</span></p>`;
+    const notes = q.notes?.length ? aside("Notes", q.notes, named) : "";
+    if (scales === "bar") {
+      const ramp = ["c5", "c4", "c3", "c2", "c1"];
+      const lo = q.ends ? q.ends[0] : q.steps[0];
+      const hi = q.ends ? q.ends[1] : q.steps.at(-1);
+      return `<div class="q-body">${avgLine}${segBar(q.counts, ramp, q.steps)}
+        <div class="ends"><span>${q.ends ? `1 · ${lo}` : lo}</span><span>${q.ends ? `${q.steps.length} · ${hi}` : hi}</span></div>${notes}</div>`;
+    }
+    const labels = q.steps.map((st, j) => q.ends && (j === 0 || j === q.steps.length - 1) ? `${st} <span class="muted">· ${q.ends[j === 0 ? 0 : 1]}</span>` : st);
+    return `<div class="q-body">${avgLine}<ul class="bars">${q.counts.map((n, j) => bar(labels[j], n, q.answered, named ? pick(ANSWERED, n, j * 3) : [])).join("")}</ul>${notes}</div>`;
+  }
+  if (q.type === "binary") {
+    const counts = q.options.map((o) => o[1]);
+    return `<div class="q-body">${segBar(counts, ["c2", "c4"], q.options.map((o) => o[0]), true)}
+      ${named ? `<div class="who-rows">${q.options.map((o, j) => `<span><i class="${["c2", "c4"][j]}"></i>${o[0]}${stack(pick(ANSWERED, o[1], j * 9), o[1], "sm")}</span>`).join("")}</div>` : ""}</div>`;
+  }
+  const other = q.other?.length ? aside("Written beside Other", q.other, named) : "";
+  return `<div class="q-body"><ul class="bars">${q.options.map((o, j) => bar(o[0], o[1], q.answered, named ? pick(ANSWERED, o[1], j * 5) : [], q.type === "person")).join("")}</ul>${other}</div>`;
+}
+
+function bar(label, n, of, who, person) {
+  const share = of ? n / of : 0;
+  return `<li><div class="bar-top"><span class="bar-label">${person ? av(label, "sm") : ""}<span>${label}</span></span>
+    <span class="bar-val">${who.length ? stack(who, who.length, "sm") : ""}<span><b>${n}</b> · ${pct(share)}</span></span></div>
+    <div class="bar"><i style="width:${share * 100}%"></i></div></li>`;
+}
+
+function segBar(counts, ramp, names, labels = false) {
+  const total = counts.reduce((a, b) => a + b, 0) || 1;
+  const darkText = (c) => (theme === "dark" ? ["c1", "c2", "c3"].includes(c) : ["c4", "c5"].includes(c));
+  return `<div class="seg-bar" role="img" aria-label="${counts.map((c, j) => `${names[j]}: ${c}`).join(", ")}">${counts.map((c, j) => c === 0 ? "" : `<span tabindex="0" class="${ramp[j]} ${darkText(ramp[j]) ? "on-light" : "on-dark"}" style="flex:${c} 1 0" data-tip="${names[j]} · ${c} ${c === 1 ? "person" : "people"} · ${pct(c / total)}">${labels && c / total >= 0.1 ? `${names[j]} ${pct(c / total)}` : ""}</span>`).join("")}</div>`;
+}
+
+function written(items, named) {
+  return `<ul class="written">${items.map(([t, who]) => `<li>${named ? av(who) : ""}<div>${named ? `<span class="who">${who}</span>` : ""}<q>${t}</q></div></li>`).join("")}</ul>`;
+}
+
+function aside(title, items, named) {
+  return `<div class="aside"><p class="aside-h">${title} <span class="muted tab">${items.length}</span></p>${written(items, named)}</div>`;
+}
+
+function roundsPlate() {
+  const rows = [
+    ["Fri, Dec 4", "Next round", "Goes out Friday at 09:00", null, null],
+    ["Fri, Nov 27", "This round", null, 3.6, "7 of 13 answered", true],
+    ["Fri, Nov 20", "Closed", null, 3.9, "11 of 13 answered"],
+    ["Fri, Nov 13", "Closed", null, 3.4, "12 of 13 answered"],
+  ];
+  return `<section class="plate"><div class="px" style="padding-block:16px"><h2 class="h2">Rounds</h2><p class="ink2 sm" style="margin-top:2px">A new round goes out every week. Each bar is the average for “How was your week?”.</p></div>
+  <ol class="rounds" style="list-style:none">${rows.map(([d, st, goes, avg, ans, cur]) => `<li class="${cur ? "cur" : ""}"><span style="display:flex;flex-direction:column"><span class="tab">${d}</span><span class="muted sm">${st}</span></span>
+    <span class="rm" style="display:flex;flex-direction:column;gap:6px">${goes ? `<span class="ink2 sm">${goes}</span>` : `<span class="sm tab">Average ${avg} of 5</span><span class="progress"><i style="width:${(avg / 5) * 100}%"></i></span>`}</span>
+    <span class="ink2 sm tab" style="text-align:end">${ans ?? ""}</span></li>`).join("")}</ol></section>`;
+}
+
+function illo(kind) {
+  const subject = kind === "lock"
+    ? `<g transform="rotate(-8 40 34)"><rect x="26" y="26" width="28" height="22" rx="4" fill="var(--illo-neutral)" stroke="var(--illo-neutral-ink)" stroke-width="1.25" vector-effect="non-scaling-stroke"/><path d="M31 26v-5a9 9 0 0 1 18 0v5" fill="none" stroke="var(--illo-neutral-ink)" stroke-width="1.75"/><circle cx="40" cy="37" r="2.5" fill="var(--illo-neutral-ink)"/></g>`
+    : `<g transform="rotate(-8 40 36)"><rect x="16" y="22" width="44" height="30" rx="5" fill="var(--illo-object)" stroke="var(--illo-line)" stroke-width="1.25" vector-effect="non-scaling-stroke"/><rect x="22" y="30" width="22" height="4" rx="2" fill="var(--illo-neutral)"/><rect x="22" y="38" width="30" height="4" rx="2" fill="none" stroke="var(--illo-line)" stroke-dasharray="3 3"/><rect x="22" y="44" width="14" height="4" rx="2" fill="none" stroke="var(--illo-line)" stroke-dasharray="3 3"/></g>`;
+  return `<svg class="illo" width="96" height="96" viewBox="0 0 80 80" aria-hidden="true"><defs><pattern id="g${kind}" width="8" height="8" patternUnits="userSpaceOnUse"><path d="M8 0H0V8" fill="none" stroke="var(--illo-grid)" stroke-width="0.75"/></pattern><radialGradient id="f${kind}"><stop offset="0.4" stop-color="white"/><stop offset="1" stop-color="black"/></radialGradient><mask id="m${kind}"><rect width="80" height="80" fill="url(#f${kind})"/></mask></defs><rect width="80" height="80" fill="url(#g${kind})" mask="url(#m${kind})"/>${subject}</svg>`;
+}
+
+function draftNote() {
+  return `<div class="callout" style="margin-top:16px"><b style="font-weight:400;color:var(--ink)">A draft never shows this page.</b> Opening a draft or a scheduled Holler you wrote goes straight to the editor (#61), and <b style="font-weight:400;color:var(--ink)">Delete draft</b> is in the draft's menu there. Someone you shared a scheduled Holler with sees the Scheduled state.</div>`;
+}
+
+function app(phone) {
+  const s = STATES[state];
+  const page = s.status === "draft" ? draftNote() : `${header(s, phone)}${s.status === "scheduled" ? "" : people(s)}${s.rounds ? roundsPlate() : ""}${resultsBlock(s, phone)}`;
+  return `<div class="page">${appHeader(phone)}${page}</div>`;
+}
+
+const CHANGES = [
+  "Text renders with the app's antialiased smoothing, which the first mockup lacked. That was the almost-bold look.",
+  "Send reminder has a bell.",
+  "Share, Export and the menu sit beside the title, not in the back link's row; the back link sits closer to the title.",
+  "Your answers moved into the account menu (Menu: Open shows it). This changes the header on every page.",
+  "Each question's count sits in the card's top corner; the type line has dots between its parts.",
+  "Scales are rows, one per step, with the end words on the first and last step. Scales: One bar shows the other way: one bar, the end words under its ends, and the step, count and share on hover.",
+  "A number question shows its average, then median, lowest and highest on one line, then a row for each value.",
+  "Written answers put the avatar beside the text. Notes and Other write-ins sit in a quiet panel under the chart.",
+];
+
+function controls() {
+  const mk = (el, items, cur, on) => {
+    el.innerHTML = Object.entries(items).map(([k, v]) => `<button aria-pressed="${k === cur}" data-k="${k}">${v}</button>`).join("");
+    el.onclick = (e) => { const b = e.target.closest("button"); if (b) { on(b.dataset.k); render(); } };
+  };
+  mk(document.getElementById("state"), Object.fromEntries(Object.entries(STATES).map(([k, s]) => [k, s.label])), state, (k) => (state = k));
+  mk(document.getElementById("scales"), { rows: "Scales: Rows", bar: "Scales: One bar" }, scales, (k) => (scales = k));
+  mk(document.getElementById("menu"), { closed: "Menu: Closed", open: "Menu: Open" }, menu, (k) => (menu = k));
+  mk(document.getElementById("theme"), { light: "Day", dark: "Night" }, theme, (k) => (theme = k));
+  document.getElementById("note").innerHTML = `<h2>A, revised from your notes</h2><ul style="grid-column:1/-1">${CHANGES.map((c) => `<li>${c}</li>`).join("")}</ul>`;
+}
+
+function fit() {
+  const holder = document.getElementById("deskHolder");
+  const desk = document.getElementById("desk");
+  const scale = Math.min(1, holder.clientWidth / 1280);
+  desk.style.transform = `scale(${scale})`;
+  holder.style.height = `${desk.offsetHeight * scale}px`;
+}
+
+function render() {
+  controls();
+  for (const [id, phone] of [["desk", false], ["phone", true]]) {
+    const el = document.getElementById(id);
+    el.dataset.theme = theme;
+    el.innerHTML = app(phone);
+  }
+  document.documentElement.dataset.theme = theme;
+  fit();
+}
+
+const params = new URLSearchParams(location.search);
+state = params.get("state") ?? state; theme = params.get("theme") ?? theme; scales = params.get("scales") ?? scales; menu = params.get("menu") ?? menu;
+addEventListener("resize", fit);
+render();
+document.fonts?.ready.then(fit);
+
+</script>
+</body>
+</html>

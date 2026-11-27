@@ -1,6 +1,6 @@
 # Holler: decisions so far
 
-Last updated: 2026-11-21. The stack is in docs/stack.md.
+Last updated: 2026-11-27. The stack is in docs/stack.md.
 
 Holler is a public product based on Tally, the internal Buffer tool. You ask your team
 something in Slack, Holler reminds the people who have not answered, and you read the
@@ -234,13 +234,27 @@ Decided on 2026-11-21; Starting, Editor shape and Sending changed on 2026-11-27.
 | AI drafting | Not in the editor. Assistants create hollers over MCP | A "Draft it for me" box |
 | Repeating pulses | A pulse repeats every week or every fortnight, on the day and time its first round goes out. Each round is its own Holler with its own results; the next round is scheduled when one goes out, so it shows under Scheduled and can be edited on its own. Each round closes before the next. Stopping deletes the next round and keeps every answer | Monthly and custom rules; one Holler collecting every round's answers; skipping single rounds |
 
+## A Holler's page
+
+Decided on 2026-11-27. The agreed mockup is [`docs/design/holler-page.html`](docs/design/holler-page.html); where it and this table differ, this table wins.
+
+| Question | Decision | Rejected |
+| --- | --- | --- |
+| Order | Chase, then read: the people first, then the results | Results and People as two tabs; an overview with one folded row per question |
+| People | The count with a few faces above a full-width bar. Up to five people still to chase by name, then one row for everyone who answered, and Show everyone. A closed Holler names who did not answer. Send reminder, with a bell, sits on the strip under them | Every person listed, folded at eight |
+| Actions | Share, Export and the menu sit beside the title; on a phone, in a row under it | In the back link's row |
+| Questions | One plate each, headed like the editor's card: the number in a grey square, the question, its type with its icon, and the count in the corner | A type line without separators; the count in the type line on a wide screen |
+| Charts | One row per answer in one colour, for choices, scales, yes or no, people and numbers. A scale leads with its average and writes its end words beside the first and last step. A number leads with its average, median, lowest and highest, then a row per value, or per range when the values spread wide | A scale as one bar split by step on the plum ramp, with a legend; a number as a dot plot; a yes or no as one split bar |
+| Written answers | The avatar beside the name and the answer. Notes and Other write-ins sit in a quiet panel under the bars | Quotes with the name underneath, under a plain heading |
+| Your answers | In the account menu, above Settings | A link in the header |
+
 ## Still open
 
 - **Trademark.** No search is done. A US company named Holler made stickers and GIFs
   for messaging apps. Check before money goes into the logo.
 - **Slack Marketplace.** No name check is done.
 - **Domain purchase.** Not bought.
-- **Screens.** Only the home screen exists in the final brand. Results and editor still
+- **Screens.** Home, the editor and a Holler's page are in the final brand. The rest still
   need a version.
 - **Teams.** Teams needs a separate bot. The suggestion was to leave it out of the first
   version. This is not decided.

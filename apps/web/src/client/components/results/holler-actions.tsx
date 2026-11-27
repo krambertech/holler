@@ -18,6 +18,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/cn";
 import { count, shortDate } from "@/lib/format";
 
 interface Props extends ComponentProps<"div"> {
@@ -54,17 +55,22 @@ function HollerActions({
   nextRoundAt = null,
   onStopRepeating,
   stopping = false,
+  className,
   ...props
 }: Props) {
   const [confirming, setConfirming] = useState(false);
   const [stoppingRepeat, setStoppingRepeat] = useState(false);
   const exportHref = (format: "csv" | "md") => `/api/hollers/${hollerId}/export?format=${format}`;
   return (
-    <div data-slot="holler-actions" className="flex flex-wrap items-center gap-2" {...props}>
+    <div
+      data-slot="holler-actions"
+      className={cn("flex flex-wrap items-center gap-2", className)}
+      {...props}
+    >
       {isCreator && onShare && (
         <Button size="sm" onClick={onShare}>
           <UserPlus aria-hidden />
-          <span className="max-sm:sr-only">Share</span>
+          Share
         </Button>
       )}
       <DropdownMenu>
@@ -74,7 +80,7 @@ function HollerActions({
           render={<Button size="sm" />}
         >
           {canExport ? <Download aria-hidden /> : <Lock aria-hidden />}
-          <span className="max-sm:sr-only">Export</span>
+          Export
         </DropdownMenuTrigger>
         <DropdownMenuContent aria-label="Export" align="end">
           <DropdownMenuLinkItem render={<a href={exportHref("csv")} download />}>
