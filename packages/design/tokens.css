@@ -58,6 +58,10 @@
   --deep-plum: oklch(0.266 0.081 337.9);
   --pink: oklch(0.628 0.196 349.5);
   --soft-pink: oklch(0.793 0.122 343);
+  --slack-red: oklch(0.588 0.222 11.5);
+  --slack-blue: oklch(0.768 0.13 223.2);
+  --slack-green: oklch(0.691 0.142 160.2);
+  --slack-yellow: oklch(0.797 0.152 82.7);
 
   /* Live: pink marks what is out and calling right now, as the sound lines do in the logo. */
   --live: oklch(0.935 0.035 345);
@@ -315,6 +319,10 @@
   --color-deep-plum: var(--deep-plum);
   --color-pink: var(--pink);
   --color-soft-pink: var(--soft-pink);
+  --color-slack-red: var(--slack-red);
+  --color-slack-blue: var(--slack-blue);
+  --color-slack-green: var(--slack-green);
+  --color-slack-yellow: var(--slack-yellow);
   --color-answered: var(--answered);
   --color-answered-ink: var(--answered-ink);
   --color-answered-dot: var(--answered-dot);

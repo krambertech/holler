@@ -51,12 +51,14 @@ function NewHoller() {
   if (!fresh) {
     return (
       <>
-        <HollerEditorTop back={<BackLink />} saveState="idle" />
-        <StartScreen
-          onPickMode={(next) => navigate({ search: { mode: next } })}
-          onPickTemplate={(id) => navigate({ search: { template: id } })}
-          onSeeAllTemplates={() => setTemplatesOpen(true)}
-        />
+        <div className="flex flex-col gap-3">
+          <HollerEditorTop back={<BackLink />} saveState="idle" />
+          <StartScreen
+            onPickMode={(next) => navigate({ search: { mode: next } })}
+            onPickTemplate={(id) => navigate({ search: { template: id } })}
+            onSeeAllTemplates={() => setTemplatesOpen(true)}
+          />
+        </div>
         <TemplatesDialog
           open={templatesOpen}
           onOpenChange={setTemplatesOpen}

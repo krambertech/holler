@@ -36,7 +36,7 @@ function ModePicker({ mode, onChange, questionCount, className, ...props }: Prop
         {modeLabels[mode]}
         <ChevronDown aria-hidden size={16} strokeWidth={2} className="text-muted" />
       </DropdownMenuTrigger>
-      <DropdownMenuContent aria-label="What you are sending" align="start" className="w-[22rem]">
+      <DropdownMenuContent aria-label="What you are sending" align="start" className="w-[24rem]">
         <DropdownMenuRadioGroup value={mode} onValueChange={(next) => onChange(next as Mode)}>
           {modes.map((option) => {
             const OptionIcon = modeIcons[option];
@@ -46,25 +46,20 @@ function ModePicker({ mode, onChange, questionCount, className, ...props }: Prop
                 key={option}
                 value={option}
                 disabled={tooMany}
-                className="h-auto items-start py-2.5"
+                className="items-start py-2.5"
               >
-                <span className="flex min-w-0 items-start gap-3">
-                  <span
+                <span className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] gap-x-2.5 gap-y-0.5">
+                  <OptionIcon
                     aria-hidden
-                    className={cn(
-                      "mt-0.5 grid size-7 shrink-0 place-items-center rounded-glyph",
-                      option === mode ? "bg-tint text-tint-ink" : "bg-well text-muted",
-                    )}
-                  >
-                    <OptionIcon size={15} strokeWidth={2} />
-                  </span>
-                  <span className="flex min-w-0 flex-col">
-                    <span className="font-normal text-ink">{modeLabels[option]}</span>
-                    <span className="whitespace-normal text-muted text-sm">
-                      {tooMany
-                        ? "A pulse has one or two questions. Remove some to switch."
-                        : modeDescriptions[option]}
-                    </span>
+                    size={16}
+                    strokeWidth={2}
+                    className={cn("mt-1", option === mode ? "text-tint-ink" : "text-muted")}
+                  />
+                  <span className="font-normal text-ink">{modeLabels[option]}</span>
+                  <span className="col-start-2 whitespace-normal text-muted text-sm">
+                    {tooMany
+                      ? "A pulse has one or two questions. Remove some to switch."
+                      : modeDescriptions[option]}
                   </span>
                 </span>
               </DropdownMenuRadioItem>

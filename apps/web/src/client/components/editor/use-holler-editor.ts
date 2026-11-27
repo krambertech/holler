@@ -58,7 +58,7 @@ function useModeSwitch(draft: EditorDraft, update: (patch: Partial<EditorDraft>)
       update({ mode });
     }
   };
-  return { aside, changeMode };
+  return { changeMode };
 }
 
 export function useHollerEditor({
@@ -129,7 +129,7 @@ export function useHollerEditor({
   const questions = draft.questions.map(filled);
   const surface = answerSurface({ mode: draft.mode, description: draft.description, questions });
   const title = hollerTitle({ mode: draft.mode, title: draft.title, questions });
-  const { aside, changeMode } = useModeSwitch(draft, update);
+  const { changeMode } = useModeSwitch(draft, update);
 
   const pickTemplate = (template: HollerTemplate) => setDraft((d) => applyTemplate(d, template));
 
@@ -196,7 +196,6 @@ export function useHollerEditor({
     sendShown,
     surface,
     title,
-    aside,
     changeMode,
     pickTemplate,
     goTo,

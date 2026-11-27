@@ -203,7 +203,12 @@ function QuestionTypeMenu({ render, onPick, side }: MenuProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger render={render} />
-      <DropdownMenuContent aria-label="Question types" side={side}>
+      <DropdownMenuContent
+        aria-label="Question types"
+        side={side}
+        align="center"
+        className="min-w-60"
+      >
         {kinds.map((t) => (
           <DropdownMenuItem key={t.id} onClick={() => onPick(t.template)}>
             <TypeIcon kind={t.id} className="text-ink-2" />

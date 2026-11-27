@@ -395,7 +395,7 @@ export const sending: Group = {
       slug: "send-bar",
       name: "SendBar",
       source: "components/editor/send/send-bar.tsx",
-      note: "The bar at the bottom of both editor pages. It floats at the bottom of the window as a plate with a shadow, and at the end of the page it settles into a plain row under a hairline. Its children say what the next press does, and the action slot holds the one plum button.",
+      note: "The bar at the bottom of both editor pages. It sits at the bottom of the window and stays in the page's flow, so it never covers the last row. It is raised only while content scrolls under it, and flat when it rests at the end. Its children say what the next press does, and the action slot holds the one plum button.",
       Demo: () => (
         <Variants
           stack
@@ -417,7 +417,7 @@ export const sending: Group = {
             },
             {
               label: "On a page",
-              note: "The whole sending page. Scroll inside: the bar floats, then settles.",
+              note: "The whole sending page. Scroll inside: the bar floats at the bottom and never covers the last row.",
               render: () => <SendStageDemo />,
             },
           ]}

@@ -146,8 +146,8 @@ function ChoiceOptions({ question, number, onEdit, problems = {} }: Props) {
   };
 
   return (
-    <div data-slot="choice-options" className="flex flex-col gap-1.5">
-      <ul aria-label={`Options for question ${number}`} className="flex flex-col gap-1.5">
+    <div data-slot="choice-options" className="flex flex-col gap-2">
+      <ul aria-label={`Options for question ${number}`} className="flex flex-col gap-2">
         {q.options.map((option, index) => {
           const key = rows.keys[index] ?? String(index);
           const problem = problems[`options.${index}`];
@@ -164,7 +164,7 @@ function ChoiceOptions({ question, number, onEdit, problems = {} }: Props) {
               <div
                 className={cn(
                   optionRowClassName,
-                  "group/option has-[input:focus-visible]:outline-2 has-[input:focus-visible]:outline-focus has-[input:focus-visible]:outline-offset-2",
+                  "group/option has-[input:focus-visible]:outline-2 has-[input:focus-visible]:outline-focus has-[input:focus-visible]:outline-offset-1",
                   problem && "bg-danger edge-danger",
                 )}
               >

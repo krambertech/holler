@@ -16,7 +16,7 @@ A template fills the editor and leaves no link behind: from then on it is an ord
 
 `HollerEditor` holds the state (`useHollerEditor`) and shows one of two pages: `HollerEditorWrite` or `HollerEditorSend`. `HollerEditorTop` draws the same row on the start screen and both pages, so the back link never moves: on the start screen and the writing page it goes to Your hollers, on the sending page back to the questions (or the form, for a chase). Delete draft sits in that row's menu.
 
-The writing page has no visible title of its own; its `h1` is visually hidden ("Write a survey"), and the Holler's title field is the largest text. A pulse shows the title it takes from its first question, and **Use a different title** on the sending page replaces it. Every mode has the line of context under its title.
+The writing page has no visible title of its own; its `h1` is visually hidden ("Write a survey"), and the Holler's title field is the largest text. A pulse's title field shows its first question in grey, the title it gets when the sender types none. Every mode has the line of context under its title.
 
 The sending page reads top to bottom: `AudiencePicker`, `WhenPicker`, then `SendSettings`. `WhenPicker` puts Now and Later on one line, and Later's day, time and clock sit right under it. `SendSettings` shows every setting as a row; a new setting is one more row.
 
@@ -33,7 +33,7 @@ The sending page reads top to bottom: `AudiencePicker`, `WhenPicker`, then `Send
 
 ## The send bar
 
-The bar rides at the bottom of the window and settles into place at the end of the page, so it never covers the last row. Floating, it is a plate with a shadow; settled, it drops the plate and sits on the page under a hairline, because a lone plate at the end reads as one more card. Its plum button names what a press does and who it reaches; with nobody chosen it reads **Send**. On a phone the button takes its own line before the words are cut short.
+The bar sits at the bottom of the window. It stays in the page's flow, so it never covers the last row, and on a short page the editor fills the window so the bar still sits at the bottom. It is a raised plate only while content scrolls under it; resting at the end it is a flat row under a hairline. `SendBarAnsweredIn` names where people answer, with a question mark whose popover says why (`webReason` for the web page). Its plum button names what a press does and who it reaches; with nobody chosen it reads **Send**. On a phone the button takes its own line before the words are cut short.
 
 `isBigSend` asks once more before sending to everyone, to more than `bigSendAbove` (50) people, or to a group of unknown size, which could be any size. The question follows the audience on screen, never the last save's problems, which can be stale. `useNow` gives the bar and `SendSettings` one clock, so the close time each prints is the same minute.
 

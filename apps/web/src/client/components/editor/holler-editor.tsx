@@ -10,6 +10,7 @@ import { HollerEditorWrite } from "./holler-editor-write";
 import { filled } from "./questions/model";
 import type { DirectoryGroup, DirectoryPerson } from "./send/directory";
 import { SendBar, SendButton } from "./send/send-bar";
+import { SendBarAnsweredIn } from "./send/send-bar-answered-in";
 import { composeBarSummary, dayTime, sendActionLabel, sendBarSummary } from "./send/send-logic";
 import { SlackPreview } from "./send/slack-preview";
 import { TemplatesDialog } from "./templates-dialog";
@@ -44,11 +45,14 @@ function composeBar(editor: HollerEditorState) {
   const { draft, composeShown, surface } = editor;
   const problem = composeShown[0]?.message;
   const bar = composeBarSummary(surface, draft.questions.length, problem);
-  const more = problem && composeShown.length > 1 ? `${composeShown.length - 1} more to fix` : null;
+  if (problem) {
+    const more = composeShown.length > 1 ? `${composeShown.length - 1} more to fix` : null;
+    return { title: problem, description: more, tone: "danger" as const };
+  }
   return {
-    title: bar.title,
-    description: draft.mode === "chase" ? null : (bar.description ?? more),
-    tone: bar.tone,
+    title: <SendBarAnsweredIn surface={surface} />,
+    description: draft.mode === "chase" ? null : bar.description,
+    tone: undefined,
   };
 }
 
@@ -120,7 +124,7 @@ function HollerEditor({
   const bar = writing ? composeBar(editor) : sendBar(editor);
 
   return (
-    <div data-slot="holler-editor" className="flex flex-col gap-7">
+    <div data-slot="holler-editor" className="-mb-12 flex flex-1 flex-col gap-3">
       <HollerEditorTop
         back={
           writing ? (
@@ -136,75 +140,76 @@ function HollerEditor({
         deleting={editor.deleting}
       />
 
-      {scheduled && (
-        <Notice
-          icon={<CalendarClock />}
-          title={draft.sendAt ? `Sends ${dayTime(draft.sendAt)}` : "Scheduled to send"}
-          description="Edits wait until you press Update schedule, so a half-finished change never goes out."
-        />
-      )}
+      <div className="flex flex-1 flex-col gap-7">
+        {scheduled && (
+          <Notice
+            icon={<CalendarClock />}
+            title={draft.sendAt ? `Sends ${dayTime(draft.sendAt)}` : "Scheduled to send"}
+            description="Edits wait until you press Update schedule, so a half-finished change never goes out."
+          />
+        )}
 
-      {writing ? (
-        <HollerEditorWrite
-          draft={draft}
-          title={editor.title}
-          problems={editor.composeShown}
-          aside={editor.aside}
-          onUpdate={editor.update}
-          onModeChange={editor.changeMode}
-          onTemplates={() => setTemplatesOpen(true)}
-        />
-      ) : (
-        <HollerEditorSend
-          draft={draft}
-          title={editor.title}
-          problems={editor.sendShown}
-          onUpdate={editor.update}
-          summary={editor.summary}
-          onSummaryChange={editor.setSummary}
-          known={known}
-          workspaceSize={workspaceSize}
-          tagSuggestions={tagSuggestions}
-          search={io.search}
-          limit={editor.limit}
-          now={editor.now}
-          timeZone={editor.senderZone}
-        />
-      )}
+        {writing ? (
+          <HollerEditorWrite
+            draft={draft}
+            title={editor.title}
+            problems={editor.composeShown}
+            onUpdate={editor.update}
+            onModeChange={editor.changeMode}
+            onTemplates={() => setTemplatesOpen(true)}
+          />
+        ) : (
+          <HollerEditorSend
+            draft={draft}
+            title={editor.title}
+            problems={editor.sendShown}
+            onUpdate={editor.update}
+            summary={editor.summary}
+            onSummaryChange={editor.setSummary}
+            known={known}
+            workspaceSize={workspaceSize}
+            tagSuggestions={tagSuggestions}
+            search={io.search}
+            limit={editor.limit}
+            now={editor.now}
+            timeZone={editor.senderZone}
+          />
+        )}
 
-      <SendBar
-        description={bar.description}
-        tone={bar.tone}
-        secondary={
-          <SlackPreview
-            holler={{
-              mode: draft.mode,
-              title: editor.title || "Untitled",
-              description: draft.description,
-              anonymous: draft.anonymous,
-              questions: draft.questions.map(filled),
-            }}
-            sender={sender}
-            closesAt={editor.closesAt}
-            sendsAt={draft.sendAt}
-            variant="ghost"
-          >
-            <Eye aria-hidden />
-            <span className="max-sm:sr-only">Preview</span>
-          </SlackPreview>
-        }
-        action={
-          writing ? (
-            <Button variant="primary" onClick={() => editor.goTo("send")}>
-              Next: who and when
-            </Button>
-          ) : (
-            <SendAction editor={editor} />
-          )
-        }
-      >
-        {bar.title}
-      </SendBar>
+        <SendBar
+          description={bar.description}
+          tone={bar.tone}
+          secondary={
+            <SlackPreview
+              holler={{
+                mode: draft.mode,
+                title: editor.title || "Untitled",
+                description: draft.description,
+                anonymous: draft.anonymous,
+                questions: draft.questions.map(filled),
+              }}
+              sender={sender}
+              closesAt={editor.closesAt}
+              sendsAt={draft.sendAt}
+              variant="ghost"
+            >
+              <Eye aria-hidden />
+              <span className="max-sm:sr-only">Preview</span>
+            </SlackPreview>
+          }
+          action={
+            writing ? (
+              <Button variant="primary" onClick={() => editor.goTo("send")}>
+                Next: who and when
+              </Button>
+            ) : (
+              <SendAction editor={editor} />
+            )
+          }
+        >
+          {bar.title}
+        </SendBar>
+      </div>
 
       <TemplatesDialog
         open={templatesOpen}

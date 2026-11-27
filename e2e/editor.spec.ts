@@ -12,7 +12,10 @@ test("a lead starts a Holler from the start screen", async ({ page }) => {
   await expect(page.getByRole("heading", { level: 1, name: "Write a pulse" })).toBeAttached();
   await expect(page.getByRole("button", { name: "Mode: Pulse" })).toBeVisible();
   await expect(page.getByLabel("Question 1", { exact: true })).toHaveValue("How was your week?");
-  await expect(page.getByText("Answered in the Slack message")).toBeVisible();
+  await expect(page.getByText("Slack DM")).toBeVisible();
+  await page.getByRole("button", { name: "Why people answer here" }).click();
+  await expect(page.getByText(/answer it there with a tap/)).toBeVisible();
+  await page.keyboard.press("Escape");
   await expectAccessible(page);
 });
 

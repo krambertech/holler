@@ -1,10 +1,7 @@
-import { hollerTitle } from "@holler/core";
-import { type ComponentProps, useState } from "react";
+import type { ComponentProps } from "react";
 import { LimitReached } from "@/components/billing/limit-reached";
-import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/cn";
 import { type EditorDraft, problemFor } from "./draft";
-import { filled } from "./questions/model";
 import { AudiencePicker, type AudienceSummary } from "./send/audience-picker";
 import type { DirectoryGroup, DirectoryPerson, DirectorySearch } from "./send/directory";
 import { SendSettings } from "./send/send-settings";
@@ -28,32 +25,6 @@ interface Props extends ComponentProps<"div"> {
   timeZone: string;
 }
 
-function PulseTitle({ draft, title, onUpdate }: Pick<Props, "draft" | "title" | "onUpdate">) {
-  const [custom, setCustom] = useState(Boolean(draft.title));
-  if (custom) {
-    return (
-      <Input
-        aria-label="Title"
-        value={draft.title}
-        onChange={(e) => onUpdate({ title: e.target.value })}
-        placeholder={hollerTitle({ ...draft, title: "", questions: draft.questions.map(filled) })}
-        maxLength={150}
-        autoFocus
-      />
-    );
-  }
-  return (
-    <button
-      type="button"
-      onClick={() => setCustom(true)}
-      className="w-fit rounded-sm text-sm text-tint-ink outline-none focus-visible:ring-2 focus-visible:ring-focus hoverable:hover:underline"
-    >
-      Use a different title
-      <span className="sr-only">, instead of {title || "the first question"}</span>
-    </button>
-  );
-}
-
 function HollerEditorSend({
   draft,
   title,
@@ -75,7 +46,6 @@ function HollerEditorSend({
     <div data-slot="holler-editor-send" className={cn("flex flex-col gap-8", className)} {...props}>
       <header className="flex flex-col gap-2">
         <h1 className="text-pretty text-4xl tracking-title">Send “{title || "Untitled"}”</h1>
-        {draft.mode === "pulse" && <PulseTitle draft={draft} title={title} onUpdate={onUpdate} />}
       </header>
       <AudiencePicker
         value={draft.audience}

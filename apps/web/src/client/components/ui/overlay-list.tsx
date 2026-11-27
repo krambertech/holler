@@ -8,7 +8,7 @@ import { useField } from "./field";
 
 /** A choice or action in a list, anchored or in a drawer. */
 export const listRowClassName =
-  "relative flex h-11 w-full cursor-default items-center gap-2.5 rounded-sm px-2.5 text-start text-[1rem] text-ink outline-none select-none md:h-10 md:text-base data-highlighted:bg-hover data-disabled:opacity-45 [&_svg]:pointer-events-none [&_svg]:shrink-0";
+  "relative flex min-h-11 w-full cursor-default items-center gap-2.5 rounded-sm px-2.5 text-start text-[1rem] text-ink outline-none select-none md:min-h-10 md:text-base data-highlighted:bg-hover data-disabled:opacity-45 [&_svg]:pointer-events-none [&_svg]:shrink-0";
 
 /** A row of choices, whose highlight gives way while the pointer's fill is out: one cursor at a time. */
 export const choiceRowClassName = cn(
@@ -20,7 +20,7 @@ export const choiceRowClassName = cn(
 export const touchRowClassName = "active:bg-hover";
 
 /** Two lines and a taller row when an option carries a description. */
-export const describedRowClassName = "h-auto items-start py-2 md:h-auto [&>[aria-hidden]]:mt-1";
+export const describedRowClassName = "items-start py-2 [&>[aria-hidden]]:mt-1";
 
 /** The line under an option's name, for options that each need a sentence. */
 export const descriptionClassName = "block text-sm whitespace-normal text-muted";

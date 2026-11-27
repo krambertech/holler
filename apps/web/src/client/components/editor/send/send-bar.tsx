@@ -148,13 +148,13 @@ function SendBar({
   ...props
 }: SendBarProps) {
   const end = useRef<HTMLDivElement>(null);
-  const [settled, setSettled] = useState(true);
+  const [resting, setResting] = useState(true);
 
   useEffect(() => {
     const el = end.current;
     if (!el) return;
     const observer = new IntersectionObserver(([entry]) =>
-      setSettled(Boolean(entry?.isIntersecting)),
+      setResting(Boolean(entry?.isIntersecting)),
     );
     observer.observe(el);
     return () => observer.disconnect();
@@ -164,9 +164,9 @@ function SendBar({
     <>
       <div
         data-slot="send-bar"
-        data-settled={settled || undefined}
+        data-resting={resting || undefined}
         className={cn(
-          "sticky bottom-0 z-(--z-sticky) pt-3 pb-[max(1rem,env(safe-area-inset-bottom))]",
+          "sticky bottom-0 z-(--z-sticky) mt-auto pt-3 pb-[max(1rem,env(safe-area-inset-bottom))]",
           className,
         )}
         {...props}
@@ -174,7 +174,7 @@ function SendBar({
         <div
           className={cn(
             "flex flex-wrap items-center gap-x-3 gap-y-2.5 py-2.5 ps-5 pe-2.5 transition-[background-color,box-shadow,border-radius] duration-200 ease-(--ease-out) max-sm:px-4",
-            settled ? "rounded-none border-divider border-t" : "floating rounded-plate",
+            resting ? "rounded-none border-divider border-t" : "floating rounded-plate",
           )}
         >
           <div className="grid min-w-0 flex-1 basis-44 leading-snug" aria-live="polite">
