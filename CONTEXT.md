@@ -92,4 +92,4 @@ Holler asks a team something in Slack, reminds the people who have not answered,
 
 **Connected app**: An MCP client, such as Claude or ChatGPT, that a member allowed to act for them through OAuth. _Avoid_: Integration (for this one), plugin, bot
 
-**Activity**: The list of what was done in a workspace and by whom: the web app, Slack, an API key or a connected app. Every write lands there. _Avoid_: Audit log (in copy), history, events
+**Activity**: The list of what was done in a workspace and by whom: the web app, Slack, an API key or a connected app. Every write lands there, and owners read it at the end of Settings. _Avoid_: Audit log (in copy), history, events

@@ -1,4 +1,5 @@
-import type { SettingsMember } from "@holler/core";
+import type { ActivityEntry, SettingsMember } from "@holler/core";
+import { ActivityRow } from "@/components/settings/activity-row";
 import { MemberRow } from "@/components/settings/member-row";
 import { WorkspaceIcon } from "@/components/settings/workspace-icon";
 import { Plate } from "@/components/ui/plate";
@@ -7,6 +8,56 @@ import { members } from "../mock";
 import type { Group } from "./types";
 
 const [owner, sender] = members as [SettingsMember, SettingsMember];
+
+const at = (minutes: number) => new Date(Date.now() - minutes * 60_000).toISOString();
+const mira = { slackUserId: "U0LEAD", name: "Mira", avatarUrl: null };
+const activity: ActivityEntry[] = [
+  {
+    id: "a1",
+    at: at(5),
+    via: "web",
+    action: "holler.sent",
+    actor: mira,
+    subject: { type: "holler", id: "hol_demo", name: "How was your week?", canOpen: true },
+    detail: { count: 12 },
+  },
+  {
+    id: "a2",
+    at: at(60),
+    via: "system",
+    action: "holler.reminded",
+    actor: null,
+    subject: { type: "holler", id: "hol_demo", name: "How was your week?", canOpen: true },
+    detail: { count: 1 },
+  },
+  {
+    id: "a3",
+    at: at(120),
+    via: "web",
+    action: "member.role_changed",
+    actor: mira,
+    subject: { type: "member", id: "mem_demo", name: "Jun", canOpen: false },
+    detail: { from: "sender", to: "owner" },
+  },
+  {
+    id: "a4",
+    at: at(600),
+    via: "slack",
+    action: "response.noted",
+    actor: null,
+    subject: { type: "holler", id: "hol_private", name: "Leadership offsite", canOpen: false },
+    detail: {},
+  },
+  {
+    id: "a5",
+    at: at(1500),
+    via: "api",
+    action: "holler.deleted",
+    actor: mira,
+    subject: { type: "holler", id: "hol_gone", name: null, canOpen: false },
+    detail: {},
+  },
+];
 
 export const settings: Group = {
   slug: "settings",
@@ -73,6 +124,31 @@ export const settings: Group = {
                 <Plate className="w-full">
                   <MemberRow member={owner} canChangeRole={false} />
                   <MemberRow member={sender} canChangeRole={false} />
+                </Plate>
+              ),
+            },
+          ]}
+        />
+      ),
+    },
+    {
+      slug: "activity-row",
+      name: "ActivityRow",
+      source: "components/settings/activity-row.tsx",
+      note: "One write in the workspace, as a sentence: who did what to which Holler, then where it came from and when. Holler's own work and recipients' taps have no person, so they get an icon. It never shows an answer.",
+      Demo: () => (
+        <Variants
+          stack
+          items={[
+            {
+              label: "Owners only, in Settings",
+              render: () => (
+                <Plate className="w-full">
+                  <ol className="contents">
+                    {activity.map((entry) => (
+                      <ActivityRow key={entry.id} entry={entry} />
+                    ))}
+                  </ol>
                 </Plate>
               ),
             },

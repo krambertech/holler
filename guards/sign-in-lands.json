@@ -6,8 +6,8 @@
   "break": [
     {
       "file": "e2e/settings.spec.ts",
-      "find": "  await signInAs(page, \"sender\", \"/settings\");",
-      "replace": "  await signInAs(page, \"sender\");\n  await page.goto(\"/settings\");"
+      "find": "  await signInAs(page, \"sender\", \"/settings\");\n  await expect(page.getByText(\"Mira Kask\")).toBeVisible();",
+      "replace": "  await signInAs(page, \"sender\");\n  await page.goto(\"/settings\");\n  await expect(page.getByText(\"Mira Kask\")).toBeVisible();"
     }
   ],
   "fails": "holler(sign-in-lands)"
