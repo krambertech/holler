@@ -67,6 +67,8 @@ sequenceDiagram
 
 A sync runs in steps of two pages, and `directory_syncs` keeps Slack's cursor between them. The install runs the first steps; the cron carries on every minute until the sync is done, then starts the next one a day later. A rate limit ends the step early with its place saved. `user_change` and `team_join` update one person as they happen. Groups and channels that Slack stops listing are removed when a sync finishes; people stay, marked deleted.
 
+The directory keeps each group's size, not its members. Who is in a group is asked of Slack only for the groups someone chose, in `services/audience.ts`: `resolveAudience` reads `usergroups.users.list` for a user group and every page of `conversations.members` for a channel, then keeps only people in the directory who are not bots and have not left, each counted once. The send uses it to write recipients, and the audience picker's `POST /api/directory/reach` uses it to show an exact count while the sender chooses. For the picker each group's member list is kept in the Worker's memory for five minutes, so typing and undoing does not spend Slack's per-minute allowance; the send always asks Slack again. A refusal from Slack makes the picker fall back to the stored sizes and say "about".
+
 ## How to create the Slack app
 
 The app is defined in [`slack-app-manifest.json`](../slack-app-manifest.json) at the repo root. It sets the scopes, the redirect URLs, the event subscriptions, the interactivity URL and `/holler`.

@@ -11,7 +11,7 @@ import { ApiError } from "@/lib/api";
 import { adoptIds, applyTemplate, composeProblems, type EditorDraft } from "./draft";
 import { filled } from "./questions/model";
 import type { AudienceSummary } from "./send/audience-picker";
-import type { DirectorySearch } from "./send/directory";
+import type { DirectoryCount, DirectorySearch } from "./send/directory";
 import { type Reach, senderZoneFor } from "./send/send-logic";
 import { useNow } from "./send/use-now";
 import { useAutosave } from "./use-autosave";
@@ -24,6 +24,7 @@ export interface EditorIo {
   remove: (id: string) => Promise<void>;
   beacon?: ((payload: HollerDraftInput, id: string) => void) | undefined;
   search?: DirectorySearch | undefined;
+  countPeople?: DirectoryCount | undefined;
 }
 
 interface Options {

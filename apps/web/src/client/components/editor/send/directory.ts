@@ -1,4 +1,9 @@
-import type { directoryOutSchema, directoryResolveOutSchema } from "@holler/core";
+import type {
+  Audience,
+  directoryOutSchema,
+  DirectoryReachOut,
+  directoryResolveOutSchema,
+} from "@holler/core";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import type { z } from "zod";
@@ -19,6 +24,11 @@ export type DirectoryResolve = (terms: string[]) => Promise<Resolved>;
 
 export const resolveDirectory: DirectoryResolve = (terms) =>
   api<Resolved>("/directory/resolve", { method: "POST", json: { terms } });
+
+export type DirectoryCount = (audience: Audience) => Promise<DirectoryReachOut>;
+
+export const countAudience: DirectoryCount = (audience) =>
+  api<DirectoryReachOut>("/directory/reach", { method: "POST", json: audience });
 
 export type AudienceEntry =
   | { kind: "person"; id: string; person: DirectoryPerson }
@@ -43,14 +53,14 @@ export function entryName(entry: AudienceEntry): string {
   return group.handle ? `@${group.handle}` : group.name;
 }
 
-const ids = new WeakMap<DirectorySearch, number>();
+const ids = new WeakMap<DirectorySearch | DirectoryCount, number>();
 let lastId = 0;
-function idOf(search: DirectorySearch) {
-  let id = ids.get(search);
+function idOf(source: DirectorySearch | DirectoryCount) {
+  let id = ids.get(source);
   if (id === undefined) {
     lastId += 1;
     id = lastId;
-    ids.set(search, id);
+    ids.set(source, id);
   }
   return id;
 }
@@ -75,4 +85,19 @@ export function useDirectory(search: DirectorySearch, query: string, enabled: bo
   });
   const current = Boolean(result.data) && !result.isPlaceholderData && settled === query.trim();
   return { ...result, current };
+}
+
+export function audienceKey(audience: Audience): string {
+  if (audience.everyone) return "everyone";
+  return JSON.stringify([[...audience.groups].sort(), [...audience.people].sort()]);
+}
+
+export function useAudienceCount(count: DirectoryCount, audience: Audience, enabled: boolean) {
+  return useQuery({
+    queryKey: ["directory", "reach", idOf(count), audienceKey(audience)],
+    queryFn: () => count(audience),
+    enabled,
+    staleTime: 60_000,
+    retry: 1,
+  });
 }

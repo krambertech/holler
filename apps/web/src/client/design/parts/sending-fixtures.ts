@@ -2,6 +2,7 @@ import { foldText, type HollerDraft, parseSearch } from "@holler/core";
 import { rankEntries } from "@/components/editor/send/audience-logic";
 import {
   type Directory,
+  type DirectoryCount,
   type DirectoryGroup,
   type DirectoryPerson,
   type DirectoryResolve,
@@ -104,6 +105,34 @@ export const resolve: DirectoryResolve = async (terms) => {
     }
   }
   return { ...found, missed };
+};
+
+const everyonePeople = [
+  ...team.map((p) => ({ id: p.slackUserId, zone: p.timeZone })),
+  ...Array.from({ length: WORKSPACE - team.length }, (_, i) => ({
+    id: `U0X${i}`,
+    zone: team[i % team.length]?.timeZone ?? null,
+  })),
+];
+
+export const countPeople: DirectoryCount = async (audience) => {
+  await wait(300);
+  const chosen = audience.everyone
+    ? everyonePeople
+    : everyonePeople.filter(
+        (p, index) =>
+          audience.people.includes(p.id) || audience.groups.some((id) => index < (sizeOf(id) ?? 0)),
+      );
+  const byZone = new Map<string | null, number>();
+  for (const p of chosen) byZone.set(p.zone, (byZone.get(p.zone) ?? 0) + 1);
+  return {
+    people: chosen.length,
+    zones: [...byZone.entries()].map(([zone, people]) => ({ zone, people })),
+  };
+};
+export const failingCount: DirectoryCount = async () => {
+  await wait(300);
+  throw new Error("Slack did not answer");
 };
 
 export const known = { people: team, groups };

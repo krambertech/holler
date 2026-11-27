@@ -101,7 +101,7 @@
         "eslint/max-lines": [
           "error",
           {
-            "max": 1200
+            "max": 1150
           }
         ]
       }

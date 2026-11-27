@@ -170,6 +170,7 @@ function HollerEditor({
             workspaceSize={workspaceSize}
             tagSuggestions={tagSuggestions}
             search={io.search}
+            countPeople={io.countPeople}
             limit={editor.limit}
             now={editor.now}
             timeZone={editor.senderZone}

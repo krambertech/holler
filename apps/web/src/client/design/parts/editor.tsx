@@ -15,6 +15,7 @@ import { TemplatePreview, TemplatesDialog } from "@/components/editor/templates-
 import { Button } from "@/components/ui/button";
 import { ApiError } from "@/lib/api";
 import { Variants } from "../frame";
+import { countPeople } from "./sending-fixtures";
 import type { Group } from "./types";
 
 const noop = () => {};
@@ -104,6 +105,7 @@ function fakeIo(): EditorIo {
     },
     remove: async () => {},
     search: async () => ({ people: [], groups: [] }),
+    countPeople,
   };
 }
 

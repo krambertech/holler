@@ -3,7 +3,12 @@ import { LimitReached } from "@/components/billing/limit-reached";
 import { cn } from "@/lib/cn";
 import { type EditorDraft, problemFor } from "./draft";
 import { AudiencePicker, type AudienceSummary } from "./send/audience-picker";
-import type { DirectoryGroup, DirectoryPerson, DirectorySearch } from "./send/directory";
+import type {
+  DirectoryCount,
+  DirectoryGroup,
+  DirectoryPerson,
+  DirectorySearch,
+} from "./send/directory";
 import { SendSettings } from "./send/send-settings";
 
 type Problem = { message: string; field: string | null };
@@ -19,6 +24,7 @@ interface Props extends ComponentProps<"div"> {
   workspaceSize?: number | null | undefined;
   tagSuggestions?: string[] | undefined;
   search?: DirectorySearch | undefined;
+  countPeople?: DirectoryCount | undefined;
   limit?: string | null | undefined;
   now: Date;
   timeZone: string;
@@ -35,6 +41,7 @@ function HollerEditorSend({
   workspaceSize,
   tagSuggestions,
   search,
+  countPeople,
   limit,
   now,
   timeZone,
@@ -54,6 +61,7 @@ function HollerEditorSend({
         workspaceSize={workspaceSize}
         onSummaryChange={onSummaryChange}
         search={search}
+        countPeople={countPeople}
       />
       <SendSettings
         value={draft}

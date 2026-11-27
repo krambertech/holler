@@ -129,6 +129,7 @@ export const audienceSchema = z.object({
   groups: z.array(z.string()).max(100).default([]),
   everyone: z.boolean().default(false),
 });
+export type Audience = z.output<typeof audienceSchema>;
 
 /** A draft can be saved half-written; sendHollerSchema checks it is complete. */
 export const hollerDraftSchema = z.object({

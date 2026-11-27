@@ -397,6 +397,10 @@ export function audienceReach(
   };
 }
 
+export function countedReach(everyone: boolean, people: number): Reach {
+  return { count: people, exact: true, everyone, unknown: false };
+}
+
 export function reachLabel(reach: Reach): string {
   if (reach.everyone) return reach.exact ? peopleLabel(reach.count) : "Everyone in the workspace";
   if (reach.unknown) return "Size not known yet";
