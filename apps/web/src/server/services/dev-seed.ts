@@ -1,5 +1,5 @@
 import { anonymousTime, newId } from "@holler/core";
-import { and, type BatchItem, eq } from "@holler/core/db";
+import { and, type BatchItem, eq, sql } from "@holler/core/db";
 import { runBatch } from "../batch";
 import type { Db } from "../db";
 import { schema } from "../db";
@@ -127,6 +127,8 @@ export async function seedLeadHollers(db: Db, workspaceId: string, creatorId: st
     sendAt?: Date;
     closesAt?: Date;
     closedAt?: Date;
+    roundOf?: number;
+    repeat?: "week";
     questions: {
       type: "single" | "multi" | "text";
       style?: "plain" | "scale" | "binary";
@@ -149,6 +151,9 @@ export async function seedLeadHollers(db: Db, workspaceId: string, creatorId: st
       tags: ["weekly"],
       recipients: [...team.slice(0, 12), "U0SENDER"],
       answered: 7,
+      roundOf: 4,
+      repeat: "week",
+      sendAt: at(-2 * DAY),
       sentAt: at(-2 * DAY),
       closesAt: at(2 * DAY),
       questions: [mood, { type: "text", prompt: "Anything in your way?" }],
@@ -204,6 +209,8 @@ export async function seedLeadHollers(db: Db, workspaceId: string, creatorId: st
       tags: ["weekly"],
       recipients: ["U0SENDER", ...team.slice(0, 12)],
       answered: 12,
+      repeat: "week",
+      sendAt: at(-40 * DAY),
       sentAt: at(-40 * DAY),
       closesAt: at(-36 * DAY),
       closedAt: at(-36 * DAY),
@@ -243,8 +250,20 @@ export async function seedLeadHollers(db: Db, workspaceId: string, creatorId: st
         { type: "text", prompt: "What would make it easier?" },
       ],
     },
+    {
+      mode: "pulse",
+      status: "scheduled",
+      title: "How was your week?",
+      tags: ["weekly"],
+      recipients: [],
+      audience: [...team.slice(0, 12), "U0SENDER"],
+      answered: 0,
+      roundOf: 4,
+      repeat: "week",
+      sendAt: at(5 * DAY),
+      questions: [mood, { type: "text", prompt: "Anything in your way?" }],
+    },
   ];
-
   for (const [order, seed] of seeds.entries()) {
     const hollerId = newId("holler");
     // The key's unique index lets each seeded holler in once when two lead sign-ins race.
@@ -270,6 +289,7 @@ export async function seedLeadHollers(db: Db, workspaceId: string, creatorId: st
         closeQueuedAt: seed.closedAt ?? null,
         createdVia: "web",
         idempotencyKey,
+        repeatRule: seed.repeat ?? null,
         createdAt: seed.sentAt ?? at(-1 * HOUR),
         updatedAt: seed.closedAt ?? seed.sentAt ?? at(-1 * HOUR),
       }),
@@ -388,6 +408,33 @@ export async function seedLeadHollers(db: Db, workspaceId: string, creatorId: st
       if (!winner) throw error;
     }
   }
+  await linkSeededRounds(db, workspaceId, seeds);
+}
+
+async function linkSeededRounds(
+  db: Db,
+  workspaceId: string,
+  seeds: readonly { roundOf?: number | undefined }[],
+) {
+  const seeded = (order: number) =>
+    and(
+      eq(schema.hollers.workspaceId, workspaceId),
+      eq(schema.hollers.idempotencyKey, `dev-seed ${order}`),
+    );
+  const links = seeds.flatMap((seed, order) => {
+    if (seed.roundOf === undefined) return [];
+    const first = db
+      .select({ id: schema.hollers.id })
+      .from(schema.hollers)
+      .where(seeded(seed.roundOf));
+    return [
+      db
+        .update(schema.hollers)
+        .set({ repeatOfId: sql`(${first})` })
+        .where(seeded(order)),
+    ];
+  });
+  await runBatch(db, links);
 }
 
 const sampleTexts = [

@@ -1,0 +1,14 @@
+{
+  "rule": "A round's page shows its series whether or not the pulse still repeats",
+  "layer": "browser",
+  "past": "#36: after Stop repeating, the first round's page lost its rounds, because the page asked for them only while the Holler repeated",
+  "check": "pnpm exec playwright test --project=chromium --retries=0 -g 'shows its rounds from any round'",
+  "break": [
+    {
+      "file": "apps/web/src/client/routes/_app/hollers.$id.tsx",
+      "find": "    enabled: holler.data !== undefined && holler.data.status !== \"draft\",",
+      "replace": "    enabled: holler.data !== undefined && holler.data.repeat !== null,"
+    }
+  ],
+  "fails": "toBeVisible"
+}

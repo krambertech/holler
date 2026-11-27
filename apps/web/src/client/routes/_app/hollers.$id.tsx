@@ -1,4 +1,4 @@
-import type { HollerOut, SharingOut } from "@holler/core";
+import type { HollerOut, Results, SharingOut } from "@holler/core";
 import { anonymousThreshold, modeLabels } from "@holler/core";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
@@ -8,6 +8,7 @@ import { ErrorState } from "@/components/error-state";
 import { ModeGlyph } from "@/components/mode-glyph";
 import { HollerActions } from "@/components/results/holler-actions";
 import { HollerPeople } from "@/components/results/holler-people";
+import { HollerRounds } from "@/components/results/holler-rounds";
 import { type PersonLookup, QuestionResult } from "@/components/results/question-result";
 import { ShareDialog } from "@/components/results/share-dialog";
 import { Skeleton } from "@/components/skeleton";
@@ -16,7 +17,13 @@ import { Plate } from "@/components/ui/plate";
 import { toast } from "@/components/ui/toast";
 import { api } from "@/lib/api";
 import { closesLabel, count, dayAndTime, momentLabel } from "@/lib/format";
-import { directoryQuery, hollerPeopleQuery, resultsQuery, sharingQuery } from "@/lib/queries";
+import {
+  directoryQuery,
+  hollerPeopleQuery,
+  resultsQuery,
+  roundsQuery,
+  sharingQuery,
+} from "@/lib/queries";
 
 export const Route = createFileRoute("/_app/hollers/$id")({
   component: HollerPage,
@@ -28,6 +35,22 @@ const statusWord = {
   scheduled: "Scheduled",
   draft: "Draft",
 } as const;
+
+async function copyResultsAsMarkdown(id: string) {
+  try {
+    const response = await fetch(`/api/hollers/${id}/export?format=md`, {
+      credentials: "same-origin",
+    });
+    if (!response.ok) throw new Error("We could not copy the results. Try again.");
+    await navigator.clipboard.writeText(await response.text());
+    toast.add({ title: "Copied the results as Markdown." });
+  } catch (error) {
+    toast.add({
+      tone: "danger",
+      title: error instanceof Error ? error.message : "We could not copy the results.",
+    });
+  }
+}
 
 function HollerPage() {
   const { id } = Route.useParams();
@@ -42,6 +65,11 @@ function HollerPage() {
   const people = useQuery({ ...hollerPeopleQuery(id), enabled: sent });
   const isCreator = holler.data?.isCreator ?? false;
   const [sharingOpen, setSharingOpen] = useState(false);
+  const rounds = useQuery({
+    ...roundsQuery(id),
+    enabled: holler.data !== undefined && holler.data.status !== "draft",
+  });
+  const nextRound = rounds.data?.rounds.find((round) => round.status === "scheduled");
 
   const refresh = () => queryClient.invalidateQueries({ queryKey: ["hollers"] });
   const remind = useMutation({
@@ -66,6 +94,14 @@ function HollerPage() {
     },
     onError: (error) => toast.add({ tone: "danger", title: error.message }),
   });
+  const stopRepeating = useMutation({
+    mutationFn: () => api<HollerOut>(`/hollers/${id}/stop-repeating`, { method: "POST" }),
+    onSuccess: () => {
+      toast.add({ title: "This pulse no longer repeats. Every answer stays." });
+      void refresh();
+    },
+    onError: (error) => toast.add({ tone: "danger", title: error.message }),
+  });
   const copy = useMutation({
     mutationFn: () => api<{ id: string }>(`/hollers/${id}/copy`, { method: "POST" }),
     onSuccess: (draft) => {
@@ -75,21 +111,7 @@ function HollerPage() {
     },
     onError: (error) => toast.add({ tone: "danger", title: error.message }),
   });
-  const copyAsMarkdown = async () => {
-    try {
-      const response = await fetch(`/api/hollers/${id}/export?format=md`, {
-        credentials: "same-origin",
-      });
-      if (!response.ok) throw new Error("We could not copy the results. Try again.");
-      await navigator.clipboard.writeText(await response.text());
-      toast.add({ title: "Copied the results as Markdown." });
-    } catch (error) {
-      toast.add({
-        tone: "danger",
-        title: error instanceof Error ? error.message : "We could not copy the results.",
-      });
-    }
-  };
+  const copyAsMarkdown = () => copyResultsAsMarkdown(id);
 
   const lookup = useMemo(() => {
     const map = new Map<string, PersonLookup>();
@@ -136,6 +158,10 @@ function HollerPage() {
             onShare={() => setSharingOpen(true)}
             copying={copy.isPending}
             closing={close.isPending}
+            repeats={rounds.data?.repeat != null}
+            nextRoundAt={nextRound?.sendAt ?? null}
+            onStopRepeating={() => stopRepeating.mutate()}
+            stopping={stopRepeating.isPending}
           />
         )}
       </div>
@@ -159,14 +185,7 @@ function HollerPage() {
         </div>
       </header>
 
-      {h.status === "scheduled" && h.sendAt && (
-        <Plate className="px-6 py-5">
-          <h2 className="text-lg">Sends {momentLabel(h.sendAt)}</h2>
-          <p className="mt-1 max-w-[60ch] text-ink-2">
-            Who answered and the results show here once it goes out.
-          </p>
-        </Plate>
-      )}
+      <ScheduledNotice holler={h} />
 
       {people.data && (
         <HollerPeople
@@ -179,33 +198,12 @@ function HollerPage() {
         />
       )}
 
-      {results.data?.state === "gated" && (
-        <Plate className="px-6 py-5">
-          <h2 className="text-lg">Results open at {anonymousThreshold} answers</h2>
-          <p className="mt-1 max-w-[60ch] text-ink-2">
-            This Holler is anonymous, so its results stay closed until enough people answered that
-            no one can be picked out.{" "}
-            {results.data.needed === 1
-              ? "One more answer opens them."
-              : `${results.data.needed} more answers open them.`}
-          </p>
-        </Plate>
+      {rounds.data && rounds.data.rounds.length > 1 && (
+        <HollerRounds rounds={rounds.data} currentId={h.id} />
       )}
 
-      {results.data?.state === "open" && results.data.questions.length > 0 && (
-        <section aria-labelledby="results-heading" className="flex flex-col gap-4">
-          <h2 id="results-heading" className="text-xl">
-            Results
-          </h2>
-          {results.data.questions.map((question, index) => (
-            <QuestionResult
-              key={question.id}
-              question={question}
-              number={index + 1}
-              people={h.anonymous ? new Map() : lookup}
-            />
-          ))}
-        </section>
+      {results.data && (
+        <HollerResults results={results.data} people={h.anonymous ? new Map() : lookup} />
       )}
     </>
   );
@@ -274,6 +272,51 @@ function HollerSharing({
       adding={add.isPending}
       linking={link.isPending}
     />
+  );
+}
+
+function ScheduledNotice({ holler }: { holler: HollerOut }) {
+  if (holler.status !== "scheduled" || !holler.sendAt) return null;
+  return (
+    <Plate className="px-6 py-5">
+      <h2 className="text-lg">Sends {momentLabel(holler.sendAt)}</h2>
+      <p className="mt-1 max-w-[60ch] text-ink-2">
+        Who answered and the results show here once it goes out.
+      </p>
+    </Plate>
+  );
+}
+
+interface HollerResultsProps {
+  results: Results;
+  people: Map<string, PersonLookup>;
+}
+
+function HollerResults({ results, people }: HollerResultsProps) {
+  if (results.state === "gated") {
+    return (
+      <Plate className="px-6 py-5">
+        <h2 className="text-lg">Results open at {anonymousThreshold} answers</h2>
+        <p className="mt-1 max-w-[60ch] text-ink-2">
+          This Holler is anonymous, so its results stay closed until enough people answered that no
+          one can be picked out.{" "}
+          {results.needed === 1
+            ? "One more answer opens them."
+            : `${results.needed} more answers open them.`}
+        </p>
+      </Plate>
+    );
+  }
+  if (results.questions.length === 0) return null;
+  return (
+    <section aria-labelledby="results-heading" className="flex flex-col gap-4">
+      <h2 id="results-heading" className="text-xl">
+        Results
+      </h2>
+      {results.questions.map((question, index) => (
+        <QuestionResult key={question.id} question={question} number={index + 1} people={people} />
+      ))}
+    </section>
   );
 }
 
