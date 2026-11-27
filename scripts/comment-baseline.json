@@ -1,6 +1,6 @@
 {
   ".agents/skills/verify/features/answer.mjs": 1,
-  ".agents/skills/verify/scripts/doctor.mjs": 5,
+  ".agents/skills/verify/scripts/doctor.mjs": 4,
   ".agents/skills/verify/scripts/run.mjs": 7,
   ".agents/skills/verify/scripts/server.mjs": 4,
   "apps/site/astro.config.mjs": 1,

@@ -24,7 +24,7 @@ async function signOutFrom(origin: string, bindings: Bindings) {
 
 describe("signing out locally", () => {
   it("works on any local port while dev routes are on, whatever PRODUCT_URL says", async () => {
-    for (const port of [5280, 5290, 5299]) {
+    for (const port of [5280, 5290, 5300, 5899]) {
       expect(await signOutFrom(`http://localhost:${port}`, env)).toBe(200);
     }
   });

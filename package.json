@@ -12,7 +12,7 @@
     "dev": "pnpm --parallel --stream --filter @holler/site --filter @holler/web dev",
     "build": "pnpm -r build",
     "typecheck": "pnpm -r typecheck && tsc -p e2e/tsconfig.json",
-    "test": "pnpm -r test && node --test scripts/*.test.mjs oxlint-plugin-holler/rules/*.test.mjs",
+    "test": "pnpm -r test && node --test scripts/*.test.mjs oxlint-plugin-holler/rules/*.test.mjs e2e/*.test.mjs",
     "test:e2e": "playwright test",
     "test:e2e:chromium": "playwright test --project=chromium",
     "check": "pnpm check:conflicts && oxfmt --check . && oxlint . --type-aware --report-unused-disable-directives-severity error && pnpm check:architecture && pnpm check:limits && pnpm check:dead-code && pnpm check:design && pnpm check:design-coverage && pnpm check:styling && pnpm check:comments && pnpm check:workflows && pnpm check:models:sync && pnpm guards:check",

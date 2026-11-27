@@ -1,0 +1,14 @@
+{
+  "rule": "A local e2e run tests only a server that this checkout runs",
+  "layer": "test",
+  "past": "While redesigning the web form (#64), pnpm test:e2e reused the e2e server another worktree had left on port 5290, and every test ran against that branch's code",
+  "check": "node --test e2e/own-server.test.mjs",
+  "break": [
+    {
+      "file": "e2e/own-server.mts",
+      "find": ".find((served) => served !== mine);",
+      "replace": ".find(() => false);"
+    }
+  ],
+  "fails": "refuses a server another checkout runs"
+}
