@@ -1,4 +1,4 @@
-export const title = "A repeating pulse shows its rounds and stops repeating";
+export const title = "A repeating pulse shows its rounds, changes how often it repeats, and stops";
 export const persona = "lead";
 
 const TITLE = "How was your week?";
@@ -37,8 +37,30 @@ export default async function drive({ page, step, api, expect }) {
     return { back: pulse.id };
   });
 
+  await step("Every fortnight moves the next round two weeks on", async () => {
+    const rounds = page.getByRole("region", { name: "Rounds" });
+    await rounds.getByRole("button", { name: "Repeats every week" }).click();
+    await expect(page.getByRole("menuitemradio", { name: "Every week" })).toBeChecked();
+    await page.getByRole("menuitemradio", { name: "Every fortnight" }).click();
+    await expect(page.getByText("This pulse now repeats every fortnight.")).toBeVisible();
+    await expect(rounds).toContainText("A new round goes out every fortnight.");
+    const series = await api(`/api/hollers/${pulse.id}/rounds`);
+    expect(series.repeat).toBe("fortnight");
+    const next = series.rounds.find((r) => r.status === "scheduled");
+    const days = (Date.parse(next.sendAt) - Date.now()) / 86_400_000;
+    expect(Math.round(days)).toBe(12);
+    const stored = await api("/api/dev/state");
+    expect(stored.activity).toContainEqual(
+      expect.objectContaining({ action: "holler.repeat_changed", via: "web" }),
+    );
+    return { repeat: series.repeat, next: next.sendAt };
+  });
+
   await step("Stop repeating asks once, then deletes only the next round", async () => {
-    await page.getByRole("button", { name: "More for this Holler" }).click();
+    await page
+      .getByRole("region", { name: "Rounds" })
+      .getByRole("button", { name: "Repeats every fortnight" })
+      .click();
     await page.getByRole("menuitem", { name: "Stop repeating" }).click();
     const dialog = page.getByRole("dialog", { name: "Stop repeating this pulse?" });
     await expect(dialog).toContainText("Every round so far and its answers stay.");
@@ -53,9 +75,7 @@ export default async function drive({ page, step, api, expect }) {
     expect(stored.activity).toContainEqual(
       expect.objectContaining({ action: "holler.repeat_stopped", via: "web" }),
     );
-    await page.getByRole("button", { name: "More for this Holler" }).click();
-    await expect(page.getByRole("menuitem", { name: "Stop repeating" })).toHaveCount(0);
-    await page.keyboard.press("Escape");
+    await expect(rounds.getByRole("button", { name: /^Repeats/ })).toHaveCount(0);
     return { repeat: series.repeat, rounds: series.rounds.map((r) => r.status) };
   });
 }

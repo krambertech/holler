@@ -1,4 +1,4 @@
-import type { HollerOut, Results, SharingOut } from "@holler/core";
+import type { HollerOut, RepeatEvery, RepeatInput, Results, SharingOut } from "@holler/core";
 import { anonymousThreshold, modeLabels } from "@holler/core";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, Navigate, useNavigate } from "@tanstack/react-router";
@@ -61,6 +61,11 @@ async function copyResultsAsMarkdown(id: string) {
   }
 }
 
+const repeatedNow: Record<RepeatEvery, string> = {
+  week: "This pulse now repeats every week. The next round moved to match.",
+  fortnight: "This pulse now repeats every fortnight. The next round moved to match.",
+};
+
 const writtenInEditor = (h: HollerOut) =>
   h.isCreator && (h.status === "draft" || h.status === "scheduled");
 
@@ -81,7 +86,6 @@ function HollerPage() {
     ...roundsQuery(id),
     enabled: holler.data !== undefined && holler.data.status !== "draft",
   });
-  const nextRound = rounds.data?.rounds.find((round) => round.status === "scheduled");
 
   const refresh = () => queryClient.invalidateQueries({ queryKey: ["hollers"] });
   const remind = useMutation({
@@ -110,6 +114,18 @@ function HollerPage() {
     mutationFn: () => api<HollerOut>(`/hollers/${id}/stop-repeating`, { method: "POST" }),
     onSuccess: () => {
       toast.add({ title: "This pulse no longer repeats. Every answer stays." });
+      void refresh();
+    },
+    onError: (error) => toast.add({ tone: "danger", title: error.message }),
+  });
+  const changeRepeat = useMutation({
+    mutationFn: (repeat: RepeatEvery) =>
+      api<HollerOut>(`/hollers/${id}/repeat`, {
+        method: "PUT",
+        json: { repeat } satisfies RepeatInput,
+      }),
+    onSuccess: (_, repeat) => {
+      toast.add({ title: repeatedNow[repeat] });
       void refresh();
     },
     onError: (error) => toast.add({ tone: "danger", title: error.message }),
@@ -161,10 +177,6 @@ function HollerPage() {
       onShare={() => setSharingOpen(true)}
       copying={copy.isPending}
       closing={close.isPending}
-      repeats={rounds.data?.repeat != null}
-      nextRoundAt={nextRound?.sendAt ?? null}
-      onStopRepeating={() => stopRepeating.mutate()}
-      stopping={stopRepeating.isPending}
       className="shrink-0 sm:mt-1"
     />
   );
@@ -218,8 +230,15 @@ function HollerPage() {
         />
       )}
 
-      {rounds.data && rounds.data.rounds.length > 1 && (
-        <HollerRounds rounds={rounds.data} currentId={h.id} canEdit={isCreator} />
+      {rounds.data && (rounds.data.repeat !== null || rounds.data.rounds.length > 1) && (
+        <HollerRounds
+          rounds={rounds.data}
+          currentId={h.id}
+          canEdit={isCreator}
+          onRepeatChange={(repeat) => changeRepeat.mutate(repeat)}
+          onStopRepeating={() => stopRepeating.mutate()}
+          pending={changeRepeat.isPending || stopRepeating.isPending}
+        />
       )}
 
       {results.data && (

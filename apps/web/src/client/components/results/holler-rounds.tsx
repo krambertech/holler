@@ -1,8 +1,32 @@
-import { anonymousThreshold, type RoundOut, type RoundsOut } from "@holler/core";
+import {
+  anonymousThreshold,
+  type RepeatEvery,
+  type RoundOut,
+  type RoundsOut,
+  repeatEvery,
+} from "@holler/core";
 import { Link } from "@tanstack/react-router";
-import { ChevronRight, Pencil, Repeat } from "lucide-react";
-import type { ComponentProps, ReactNode } from "react";
+import { ChevronDown, ChevronRight, Pencil, Repeat, RepeatOff } from "lucide-react";
+import { type ComponentProps, type ReactNode, useState } from "react";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Plate } from "@/components/ui/plate";
 import { ProgressBar } from "@/components/ui/progress";
 import { cn } from "@/lib/cn";
@@ -13,9 +37,22 @@ interface Props extends ComponentProps<"section"> {
   currentId: string;
   canEdit?: boolean | undefined;
   now?: Date | undefined;
+  onRepeatChange?: ((every: RepeatEvery) => void) | undefined;
+  onStopRepeating?: (() => void) | undefined;
+  pending?: boolean | undefined;
 }
 
-function HollerRounds({ rounds, currentId, canEdit = false, now, className, ...props }: Props) {
+function HollerRounds({
+  rounds,
+  currentId,
+  canEdit = false,
+  now,
+  onRepeatChange,
+  onStopRepeating,
+  pending = false,
+  className,
+  ...props
+}: Props) {
   const scored = rounds.rounds.find((round) => round.scores.length > 0)?.scores[0];
   const next = rounds.rounds.find((round) => round.status === "scheduled");
   return (
@@ -42,11 +79,24 @@ function HollerRounds({ rounds, currentId, canEdit = false, now, className, ...p
               {scored && ` Each bar is the average for “${scored.prompt}”.`}
             </p>
           </div>
-          {canEdit && next && (
-            <Button size="sm" render={<Link to="/hollers/$id" params={{ id: next.id }} />}>
-              <Pencil aria-hidden />
-              Edit next round
-            </Button>
+          {canEdit && (next || rounds.repeat) && (
+            <div className="flex flex-wrap items-center gap-2">
+              {next && (
+                <Button size="sm" render={<Link to="/hollers/$id" params={{ id: next.id }} />}>
+                  <Pencil aria-hidden />
+                  Edit next round
+                </Button>
+              )}
+              {rounds.repeat && onRepeatChange && onStopRepeating && (
+                <RepeatMenu
+                  repeat={rounds.repeat}
+                  nextRoundAt={next?.sendAt ?? null}
+                  onRepeatChange={onRepeatChange}
+                  onStopRepeating={onStopRepeating}
+                  pending={pending}
+                />
+              )}
+            </div>
           )}
         </div>
         <ol>
@@ -58,6 +108,88 @@ function HollerRounds({ rounds, currentId, canEdit = false, now, className, ...p
         </ol>
       </Plate>
     </section>
+  );
+}
+
+const everyLabel: Record<RepeatEvery, string> = {
+  week: "Every week",
+  fortnight: "Every fortnight",
+};
+
+const repeatsLabel: Record<RepeatEvery, string> = {
+  week: "Repeats every week",
+  fortnight: "Repeats every fortnight",
+};
+
+function RepeatMenu({
+  repeat,
+  nextRoundAt,
+  onRepeatChange,
+  onStopRepeating,
+  pending,
+}: {
+  repeat: RepeatEvery;
+  nextRoundAt: string | null;
+  onRepeatChange: (every: RepeatEvery) => void;
+  onStopRepeating: () => void;
+  pending: boolean;
+}) {
+  const [stopping, setStopping] = useState(false);
+  return (
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          render={<Button size="sm" aria-label={repeatsLabel[repeat]} pending={pending} />}
+        >
+          {everyLabel[repeat]}
+          <ChevronDown aria-hidden />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent aria-label="How often it repeats" align="end">
+          <DropdownMenuRadioGroup
+            value={repeat}
+            onValueChange={(value) => {
+              const every = repeatEvery.find((option) => option === value);
+              if (every) onRepeatChange(every);
+            }}
+          >
+            {repeatEvery.map((every) => (
+              <DropdownMenuRadioItem key={every} value={every}>
+                {everyLabel[every]}
+              </DropdownMenuRadioItem>
+            ))}
+          </DropdownMenuRadioGroup>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={() => setStopping(true)}>
+            <RepeatOff />
+            Stop repeating
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <Dialog open={stopping} onOpenChange={setStopping}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Stop repeating this pulse?</DialogTitle>
+            <DialogDescription>
+              {nextRoundAt
+                ? `The next round, on ${shortDate(nextRoundAt)}, is deleted. Every round so far and its answers stay.`
+                : "No more rounds go out. Every round so far and its answers stay."}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <DialogClose render={<Button variant="ghost">Keep repeating</Button>} />
+            <Button
+              variant="primary"
+              onClick={() => {
+                onStopRepeating();
+                setStopping(false);
+              }}
+            >
+              Stop repeating
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 

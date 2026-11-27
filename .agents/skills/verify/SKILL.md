@@ -27,7 +27,7 @@ A change is verified when every feature it reaches has been driven in a running 
 | The Holler page chases and closes | [holler-page.md](features/holler-page.md) |
 | Delete the workspace's data | [workspace-deletion.md](features/workspace-deletion.md) |
 | Sharing the results | [sharing.md](features/sharing.md) |
-| A repeating pulse shows its rounds and stops repeating | [rounds.md](features/rounds.md) |
+| A repeating pulse shows its rounds, changes how often it repeats, and stops | [rounds.md](features/rounds.md) |
 
 ## Launch
 
