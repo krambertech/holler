@@ -1,0 +1,14 @@
+{
+  "rule": "Sending keeps a close time the sender fixed, instead of the default duration",
+  "layer": "test",
+  "past": "#61 review: goLive set closesAt from closeAfterHours alone, so a Holler meant to close on a picked date closed after three days",
+  "check": "cd apps/web && pnpm exec vitest run src/server/services/delivery.test.ts -t 'keeps a close time the sender fixed'",
+  "break": [
+    {
+      "file": "apps/web/src/server/services/delivery.ts",
+      "find": "  const closes = holler.closesAt?.getTime() ?? lastSend + holler.closeAfterHours * HOUR;",
+      "replace": "  const closes = lastSend + holler.closeAfterHours * HOUR;"
+    }
+  ],
+  "fails": "keeps a close time the sender fixed"
+}

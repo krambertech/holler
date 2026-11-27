@@ -87,6 +87,10 @@ function zoneOffset(at: Date, zone: string): number {
   return asUtc(wallClock(at, zone)) - Math.floor(at.getTime() / 60_000) * 60_000;
 }
 
+export function senderZoneFor(slackZone: string | null | undefined, browserZone: string): string {
+  return isTimeZone(slackZone) ? slackZone : browserZone;
+}
+
 export function zoneName(zone: string): string {
   return (zone.split("/").pop() ?? zone).replaceAll("_", " ");
 }

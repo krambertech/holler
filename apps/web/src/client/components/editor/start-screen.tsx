@@ -12,12 +12,6 @@ interface Props extends ComponentProps<"div"> {
 
 const featured = ["weekly-pulse", "enps", "retro", "offsite-dates", "team-health", "benefits"];
 
-const goodFor: Record<Mode, string> = {
-  pulse: "Good for weekly check-ins, eNPS and a quick read of the mood. It can repeat every week.",
-  survey: "Good for retros, planning, picking offsite dates and feedback.",
-  chase: "Good for benefits sign-up, expense reports and anything in a Google Form.",
-};
-
 const line = "block h-[5px] rounded-full bg-edge-3";
 
 function Drawing({ mode }: { mode: Mode }) {
@@ -85,7 +79,6 @@ function ModeRow({ mode, onPick }: { mode: Mode; onPick: () => void }) {
             {modeLabels[mode]}
           </span>
           <span className="text-ink-2">{modeDescriptions[mode]}</span>
-          <span className="text-muted text-sm">{goodFor[mode]}</span>
         </span>
         <ChevronRight
           aria-hidden

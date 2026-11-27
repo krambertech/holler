@@ -15,6 +15,7 @@ import {
   sendActionLabel,
   sendBarSummary,
   sendSummary,
+  senderZoneFor,
   wallClock,
   webReason,
   zoneName,
@@ -327,5 +328,16 @@ describe("the bar", () => {
       "Question 2 shows its note only after some answers, which a Slack form cannot do.",
     );
     expect(webReason({ where: "dm" })).toBeNull();
+  });
+});
+
+describe("the sender's clock", () => {
+  it("reads send times on the sender's Slack time zone, as delivery does", () => {
+    expect(senderZoneFor("America/New_York", "Europe/London")).toBe("America/New_York");
+  });
+
+  it("falls back to the browser's zone when Slack has none or an unknown one", () => {
+    expect(senderZoneFor(null, "Europe/London")).toBe("Europe/London");
+    expect(senderZoneFor("Mars/Olympus", "Europe/London")).toBe("Europe/London");
   });
 });

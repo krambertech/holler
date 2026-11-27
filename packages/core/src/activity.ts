@@ -5,6 +5,7 @@ export const activityActions = [
   "holler.copied",
   "holler.deleted",
   "holler.scheduled",
+  "holler.unscheduled",
   "holler.sent",
   "holler.send_failed",
   "holler.reminded",

@@ -6,8 +6,8 @@
   "break": [
     {
       "file": "apps/web/src/server/services/delivery.ts",
-      "find": "new Date(Math.min(lastSend + holler.closeAfterHours * HOUR, nextInvite))",
-      "replace": "new Date(Math.min(lastSend + holler.closeAfterHours * HOUR, nextInvite + HOUR))"
+      "find": "new Date(Math.min(closes, nextInvite))",
+      "replace": "new Date(Math.min(closes, nextInvite + HOUR))"
     }
   ],
   "fails": "closes every round before anyone gets the next"

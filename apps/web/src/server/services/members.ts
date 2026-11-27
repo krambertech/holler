@@ -31,6 +31,7 @@ export async function describeMe(ctx: ServiceContext) {
       slackUserId: row.member.slackUserId,
       name: row.person?.displayName || row.person?.name || "You",
       avatarUrl: row.person?.avatarUrl ?? null,
+      timeZone: row.person?.timeZone ?? null,
     },
     workspace: {
       id: row.workspace.id,

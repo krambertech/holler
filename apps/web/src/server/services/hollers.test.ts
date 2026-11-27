@@ -80,6 +80,23 @@ describe("drafts", () => {
     expect(chase.questions).toEqual([]);
   });
 
+  it("keeps a scheduled Holler scheduled while it has a send time, and a draft once it has none", async () => {
+    const { ctx } = await workspaceFixture(db);
+    const sendAt = new Date("2026-12-01T09:00:00Z");
+    const holler = await createDraft(ctx, { ...pulse, sendAt });
+    await db
+      .update(schema.hollers)
+      .set({ status: "scheduled" })
+      .where(eq(schema.hollers.id, holler.id));
+    const later = await updateDraft(ctx, holler.id, {
+      ...pulse,
+      sendAt: new Date("2026-12-02T09:00:00Z"),
+    });
+    expect(later.status).toBe("scheduled");
+    const now = await updateDraft(ctx, holler.id, { ...pulse, sendAt: null });
+    expect(now.status).toBe("draft");
+  });
+
   it("stores a fixed close time on a draft", async () => {
     const { ctx } = await workspaceFixture(db);
     const closesAt = new Date("2026-11-27T18:00:00Z");

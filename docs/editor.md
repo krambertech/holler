@@ -58,9 +58,10 @@ The bar rides at the bottom of the window and settles into place at the end of t
 
 `WhenPicker` chooses now or later. Later starts at the next working morning (`tomorrowMorning`). In `SendSettings` each setting is a row whose whole line is the button, with an action word that says what a press does. **Change** opens one row at a time, so the defaults need no clicks. An open row grows to its content's own height, and nothing inside a shut row can be reached.
 
+- **The sender's clock.** It is the sender's Slack time zone, which `/api/me` returns, because delivery reads a send time there (`senderZoneFor`). Only when Slack has no zone for them does the editor use the browser's.
 - **Sending in each person's own time.** `landingTimes` reads `sendAt` as a wall-clock time on the sender's clock and finds that time in each zone, with the conversion delivery uses (`sameWallClockIn`), so the preview and the send agree. A person with no time zone in Slack counts as UTC, as in delivery. Times at one moment sort west to east, so the local times read in clock order. `atWallClock` corrects twice, so a time either side of a daylight-saving change lands on the right hour, and a time the change skips moves forward.
 - **The browser's clock.** The date and time pickers read and write the browser's clock, so `toPicker` and `fromPicker` carry a time across from the sender's zone.
-- **Close.** `durationLabel` also reads well for a `closeAfterHours` the API set that `closePresets` does not offer.
+- **Close.** A close time the sender fixed is kept when it sends; otherwise it closes `closeAfterHours` after the last person gets it. `durationLabel` also reads well for a `closeAfterHours` the API set that `closePresets` does not offer.
 - **Reminders.** `remindersBeforeClose` counts the rhythm. A reminder never lands in the last two hours, and working hours can move one a little later, so the real slots can differ.
 - **Anonymous.** `anonymousWarning` warns when the audience is smaller than the five responses anonymous results need. It says nothing while nobody is chosen.
 

@@ -37,6 +37,7 @@ interface Props {
   onDeleted?: (() => void) | undefined;
   backLink: ReactNode;
   now?: Date | undefined;
+  timeZone?: string | null | undefined;
 }
 
 function composeBar(editor: HollerEditorState) {
@@ -61,7 +62,7 @@ function sendBar(editor: HollerEditorState) {
 
 function SendAction({ editor }: { editor: HollerEditorState }) {
   const { draft, summary, title, scheduled, autosave, sending } = editor;
-  if (scheduled) {
+  if (scheduled && draft.sendAt) {
     return (
       <Button variant="primary" onClick={() => autosave.flush().catch(() => {})}>
         Update schedule
@@ -100,6 +101,7 @@ function HollerEditor({
   onDeleted,
   backLink,
   now: fixedNow,
+  timeZone,
 }: Props) {
   const editor = useHollerEditor({
     io,
@@ -110,6 +112,7 @@ function HollerEditor({
     onSent,
     onDeleted,
     now: fixedNow,
+    timeZone,
   });
   const [templatesOpen, setTemplatesOpen] = useState(false);
   const { draft, holler, scheduled, autosave } = editor;

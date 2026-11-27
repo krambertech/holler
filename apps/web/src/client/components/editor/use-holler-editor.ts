@@ -12,7 +12,7 @@ import { adoptIds, applyTemplate, composeProblems, type EditorDraft } from "./dr
 import { filled } from "./questions/model";
 import type { AudienceSummary } from "./send/audience-picker";
 import type { DirectorySearch } from "./send/directory";
-import type { Reach } from "./send/send-logic";
+import { type Reach, senderZoneFor } from "./send/send-logic";
 import { useNow } from "./send/use-now";
 import { useAutosave } from "./use-autosave";
 
@@ -35,6 +35,7 @@ interface Options {
   onSent?: ((holler: HollerOut) => void) | undefined;
   onDeleted?: (() => void) | undefined;
   now?: Date | undefined;
+  timeZone?: string | null | undefined;
 }
 
 const noReach: Reach = { count: 0, exact: true, everyone: false, unknown: false };
@@ -69,6 +70,7 @@ export function useHollerEditor({
   onSent,
   onDeleted,
   now: fixedNow,
+  timeZone,
 }: Options) {
   const [draft, setDraft] = useState(initial);
   const [holler, setHoller] = useState<HollerOut | null>(savedAtStart);
@@ -83,7 +85,10 @@ export function useHollerEditor({
     chosen: [],
   });
   const now = useNow(fixedNow);
-  const senderZone = useMemo(() => Intl.DateTimeFormat().resolvedOptions().timeZone, []);
+  const senderZone = useMemo(
+    () => senderZoneFor(timeZone, Intl.DateTimeFormat().resolvedOptions().timeZone),
+    [timeZone],
+  );
   const scheduled = holler?.status === "scheduled";
   const created = useRef(Boolean(savedAtStart));
 
@@ -152,7 +157,7 @@ export function useHollerEditor({
       if (out && composeProblems(out.problems).length > 0) goTo("compose");
       return;
     }
-    if (scheduled) return;
+    if (out.status === "scheduled") return;
     setSending(true);
     try {
       onSent?.(await io.send(out.id));

@@ -1,5 +1,5 @@
 {
-  "commit": "faf3cdeadbe2+changes",
+  "commit": "96ac3119ac04+changes",
   "code": {
     "apps/web/src/server/cron.ts#runCronPass": "67d80e4239381291",
     "apps/web/src/server/cron.ts#runSteps": "0b2b4be2ad7c622e",
@@ -9,7 +9,7 @@
     "apps/web/src/server/services/delivery.ts#countsFor": "9bee80ffd0739070",
     "apps/web/src/server/services/delivery.ts#deliver": "1dc1f8b08dc99913",
     "apps/web/src/server/services/delivery.ts#enqueue": "a84b28853ac25327",
-    "apps/web/src/server/services/delivery.ts#goLive": "f2ff33383da888e8",
+    "apps/web/src/server/services/delivery.ts#goLive": "75c2e514f04d6891",
     "apps/web/src/server/services/delivery.ts#postDm": "0834801a806d6d16",
     "apps/web/src/server/services/delivery.ts#postKey": "1d623ee22f9df5d0",
     "apps/web/src/server/services/delivery.ts#postOnce": "be2c2c9bc16793c2",

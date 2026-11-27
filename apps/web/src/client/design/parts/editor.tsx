@@ -165,7 +165,7 @@ export const editor: Group = {
       slug: "start-screen",
       name: "StartScreen",
       source: "components/editor/start-screen.tsx",
-      note: "What New holler opens. Each mode is a row with a drawing of what people get, what it is and what it is good for; one click opens the editor in it. Hovering tints only the drawing. Six templates sit below, apart from the modes.",
+      note: "What New holler opens. Each mode is a row with a drawing of what people get and one plain line on how they answer; one click opens the editor in it. Hovering tints only the drawing. Six templates sit below, apart from the modes.",
       Demo: () => (
         <div className="w-full max-w-[800px]">
           <StartScreen onPickMode={noop} onPickTemplate={noop} onSeeAllTemplates={noop} />

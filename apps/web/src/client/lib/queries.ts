@@ -25,6 +25,7 @@ export interface Me {
     slackUserId: string;
     name: string;
     avatarUrl: string | null;
+    timeZone: string | null;
   };
   workspace: {
     id: string;

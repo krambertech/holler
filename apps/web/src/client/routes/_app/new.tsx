@@ -140,6 +140,7 @@ function Editor({
       stage={stage}
       onStageChange={(next) => navigate({ search: (prev) => ({ ...prev, stage: next }) })}
       sender={me.data?.member.name ?? "You"}
+      timeZone={me.data?.member.timeZone}
       workspaceSize={workspace.data?.people ?? null}
       onCreated={(holler) =>
         navigate({ search: (prev) => ({ ...prev, draft: holler.id }), replace: true })

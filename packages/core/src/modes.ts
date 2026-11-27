@@ -8,10 +8,9 @@ export const modeLabels: Record<Mode, string> = {
 };
 
 export const modeDescriptions: Record<Mode, string> = {
-  pulse: "One or two quick questions. People answer with a tap, right in the DM.",
-  survey: "Several questions, for a retro, a plan or a decision. Answered in a Slack form.",
-  chase:
-    "A form that lives somewhere else. Holler reminds people until they say they submitted it.",
+  pulse: "People answer right in their Slack DMs. Best for one or two quick questions.",
+  survey: "People answer in a Slack form or on the web. Ask as many questions as you need.",
+  chase: "Send a link to any form. Holler reminds people until they say it is done.",
 };
 
 export const questionLimits: Record<Mode, { min: number; max: number }> = {

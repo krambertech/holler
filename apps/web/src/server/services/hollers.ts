@@ -457,31 +457,42 @@ export async function updateDraft(ctx: ServiceContext, id: string, input: Holler
     );
   }
   const draft = hollerDraftSchema.parse(input);
-  await ctx.db.batch([
+  const fields = ctx.db
+    .update(hollers)
+    .set({
+      mode: draft.mode,
+      title: draft.title,
+      searchTitle: searchTitleOf(draft),
+      description: draft.description,
+      externalUrl: draft.externalUrl,
+      anonymous: draft.anonymous,
+      visibility: draft.visibility,
+      tags: [...new Set(draft.tags)],
+      audience: draft.audience,
+      announceChannelId: draft.announceChannelId,
+      sendAt: draft.sendAt,
+      sendInRecipientTimeZone: draft.sendInRecipientTimeZone,
+      closesAt: draft.closesAt,
+      closeAfterHours: draft.closeAfterHours,
+      remindersEnabled: draft.remindersEnabled,
+      repeatRule: draft.repeat,
+      updatedAt: ctx.now(),
+    })
+    .where(eq(hollers.id, id));
+  const questions = await syncQuestions(ctx, id, questionsOf(draft));
+  if (existing.status !== "scheduled" || draft.sendAt) {
+    await ctx.db.batch([fields, ...questions]);
+    return getHoller(ctx, id);
+  }
+  await recordChange(
+    ctx,
+    activityOf(ctx, { action: "holler.unscheduled", subjectType: "holler", subjectId: id }),
     ctx.db
       .update(hollers)
-      .set({
-        mode: draft.mode,
-        title: draft.title,
-        searchTitle: searchTitleOf(draft),
-        description: draft.description,
-        externalUrl: draft.externalUrl,
-        anonymous: draft.anonymous,
-        visibility: draft.visibility,
-        tags: [...new Set(draft.tags)],
-        audience: draft.audience,
-        announceChannelId: draft.announceChannelId,
-        sendAt: draft.sendAt,
-        sendInRecipientTimeZone: draft.sendInRecipientTimeZone,
-        closesAt: draft.closesAt,
-        closeAfterHours: draft.closeAfterHours,
-        remindersEnabled: draft.remindersEnabled,
-        repeatRule: draft.repeat,
-        updatedAt: ctx.now(),
-      })
-      .where(eq(hollers.id, id)),
-    ...(await syncQuestions(ctx, id, questionsOf(draft))),
-  ]);
+      .set({ status: "draft" })
+      .where(and(eq(hollers.id, id), eq(hollers.status, "scheduled"))),
+    { before: [fields, ...questions] },
+  );
   return getHoller(ctx, id);
 }
 

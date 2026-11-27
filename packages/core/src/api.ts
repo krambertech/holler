@@ -293,6 +293,10 @@ export const meOutSchema = z.object({
     slackUserId: z.string(),
     name: z.string(),
     avatarUrl: z.string().nullable(),
+    timeZone: z
+      .string()
+      .nullable()
+      .describe("The member's Slack time zone. A send time is read on this clock."),
   }),
   workspace: z.object({
     id: z.string(),

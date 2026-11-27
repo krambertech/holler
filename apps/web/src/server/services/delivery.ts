@@ -1,5 +1,4 @@
 import {
-  earliestInstantOf,
   hollerTitle,
   nextReminder,
   type ReminderTone,
@@ -41,6 +40,7 @@ import { type ServiceContext, ServiceError } from "./context";
 import { getHoller, presentQuestion, sendProblems } from "./hollers";
 import { respondUrl } from "./respond-links";
 import { nextRound } from "./rounds";
+import { creatorOf, goesLiveAt, timeZoneOf } from "./send-clock";
 import { slackFor } from "./slack-connection";
 import { claimSlackDelivery, releaseSlackDelivery } from "./slack-deliveries";
 import { assertCanSend } from "./usage";
@@ -227,37 +227,6 @@ function assertSendable(problems: { message: string; field?: string | null | und
   );
 }
 
-async function timeZoneOf(db: Db, workspaceId: string, slackUserId: string) {
-  const person = await db.query.slackPeople.findFirst({
-    where: and(eq(slackPeople.workspaceId, workspaceId), eq(slackPeople.slackUserId, slackUserId)),
-    columns: { timeZone: true },
-  });
-  return person?.timeZone ?? null;
-}
-
-async function creatorOf(db: Db, holler: { workspaceId: string; creatorId: string }) {
-  const creator = await db.query.members.findFirst({
-    where: eq(members.id, holler.creatorId),
-    columns: { slackUserId: true },
-  });
-  if (!creator) throw new Error(`Holler creator ${holler.creatorId} has no member row`);
-  return {
-    slackUserId: creator.slackUserId,
-    timeZone: await timeZoneOf(db, holler.workspaceId, creator.slackUserId),
-  };
-}
-
-/** When a Holler with a send time goes live: that time, or for a per-zone send the first zone's. */
-function goesLiveAt(
-  holler: { sendAt: Date | null; sendInRecipientTimeZone: boolean },
-  creatorZone: string | null,
-) {
-  if (!holler.sendAt) return null;
-  return holler.sendInRecipientTimeZone
-    ? earliestInstantOf(holler.sendAt, creatorZone)
-    : holler.sendAt;
-}
-
 /**
  * Sends a Holler now, or schedules it when its send time is still ahead. Refuses with every send
  * problem at once, or `limit_reached` when Free has used this month's hollers.
@@ -359,6 +328,7 @@ async function goLive(
     audience: HollerDetail["audience"];
     sendAt: Date | null;
     sendInRecipientTimeZone: boolean;
+    closesAt: Date | null;
     closeAfterHours: number;
     announceChannelId: string | null;
   },
@@ -401,7 +371,8 @@ async function goLive(
   const nextInvite = next
     ? Math.min(...rows.map((row) => theirTime(next.sendAt, row.slackUserId).getTime()))
     : Number.POSITIVE_INFINITY;
-  const closesAt = new Date(Math.min(lastSend + holler.closeAfterHours * HOUR, nextInvite));
+  const closes = holler.closesAt?.getTime() ?? lastSend + holler.closeAfterHours * HOUR;
+  const closesAt = new Date(Math.min(closes, nextInvite));
 
   const sent = activityOf(ctx, {
     action: "holler.sent",

@@ -1,0 +1,14 @@
+{
+  "rule": "A scheduled Holler saved with no send time goes back to draft, so it can be sent and is never stranded",
+  "layer": "test",
+  "past": "#61 review: choosing Now on a scheduled Holler saved sendAt null but kept it scheduled, and the cron only picks scheduled rows with a send time, so it never went out",
+  "check": "cd apps/web && pnpm exec vitest run src/server/services/hollers.test.ts -t 'keeps a scheduled Holler scheduled'",
+  "break": [
+    {
+      "file": "apps/web/src/server/services/hollers.ts",
+      "find": "  if (existing.status !== \"scheduled\" || draft.sendAt) {",
+      "replace": "  if (existing.status !== \"scheduled\" || draft.sendAt || existing.id) {"
+    }
+  ],
+  "fails": "keeps a scheduled Holler scheduled"
+}
