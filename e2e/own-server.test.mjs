@@ -5,6 +5,7 @@ import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { after, test } from "node:test";
+import { pathToFileURL } from "node:url";
 import { foreignServerProblem, portForCheckout } from "./own-server.mts";
 
 const checkout = execFileSync("git", ["rev-parse", "--show-toplevel"], {
@@ -74,4 +75,38 @@ test("keeps the port its own server holds", async () => {
   const first = portForCheckout(mine);
   await listenFrom(mine, first);
   assert.equal(portForCheckout(mine), first);
+});
+
+const PARENT = `
+const { execFileSync } = await import("node:child_process");
+const { E2E_PORT } = await import(process.argv[1]);
+console.log(E2E_PORT);
+process.stdin.once("data", () => {
+  const child = execFileSync(process.execPath, ["--input-type=module", "-e", \`console.log((await import(process.argv[1])).E2E_PORT)\`, process.argv[1]], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] });
+  console.log(child.trim());
+  process.exit(0);
+});
+`;
+
+test("a child process keeps the port its parent chose", async () => {
+  const origin = pathToFileURL(join(import.meta.dirname, "origin.ts")).href;
+  const parent = spawn(process.execPath, ["--input-type=module", "-e", PARENT, origin], {
+    cwd: otherCheckout(),
+    env: { ...process.env, CI: "", HOLLER_E2E_PORT: "" },
+    stdio: ["pipe", "pipe", "ignore"],
+  });
+  stops.push(() => parent.kill());
+  const lines = [];
+  const line = () =>
+    new Promise((resolve) => {
+      if (lines.length > 0) return resolve(lines.shift());
+      parent.stdout.once("data", (data) => {
+        lines.push(...String(data).trim().split("\n"));
+        resolve(lines.shift());
+      });
+    });
+  const chosen = Number(await line());
+  await listenFrom(otherCheckout(), chosen);
+  parent.stdin.write("go\n");
+  assert.equal(Number(await line()), chosen);
 });

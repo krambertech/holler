@@ -1,0 +1,14 @@
+{
+  "rule": "Every process in one e2e run uses the port the first one chose",
+  "layer": "test",
+  "past": "Review of #67: Playwright, e2e/server.mjs and each worker chose the port on their own, so a server another checkout stopped mid-run could move the server off the port Playwright waits on",
+  "check": "node --test e2e/own-server.test.mjs",
+  "break": [
+    {
+      "file": "e2e/origin.ts",
+      "find": "    process.env.HOLLER_E2E_PORT = String(port);\n",
+      "replace": ""
+    }
+  ],
+  "fails": "a child process keeps the port its parent chose"
+}
