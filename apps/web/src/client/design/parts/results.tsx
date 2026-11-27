@@ -1,6 +1,7 @@
-import type { RecipientsOut, QuestionResult as Result } from "@holler/core";
+import type { RecipientsOut, QuestionResult as Result, RoundsOut } from "@holler/core";
 import { HollerActions } from "@/components/results/holler-actions";
 import { HollerPeople } from "@/components/results/holler-people";
+import { HollerRounds } from "@/components/results/holler-rounds";
 import { type PersonLookup, QuestionResult } from "@/components/results/question-result";
 import { toast } from "@/components/ui/toast";
 import { Variants } from "../frame";
@@ -114,11 +115,75 @@ const text: Result = {
 
 const note = () => toast.add({ title: "The page calls the API here" });
 
+const DAY = 24 * 3600_000;
+const weeksAgo = (n: number) => new Date(NOW.getTime() - n * 7 * DAY).toISOString();
+const round = (id: string, sendAt: string, answered: number, average: number | null) => ({
+  id,
+  status: "closed" as const,
+  sendAt,
+  recipientCount: 12,
+  responseCount: answered,
+  gated: false,
+  scores: [{ position: 0, prompt: "How was your week?", average, top: 5 }],
+});
+const weekly: RoundsOut = {
+  repeat: "week",
+  rounds: [
+    {
+      ...round("r5", new Date(NOW.getTime() + 6 * DAY).toISOString(), 0, null),
+      status: "scheduled",
+      recipientCount: 0,
+      scores: [],
+    },
+    { ...round("r4", weeksAgo(0), 7, 3.9), status: "live" },
+    round("r3", weeksAgo(1), 11, 3.4),
+    round("r2", weeksAgo(2), 10, 2.8),
+    round("r1", weeksAgo(3), 12, 3.1),
+  ],
+};
+const stoppedAnonymous: RoundsOut = {
+  repeat: null,
+  rounds: [
+    { ...round("a2", weeksAgo(0), 3, null), status: "live", gated: true, scores: [] },
+    round("a1", weeksAgo(2), 9, 4.2),
+  ],
+};
+
 export const results: Group = {
   slug: "results",
   title: "Results",
   lede: "A Holler's page: who answered, when Holler reminds the rest, the results per question, and getting them out. Chasing is Holler's job, so the people still to answer come first and the strip under them always says what happens next.",
   entries: [
+    {
+      slug: "holler-rounds",
+      name: "HollerRounds",
+      source: "components/results/holler-rounds.tsx",
+      note: "Every round of a repeating pulse, newest first, so the rounds read side by side. Each bar is the round's average on its first scale question. The round on screen is tinted and every other round opens its own page. An anonymous round under five answers shows its count only.",
+      Demo: () => (
+        <Variants
+          stack
+          items={[
+            {
+              label: "Weekly, with the next round",
+              render: () => (
+                <HollerRounds className="w-full" rounds={weekly} currentId="r4" now={NOW} />
+              ),
+            },
+            {
+              label: "Stopped, anonymous",
+              render: () => (
+                <HollerRounds
+                  className="w-full"
+                  rounds={stoppedAnonymous}
+                  currentId="a1"
+                  now={NOW}
+                />
+              ),
+            },
+          ]}
+        />
+      ),
+    },
     {
       slug: "holler-people",
       name: "HollerPeople",
@@ -229,6 +294,24 @@ export const results: Group = {
                   onCopyAsMarkdown={note}
                   onCopyIntoDraft={note}
                   onClose={note}
+                />
+              ),
+            },
+            {
+              label: "Creator of a repeating pulse",
+              render: () => (
+                <HollerActions
+                  hollerId="hol_design"
+                  status="live"
+                  isCreator
+                  canExport
+                  waitingCount={3}
+                  onCopyAsMarkdown={note}
+                  onCopyIntoDraft={note}
+                  onClose={note}
+                  repeats
+                  nextRoundAt={new Date(NOW.getTime() + 6 * DAY).toISOString()}
+                  onStopRepeating={note}
                 />
               ),
             },
