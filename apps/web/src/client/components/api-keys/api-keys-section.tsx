@@ -76,7 +76,7 @@ function NewKey({ created, onDone }: { created: ApiKeyCreatedOut; onDone: () => 
       <PlateStrip id={id}>
         <span>Copy this key now. Holler cannot show it again.</span>
       </PlateStrip>
-      <PlateRow className="flex flex-col gap-3 px-5 py-4" aria-labelledby={id}>
+      <PlateRow role="group" className="flex flex-col gap-3 px-5 py-4" aria-labelledby={id}>
         <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
           <span className="font-normal">{created.name}</span>
           <Chip variant={created.scope === "write" ? "tint" : "quiet"}>

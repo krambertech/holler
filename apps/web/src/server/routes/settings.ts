@@ -1,15 +1,24 @@
-import { activityQuerySchema, memberRoleInputSchema } from "@holler/core";
+import {
+  activityQuerySchema,
+  deleteWorkspaceInputSchema,
+  memberRoleInputSchema,
+} from "@holler/core";
 import { sValidator } from "@hono/standard-validator";
 import { Hono } from "hono";
 import type { AppEnv } from "../app";
 import { listActivity } from "../services/activity";
 import { listMembers, setMemberRole } from "../services/members";
+import { deleteWorkspace } from "../services/workspace-deletion";
 import { workspaceSettings } from "../services/workspaces";
 import { requireMember } from "./context";
 
 /** Settings: the workspace and its members. Billing and API keys bring their own routes. */
 export const settingsRoutes = new Hono<AppEnv>()
   .get("/workspace", async (c) => c.json(await workspaceSettings(requireMember(c))))
+  .delete("/workspace", sValidator("json", deleteWorkspaceInputSchema), async (c) => {
+    await deleteWorkspace(requireMember(c), c.env, c.req.valid("json"));
+    return c.json({ ok: true as const });
+  })
   .get("/members", async (c) => c.json({ members: await listMembers(requireMember(c)) }))
   .get("/activity", sValidator("query", activityQuerySchema), async (c) =>
     c.json(await listActivity(requireMember(c), c.req.valid("query"))),

@@ -299,6 +299,7 @@ const unrecordedRoutes: Record<string, string> = {
     "opens Polar; its webhook changes the plan, through applyPolarEvent",
   "POST /api/billing/portal": "opens Polar; its webhook changes the plan, through applyPolarEvent",
   "POST /api/auth/*": "Better Auth's own tables; a first sign-in is recorded by ensureMember",
+  "DELETE /api/settings/workspace": "deletes the workspace with its Activity, so no row could stay",
   "POST /api/dev/tick": "development and browser tests only",
   "POST /api/dev/web-survey": "development and browser tests only",
   "POST /api/dev/answer": "development and browser tests only",

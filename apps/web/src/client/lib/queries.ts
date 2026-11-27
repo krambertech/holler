@@ -29,6 +29,7 @@ export interface Me {
     iconUrl: string | null;
     slackDomain: string | null;
     installed: boolean;
+    deletesAt: string | null;
   };
   usage: {
     plan: "free" | "team";

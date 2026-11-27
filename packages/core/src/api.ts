@@ -278,6 +278,7 @@ export const meOutSchema = z.object({
     iconUrl: z.string().nullable(),
     slackDomain: z.string().nullable(),
     installed: z.boolean(),
+    deletesAt: z.string().nullable(),
   }),
   credential: z.object({
     via: z.enum(["web", "api", "mcp"]),

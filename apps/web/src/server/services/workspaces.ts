@@ -1,4 +1,4 @@
-import { newId } from "@holler/core";
+import { deletionDueAt, newId, teamRenews } from "@holler/core";
 import { and, eq, isNull, ne, sql } from "@holler/core/db";
 import { type Db, schema } from "../db";
 import type { SlackClient, SlackInstallGrant } from "../slack/client";
@@ -227,6 +227,10 @@ export async function workspaceSettings(ctx: ServiceContext) {
     slackDomain: row.workspace.slackDomain,
     installed: row.workspace.uninstalledAt == null,
     uninstalledAt: row.workspace.uninstalledAt?.toISOString() ?? null,
+    deletesAt: row.workspace.uninstalledAt
+      ? deletionDueAt(row.workspace.uninstalledAt).toISOString()
+      : null,
+    teamRenews: teamRenews(row.workspace),
     installedAt: row.installedAt?.toISOString() ?? null,
     installedBy: row.installedBy ?? null,
     people: people?.count ?? 0,

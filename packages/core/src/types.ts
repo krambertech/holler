@@ -275,6 +275,9 @@ export type MemberRole = z.infer<typeof memberRoleSchema>;
 /** `PUT /api/settings/members/:id/role`. Only an owner may, and the last owner stays one. */
 export const memberRoleInputSchema = z.object({ role: memberRoleSchema });
 
+export const deleteWorkspaceInputSchema = z.object({ confirmName: z.string().max(200) });
+export type DeleteWorkspaceInput = z.infer<typeof deleteWorkspaceInputSchema>;
+
 /** One row of Settings → Members. */
 export const settingsMemberSchema = z.object({
   id: z.string(),
@@ -295,6 +298,8 @@ export const settingsWorkspaceSchema = z.object({
   slackDomain: z.string().nullable(),
   installed: z.boolean(),
   uninstalledAt: z.string().nullable(),
+  deletesAt: z.string().nullable(),
+  teamRenews: z.boolean(),
   installedAt: z.string().nullable(),
   installedBy: z.string().nullable(),
   people: z.number().int(),

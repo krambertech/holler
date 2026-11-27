@@ -1,17 +1,19 @@
 import type { ActivityOut, MemberRole, SettingsWorkspace } from "@holler/core";
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { ApiAccessSections } from "@/components/api-keys/api-access";
 import { PlanSection } from "@/components/billing/plan-section";
 import { ActivityRow } from "@/components/settings/activity-row";
+import { DeleteWorkspace } from "@/components/settings/delete-workspace";
 import { MemberRow } from "@/components/settings/member-row";
 import { WorkspaceIcon } from "@/components/settings/workspace-icon";
 import { Button } from "@/components/ui/button";
 import { StatusChip } from "@/components/ui/chip";
 import { Plate, PlateRow, PlateStrip } from "@/components/ui/plate";
 import { ApiError, api } from "@/lib/api";
-import { count, dayAndTime, shortDate } from "@/lib/format";
+import { authClient } from "@/lib/auth-client";
+import { count, dayAndTime, longDate, shortDate } from "@/lib/format";
 import { membersQuery, meQuery, workspaceSettingsQuery } from "@/lib/queries";
 
 /**
@@ -34,6 +36,7 @@ function Settings() {
       <PlanSection />
       <ApiAccessSections />
       {isOwner && <ActivitySection />}
+      {isOwner && <WorkspaceDataSection />}
     </>
   );
 }
@@ -130,7 +133,7 @@ function WorkspacePlate({
         <PlateStrip>
           <span>
             {workspace.uninstalledAt
-              ? `Removed from Slack on ${shortDate(workspace.uninstalledAt)}. Sending is paused.`
+              ? `Removed from Slack on ${shortDate(workspace.uninstalledAt)}. Sending is paused, and Holler deletes this workspace’s data on ${longDate(workspace.deletesAt ?? workspace.uninstalledAt)}.`
               : "Holler is not in Slack. Sending is paused."}
           </span>
           {isOwner && (
@@ -219,6 +222,35 @@ function MembersSection({ isOwner }: { isOwner: boolean }) {
       ) : (
         <Plate aria-hidden className="h-[196px] animate-pulse" />
       )}
+    </Section>
+  );
+}
+
+function WorkspaceDataSection() {
+  const navigate = useNavigate();
+  const workspace = useQuery(workspaceSettingsQuery);
+  const [error, setError] = useState<string>();
+  if (!workspace.data) return null;
+  const name = workspace.data.name;
+  async function onDelete(confirmName: string) {
+    setError(undefined);
+    try {
+      await api("/settings/workspace", { method: "DELETE", json: { confirmName } });
+      await authClient.signOut().catch(() => undefined);
+      await navigate({ to: "/sign-in", search: { deleted: name }, reloadDocument: true });
+    } catch (failure) {
+      setError(
+        failure instanceof Error ? failure.message : "Holler could not delete the data. Try again.",
+      );
+    }
+  }
+  return (
+    <Section
+      id="settings-workspace-data"
+      title="Workspace data"
+      description="Holler keeps hollers and answers until an owner deletes them. When Holler is removed from Slack, it deletes everything 90 days later."
+    >
+      <DeleteWorkspace workspace={workspace.data} onDelete={onDelete} error={error} />
     </Section>
   );
 }

@@ -255,11 +255,19 @@ export const states: Group = {
           items={[
             {
               label: "An owner",
-              render: () => <UninstalledNotice className="w-full" canReinstall />,
+              render: () => (
+                <UninstalledNotice
+                  className="w-full"
+                  canReinstall
+                  deletesAt="2027-02-19T09:00:00Z"
+                />
+              ),
             },
             {
               label: "A sender",
-              render: () => <UninstalledNotice className="w-full" canReinstall={false} />,
+              render: () => (
+                <UninstalledNotice className="w-full" canReinstall={false} deletesAt={null} />
+              ),
             },
           ]}
         />

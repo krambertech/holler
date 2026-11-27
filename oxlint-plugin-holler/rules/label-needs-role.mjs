@@ -5,7 +5,24 @@ const message =
   "and axe refuses it as aria-prohibited-attr. Give it a role that takes a name, such as " +
   'role="status" for a loading state or role="group", or use an element that has one, such as a section.';
 
-const generic = new Set(["div", "span", "p", "Plate", "PlateStrip"]);
+const generic = new Set([
+  "div",
+  "span",
+  "p",
+  "b",
+  "i",
+  "em",
+  "strong",
+  "small",
+  "code",
+  "pre",
+  "Plate",
+  "PlateRow",
+  "PlateStrip",
+  "Underplate",
+  "UnderplateStrip",
+  "Skeleton",
+]);
 const naming = new Set(["aria-label", "aria-labelledby"]);
 
 function attributeName(attribute) {

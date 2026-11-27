@@ -1,6 +1,7 @@
 export * from "./answers";
 export * from "./activity";
 export * from "./api";
+export * from "./deletion";
 export * from "./ids";
 export * from "./modes";
 export * from "./own-answers";
