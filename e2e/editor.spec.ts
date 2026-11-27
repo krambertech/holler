@@ -58,6 +58,7 @@ test("a draft on Home opens in the editor", async ({ page }) => {
   await page.getByRole("button", { name: "Free text" }).click();
   await page.getByLabel("Question 1", { exact: true }).fill("What is your one focus this week?");
   await expect(page).toHaveURL(/draft=hol_/);
+  await expect(page.getByText("Draft saved")).toBeVisible();
   const id = new URL(page.url()).searchParams.get("draft");
 
   await page.goto(`/hollers/${id}`);
