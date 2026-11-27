@@ -211,7 +211,7 @@ async function fullWorkspace(clientId: string, alsoIn?: { userId: string } | und
   });
   await db
     .insert(schema.viewers)
-    .values({ hollerId: holler.id, memberId: secondMemberId, addedById: memberId });
+    .values({ hollerId: holler.id, slackUserId: "UA", addedById: memberId });
   await devSlack(db, workspaceId);
   return { ...fixture, secondMemberId, secondUserId };
 }
