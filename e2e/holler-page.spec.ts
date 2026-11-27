@@ -111,7 +111,7 @@ test("a repeating pulse shows its rounds from any round, and Stop repeating asks
   await expect(rounds).toContainText("A new round goes out every week.");
   await expect(rounds.getByRole("listitem")).toHaveCount(3);
   await expect(rounds.getByText("This round")).toBeVisible();
-  await expect(rounds.getByText("Next round")).toBeVisible();
+  await expect(rounds.getByText("Next round", { exact: true })).toBeVisible();
   await expectAccessible(page);
 
   await page.getByRole("button", { name: "More for this Holler" }).click();
