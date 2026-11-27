@@ -186,7 +186,7 @@ function Folded({ people, ordered, shown, anonymous, live }: FoldedProps) {
           aria-label={`${count(answered.length)} answered`}
         />
       )}
-      <span className="flex min-w-0 flex-wrap text-ink-2 text-sm tabular [&>*]:whitespace-nowrap [&>*+*]:before:mx-1.5 [&>*+*]:before:content-['·']">
+      <span className="flex min-w-0 flex-wrap text-ink-2 text-sm tabular [&>*]:whitespace-nowrap max-sm:[&>*+*]:hidden [&>*+*]:before:mx-1.5 [&>*+*]:before:content-['·']">
         {moreWaiting > 0 && <span>{count(moreWaiting)} more waiting</span>}
         {answered.length > 0 && <span>{count(answered.length)} answered</span>}
       </span>
