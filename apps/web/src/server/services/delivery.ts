@@ -39,10 +39,12 @@ import { type PostMessage, SlackApiError, type SlackClient } from "../slack/clie
 import { activityOf, recordChange, takeBack } from "./audit";
 import { type ServiceContext, ServiceError } from "./context";
 import { getHoller, presentQuestion, sendProblems } from "./hollers";
+import { type HomeSend, refreshHomes } from "./home-queue";
 import { respondUrl } from "./respond-links";
 import { nextRound } from "./rounds";
 import { slackFor } from "./slack-connection";
 import { claimSlackDelivery, releaseSlackDelivery } from "./slack-deliveries";
+import { chunks, queueClaimed } from "./slack-queue";
 import { assertCanSend } from "./usage";
 
 /**
@@ -84,7 +86,8 @@ export type SlackSend =
       slackUserId: string;
       addedAt: string;
       queuedAt: string;
-    };
+    }
+  | HomeSend;
 
 /**
  * What each send does in Slack. A post makes a new message, so the consumer claims it in
@@ -102,6 +105,7 @@ export const sendEffects = {
   answered: "edits",
   closed: "edits",
   snoozed: "edits",
+  home: "edits",
 } as const satisfies Record<SlackSend["kind"], "posts" | "edits">;
 
 /** The once-only identity of a send that posts. */
@@ -135,44 +139,13 @@ export interface DmRef {
 type HollerDetail = Awaited<ReturnType<typeof getHoller>>;
 
 const HOUR = 60 * 60 * 1000;
-/** Slack's sendBatch takes at most 100 messages; D1 runs 100 statements per batch comfortably. */
-const CHUNK = 100;
 /** A creator's Send reminder can go once in this long. */
 export const manualReminderGapHours = 4;
 /** A per-zone send goes live when the first zone, UTC+14, reaches the send time. */
 const zoneLeadHours = 26;
 
-function chunks<T>(items: T[]): T[][] {
-  const out: T[][] = [];
-  for (let start = 0; start < items.length; start += CHUNK)
-    out.push(items.slice(start, start + CHUNK));
-  return out;
-}
-
 export async function enqueue(env: Bindings, sends: SlackSend[]): Promise<void> {
   await queueClaimed(env, sends, async () => {});
-}
-
-/**
- * Queues the sends for rows a guarded update just claimed. When the queue refuses a chunk,
- * `release` gets that chunk and every later one, the sends that never reached the queue, to give
- * their claims back so the next run retries them; then the error is thrown. Claimed work is
- * never lost, and work that was queued is never released to be sent twice.
- */
-export async function queueClaimed(
-  env: Bindings,
-  sends: SlackSend[],
-  release: (unqueued: SlackSend[]) => Promise<unknown>,
-): Promise<void> {
-  const batches = chunks(sends);
-  for (const [index, batch] of batches.entries()) {
-    try {
-      await env.SLACK_SENDS.sendBatch(batch.map((body) => ({ body })));
-    } catch (error) {
-      await release(batches.slice(index).flat());
-      throw error;
-    }
-  }
 }
 
 /** Gives back the invite claims of sends that never reached the queue. */
@@ -295,9 +268,11 @@ export async function sendHoller(
           .where(and(eq(hollers.id, id), eq(hollers.status, "draft"))),
       );
     }
+    await refreshHomes(env, ctx.db, ctx.workspaceId, [creator.slackUserId], now);
     return getHoller(ctx, id);
   }
   await goLive(ctx, env, holler, creator.timeZone);
+  await refreshHomes(env, ctx.db, ctx.workspaceId, [creator.slackUserId], now);
   return getHoller(ctx, id);
 }
 
@@ -668,6 +643,13 @@ export async function remindWaiting(
       ]);
     }
   });
+  await refreshHomes(
+    env,
+    ctx.db,
+    ctx.workspaceId,
+    [(await creatorOf(ctx.db, holler)).slackUserId],
+    now,
+  );
   return getHoller(ctx, id);
 }
 
@@ -875,7 +857,12 @@ type Loaded = NonNullable<Awaited<ReturnType<typeof loadSlackHoller>>>;
  * twice does the right thing or nothing. A permanent Slack error on a DM is stored on the
  * recipient; any other Slack error is thrown, and the consumer retries it.
  */
-export async function deliver(env: Bindings, db: Db, send: SlackSend, now: Date): Promise<void> {
+export async function deliver(
+  env: Bindings,
+  db: Db,
+  send: Exclude<SlackSend, HomeSend>,
+  now: Date,
+): Promise<void> {
   const loaded = await loadSlackHoller(db, send.hollerId);
   if (!loaded) return;
   const { row, holler } = loaded;
@@ -884,10 +871,23 @@ export async function deliver(env: Bindings, db: Db, send: SlackSend, now: Date)
   switch (send.kind) {
     case "invite":
     case "reminder":
-      return postToRecipient(env, db, slack, loaded, send, now);
+      await postToRecipient(env, db, slack, loaded, send, now);
+      if (send.kind === "invite")
+        await refreshHomes(env, db, row.workspaceId, [send.slackUserId], now);
+      return;
     case "answered":
     case "closed":
-      return updateRecipient(db, slack, loaded, send, now);
+      await updateRecipient(db, slack, loaded, send, now);
+      await refreshHomes(
+        env,
+        db,
+        row.workspaceId,
+        send.kind === "answered"
+          ? [send.slackUserId, loaded.creatorSlackUserId]
+          : [send.slackUserId],
+        now,
+      );
+      return;
     case "snoozed":
       return showSnoozed(env, db, slack, loaded, send, now);
     case "announce": {
@@ -928,6 +928,7 @@ export async function deliver(env: Bindings, db: Db, send: SlackSend, now: Date)
           ),
         }),
       );
+      await refreshHomes(env, db, row.workspaceId, [loaded.creatorSlackUserId], now);
       return;
     }
     case "send_failed":

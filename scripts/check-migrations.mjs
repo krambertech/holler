@@ -5,7 +5,7 @@
 // `--write` records new files. It never rewrites a recorded hash: edit the manifest by hand only
 // when a migration was provably never applied anywhere, and say so in the pull request.
 
-import { spawnSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { cpSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
@@ -25,6 +25,32 @@ export function compare(manifest, files) {
   }
   const unrecorded = Object.keys(files).filter((name) => !(name in manifest));
   return { problems, unrecorded };
+}
+
+export function keptSincePush(pushed, main, files, reset = []) {
+  const problems = [];
+  for (const [name, hash] of Object.entries(pushed)) {
+    if (name in main || reset.includes(name)) continue;
+    if (files[name] === hash) continue;
+    const what = name in files ? "changed" : "was renamed or deleted";
+    problems.push(
+      `${name} ${what} after this branch pushed it, and the shared preview database already applied it, so the next preview would fail. Keep it as pushed: when main takes the same number, keep both files (docs/operations.md, Previews). If it must change, ask Kateryna to undo it on holler-preview first, then run again with PREVIEW_RESET=${name}.`,
+    );
+  }
+  return problems;
+}
+
+function manifestAt(ref) {
+  try {
+    const text = execFileSync("git", ["show", `${ref}:scripts/migration-manifest.json`], {
+      cwd: root,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    });
+    return JSON.parse(text);
+  } catch {
+    return null;
+  }
 }
 
 export function missingMigration() {
@@ -71,6 +97,11 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   );
   const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
   const { problems, unrecorded } = compare(manifest, files);
+  const pushed = manifestAt("@{upstream}");
+  if (pushed) {
+    const reset = (process.env.PREVIEW_RESET ?? "").split(",").filter(Boolean);
+    problems.push(...keptSincePush(pushed, manifestAt("origin/main") ?? {}, files, reset));
+  }
   if (process.argv.includes("--write")) {
     for (const name of unrecorded) manifest[name] = files[name];
     writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);

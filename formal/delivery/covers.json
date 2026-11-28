@@ -1,5 +1,5 @@
 {
-  "commit": "faf3cdeadbe2+changes",
+  "commit": "9281701826bc+changes",
   "code": {
     "apps/web/src/server/cron.ts#runCronPass": "67d80e4239381291",
     "apps/web/src/server/cron.ts#runSteps": "0b2b4be2ad7c622e",
@@ -7,7 +7,7 @@
     "apps/web/src/server/services/answering.ts#queueOutcome": "ea6404c3d91c6223",
     "apps/web/src/server/services/delivery.ts#closeHoller": "80f6c2ec5890a1df",
     "apps/web/src/server/services/delivery.ts#countsFor": "9bee80ffd0739070",
-    "apps/web/src/server/services/delivery.ts#deliver": "1dc1f8b08dc99913",
+    "apps/web/src/server/services/delivery.ts#deliver": "58058e12581c153a",
     "apps/web/src/server/services/delivery.ts#enqueue": "a84b28853ac25327",
     "apps/web/src/server/services/delivery.ts#goLive": "f2ff33383da888e8",
     "apps/web/src/server/services/delivery.ts#postDm": "0834801a806d6d16",
@@ -15,13 +15,12 @@
     "apps/web/src/server/services/delivery.ts#postOnce": "be2c2c9bc16793c2",
     "apps/web/src/server/services/delivery.ts#postToRecipient": "9339b93b0ccd7923",
     "apps/web/src/server/services/delivery.ts#queueAfterResponse": "3d41dedb0d6f83f8",
-    "apps/web/src/server/services/delivery.ts#queueClaimed": "e3a076750ce3b019",
     "apps/web/src/server/services/delivery.ts#queueCloseWork": "848a37ae58530a6b",
     "apps/web/src/server/services/delivery.ts#queueDueInvites": "cbac6a1010437184",
     "apps/web/src/server/services/delivery.ts#queueMissingAnnouncements": "ce72fac5c16291ea",
     "apps/web/src/server/services/delivery.ts#recipientFor": "89ccee85edf0acf4",
     "apps/web/src/server/services/delivery.ts#releaseInvites": "abc99635ab2e1202",
-    "apps/web/src/server/services/delivery.ts#sendEffects": "9550c805f405fdf1",
+    "apps/web/src/server/services/delivery.ts#sendEffects": "66af3f86f06c4175",
     "apps/web/src/server/services/delivery.ts#updateRecipient": "f271b2ee2de262f5",
     "apps/web/src/server/services/lifecycle.ts#closeDueHollers": "c0c0332ced4fac05",
     "apps/web/src/server/services/reminders.ts#queueDueReminders": "8a8787e6e60c1954",
@@ -33,7 +32,8 @@
     "apps/web/src/server/services/sharing.ts#removeViewer": "4e7d1e71e94d28d7",
     "apps/web/src/server/services/slack-deliveries.ts#claimSlackDelivery": "ce397fffc3cc82b0",
     "apps/web/src/server/services/slack-deliveries.ts#releaseSlackDelivery": "72989124ad625eac",
-    "apps/web/src/server/slack/queue.ts#consumeSlackSends": "cc78f230bc7e21dc",
+    "apps/web/src/server/services/slack-queue.ts#queueClaimed": "181b335b383ebf4d",
+    "apps/web/src/server/slack/queue.ts#consumeSlackSends": "6b2c843b72de34d3",
     "packages/core/src/schema/activity.ts#slackDeliveries": "2498f1b5b0f80a02",
     "packages/core/src/schema/hollers.ts#recipients": "7caa51670ec36b83"
   }

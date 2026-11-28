@@ -1,0 +1,14 @@
+{
+  "rule": "A burst of changes publishes each App Home once, and only to people who opened it",
+  "layer": "test",
+  "past": "preventive: without the claim on slack_homes.queued_at, five changes in a row publish one Home five times",
+  "check": "cd apps/web && pnpm exec vitest run src/server/services/slack-home.test.ts -t 'publishes a burst of changes once'",
+  "break": [
+    {
+      "file": "apps/web/src/server/services/home-queue.ts",
+      "find": "            : or(isNull(slackHomes.queuedAt), lte(slackHomes.queuedAt, stale)),",
+      "replace": "            : undefined,"
+    }
+  ],
+  "fails": "publishes a burst of changes once"
+}

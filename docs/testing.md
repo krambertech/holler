@@ -15,7 +15,7 @@ pnpm verify
 | `pnpm guards:prove`    | Every check fails when its mistake is brought back. CI runs it in four parts |
 | `pnpm check:models`    | Every order of the steps in the TLA+ models in `formal/` keeps Holler's promises about sending, closing and rounds, and each past bug and recorded finding still breaks the one it names. Needs Java; CI's `models` job runs it |
 | `pnpm check:models:sync` | No function a model describes changed since it was last confirmed. `pnpm check` runs it |
-| `pnpm check:migrations` | No applied migration changed, and the schema needs no migration that is missing                                                                                                                    |
+| `pnpm check:migrations` | No applied migration changed, nor one this branch pushed, and the schema needs no migration that is missing                                                                                                                    |
 | `pnpm typecheck`        | Every package, both Workers and the browser journeys, strict                                                                                                                                                     |
 | `pnpm check:architecture` | Every import keeps to its layer, there are no import cycles, and `scripts/architecture.json` gains no exception. Part of `pnpm check` |
 | `pnpm check:limits` | Every number in `oxlint-limits.json` is as low as its file allows, and none rose since the base. Part of `pnpm check` |

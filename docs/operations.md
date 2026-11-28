@@ -34,7 +34,7 @@ Previews run with `DEV_ROUTES=true` and seeded personas, never real Slack data. 
 HOLLER_DEV_KEY=$(cat ~/.holler-dev-key) node .agents/skills/verify/scripts/run.mjs home --url https://pr-<n>-holler-preview.k-porshnieva.workers.dev --version <id> --pr <n>
 ```
 
-Every pull request shares the preview D1. A branch's migration applies to it before merging, so keep migrations additive while they are open.
+Every pull request shares the preview D1. A branch's migration applies to it before merging, so keep migrations additive while they are open. Never rename or change a migration after you push it: the preview D1 has applied it under that name, so the next preview fails with `already exists`, and `pnpm check:migrations` compares your files with the pushed branch's manifest to refuse it first. When main takes your migration's number before you merge, keep both files, because Wrangler applies migrations by name: take main's `apps/web/migrations/meta/`, run `pnpm db:generate --name <your name>`, delete the SQL file it writes, and set that journal entry's `tag` to your pushed file's name, the one hand edit a generated file takes. If a pushed migration must go, Kateryna undoes it on `holler-preview` and deletes its row from `d1_migrations`, and the check then runs with `PREVIEW_RESET=<file>`.
 
 ## When nobody is working on it
 

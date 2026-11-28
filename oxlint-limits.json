@@ -146,28 +146,6 @@
       }
     },
     {
-      "files": ["apps/web/src/server/slack/blocks/limits.ts"],
-      "rules": {
-        "eslint/complexity": [
-          "error",
-          {
-            "max": 55
-          }
-        ]
-      }
-    },
-    {
-      "files": ["apps/web/src/server/slack/interactions.ts"],
-      "rules": {
-        "eslint/complexity": [
-          "error",
-          {
-            "max": 55
-          }
-        ]
-      }
-    },
-    {
       "files": ["packages/core/src/answers.ts"],
       "rules": {
         "eslint/complexity": [

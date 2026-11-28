@@ -1,13 +1,14 @@
 import { createDb } from "../db";
 import type { Bindings } from "../env";
-import { deliver, type SlackSend } from "../services/delivery";
+import type { SlackSend } from "../services/delivery";
+import { deliverSend } from "../services/slack-home";
 import { SlackApiError } from "./client";
 
 export async function consumeSlackSends(batch: MessageBatch<SlackSend>, env: Bindings) {
   const db = createDb(env.DB);
   for (const message of batch.messages) {
     try {
-      await deliver(env, db, message.body, new Date());
+      await deliverSend(env, db, message.body, new Date());
       message.ack();
     } catch (error) {
       const delaySeconds =

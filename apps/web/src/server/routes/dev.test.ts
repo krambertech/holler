@@ -138,6 +138,20 @@ describe("dev routes", () => {
     expect(s.activity).toEqual([]);
   });
 
+  it("sends /holler as Slack would, signed, from the persona it names", async () => {
+    const cookie = await signIn("as=lead&reset=1");
+    const response = await post(
+      "/api/dev/slack",
+      { path: "commands", as: "U0LEAD", text: "results" },
+      cookie,
+    );
+    const reply = (await response.json()) as { status: number; body: { text: string } };
+    expect(reply.status).toBe(200);
+    expect(reply.body.text).toMatch(/^You have \d+ live hollers?\.$/);
+    const help = await post("/api/dev/slack", { path: "commands", as: "U0MK", text: "" }, cookie);
+    expect(((await help.json()) as { body: { text: string } }).body.text).toMatch(/sign in/);
+  });
+
   it("refuses state without a session", async () => {
     expect((await request("/api/dev/state")).status).toBe(403);
   });

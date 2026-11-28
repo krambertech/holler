@@ -164,6 +164,7 @@ async function fullWorkspace(clientId: string, alsoIn?: { userId: string } | und
       name: "design",
       searchName: "design",
     }),
+    db.insert(schema.slackHomes).values({ workspaceId, slackUserId: "UA", openedAt: now }),
     db.insert(schema.directorySyncs).values({ workspaceId, completedAt: now }),
     db.insert(schema.polarEvents).values({
       id: `subscription.updated:${workspaceId}`,

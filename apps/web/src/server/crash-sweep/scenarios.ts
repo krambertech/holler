@@ -15,6 +15,7 @@ import {
   sendDueHollers,
   sendHoller,
 } from "../services/delivery";
+import { markHomeOpened, queueHomes } from "../services/home-queue";
 import { closeDueHollers } from "../services/lifecycle";
 import { queueDueReminders } from "../services/reminders";
 import { answerOnWeb } from "../services/respond";
@@ -150,6 +151,13 @@ export const deliveries: Delivery[] = [
     const { id } = await world.live();
     const side = world.side();
     await closeHoller(side.sender(minutes(10)), side.env, id);
+    return { at: minutes(10) };
+  }),
+  delivery("home", async (world) => {
+    await world.live(WEEK);
+    const { env, db } = world.side();
+    await markHomeOpened(db, world.workspaceId, "UA", minutes(10));
+    await queueHomes(env, db, world.workspaceId, ["UA"], minutes(10));
     return { at: minutes(10) };
   }),
   delivery("snoozed", async (world) => {

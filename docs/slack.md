@@ -26,7 +26,7 @@ Endpoints, all on the product Worker. Slack signs every request it sends, and ea
 | `/slack/oauth/install`  | Nothing. "Add to Slack" starts here and redirects to Slack with the bot scopes and a state     |
 | `/slack/oauth/callback` | The install redirect. Stores the bot token encrypted (`encryptToken`)                          |
 | `/slack/events`         | Events API: `app_home_opened`, `app_uninstalled`, `tokens_revoked`, `user_change`, `team_join` |
-| `/slack/interactions`   | Buttons, modals, shortcuts                                                                     |
+| `/slack/interactions`   | Buttons, modals, the message shortcut                                                          |
 | `/slack/commands`       | `/holler`                                                                                      |
 
 Every handler acknowledges within three seconds. A request signed more than five minutes from now is refused, so a captured one cannot be replayed. Anything slower runs in `waitUntil` or goes on the `SLACK_SENDS` queue. Retries are dropped by recording Slack's event or view id in `slack_deliveries`. Every Slack call goes through `SlackClient` in `apps/web/src/server/slack/client.ts`; tests use `FakeSlack`.
@@ -87,6 +87,7 @@ The app is defined in [`slack-app-manifest.json`](../slack-app-manifest.json) at
 | Bot events        | `app_home_opened`, `app_uninstalled`, `tokens_revoked`, `user_change`, `team_join`      |
 | Interactivity URL | `/slack/interactions`                                                                   |
 | Slash command     | `/holler`, at `/slack/commands`                                                         |
+| Message shortcut  | **Send a Holler about this**, callback id `holler_about_message`                        |
 
 **Keep the bot scopes in the manifest and `BOT_SCOPES` in `apps/web/src/server/slack/oauth.ts` the same.** A scope added to one and not the other means a reinstall asks for something the code does not request, or the other way round.
 
@@ -114,7 +115,7 @@ sequenceDiagram
 - **Send in their time zone.** The send time is a wall-clock time in the sender's zone, and each person gets it at that time in theirs. The Holler goes live when the earliest zone on Earth reaches it, and the cron invites each person as their time arrives. Someone whose time had already passed gets it at once. It closes `close_after_hours` after the last person's send.
 - **At most once.** A recipient is claimed (`invited_at`) before their invite is queued, and the consumer posts only while `dm_ts` is empty, so a queue retry never sends twice.
 - **Failures.** A permanent Slack error (`SlackApiError.permanent`) is stored in `recipients.failure` and not retried. A rate limit waits for `Retry-After`; any other error retries with backoff.
-- **Claims and the queue.** Every pass claims its rows (`invited_at`, `reminders_sent`, `reminded_at`, `close_queued_at`) with a guarded update, then queues through `queueClaimed`. When the queue refuses a batch, the claims for it and every later batch are given back, so the next cron run retries them and nothing is lost or sent twice. A send or close the person asked for still succeeds; its Slack work follows within a minute.
+- **Claims and the queue.** Every pass claims its rows (`invited_at`, `reminders_sent`, `reminded_at`, `close_queued_at`) with a guarded update, then queues through `queueClaimed` (`services/slack-queue.ts`). When the queue refuses a batch, the claims for it and every later batch are given back, so the next cron run retries them and nothing is lost or sent twice; a batch the queue took is never given back. A send or close the person asked for still succeeds; its Slack work follows within a minute.
 - **Posts happen once.** `sendEffects` in `services/delivery.ts` says whether each kind of send posts a new message or edits one. Before posting, the consumer claims the send's `postKey` in `slack_deliveries`, so a send delivered twice, even at the same time, posts once; a failed post gives the claim back for the retry. Edits rewrite a message to the current state, so a repeat is harmless.
 - **Close work and announcements catch up.** Close work is claimed one Holler at a time, so a queue failure leaves the rest for the next pass. An announcement that never posted is queued again by the cron from two minutes after the send, for a day.
 - **Every DM edit goes through the queue**, so a rate limit retries it: thank-yous, closed lines, snoozed reminders.
@@ -178,13 +179,25 @@ Each reminder carries **Answer now** and **Remind me later** (snooze to 15:00 to
 
 ## App Home
 
-The App Home tab is the sender's Home in Slack: the three numbers, live hollers with their counts and **Send reminder**, and **New holler**. For a recipient it lists what is waiting on them with **Answer** buttons, so a lost DM is never a lost question. Published with `views.publish` on `app_home_opened` and after each change that affects that person, debounced.
+The App Home tab shows each person what is waiting on them and, for a member, what they sent. `homeView` in `slack/blocks/home.ts` draws it from `homeState` in `services/slack-home.ts`, read fresh on every publish, so a late or repeated publish is never wrong.
+
+- **Waiting on you** comes first whenever something is: each live Holler the person got and has not answered, soonest to close first, with the control its DM would have. **Answer** opens the answer modal (or, for a Holler answered on the web, their signed link); a chase has **Open the form** and **I submitted it**. A lost DM is never a lost question.
+- **Your hollers**, for members: the web Home's three numbers on one line, **New holler** (the quick pulse) and **Open Holler**, then each live Holler. Every row on the Home has one shape: the title in bold, one line of detail, and its buttons underneath. A live row says "7 of 12 answered · Closes Saturday at 18:00" with **See results** and, while it can go, **Send reminder**; inside the four-hour gap a third line says "Reminded at 11:00. You can remind again at 15:00." instead of the button.
+- Someone who has not signed in sees what is waiting on them and **Sign in to Holler**.
+- Ten rows at most in each list; the rest link to Holler, so a Home stays far inside 100 blocks.
+
+**Publishing.** `app_home_opened` on the Home tab records the person in `slack_homes` and publishes at once. After a change, `refreshHomes` queues a publish for the people it touches: an invite or a close for its recipient, an answer for its recipient and the creator, a send, a schedule, a close notice or a reminder round for the creator. Only people who opened their Home get one; anyone else gets a fresh Home when they first open it. Each publish is claimed in `slack_homes.queued_at` and waits five seconds on the queue, so ten answers in a row publish once; the claim is cleared when the publish runs, and a claim older than a minute is taken again in case its publish was lost. A press on the Home itself (Send reminder, an answer from the Home) publishes at once. A refresh that fails never fails the send or answer that caused it. The claim and the queueing live in `services/home-queue.ts`, which imports nothing that sends, so `services/delivery.ts` can refresh a Home; the consumer's `deliverSend` runs a `home` send through `publishHome` and every other send through `deliver`.
 
 ## `/holler`
 
-- `/holler` opens a modal to write a quick pulse: question, options or a template, who, when it closes. Longer hollers get **Open in Holler** to the web editor.
-- `/holler results` lists your live hollers with their counts, only to you.
-- A message shortcut, **Send a Holler about this**, starts a pulse with the message linked in its description.
+- `/holler` opens the quick pulse; `/holler How was your week?` opens it with the question filled in.
+- `/holler results` lists your live hollers with their counts and **See results**, only to you.
+- `/holler help` says what it does. Someone who has not signed in is asked to, with a link.
+- The message shortcut **Send a Holler about this** opens the quick pulse with the message linked in its description ("About this message."). The link is built from the team's domain, the channel and the message ts, because the trigger id expires before `chat.getPermalink` could answer.
+
+**The quick pulse** (`slack/blocks/quick-pulse.ts`) is one question and who gets it: the question; its answers (options the sender writes, one per line, or Yes or no, Rating 1 to 5, Agreement or Free text from the question templates); people and public channels; when it closes (1 day, 3 days or 1 week); anonymous. Changing the answers redraws the modal with or without the options box and keeps what was typed. **Open in Holler** goes to the web editor for anything longer.
+
+On **Send**, what Slack can check is checked first and every problem comes back beside its field; then `sendProblems` runs on the draft, as in every other door, before anything is saved. The reply rewrites the modal to "Sending…" and the send finishes in `waitUntil`, because resolving channel members can take longer than Slack's three seconds; then the modal shows "went to 12 people" with **See results**, or why it did not send and a link to the draft it left. Any error after the reply ends on that same Not sent view, with the draft's link when the draft was saved and a link to start one in Holler when it was not, so the modal never stays on Sending. `createDraft` takes the modal's view id as its idempotency key, so a submit Slack delivers twice makes one Holler and sends it once.
 
 ## Limits
 

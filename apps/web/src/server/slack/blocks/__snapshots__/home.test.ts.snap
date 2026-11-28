@@ -1,0 +1,532 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`App Home > puts what is waiting on them first, then their own hollers 1`] = `
+{
+  "blocks": [
+    {
+      "text": {
+        "emoji": false,
+        "text": "Waiting on you",
+        "type": "plain_text",
+      },
+      "type": "header",
+    },
+    {
+      "block_id": "wait:h_week",
+      "text": {
+        "text": "*How was your week?*
+From Mira Kask · Closes Sunday at 12:00",
+        "type": "mrkdwn",
+      },
+      "type": "section",
+    },
+    {
+      "block_id": "wait-actions:h_week",
+      "elements": [
+        {
+          "action_id": "holler_open",
+          "text": {
+            "emoji": false,
+            "text": "Answer",
+            "type": "plain_text",
+          },
+          "type": "button",
+          "value": "h_week",
+        },
+      ],
+      "type": "actions",
+    },
+    {
+      "block_id": "wait:h_form",
+      "text": {
+        "text": "*Expense form*
+From Mira Kask · Closes Sunday at 12:00",
+        "type": "mrkdwn",
+      },
+      "type": "section",
+    },
+    {
+      "block_id": "wait-actions:h_form",
+      "elements": [
+        {
+          "action_id": "holler_form",
+          "text": {
+            "emoji": false,
+            "text": "Open the form",
+            "type": "plain_text",
+          },
+          "type": "button",
+          "url": "https://forms.example/expenses",
+        },
+        {
+          "action_id": "holler_done",
+          "text": {
+            "emoji": false,
+            "text": "I submitted it",
+            "type": "plain_text",
+          },
+          "type": "button",
+          "value": "h_form",
+        },
+      ],
+      "type": "actions",
+    },
+    {
+      "type": "divider",
+    },
+    {
+      "text": {
+        "emoji": false,
+        "text": "Your hollers",
+        "type": "plain_text",
+      },
+      "type": "header",
+    },
+    {
+      "text": {
+        "text": "*3* live now   ·   *9* people still to answer   ·   *1* scheduled",
+        "type": "mrkdwn",
+      },
+      "type": "section",
+    },
+    {
+      "block_id": "home:start",
+      "elements": [
+        {
+          "action_id": "holler_home_new",
+          "style": "primary",
+          "text": {
+            "emoji": false,
+            "text": "New holler",
+            "type": "plain_text",
+          },
+          "type": "button",
+          "value": "new",
+        },
+        {
+          "action_id": "holler_product",
+          "text": {
+            "emoji": false,
+            "text": "Open Holler",
+            "type": "plain_text",
+          },
+          "type": "button",
+          "url": "https://app.holler.team",
+        },
+      ],
+      "type": "actions",
+    },
+    {
+      "block_id": "live:h_offsite",
+      "text": {
+        "text": "*Where should the offsite be?*
+7 of 12 answered · Closes Saturday at 18:00",
+        "type": "mrkdwn",
+      },
+      "type": "section",
+    },
+    {
+      "block_id": "live-actions:h_offsite",
+      "elements": [
+        {
+          "action_id": "holler_product",
+          "text": {
+            "emoji": false,
+            "text": "See results",
+            "type": "plain_text",
+          },
+          "type": "button",
+          "url": "https://app.holler.team/hollers/h_offsite",
+        },
+        {
+          "action_id": "holler_home_remind",
+          "text": {
+            "emoji": false,
+            "text": "Send reminder",
+            "type": "plain_text",
+          },
+          "type": "button",
+          "value": "h_offsite",
+        },
+      ],
+      "type": "actions",
+    },
+    {
+      "block_id": "live:h_retro",
+      "text": {
+        "text": "*Sprint retro*
+3 of 5 answered · Closes Saturday at 18:00
+Reminded at 11:00. You can remind again at 15:00.",
+        "type": "mrkdwn",
+      },
+      "type": "section",
+    },
+    {
+      "block_id": "live-actions:h_retro",
+      "elements": [
+        {
+          "action_id": "holler_product",
+          "text": {
+            "emoji": false,
+            "text": "See results",
+            "type": "plain_text",
+          },
+          "type": "button",
+          "url": "https://app.holler.team/hollers/h_retro",
+        },
+      ],
+      "type": "actions",
+    },
+    {
+      "block_id": "live:h_done",
+      "text": {
+        "text": "*Laptop survey*
+4 of 4 answered · Closes Saturday at 18:00",
+        "type": "mrkdwn",
+      },
+      "type": "section",
+    },
+    {
+      "block_id": "live-actions:h_done",
+      "elements": [
+        {
+          "action_id": "holler_product",
+          "text": {
+            "emoji": false,
+            "text": "See results",
+            "type": "plain_text",
+          },
+          "type": "button",
+          "url": "https://app.holler.team/hollers/h_done",
+        },
+      ],
+      "type": "actions",
+    },
+  ],
+  "type": "home",
+}
+`;
+
+exports[`App Home > tells someone who has not signed in how to send their own 1`] = `
+{
+  "blocks": [
+    {
+      "text": {
+        "emoji": false,
+        "text": "Waiting on you",
+        "type": "plain_text",
+      },
+      "type": "header",
+    },
+    {
+      "elements": [
+        {
+          "text": "Nothing is waiting on you.",
+          "type": "mrkdwn",
+        },
+      ],
+      "type": "context",
+    },
+    {
+      "type": "divider",
+    },
+    {
+      "text": {
+        "text": "*Ask your team something*
+Sign in once with Slack to send your own.",
+        "type": "mrkdwn",
+      },
+      "type": "section",
+    },
+    {
+      "block_id": "home:sign-in",
+      "elements": [
+        {
+          "action_id": "holler_product",
+          "text": {
+            "emoji": false,
+            "text": "Sign in to Holler",
+            "type": "plain_text",
+          },
+          "type": "button",
+          "url": "https://app.holler.team/sign-in",
+        },
+      ],
+      "type": "actions",
+    },
+  ],
+  "type": "home",
+}
+`;
+
+exports[`the quick pulse > fits Slack's modal limits in every way it can be drawn 1`] = `
+{
+  "blocks": [
+    {
+      "block_id": "quick:prompt",
+      "element": {
+        "action_id": "value",
+        "max_length": 300,
+        "placeholder": {
+          "emoji": false,
+          "text": "How was your week?",
+          "type": "plain_text",
+        },
+        "type": "plain_text_input",
+      },
+      "label": {
+        "emoji": false,
+        "text": "Question",
+        "type": "plain_text",
+      },
+      "type": "input",
+    },
+    {
+      "block_id": "quick:kind",
+      "dispatch_action": true,
+      "element": {
+        "action_id": "holler_quick_kind",
+        "initial_option": {
+          "text": {
+            "emoji": false,
+            "text": "Options you write",
+            "type": "plain_text",
+          },
+          "value": "options",
+        },
+        "options": [
+          {
+            "text": {
+              "emoji": false,
+              "text": "Options you write",
+              "type": "plain_text",
+            },
+            "value": "options",
+          },
+          {
+            "text": {
+              "emoji": false,
+              "text": "Yes or no",
+              "type": "plain_text",
+            },
+            "value": "binary",
+          },
+          {
+            "text": {
+              "emoji": false,
+              "text": "Rating, 1 to 5",
+              "type": "plain_text",
+            },
+            "value": "rating",
+          },
+          {
+            "text": {
+              "emoji": false,
+              "text": "Agreement, disagree to agree",
+              "type": "plain_text",
+            },
+            "value": "agreement",
+          },
+          {
+            "text": {
+              "emoji": false,
+              "text": "Free text",
+              "type": "plain_text",
+            },
+            "value": "text",
+          },
+        ],
+        "type": "static_select",
+      },
+      "label": {
+        "emoji": false,
+        "text": "Answers",
+        "type": "plain_text",
+      },
+      "type": "input",
+    },
+    {
+      "block_id": "quick:options",
+      "element": {
+        "action_id": "value",
+        "max_length": 3000,
+        "multiline": true,
+        "placeholder": {
+          "emoji": false,
+          "text": "Great
+Fine
+Rough",
+          "type": "plain_text",
+        },
+        "type": "plain_text_input",
+      },
+      "hint": {
+        "emoji": false,
+        "text": "One per line. People answer with one tap in the DM.",
+        "type": "plain_text",
+      },
+      "label": {
+        "emoji": false,
+        "text": "Options",
+        "type": "plain_text",
+      },
+      "type": "input",
+    },
+    {
+      "block_id": "quick:people",
+      "element": {
+        "action_id": "value",
+        "placeholder": {
+          "emoji": false,
+          "text": "Choose people",
+          "type": "plain_text",
+        },
+        "type": "multi_users_select",
+      },
+      "label": {
+        "emoji": false,
+        "text": "Send to",
+        "type": "plain_text",
+      },
+      "optional": true,
+      "type": "input",
+    },
+    {
+      "block_id": "quick:channels",
+      "element": {
+        "action_id": "value",
+        "placeholder": {
+          "emoji": false,
+          "text": "Choose channels",
+          "type": "plain_text",
+        },
+        "type": "multi_channels_select",
+      },
+      "hint": {
+        "emoji": false,
+        "text": "Each member of these channels gets their own DM.",
+        "type": "plain_text",
+      },
+      "label": {
+        "emoji": false,
+        "text": "And everyone in",
+        "type": "plain_text",
+      },
+      "optional": true,
+      "type": "input",
+    },
+    {
+      "block_id": "quick:closes",
+      "element": {
+        "action_id": "value",
+        "initial_option": {
+          "text": {
+            "emoji": false,
+            "text": "In 3 days",
+            "type": "plain_text",
+          },
+          "value": "72",
+        },
+        "options": [
+          {
+            "text": {
+              "emoji": false,
+              "text": "In 1 day",
+              "type": "plain_text",
+            },
+            "value": "24",
+          },
+          {
+            "text": {
+              "emoji": false,
+              "text": "In 3 days",
+              "type": "plain_text",
+            },
+            "value": "72",
+          },
+          {
+            "text": {
+              "emoji": false,
+              "text": "In 1 week",
+              "type": "plain_text",
+            },
+            "value": "168",
+          },
+        ],
+        "type": "static_select",
+      },
+      "label": {
+        "emoji": false,
+        "text": "Closes",
+        "type": "plain_text",
+      },
+      "type": "input",
+    },
+    {
+      "block_id": "quick:anonymous",
+      "element": {
+        "action_id": "value",
+        "options": [
+          {
+            "description": {
+              "emoji": false,
+              "text": "You see how many answered, never who.",
+              "type": "plain_text",
+            },
+            "text": {
+              "emoji": false,
+              "text": "Anonymous",
+              "type": "plain_text",
+            },
+            "value": "anonymous",
+          },
+        ],
+        "type": "checkboxes",
+      },
+      "label": {
+        "emoji": false,
+        "text": "Answers are",
+        "type": "plain_text",
+      },
+      "optional": true,
+      "type": "input",
+    },
+    {
+      "accessory": {
+        "action_id": "holler_product",
+        "text": {
+          "emoji": false,
+          "text": "Open in Holler",
+          "type": "plain_text",
+        },
+        "type": "button",
+        "url": "https://app.holler.team/",
+      },
+      "block_id": "quick:more",
+      "text": {
+        "text": "More questions, a schedule or a form to chase?",
+        "type": "mrkdwn",
+      },
+      "type": "section",
+    },
+  ],
+  "callback_id": "holler_quick_pulse",
+  "close": {
+    "emoji": false,
+    "text": "Cancel",
+    "type": "plain_text",
+  },
+  "private_metadata": "{"about":null}",
+  "submit": {
+    "emoji": false,
+    "text": "Send",
+    "type": "plain_text",
+  },
+  "title": {
+    "emoji": false,
+    "text": "New pulse",
+    "type": "plain_text",
+  },
+  "type": "modal",
+}
+`;

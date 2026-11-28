@@ -4,10 +4,11 @@ import { createDb, type Db } from "../db";
 import type { Bindings } from "../env";
 import { recipientContext } from "../services/answering";
 import type { ServiceContext } from "../services/context";
-import { deliver, postKey, type SlackSend, sendEffects, sendHoller } from "../services/delivery";
+import { postKey, type SlackSend, sendEffects, sendHoller } from "../services/delivery";
 import { workspaceFixture } from "../services/fixtures";
 import { createDraft } from "../services/hollers";
 import { devSlack } from "../services/slack-connection";
+import { deliverSend } from "../services/slack-home";
 import { type PostMessage, SlackApiError } from "../slack/client";
 import { deliveryEnv, emptyDatabase } from "../test-delivery";
 import { Life } from "./life";
@@ -186,7 +187,7 @@ export class World {
 
   async deliver(side: Side, send: SlackSend, at: Date): Promise<void> {
     this.delivering = { send, at };
-    await deliver(side.env, side.db, send, at);
+    await deliverSend(side.env, side.db, send, at);
   }
 
   async drain(at: Date): Promise<void> {
@@ -256,6 +257,7 @@ export class World {
 
 export function isTo(send: SlackSend, hollerId: string, slackUserId: string): boolean {
   return (
+    "hollerId" in send &&
     send.kind !== "shared" &&
     "slackUserId" in send &&
     send.hollerId === hollerId &&

@@ -78,7 +78,40 @@ function slackRecord(workspaceId: string) {
     posted: fake?.posted.map(summary) ?? [],
     updated: fake?.updated.map(summary) ?? [],
     modals: fake?.views.length ?? 0,
+    views:
+      fake?.views.map((opened) => ({
+        viewId: opened.viewId,
+        callbackId: opened.view.callback_id ?? null,
+        privateMetadata: opened.view.private_metadata ?? null,
+        text: homeText(opened.view.blocks),
+      })) ?? [],
+    viewUpdates:
+      fake?.viewUpdates.map((update) => ({
+        viewId: update.viewId,
+        callbackId: update.view.callback_id ?? null,
+        text: homeText(update.view.blocks),
+      })) ?? [],
+    homes:
+      fake?.homes.map((home) => ({
+        userId: home.userId,
+        text: homeText(home.view.blocks),
+      })) ?? [],
   };
+}
+
+function homeText(blocks: unknown[]): string[] {
+  return blocks.flatMap((raw) => {
+    const block = raw as {
+      text?: { text?: string };
+      fields?: { text?: string }[];
+      elements?: { text?: string | { text?: string } }[];
+    };
+    const own = [block.text?.text, ...(block.fields ?? []).map((field) => field.text)];
+    const inner = (block.elements ?? []).map((element) =>
+      typeof element.text === "string" ? element.text : element.text?.text,
+    );
+    return [...own, ...inner].filter((text): text is string => Boolean(text));
+  });
 }
 
 /**

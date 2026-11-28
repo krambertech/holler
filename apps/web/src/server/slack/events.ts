@@ -1,7 +1,9 @@
 import { Hono } from "hono";
 import type { AppEnv } from "../app";
 import type { Db } from "../db";
+import type { Bindings } from "../env";
 import { refreshSlackPerson } from "../services/directory-sync";
+import { markHomeOpened, refreshHomes } from "../services/home-queue";
 import { claimSlackDelivery } from "../services/slack-deliveries";
 import { markUninstalled, workspaceIdForTeam } from "../services/workspaces";
 import type { SlackUser } from "./client";
@@ -20,6 +22,7 @@ interface EventEnvelope {
   event?: {
     type: string;
     user?: SlackUser | string;
+    tab?: string;
     tokens?: { oauth?: string[]; bot?: string[] };
   };
 }
@@ -42,11 +45,12 @@ export const slackEventRoutes = new Hono<AppEnv>().post("/", async (c) => {
 
   const db = c.get("db");
   if (!(await claimSlackDelivery(db, `event:${envelope.event_id}`, now))) return c.body(null, 200);
-  await handleEvent(db, envelope.team_id, envelope.event, now);
+  await handleEvent(c.env, db, envelope.team_id, envelope.event, now);
   return c.body(null, 200);
 });
 
 async function handleEvent(
+  env: Bindings,
   db: Db,
   teamId: string,
   event: EventEnvelope["event"],
@@ -67,8 +71,15 @@ async function handleEvent(
       if (workspaceId) await refreshSlackPerson(db, workspaceId, event.user, now);
       return;
     }
+    case "app_home_opened": {
+      if (event.tab !== "home" || typeof event.user !== "string") return;
+      const workspaceId = await workspaceIdForTeam(db, teamId);
+      if (!workspaceId) return;
+      await markHomeOpened(db, workspaceId, event.user, now);
+      await refreshHomes(env, db, workspaceId, [event.user], now, { soon: true });
+      return;
+    }
     default:
-      // app_home_opened and anything newer belong to other handlers or nobody yet.
       return;
   }
 }

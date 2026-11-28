@@ -37,9 +37,15 @@ export const actionIds = {
   formLink: "holler_form",
   respondLink: "holler_respond",
   resultsLink: "holler_results",
+  homeNew: "holler_home_new",
+  homeRemind: "holler_home_remind",
+  productLink: "holler_product",
+  quickKind: "holler_quick_kind",
 } as const;
 
 export const answerViewId = "holler_answer";
+export const quickPulseViewId = "holler_quick_pulse";
+export const aboutMessageShortcutId = "holler_about_message";
 
 /** Where this Holler is answered. `answerSurface` in core decides; docs/slack.md, Answering. */
 export function surfaceOf(

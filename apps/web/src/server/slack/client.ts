@@ -7,7 +7,8 @@ export interface SlackClient {
   /** Posts a message. A user id as `channel` posts to that person's DM with the bot. */
   postMessage(input: PostMessage): Promise<{ channel: string; ts: string }>;
   updateMessage(input: PostMessage & { ts: string }): Promise<void>;
-  openView(input: { triggerId: string; view: SlackView }): Promise<void>;
+  openView(input: { triggerId: string; view: SlackView }): Promise<{ viewId: string }>;
+  updateView(input: { viewId: string; view: SlackView }): Promise<void>;
   publishHome(input: { userId: string; view: SlackView }): Promise<void>;
   /** One page of the workspace's people. Pass the returned cursor until it is empty. */
   listUsers(cursor?: string): Promise<{ members: SlackUser[]; nextCursor: string }>;
@@ -142,7 +143,14 @@ export function createSlackClient(token: string, fetcher: Fetch = fetch): SlackC
       await call("chat.update", { ...input });
     },
     async openView({ triggerId, view }) {
-      await call("views.open", { trigger_id: triggerId, view });
+      const data = await call<{ view: { id: string } }>("views.open", {
+        trigger_id: triggerId,
+        view,
+      });
+      return { viewId: data.view.id };
+    },
+    async updateView({ viewId, view }) {
+      await call("views.update", { view_id: viewId, view });
     },
     async publishHome({ userId, view }) {
       await call("views.publish", { user_id: userId, view });

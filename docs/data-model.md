@@ -43,6 +43,7 @@ erDiagram
 | `viewers`                                                 | A person a Holler's results are shared with | Keyed by `slack_user_id`, not member, so a share can wait for someone who has not signed in. `notified_at` claims their Slack message |
 | `activity`                                                | One change                                  | Written only by `services/audit.ts`, in the batch that makes the change. `action` is one of `activityActions` in `packages/core/src/activity.ts`, and Settings has a sentence for each |
 | `slack_deliveries`                                        | A Slack event or view already handled       | Drops Slack's retries                                                       |
+| `slack_homes` | Someone who opened Holler's App Home, and whether a fresh one is queued | Pushes go only to people with a Home; `queued_at` turns a burst of changes into one publish |
 | `user`, `session`, `account`, `apikey`, `jwks`, `oauth_*` | Better Auth                                 | Generated: `pnpm --filter @holler/web auth:schema`. Never edit by hand      |
 
 ## Lifecycle

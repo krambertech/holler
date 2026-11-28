@@ -1,0 +1,14 @@
+{
+  "rule": "A quick pulse that was acknowledged ends on Sent or Not sent, whatever fails",
+  "layer": "test",
+  "past": "#24: a Slack error mid-send left the modal on Sending for good (Codex review)",
+  "check": "cd apps/web && pnpm exec vitest run src/server/slack/sending.test.ts -t 'never on Sending'",
+  "break": [
+    {
+      "file": "apps/web/src/server/services/quick-pulse.ts",
+      "find": "    if (!(error instanceof ServiceError)) console.error(\"quick pulse send failed\", error);",
+      "replace": "    if (!(error instanceof ServiceError)) throw error;"
+    }
+  ],
+  "fails": "never on Sending"
+}

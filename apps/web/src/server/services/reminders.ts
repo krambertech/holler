@@ -5,7 +5,8 @@ import { type Db, schema } from "../db";
 import type { Bindings } from "../env";
 import { activityOf, recordChange } from "./audit";
 import type { ServiceContext } from "./context";
-import { queueClaimed, toneFor } from "./delivery";
+import { toneFor } from "./delivery";
+import { queueClaimed } from "./slack-queue";
 
 const { hollers, recipients, slackPeople } = schema;
 

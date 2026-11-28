@@ -13,9 +13,10 @@ import type { Bindings } from "../env";
 import { productUrl } from "../product-url";
 import { activityOf, recordChange } from "./audit";
 import { type ServiceContext, ServiceError } from "./context";
-import { queueClaimed, type SlackSend } from "./delivery";
+import type { SlackSend } from "./delivery";
 import { getHoller, type HollerDetail } from "./hollers";
 import { resultsFor } from "./responses";
+import { queueClaimed } from "./slack-queue";
 
 const { hollers, viewers, slackPeople, members, recipients, workspaces } = schema;
 

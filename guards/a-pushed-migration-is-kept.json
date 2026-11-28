@@ -1,0 +1,14 @@
+{
+  "rule": "A migration a branch pushed keeps its name and contents, so the shared preview database never applies it twice",
+  "layer": "ci",
+  "past": "#24 renamed 0005_slack_homes after #26 took 0005, and the shared preview database failed with \"table slack_homes already exists\"",
+  "check": "node --test scripts/check-migrations.test.mjs",
+  "break": [
+    {
+      "file": "scripts/check-migrations.mjs",
+      "find": "    if (files[name] === hash) continue;",
+      "replace": "    continue;"
+    }
+  ],
+  "fails": "renamed"
+}

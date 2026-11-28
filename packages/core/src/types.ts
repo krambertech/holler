@@ -236,6 +236,24 @@ export const devAnswerInputSchema = z.object({
   response: responseInputSchema,
 });
 
+export const devSlackInputSchema = z.discriminatedUnion("path", [
+  z.object({
+    path: z.literal("commands"),
+    as: z.string(),
+    text: z.string().default(""),
+  }),
+  z.object({
+    path: z.literal("interactions"),
+    as: z.string(),
+    payload: z.record(z.string(), z.unknown()),
+  }),
+  z.object({
+    path: z.literal("events"),
+    as: z.string(),
+    event: z.record(z.string(), z.unknown()),
+  }),
+]);
+
 /** Local development only: runs the cron's pass as if it fired at `at`, or now. */
 export const devTickInputSchema = z.object({ at: z.iso.datetime().optional() });
 

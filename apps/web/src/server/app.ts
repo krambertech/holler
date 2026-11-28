@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { secureHeaders } from "hono/secure-headers";
 import { type Auth, createAuth } from "./auth";
 import { createDb, type Db } from "./db";
+import { devSlackRoutes } from "./dev-slack";
 import { type Bindings, devKeyAccepted, devRoutesEnabled } from "./env";
 import { handleMcpRequest } from "./mcp";
 import { mountOpenApi } from "./openapi";
@@ -19,6 +20,7 @@ import { respondRoutes } from "./routes/respond";
 import { settingsRoutes } from "./routes/settings";
 import { v1Routes } from "./routes/v1";
 import { ServiceError } from "./services/context";
+import { slackCommandRoutes } from "./slack/commands";
 import { slackEventRoutes } from "./slack/events";
 import { slackInteractionRoutes } from "./slack/interactions";
 import { slackOAuthRoutes } from "./slack/oauth";
@@ -108,11 +110,13 @@ app.use("/api/dev/*", async (c, next) => {
   }
   await next();
 });
+app.route("/api/dev/slack", devSlackRoutes);
 app.route("/api/dev", devRoutes);
 
 app.route("/slack/oauth", slackOAuthRoutes);
 app.route("/slack/events", slackEventRoutes);
 app.route("/slack/interactions", slackInteractionRoutes);
+app.route("/slack/commands", slackCommandRoutes);
 
 app.all("/api/*", (c) =>
   c.json({ error: { code: "not_found", message: "There is no API route here." } }, 404),
