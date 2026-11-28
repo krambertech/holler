@@ -46,6 +46,7 @@ interface ComboboxContextValue {
   input: React.RefObject<HTMLInputElement | null>;
   /** Raises the keyboard with the drawer and hands focus to the search field once it settles. */
   handoff: ReturnType<typeof useKeyboardHandoff>;
+  popupId: string;
 }
 
 const ComboboxContext = React.createContext<ComboboxContextValue | null>(null);
@@ -87,9 +88,10 @@ function Combobox<Value, Multiple extends boolean | undefined = false, Item = Va
   const trigger = React.useRef<HTMLButtonElement>(null);
   const input = React.useRef<HTMLInputElement>(null);
   const handoff = useKeyboardHandoff(React.useCallback(() => input.current, []));
+  const popupId = React.useId();
   const context = React.useMemo(
-    () => ({ shape, open, setOpen, disabled, trigger, input, handoff }),
-    [shape, open, setOpen, disabled, handoff],
+    () => ({ shape, open, setOpen, disabled, trigger, input, handoff, popupId }),
+    [shape, open, setOpen, disabled, handoff, popupId],
   );
   return (
     <ComboboxContext.Provider value={context}>
@@ -143,7 +145,7 @@ function ComboboxTrigger({
   children,
   ...props
 }: TriggerProps) {
-  const { shape, open, setOpen, disabled, trigger, input, handoff } =
+  const { shape, open, setOpen, disabled, trigger, input, handoff, popupId } =
     useCombobox("ComboboxTrigger");
   const a11y = useFieldControl({ id, "aria-describedby": describedBy, "aria-invalid": invalid });
   const ref = useMergedRefs(trigger, refProp);
@@ -201,9 +203,9 @@ function ComboboxTrigger({
         data-slot="combobox-trigger"
         {...mergeProps<"button">({ onClick: handoff.warmUp, onKeyDown }, props)}
         {...a11y}
-        // oxlint-disable-next-line jsx-a11y/role-has-required-aria-props -- Biome let this pass; the drawer it opens has no id to point aria-controls at yet
         role="combobox"
         aria-haspopup="dialog"
+        aria-controls={popupId}
         aria-expanded={open}
         data-popup-open={open || undefined}
         disabled={disabled}
@@ -333,13 +335,14 @@ function DrawerSearchContent({
   children,
   ...props
 }: ContentProps) {
-  const { open, handoff, trigger, setOpen } = useCombobox("ComboboxContent");
+  const { open, handoff, trigger, setOpen, popupId } = useCombobox("ComboboxContent");
   const name = useListName(label, open);
   const ref = React.useRef<HTMLDivElement>(null);
   const refs = useMergedRefs(ref, refProp);
   const tabbed = React.useRef<"forward" | "back" | null>(null);
   return (
     <DrawerContent
+      id={popupId}
       initialFocus={handoff.initialFocus}
       finalFocus={() => {
         const box = trigger.current;

@@ -53,6 +53,7 @@ interface SelectContextValue {
   items: readonly SelectItemData[] | undefined;
   disabled: boolean;
   required: boolean;
+  listId: string;
 }
 
 const SelectContext = React.createContext<SelectContextValue | null>(null);
@@ -109,9 +110,10 @@ function Select({
     onChange: onOpenChange,
   });
   const shape = useOverlayShape(open);
+  const listId = React.useId();
   const context = React.useMemo(
-    () => ({ shape, open, value, setValue, setOpen, items, disabled, required }),
-    [shape, open, value, setValue, setOpen, items, disabled, required],
+    () => ({ shape, open, value, setValue, setOpen, items, disabled, required, listId }),
+    [shape, open, value, setValue, setOpen, items, disabled, required, listId],
   );
   return (
     <SelectContext.Provider value={context}>
@@ -158,7 +160,7 @@ function SelectTrigger({
   children,
   ...props
 }: TriggerProps) {
-  const { shape, open, value, disabled, required } = useSelect("SelectTrigger");
+  const { shape, open, value, disabled, required, listId } = useSelect("SelectTrigger");
   const a11y = useFieldControl({ id, "aria-describedby": describedBy, "aria-invalid": invalid });
   const classes =
     variant === "chip"
@@ -183,9 +185,9 @@ function SelectTrigger({
       data-slot="select-trigger"
       {...props}
       {...a11y}
-      // oxlint-disable-next-line jsx-a11y/role-has-required-aria-props -- Biome let this pass; the drawer it opens has no id to point aria-controls at yet
       role="combobox"
       aria-haspopup="listbox"
+      aria-controls={listId}
       aria-expanded={open}
       aria-required={required || undefined}
       data-open={open || undefined}
@@ -323,7 +325,7 @@ function DrawerListContent({
   children,
   ...props
 }: ContentProps) {
-  const { open, setOpen } = useSelect("SelectContent");
+  const { open, setOpen, listId } = useSelect("SelectContent");
   const name = useListName(label, open);
   const ref = React.useRef<HTMLDivElement>(null);
   const refs = useMergedRefs(ref, refProp);
@@ -346,6 +348,7 @@ function DrawerListContent({
         data-slot="select-content"
         className={cn("grid p-2 pt-1", className)}
         {...mergeProps<"div">({ onKeyDown }, props)}
+        id={listId}
       >
         {children}
       </div>

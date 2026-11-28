@@ -8,11 +8,11 @@ The header's **Settings** link, then the **API keys** section.
 
 ## Drive
 
-[`api-keys.mjs`](api-keys.mjs) as `lead` from `/settings`: name a read-only key **Verify script**, press **Make key**, then reload.
+[`api-keys.mjs`](api-keys.mjs) as `lead` from `/settings`: open **Access** and check that its `aria-controls` names the open list, choose **Read and write**, name the key **Verify script**, press **Make key**, then reload.
 
 ## End state
 
-The **API keys** region lists **Verify script** after a reload, and the empty line is gone.
+The **API keys** region lists **Verify script** with **Read and write** after a reload, and the empty line is gone.
 
 ## Gotchas
 

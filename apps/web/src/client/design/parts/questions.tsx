@@ -97,6 +97,7 @@ const everyType: QuestionInput[] = [
 const sendProblems = {
   "questions.0.prompt": "Write the question.",
   "questions.0.options.1": "Name this option, or remove it.",
+  "questions.1.followUp": "The follow-up names an option the question does not have.",
   "questions.1.followUp.prompt": "Write the follow-up note, or remove it.",
   "questions.2.numberMin": "The smallest number is larger than the largest.",
 };
