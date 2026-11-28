@@ -31,7 +31,6 @@ export const pairs: Pair[] = [
   { text: "closed-ink", on: "closed", min: TEXT },
   { text: "danger-ink", on: "danger", min: TEXT },
   { text: "danger-ink", on: "plate", min: TEXT },
-  { text: "plate", on: "danger-ink", min: TEXT },
   // A question card's field at fault: what is typed, and its placeholder, on the danger tint.
   { text: "muted", on: "danger", min: TEXT },
   // Notice: ink text on its tinted boxes.

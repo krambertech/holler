@@ -97,7 +97,7 @@ export function answerProblem(
   if (otherText && !pickedOther) {
     return "Pick Other to add your own answer, or clear what you wrote.";
   }
-  if (pickedOther && !otherText) return "Write your answer beside Other.";
+  if (pickedOther && !otherText) return "Write your own answer.";
 
   if (note) {
     if (question.followUp === null) return "This question does not ask for a note.";

@@ -1,6 +1,6 @@
 import type { RespondPerson, RespondQuestion } from "@holler/core";
 import { otherOption } from "@holler/core";
-import { CornerDownRight } from "lucide-react";
+import { AlertCircle, CornerDownRight } from "lucide-react";
 import { type ComponentProps, useId } from "react";
 import { Field, FieldLabel, FieldLegend, FieldSet } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -19,15 +19,8 @@ interface Props extends Omit<ComponentProps<"fieldset">, "onChange"> {
   onValueChange: (next: DraftAnswer) => void;
   error?: string | undefined;
   number?: number | undefined;
-  answered?: boolean | undefined;
   searchPeople: (query: string) => Promise<RespondPerson[]>;
 }
-
-const numberTone = {
-  waiting: "bg-well text-muted",
-  answered: "bg-tint text-tint-ink",
-  problem: "bg-danger-ink text-plate",
-};
 
 function AnswerQuestion({
   question,
@@ -35,7 +28,6 @@ function AnswerQuestion({
   onValueChange,
   error,
   number,
-  answered = false,
   searchPeople,
   className,
   ...props
@@ -45,7 +37,6 @@ function AnswerQuestion({
   const descriptionId = useId();
   const hintId = useId();
   const hint = hintFor(question);
-  const tone = error ? "problem" : answered ? "answered" : "waiting";
   const describedBy = [
     error && errorId,
     question.description && descriptionId,
@@ -61,13 +52,7 @@ function AnswerQuestion({
     >
       <FieldLegend id={legendId} className="mb-0 flex w-full items-start gap-2.5 text-lg">
         {number !== undefined && (
-          <span
-            data-tone={tone}
-            className={cn(
-              "mt-px grid size-6 shrink-0 place-items-center rounded-sm text-xs tabular transition-colors duration-200",
-              numberTone[tone],
-            )}
-          >
+          <span className="mt-px grid size-6 shrink-0 place-items-center rounded-sm bg-well text-muted text-xs tabular">
             {count(number)}
           </span>
         )}
@@ -79,8 +64,20 @@ function AnswerQuestion({
       {(error || question.description) && (
         <div className={cn("mt-1 flex flex-col gap-0.5 text-sm", number !== undefined && "ps-8.5")}>
           {error && (
-            <p id={errorId} role="alert" className="text-danger-ink">
-              {error}
+            <p
+              id={errorId}
+              role="alert"
+              className={cn(
+                "flex items-start text-danger-ink",
+                number !== undefined ? "-ms-8.5 gap-2.5" : "gap-1.5",
+              )}
+            >
+              <span
+                className={cn("flex shrink-0 justify-center pt-0.5", number !== undefined && "w-6")}
+              >
+                <AlertCircle aria-hidden="true" className="size-3.5" />
+              </span>
+              <span className="min-w-0">{error}</span>
             </p>
           )}
           {question.description && (

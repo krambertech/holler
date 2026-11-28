@@ -6,7 +6,7 @@ import { AnonymousNote, RespondHeader } from "@/components/respond/respond-heade
 import { RespondState } from "@/components/respond/respond-state";
 import { Button } from "@/components/ui/button";
 import { Plate } from "@/components/ui/plate";
-import { type DraftAnswer, emptyAnswer, isAnswered } from "@/lib/respond";
+import { type DraftAnswer, emptyAnswer } from "@/lib/respond";
 import { Variants } from "../frame";
 import type { Group } from "./types";
 
@@ -190,7 +190,6 @@ function Demo({ question, error }: { question: RespondQuestion; error?: string |
         question={question}
         number={2}
         value={value}
-        answered={isAnswered(question, value)}
         onValueChange={setValue}
         error={error}
         searchPeople={searchPeople}

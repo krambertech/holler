@@ -17,14 +17,7 @@ import { ProgressBar } from "@/components/ui/progress";
 import { ApiError, api } from "@/lib/api";
 import { cn } from "@/lib/cn";
 import { closesIn, count } from "@/lib/format";
-import {
-  answeredCount,
-  type Drafts,
-  draftOf,
-  isAnswered,
-  problemsOf,
-  toResponse,
-} from "@/lib/respond";
+import { answeredCount, type Drafts, draftOf, problemsOf, toResponse } from "@/lib/respond";
 
 export const Route = createFileRoute("/respond/$id")({
   validateSearch: z.object({
@@ -308,7 +301,6 @@ function OpenForm({ form, id, link, onSent }: OpenFormProps) {
                 className="scroll-mt-24 outline-none"
                 question={question}
                 value={draftOf(drafts, question.id)}
-                answered={isAnswered(question, draftOf(drafts, question.id))}
                 onValueChange={(next) => setDrafts((all) => ({ ...all, [question.id]: next }))}
                 error={problems[question.id]}
                 searchPeople={searchPeople}

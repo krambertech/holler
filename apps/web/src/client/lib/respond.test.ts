@@ -92,7 +92,7 @@ describe("problems", () => {
       q3: { ...emptyAnswer(), number: "9" },
     });
     expect(problems).toEqual({
-      q1: "Write your answer beside Other.",
+      q1: "Write your own answer.",
       q2: "This question needs an answer.",
       q3: "Enter a whole number from 1 to 7.",
     });
