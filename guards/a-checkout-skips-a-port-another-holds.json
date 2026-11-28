@@ -1,0 +1,14 @@
+{
+  "rule": "Two checkouts never pick the same e2e port while one of them holds it",
+  "layer": "test",
+  "past": "Every worktree ran its e2e server on 5290, so a second worktree's pnpm test:e2e met the first one's server; the first per-checkout ports collided too, since this worktree and a twin both hashed to 5431",
+  "check": "node --test e2e/own-server.test.mjs",
+  "break": [
+    {
+      "file": "e2e/own-server.mts",
+      "find": "if (!heldByAnotherCheckout(port, mine)) return port;",
+      "replace": "return port;"
+    }
+  ],
+  "fails": "skips a port another checkout holds"
+}

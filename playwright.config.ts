@@ -4,6 +4,8 @@ import { E2E_ORIGIN } from "./e2e/origin";
 // The product and the site on their own ports, with dev routes and an isolated local D1.
 export default defineConfig({
   testDir: "e2e",
+  testMatch: "*.spec.ts",
+  globalSetup: "./e2e/global-setup.ts",
   fullyParallel: true,
   forbidOnly: Boolean(process.env.CI),
   failOnFlakyTests: true,

@@ -6,6 +6,7 @@ import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 import { parseArgs } from "node:util";
+import { listenerDirectories } from "../../../../e2e/own-server.mts";
 
 const HELP = `Usage: node .agents/skills/verify/scripts/doctor.mjs [options]
 
@@ -33,23 +34,6 @@ function isLoopback(url) {
   return ["localhost", "127.0.0.1", "[::1]"].includes(new URL(url).hostname);
 }
 
-/** The working directory of whatever listens on a loopback port, via lsof (macOS and Linux). */
-function listenerDirectory(port) {
-  try {
-    const pids = execFileSync("lsof", ["-nP", `-iTCP:${port}`, "-sTCP:LISTEN", "-t"], {
-      encoding: "utf8",
-    })
-      .split("\n")
-      .filter(Boolean);
-    for (const pid of pids) {
-      const out = execFileSync("lsof", ["-a", "-p", pid, "-d", "cwd", "-Fn"], { encoding: "utf8" });
-      const line = out.split("\n").find((l) => l.startsWith("n"));
-      if (line) return line.slice(1);
-    }
-  } catch {}
-  return null;
-}
-
 function checkCommit(url, health, sha, version) {
   if (version) {
     // A preview alias reports no tag at runtime; its version id names the build of one commit.
@@ -67,7 +51,7 @@ function checkCommit(url, health, sha, version) {
   }
   // A local server has no tag; it serves whatever worktree it was started in.
   const port = new URL(url).port || "80";
-  const dir = listenerDirectory(port);
+  const [dir] = listenerDirectories(port);
   if (!dir) return { ok: false, detail: `nothing found listening on port ${port}` };
   const served = git(["rev-parse", "--show-toplevel"], dir);
   const mine = git(["rev-parse", "--show-toplevel"]);

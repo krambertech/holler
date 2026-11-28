@@ -1,5 +1,5 @@
 {
   "extends": "../tsconfig.base.json",
-  "compilerOptions": { "types": ["node"] },
-  "include": ["*.ts", "../playwright.config.ts"]
+  "compilerOptions": { "types": ["node"], "allowImportingTsExtensions": true },
+  "include": ["*.ts", "*.mts", "../playwright.config.ts"]
 }

@@ -6,6 +6,13 @@ import { defineConfig } from "vite";
 
 const isE2E = process.env.HOLLER_E2E === "1";
 
+function e2eOrigin() {
+  const origin = process.env.HOLLER_E2E_ORIGIN;
+  if (!origin)
+    throw new Error("Start the e2e server with node e2e/server.mjs, which sets HOLLER_E2E_ORIGIN.");
+  return origin;
+}
+
 export default defineConfig({
   plugins: [
     tanstackRouter({
@@ -26,7 +33,7 @@ export default defineConfig({
               config: {
                 vars: {
                   DEV_ROUTES: "true",
-                  PRODUCT_URL: process.env.HOLLER_E2E_ORIGIN ?? "http://localhost:5290",
+                  PRODUCT_URL: e2eOrigin(),
                   PUBLIC_SITE_URL: "http://localhost:5281",
                   BETTER_AUTH_SECRET: "holler-e2e-secret-at-least-thirty-two-characters",
                   SLACK_TOKEN_KEY: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
