@@ -1,6 +1,8 @@
 import { Search } from "lucide-react";
 import { useState } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
+import { DatePicker } from "@/components/ui/date-picker";
+import { DateTimeInput } from "@/components/ui/date-time-input";
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input, InputGroup } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -11,6 +13,19 @@ import type { Group } from "./types";
 
 const box = "w-full max-w-sm";
 
+const DAY = 24 * 3600_000;
+const mondayNine = (() => {
+  const at = new Date();
+  at.setHours(9, 0, 0, 0);
+  at.setTime(at.getTime() + ((8 - at.getDay()) % 7 || 7) * DAY);
+  return at;
+})();
+const yesterdayFive = (() => {
+  const at = new Date(Date.now() - DAY);
+  at.setHours(17, 0, 0, 0);
+  return at;
+})();
+
 function SwitchDemo() {
   const [on, setOn] = useState(true);
   return (
@@ -18,6 +33,19 @@ function SwitchDemo() {
       <FieldLabel>Anonymous</FieldLabel>
       <Switch checked={on} onCheckedChange={setOn} />
     </Field>
+  );
+}
+
+function DatePickerDemo({ start }: { start: Date | null }) {
+  const [value, setValue] = useState<Date | null>(start);
+  return (
+    <DatePicker
+      aria-label="Day"
+      className="w-56"
+      value={value}
+      min={new Date()}
+      onValueChange={({ year, month, day }) => setValue(new Date(year, month, day, 9))}
+    />
   );
 }
 
@@ -101,6 +129,60 @@ export const forms: Group = {
                 <InputGroup className={box} icon={<Search strokeWidth={2} />}>
                   <Input aria-label="Search hollers" placeholder="Search by title" />
                 </InputGroup>
+              ),
+            },
+          ]}
+        />
+      ),
+    },
+    {
+      slug: "date-picker",
+      name: "DatePicker",
+      source: "components/ui/date-picker.tsx",
+      note: "A day, picked from a month. The box shows the day in words; the calendar opens under it with the chosen day tinted and today ringed, and days before min cannot be picked. Arrows move a day or a week, Page Up and Page Down a month, Home and End the week's ends, Enter picks.",
+      Demo: () => (
+        <Variants
+          items={[
+            { label: "A day", render: () => <DatePickerDemo start={mondayNine} /> },
+            { label: "Nothing picked", render: () => <DatePickerDemo start={null} /> },
+          ]}
+        />
+      ),
+    },
+    {
+      slug: "date-time-input",
+      name: "DateTimeInput",
+      source: "components/ui/date-time-input.tsx",
+      note: "A day and a time. The day opens Holler's calendar; the time is Holler's list in 15-minute steps, and typing 9:30, 930 or 9pm picks any minute. Give it value and onValueChange, or a defaultValue to let it keep its own. inline hides the labels and sits the two boxes side by side, for a row that names them itself.",
+      Demo: () => (
+        <Variants
+          items={[
+            {
+              label: "A time",
+              render: () => <DateTimeInput defaultValue={mondayNine} min={new Date()} />,
+            },
+            {
+              label: "Inline, for a row",
+              render: () => <DateTimeInput inline defaultValue={mondayNine} min={new Date()} />,
+            },
+            {
+              label: "In a Field with an error",
+              note: "Both boxes take the Field's error as their description and turn red.",
+              render: () => (
+                <Field className={box}>
+                  <FieldLabel>Closes</FieldLabel>
+                  <DateTimeInput defaultValue={yesterdayFive} min={new Date()} />
+                  <FieldError>Pick a time after it sends.</FieldError>
+                </Field>
+              ),
+            },
+            {
+              label: "In a disabled Field",
+              render: () => (
+                <Field disabled className={box}>
+                  <FieldLabel>Sends</FieldLabel>
+                  <DateTimeInput defaultValue={mondayNine} />
+                </Field>
               ),
             },
           ]}

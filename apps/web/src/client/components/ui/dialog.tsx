@@ -93,6 +93,7 @@ const sizes = {
   sm: "w-[min(92vw,420px)]",
   md: "w-[min(92vw,480px)]",
   lg: "w-[min(92vw,560px)]",
+  xl: "w-[min(92vw,800px)]",
 };
 
 interface ContentProps extends React.ComponentProps<"div"> {
@@ -148,7 +149,14 @@ function DialogContent({ className, size = "sm", children, ...props }: ContentPr
 
 function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
   return useDialogShape("DialogHeader") === "desktop" ? (
-    <div data-slot="dialog-header" className={cn("grid gap-2", className)} {...props} />
+    <div
+      data-slot="dialog-header"
+      className={cn(
+        "sticky -top-5 z-(--z-sticky) -mx-5 -mt-5 grid gap-2 bg-plate px-5 pt-5 pb-1",
+        className,
+      )}
+      {...props}
+    />
   ) : (
     <DrawerHeader data-slot="dialog-header" className={cn("gap-2 p-0", className)} {...props} />
   );
@@ -159,7 +167,10 @@ function DialogFooter({ className, ...props }: React.ComponentProps<"div">) {
   return useDialogShape("DialogFooter") === "desktop" ? (
     <div
       data-slot="dialog-footer"
-      className={cn("mt-1 flex flex-row justify-end gap-2", className)}
+      className={cn(
+        "sticky -bottom-5 z-(--z-sticky) -mx-5 -mb-5 mt-1 flex flex-row justify-end gap-2 bg-plate px-5 pt-3 pb-5",
+        className,
+      )}
       {...props}
     />
   ) : (

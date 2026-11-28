@@ -1,0 +1,14 @@
+{
+  "rule": "The send button says about when groups make the count approximate, as the count above it does",
+  "layer": "test",
+  "past": "#61: with @design in the audience the count read About 9 people while the button read Send to 9 people",
+  "check": "cd apps/web && pnpm exec vitest run src/client/components/editor/send/send-logic.test.ts -t 'names the reach'",
+  "break": [
+    {
+      "file": "apps/web/src/client/components/editor/send/send-logic.ts",
+      "find": "  if (!reach.exact)\n    return scheduled ? `Schedule for about ${n} people` : `Send to about ${n} people`;\n",
+      "replace": ""
+    }
+  ],
+  "fails": "Send to about 14 people"
+}

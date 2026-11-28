@@ -1,0 +1,14 @@
+{
+  "rule": "The editor reads a send time on the sender's Slack time zone, the clock delivery uses",
+  "layer": "test",
+  "past": "#61 review: the editor read the time on the browser's clock while delivery read it on the creator's Slack clock, so a per-zone send went out at a different hour than the preview showed",
+  "check": "cd apps/web && pnpm exec vitest run src/client/components/editor/send/send-logic.test.ts -t \"reads send times on the sender's Slack time zone\"",
+  "break": [
+    {
+      "file": "apps/web/src/client/components/editor/send/send-logic.ts",
+      "find": "  return isTimeZone(slackZone) ? slackZone : browserZone;",
+      "replace": "  return slackZone && false ? slackZone : browserZone;"
+    }
+  ],
+  "fails": "reads send times on the sender's Slack time zone"
+}

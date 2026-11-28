@@ -1,5 +1,4 @@
 import {
-  earliestInstantOf,
   hollerTitle,
   nextReminder,
   type ReminderTone,
@@ -36,11 +35,13 @@ import {
   sharedMessage,
 } from "../slack/blocks/messages";
 import { type PostMessage, SlackApiError, type SlackClient } from "../slack/client";
+import { membersFromSlack, resolveAudience } from "./audience";
 import { activityOf, recordChange, takeBack } from "./audit";
 import { type ServiceContext, ServiceError } from "./context";
 import { getHoller, presentQuestion, sendProblems } from "./hollers";
 import { respondUrl } from "./respond-links";
 import { nextRound } from "./rounds";
+import { creatorOf, goesLiveAt, timeZoneOf } from "./send-clock";
 import { slackFor } from "./slack-connection";
 import { claimSlackDelivery, releaseSlackDelivery } from "./slack-deliveries";
 import { assertCanSend } from "./usage";
@@ -227,37 +228,6 @@ function assertSendable(problems: { message: string; field?: string | null | und
   );
 }
 
-async function timeZoneOf(db: Db, workspaceId: string, slackUserId: string) {
-  const person = await db.query.slackPeople.findFirst({
-    where: and(eq(slackPeople.workspaceId, workspaceId), eq(slackPeople.slackUserId, slackUserId)),
-    columns: { timeZone: true },
-  });
-  return person?.timeZone ?? null;
-}
-
-async function creatorOf(db: Db, holler: { workspaceId: string; creatorId: string }) {
-  const creator = await db.query.members.findFirst({
-    where: eq(members.id, holler.creatorId),
-    columns: { slackUserId: true },
-  });
-  if (!creator) throw new Error(`Holler creator ${holler.creatorId} has no member row`);
-  return {
-    slackUserId: creator.slackUserId,
-    timeZone: await timeZoneOf(db, holler.workspaceId, creator.slackUserId),
-  };
-}
-
-/** When a Holler with a send time goes live: that time, or for a per-zone send the first zone's. */
-function goesLiveAt(
-  holler: { sendAt: Date | null; sendInRecipientTimeZone: boolean },
-  creatorZone: string | null,
-) {
-  if (!holler.sendAt) return null;
-  return holler.sendInRecipientTimeZone
-    ? earliestInstantOf(holler.sendAt, creatorZone)
-    : holler.sendAt;
-}
-
 /**
  * Sends a Holler now, or schedules it when its send time is still ahead. Refuses with every send
  * problem at once, or `limit_reached` when Free has used this month's hollers.
@@ -302,51 +272,6 @@ export async function sendHoller(
 }
 
 /**
- * Who a Holler goes to: people by name, the members of user groups and channels, or everyone.
- * Only people in the directory who are not bots and have not left. The first way a person was
- * chosen is kept, so `added_via` gives the most specific reason.
- */
-async function resolveAudience(
-  db: Db,
-  slack: SlackClient,
-  workspaceId: string,
-  audience: HollerDetail["audience"],
-): Promise<Map<string, string>> {
-  const chosen = new Map<string, string>();
-  const add = (slackUserId: string, via: string) => {
-    if (!chosen.has(slackUserId)) chosen.set(slackUserId, via);
-  };
-  for (const person of audience.people) add(person, "person");
-  for (const group of audience.groups) {
-    // User group ids start with S; anything else is a channel.
-    if (group.startsWith("S")) {
-      for (const person of await slack.userGroupMembers(group)) add(person, `group:${group}`);
-      continue;
-    }
-    let cursor: string | undefined;
-    do {
-      const page = await slack.channelMembers(group, cursor);
-      for (const person of page.members) add(person, `group:${group}`);
-      cursor = page.nextCursor || undefined;
-    } while (cursor);
-  }
-  const directory = await db
-    .select({ slackUserId: slackPeople.slackUserId })
-    .from(slackPeople)
-    .where(
-      and(
-        eq(slackPeople.workspaceId, workspaceId),
-        eq(slackPeople.isBot, false),
-        eq(slackPeople.isDeleted, false),
-      ),
-    );
-  const reachable = new Set(directory.map((row) => row.slackUserId));
-  if (audience.everyone) for (const person of reachable) add(person, "everyone");
-  for (const person of chosen.keys()) if (!reachable.has(person)) chosen.delete(person);
-  return chosen;
-}
-
-/**
  * Resolves the audience, writes the recipients, marks the Holler live and queues the invites due
  * now. The status guard means two sends at once go out once: the loser gets `conflict`.
  */
@@ -359,6 +284,7 @@ async function goLive(
     audience: HollerDetail["audience"];
     sendAt: Date | null;
     sendInRecipientTimeZone: boolean;
+    closesAt: Date | null;
     closeAfterHours: number;
     announceChannelId: string | null;
   },
@@ -366,7 +292,12 @@ async function goLive(
 ): Promise<void> {
   const now = ctx.now();
   const slack = await slackFor(env, ctx.db, ctx.workspaceId);
-  const audience = await resolveAudience(ctx.db, slack, ctx.workspaceId, holler.audience);
+  const audience = await resolveAudience(
+    ctx.db,
+    membersFromSlack(slack),
+    ctx.workspaceId,
+    holler.audience,
+  );
   if (audience.size === 0) {
     throw new ServiceError(
       "invalid",
@@ -374,17 +305,9 @@ async function goLive(
       "audience",
     );
   }
-  const zones = new Map<string, string | null>();
-  if (holler.sendInRecipientTimeZone) {
-    const rows = await ctx.db
-      .select({ slackUserId: slackPeople.slackUserId, timeZone: slackPeople.timeZone })
-      .from(slackPeople)
-      .where(eq(slackPeople.workspaceId, ctx.workspaceId));
-    for (const row of rows) zones.set(row.slackUserId, row.timeZone);
-  }
   const theirTime = (at: Date, slackUserId: string) =>
     holler.sendInRecipientTimeZone
-      ? sameWallClockIn(at, creatorZone, zones.get(slackUserId) ?? null)
+      ? sameWallClockIn(at, creatorZone, audience.get(slackUserId)?.timeZone ?? null)
       : at;
   const sendAtFor = (slackUserId: string) => {
     if (!holler.sendInRecipientTimeZone || !holler.sendAt) return now;
@@ -392,7 +315,7 @@ async function goLive(
     // Someone whose time already passed gets it at once.
     return new Date(Math.max(theirs.getTime(), now.getTime()));
   };
-  const rows = [...audience].map(([slackUserId, addedVia]) => {
+  const rows = [...audience].map(([slackUserId, { addedVia }]) => {
     const sendAt = sendAtFor(slackUserId);
     return { slackUserId, addedVia, sendAt, invitedAt: sendAt <= now ? now : null };
   });
@@ -401,7 +324,8 @@ async function goLive(
   const nextInvite = next
     ? Math.min(...rows.map((row) => theirTime(next.sendAt, row.slackUserId).getTime()))
     : Number.POSITIVE_INFINITY;
-  const closesAt = new Date(Math.min(lastSend + holler.closeAfterHours * HOUR, nextInvite));
+  const closes = holler.closesAt?.getTime() ?? lastSend + holler.closeAfterHours * HOUR;
+  const closesAt = new Date(Math.min(closes, nextInvite));
 
   const sent = activityOf(ctx, {
     action: "holler.sent",

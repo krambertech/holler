@@ -45,7 +45,7 @@ function AppLayout() {
   // Settings says it in the workspace's own plate, with the button beside it.
   const onSettings = useLocation({ select: (l) => l.pathname === "/settings" });
   return (
-    <div className="mx-auto flex w-full max-w-[880px] flex-col gap-6 px-4 pt-6 pb-12 sm:px-10 sm:pt-7 lg:px-20">
+    <div className="mx-auto flex min-h-dvh w-full max-w-[880px] flex-col gap-6 px-4 pt-6 pb-12 sm:px-10 sm:pt-7 lg:px-20">
       <AppHeader me={me?.member} workspaceName={me?.workspace.name} onSignOut={signOut} />
       {me && !me.workspace.installed && !onSettings && (
         <UninstalledNotice
@@ -53,7 +53,7 @@ function AppLayout() {
           deletesAt={me.workspace.deletesAt}
         />
       )}
-      <main className="flex flex-col gap-6">
+      <main className="flex flex-1 flex-col gap-6">
         <Outlet />
       </main>
     </div>

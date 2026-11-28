@@ -144,6 +144,7 @@ function AnchoredContent({
   return (
     <MenuPrimitive.Portal>
       <MenuPrimitive.Positioner
+        positionMethod="fixed"
         className="isolate z-(--z-dropdown) outline-none"
         align={align}
         side={side}
@@ -458,15 +459,19 @@ function DropdownMenuRadioGroup({
 
 interface RadioItemProps extends RowProps {
   value: string;
+  disabled?: boolean | undefined;
   /** False when the menu holds more to choose, such as a filter menu. */
   closeOnClick?: boolean | undefined;
+  checkmark?: boolean | undefined;
 }
 
 /** One of a set. Choosing it closes the menu, unless the set sits among other choices. */
 function DropdownMenuRadioItem({
   ref,
   value,
+  disabled = false,
   closeOnClick = true,
+  checkmark = true,
   className,
   children,
   ...props
@@ -483,10 +488,11 @@ function DropdownMenuRadioItem({
         {...props}
         ref={ref as React.Ref<HTMLDivElement> | undefined}
         value={value}
+        disabled={disabled}
         closeOnClick={closeOnClick}
-        className={cn(itemClassName, "ps-9", className)}
+        className={cn(itemClassName, checkmark && "ps-9", className)}
       >
-        <ItemCheck checked={checked} />
+        {checkmark && <ItemCheck checked={checked} />}
         {children}
       </MenuPrimitive.RadioItem>
     );
@@ -496,6 +502,7 @@ function DropdownMenuRadioItem({
       type="button"
       role="menuitemradio"
       aria-checked={checked}
+      disabled={disabled}
       tabIndex={-1}
       {...mergeProps<"button">(
         {
@@ -508,9 +515,9 @@ function DropdownMenuRadioItem({
       )}
       ref={ref as React.Ref<HTMLButtonElement> | undefined}
       data-slot="dropdown-menu-radio-item"
-      className={cn(itemClassName, touchRowClassName, "ps-9", className)}
+      className={cn(itemClassName, touchRowClassName, checkmark && "ps-9", className)}
     >
-      <ItemCheck checked={checked} />
+      {checkmark && <ItemCheck checked={checked} />}
       {children}
     </button>
   );

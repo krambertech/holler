@@ -48,18 +48,15 @@ test("Export downloads every response as CSV", async ({ page }) => {
   expect(file.suggestedFilename()).toMatch(/^holler-hol_.+\.csv$/);
 });
 
-test("Copy into a new draft opens the draft it made", async ({ page }) => {
+test("Copy into a new draft opens the copy in the editor", async ({ page }) => {
   await signInAs(page, "lead");
   const live = page.getByRole("region", { name: /^Live \d+$/ });
-  const href = await live.getByRole("link", { name: "How was your week?" }).getAttribute("href");
-  const madeId = href?.split("/").at(-1) ?? "";
-  await page.route("**/api/hollers/*/copy", (route) => route.fulfill({ json: { id: madeId } }));
   await live.getByRole("link", { name: "Offsite: which dates work?" }).click();
   await page.getByRole("button", { name: "More for this Holler" }).click();
   await page.getByRole("menuitem", { name: "Copy into a new draft" }).click();
-  await expect(page).toHaveURL(new RegExp(`/hollers/${madeId}$`));
+  await expect(page).toHaveURL(/\/new\?draft=hol_/);
   await expect(page.getByText("Copied into a new draft.")).toBeVisible();
-  await expect(page.getByRole("heading", { level: 1, name: "How was your week?" })).toBeVisible();
+  await expect(page.getByRole("textbox", { name: "Title" })).toHaveValue(/Offsite/);
 });
 
 test("Send reminder wakes up when the wait between reminders ends", async ({ page }) => {

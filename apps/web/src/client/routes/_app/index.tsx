@@ -1,6 +1,6 @@
 import type { HollerSummary } from "@holler/core";
 import { useQuery } from "@tanstack/react-query";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Plus, Search, X } from "lucide-react";
 import { useState } from "react";
 import { z } from "zod";
@@ -15,9 +15,6 @@ import { Plate, PlateStrip } from "@/components/ui/plate";
 import { Segmented, SegmentedItem } from "@/components/ui/segmented";
 import { count } from "@/lib/format";
 import { hollersQuery, homeCountsQuery } from "@/lib/queries";
-import { waitingFor } from "@/pages";
-
-const newHoller = waitingFor("#11", "/new");
 
 const searchSchema = z.object({
   tab: z.enum(["mine", "shared"]).optional().catch(undefined),
@@ -58,7 +55,7 @@ function Home() {
             {searching ? <X aria-hidden strokeWidth={2} /> : <Search aria-hidden strokeWidth={2} />}
           </Button>
           {/* The editor owns /new; until it lands this link reaches the not-found page. */}
-          <Button variant={firstVisit ? "secondary" : "primary"} render={<a href={newHoller} />}>
+          <Button variant={firstVisit ? "secondary" : "primary"} render={<Link to="/new" />}>
             <Plus aria-hidden strokeWidth={2} />
             New holler
           </Button>
@@ -267,7 +264,7 @@ function EmptyList({
       title="Ask your team something"
       description="Holler sends your question to each person in Slack, reminds the ones who have not answered, and shows you the results here."
       action={
-        <Button variant="primary" render={<a href={newHoller} />}>
+        <Button variant="primary" render={<Link to="/new" />}>
           New holler
         </Button>
       }

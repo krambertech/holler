@@ -152,6 +152,13 @@ describe("sendHoller", () => {
     });
   });
 
+  it("keeps a close time the sender fixed instead of the default duration", async () => {
+    const fixed = at(7 * DAY);
+    const { ctx, env, holler } = await setup({ closesAt: fixed, closeAfterHours: 72 });
+    const sent = await sendHoller(ctx, env, holler.id);
+    expect(sent).toMatchObject({ status: "live", closesAt: fixed });
+  });
+
   it("records the send in Activity", async () => {
     const { ctx, env, holler } = await setup();
     await sendHoller(ctx, env, holler.id);

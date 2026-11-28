@@ -26,6 +26,10 @@ colors:
   deep-plum: "#3d1233"
   pink: "#d9499a"
   soft-pink: "#f29bd0"
+  slack-red: "#e01d5a"
+  slack-blue: "#37c5f0"
+  slack-green: "#2eb67d"
+  slack-yellow: "#ecb22d"
   live: "#fce1ef"
   live-ink: "#822155"
   live-dot: "#d9499a"
@@ -151,7 +155,7 @@ Numbers in tables and counts use `tabular`.
 | `Field`, `Input`, `Textarea` | `components/ui/field.tsx`, `input.tsx`, `textarea.tsx` | One box for every text control; label above, description or error below, wired by context |
 | `Checkbox`, `Switch`, `RadioGroup` | `components/ui/` | Checkbox applies on save; Switch acts at once; RadioGroup for a few visible choices |
 | `Select`, `Combobox` | `components/ui/select.tsx`, `combobox.tsx` | A list behind a control; a sheet on touch. Combobox when the list needs search |
-| `DropdownMenu`, `Popover`, `Tooltip` | `components/ui/` | What floats over the page: plate plus `shadow-float`, growing from the control |
+| `DropdownMenu`, `Popover`, `Tooltip` | `components/ui/` | What floats over the page: plate plus `shadow-float`, growing from the control. A menu item that cannot be chosen stays in the list, disabled, and its row says why |
 | `Dialog`, `Toast` | `components/ui/dialog.tsx`, `toast.tsx` | Dialog asks before what cannot be undone; anything undoable gets a toast with Undo |
 | `EmptyState`, `ErrorState` | `components/empty-state.tsx`, `error-state.tsx` | Nothing yet, nothing matched, or a failure. Sizes `sm`, `md`, `lg` follow the space; `plate`, `dashed` for no results, `bare` inside a surface |
 | `Illustration` | `components/illustration.tsx` | A spot drawing from the set in `packages/design/src/illustrations.ts`, sized and toned by the state around it |

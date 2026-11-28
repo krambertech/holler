@@ -1,0 +1,14 @@
+{
+  "rule": "A row in a menu, select or combobox grows with its text instead of clipping a second line",
+  "layer": "test",
+  "past": "#61: the mode menu's two-line descriptions spilled into the next row on desktop, because the shared row fixed its height with md:h-10, which a row's h-auto does not override",
+  "check": "cd apps/web && pnpm exec vitest run src/client/components/ui/overlay-list.test.ts",
+  "break": [
+    {
+      "file": "apps/web/src/client/components/ui/overlay-list.tsx",
+      "find": "outline-none select-none md:min-h-10 md:text-base",
+      "replace": "outline-none select-none md:h-10 md:text-base"
+    }
+  ],
+  "fails": "grows with two lines of text"
+}

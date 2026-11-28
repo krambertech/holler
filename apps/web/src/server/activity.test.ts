@@ -16,7 +16,7 @@ import { applyPolarEvent } from "./services/billing";
 import type { ServiceContext } from "./services/context";
 import { remindWaiting, sendDueHollers, sendHoller } from "./services/delivery";
 import { workspaceFixture } from "./services/fixtures";
-import { createDraft } from "./services/hollers";
+import { createDraft, updateDraft } from "./services/hollers";
 import { closeDueHollers } from "./services/lifecycle";
 import { ensureMember } from "./services/members";
 import { snoozeReminder } from "./services/reminders";
@@ -294,6 +294,8 @@ const routeProofs: Record<string, Proof> = {
 const unrecordedRoutes: Record<string, string> = {
   "PUT /api/hollers/:id": "a draft saves itself while it is written; its send is recorded",
   "PUT /api/v1/hollers/:id": "a draft saves itself while it is written; its send is recorded",
+  "POST /api/directory/resolve": "reads the directory to match pasted names; it changes nothing",
+  "POST /api/directory/reach": "counts who an audience reaches, asking Slack; it changes nothing",
   "POST /api/respond/:id": "an answer is the response itself, and Activity never says who answered",
   "POST /api/billing/checkout":
     "opens Polar; its webhook changes the plan, through applyPolarEvent",
@@ -347,6 +349,15 @@ const serviceProofs: Record<string, Proof> = {
     "holler.scheduled",
     () => draft({ sendAt: inAnHour() }),
     (id) => sendHoller(world.ctx, world.env, id),
+  ),
+  "clearing a scheduled Holler's send time puts it back to draft": proof(
+    "holler.unscheduled",
+    async () => {
+      const id = await draft({ sendAt: inAnHour() });
+      await sendHoller(world.ctx, world.env, id);
+      return id;
+    },
+    (id) => updateDraft(world.ctx, id, { ...pulse, sendAt: null }),
   ),
   "the cron sends a Holler that is due": proof(
     "holler.sent",

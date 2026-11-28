@@ -6,8 +6,8 @@
   "break": [
     {
       "file": "apps/web/src/server/services/directory.ts",
-      "find": "sql`instr(${column}, ${q}) > 0`",
-      "replace": "sql`instr(lower(${column}), ${q}) > 0`"
+      "find": "sql`instr(${column}, ${token}) > 0`",
+      "replace": "sql`instr(lower(${column}), ${token}) > 0`"
     }
   ],
   "fails": "holler(no-sql-lower)"

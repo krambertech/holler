@@ -1,0 +1,14 @@
+{
+  "rule": "Escape in the audience field never clears who is chosen",
+  "layer": "test",
+  "past": "#15: Base UI's combobox input sets the value to [] on Escape while its list is unmounted, which took every chip away, so the field swallows Escape when the list is shut",
+  "check": "cd apps/web && pnpm exec vitest run src/client/components/editor/send/audience-logic.test.ts -t 'never lets Escape clear the chips'",
+  "break": [
+    {
+      "file": "apps/web/src/client/components/editor/send/audience-logic.ts",
+      "find": "[\"Escape\", (k) => (k.open ? \"close\" : \"swallow\")],",
+      "replace": "[\"Escape\", (k) => (k.open ? \"close\" : null)],"
+    }
+  ],
+  "fails": "never lets Escape clear the chips"
+}

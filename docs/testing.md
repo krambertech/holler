@@ -29,6 +29,7 @@ pnpm verify
 
 - `packages/core`: pure rules. Results maths, the anonymous gate, the reminder rhythm, plan limits, the API schemas.
 - `packages/design`: every text pair in `src/pairs.ts` meets its WCAG floor in both themes, and the OS dark block matches the `[data-theme="dark"]` block token for token.
+- `apps/web/src/client` logic with no React, such as the editor's draft and send rules: in the server's Vitest run, which maps `@` to the client so these files import as the app does.
 - `apps/web/src/server`: services against a real local D1 with every migration applied (`testDb()` in `test-db.ts`). Each file boots its own. Use `workspaceFixture()` for a workspace and a member, and `FakeSlack` instead of slack.com.
 
 Anything that sends uses `deliveryEnv()` in `test-delivery.ts`: its queue refuses what Cloudflare Queues would (over 100 messages or 256 KB a batch), can refuse a kind of send or fail midway, and `drain(at)` runs the consumer by hand. Tests run shuffled, in the same order every run (`apps/web/vitest.config.ts`), so each test sets up what it reads: a file whose tests run the cron's passes calls `emptyDatabase()` before each test, because a pass reads every workspace, and a dev route test signs in with `reset=1`. Try another order with `--sequence.seed=<n>`. Fix the clock: pass a `now` to `workspaceFixture()`, and `vi.setSystemTime` for a route that reads it.
@@ -61,6 +62,10 @@ Each checkout runs its journeys on its own port, so two worktrees run `pnpm test
 Every test has its own workspace. `e2e/fixtures.ts` sends a random `x-holler-dev-workspace` key with each request, and dev sign-in makes and seeds that workspace with every persona. A test can change anything, in both browsers at once. Use `signInAs(page, persona)` for a page and the `requestAs` fixture for API calls; both use the test's own workspace. `/api/dev/tick` refuses a keyed caller, because a tick runs every workspace. A flaky test fails: `failOnFlakyTests` is on and `holler/no-flaky-escape` refuses retries, sleeps and bare skips.
 
 Personas are in `apps/web/src/server/services/dev-seed.ts`: `lead` has live, scheduled and closed hollers; `sender` has sent nothing, for the empty states. `routes/dev-concurrency.test.ts` fires first sign-ins at once and checks that each succeeds and the seed lands once.
+
+Another worker's sign-in can re-seed the workspace mid-test, so a journey reads back what it made by id (`e2e/editor.spec.ts` asks `/api/hollers/<id>`), never from a list on Home. Axe reads colours mid-fade as low contrast, so run it once a list or dialog has settled. Base UI hides a toast's close button from screen readers until the toasts expand, so `e2e/audience.spec.ts` finds it by `data-slot="toast-close"`, not by role.
+
+The design site drives the real editor with fakes: `design/parts/editor.tsx` passes an in-memory server that saves, flags problems and refuses as the API does, and dated demos such as the one in `design/parts/forms.tsx` fall on the next Monday at nine, so none shows a time already gone.
 
 ## Proving a change in the browser
 

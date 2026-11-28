@@ -71,6 +71,11 @@ const sentences: Record<ActivityAction, (entry: ActivityEntry) => ReactNode> = {
       {who(e)} scheduled <HollerTitle entry={e} last />
     </>
   ),
+  "holler.unscheduled": (e) => (
+    <>
+      {who(e)} took <HollerTitle entry={e} /> off the schedule.
+    </>
+  ),
   "holler.sent": (e) =>
     e.detail.count === undefined ? (
       <>

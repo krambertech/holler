@@ -1,0 +1,14 @@
+{
+  "rule": "A select, combobox or menu list is placed against the window, so opening one inside a dialog never scrolls the page behind it",
+  "layer": "browser",
+  "past": "#61: opening Closes in the send dialog scrolled the editor behind it to the bottom, because the list was placed against the page and focusing it scrolled the page to reach it",
+  "check": "pnpm exec playwright test --project=chromium --retries=0 -g 'leaves the page behind it where it was'",
+  "break": [
+    {
+      "file": "apps/web/src/client/components/ui/select.tsx",
+      "find": "      <SelectPrimitive.Positioner\n        positionMethod=\"fixed\"\n",
+      "replace": "      <SelectPrimitive.Positioner\n"
+    }
+  ],
+  "fails": "leaves the page behind it where it was"
+}

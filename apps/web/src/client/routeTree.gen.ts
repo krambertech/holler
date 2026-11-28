@@ -14,6 +14,7 @@ import { Route as ConsentRouteImport } from './routes/consent'
 import { Route as InstallRouteImport } from './routes/install'
 import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
+import { Route as AppNewRouteImport } from './routes/_app/new'
 import { Route as AppSettingsRouteImport } from './routes/_app/settings'
 import { Route as ReportTokenRouteImport } from './routes/report.$token'
 import { Route as RespondIdRouteImport } from './routes/respond.$id'
@@ -43,6 +44,11 @@ const SignInRoute = SignInRouteImport.update({
 const AppIndexRoute = AppIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppNewRoute = AppNewRouteImport.update({
+  id: '/new',
+  path: '/new',
   getParentRoute: () => AppRoute,
 } as any)
 const AppSettingsRoute = AppSettingsRouteImport.update({
@@ -81,6 +87,7 @@ export interface FileRoutesByFullPath {
   '/consent': typeof ConsentRoute
   '/install': typeof InstallRoute
   '/sign-in': typeof SignInRoute
+  '/new': typeof AppNewRoute
   '/settings': typeof AppSettingsRoute
   '/report/$token': typeof ReportTokenRoute
   '/respond/$id': typeof RespondIdRoute
@@ -92,6 +99,7 @@ export interface FileRoutesByTo {
   '/consent': typeof ConsentRoute
   '/install': typeof InstallRoute
   '/sign-in': typeof SignInRoute
+  '/new': typeof AppNewRoute
   '/settings': typeof AppSettingsRoute
   '/report/$token': typeof ReportTokenRoute
   '/respond/$id': typeof RespondIdRoute
@@ -106,6 +114,7 @@ export interface FileRoutesById {
   '/consent': typeof ConsentRoute
   '/install': typeof InstallRoute
   '/sign-in': typeof SignInRoute
+  '/_app/new': typeof AppNewRoute
   '/_app/settings': typeof AppSettingsRoute
   '/report/$token': typeof ReportTokenRoute
   '/respond/$id': typeof RespondIdRoute
@@ -121,6 +130,7 @@ export interface FileRouteTypes {
     | '/consent'
     | '/install'
     | '/sign-in'
+    | '/new'
     | '/settings'
     | '/report/$token'
     | '/respond/$id'
@@ -132,6 +142,7 @@ export interface FileRouteTypes {
     | '/consent'
     | '/install'
     | '/sign-in'
+    | '/new'
     | '/settings'
     | '/report/$token'
     | '/respond/$id'
@@ -145,6 +156,7 @@ export interface FileRouteTypes {
     | '/consent'
     | '/install'
     | '/sign-in'
+    | '/_app/new'
     | '/_app/settings'
     | '/report/$token'
     | '/respond/$id'
@@ -200,6 +212,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppIndexRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/new': {
+      id: '/_app/new'
+      path: '/new'
+      fullPath: '/new'
+      preLoaderRoute: typeof AppNewRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/settings': {
       id: '/_app/settings'
       path: '/settings'
@@ -246,6 +265,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AppRouteChildren {
+  AppNewRoute: typeof AppNewRoute
   AppSettingsRoute: typeof AppSettingsRoute
   AppIndexRoute: typeof AppIndexRoute
   AppAnswersIdRoute: typeof AppAnswersIdRoute
@@ -254,6 +274,7 @@ interface AppRouteChildren {
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppNewRoute: AppNewRoute,
   AppSettingsRoute: AppSettingsRoute,
   AppIndexRoute: AppIndexRoute,
   AppAnswersIdRoute: AppAnswersIdRoute,

@@ -282,6 +282,7 @@ function AnchoredContent({
   return (
     <ComboboxPrimitive.Portal>
       <ComboboxPrimitive.Positioner
+        positionMethod="fixed"
         className="isolate z-(--z-dropdown) outline-none"
         side={side}
         align={align}

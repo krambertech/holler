@@ -278,6 +278,7 @@ function AnchoredContent({
   return (
     <SelectPrimitive.Portal>
       <SelectPrimitive.Positioner
+        positionMethod="fixed"
         className="isolate z-(--z-dropdown) outline-none"
         side={side}
         align={align}
