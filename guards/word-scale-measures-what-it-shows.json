@@ -1,0 +1,14 @@
+{
+  "rule": "A worded scale decides whether it fits one row by measuring the same labels its tiles show",
+  "layer": "browser",
+  "past": "#64 review: the ruler measured each option's bare label while the tiles showed it with the scale's end words, so a scale with long end words overflowed a phone instead of stacking",
+  "check": "pnpm exec playwright test --project=chromium -g 'a worded scale whose end words'",
+  "break": [
+    {
+      "file": "apps/web/src/client/components/respond/answer-scales.tsx",
+      "find": "              {tile.label}\n            </span>",
+      "replace": "              {tile.label.split(\",\")[0]}\n            </span>"
+    }
+  ],
+  "fails": "toBeLessThanOrEqual"
+}

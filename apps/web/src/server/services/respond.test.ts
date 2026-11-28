@@ -291,7 +291,7 @@ describe("the form", () => {
     ).rejects.toMatchObject({
       code: "invalid",
       field: where?.id,
-      message: "Write your answer beside Other.",
+      message: "Write your own answer.",
     });
   });
 });

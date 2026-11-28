@@ -140,7 +140,7 @@ describe("the answer modal", () => {
     });
     expect(outcome).toEqual({
       status: "invalid",
-      message: "Write your answer beside Other.",
+      message: "Write your own answer.",
       questionId: where?.id,
     });
   });

@@ -52,17 +52,6 @@
       }
     },
     {
-      "files": ["apps/web/src/client/components/respond/answer-question.tsx"],
-      "rules": {
-        "eslint/max-lines": [
-          "error",
-          {
-            "max": 600
-          }
-        ]
-      }
-    },
-    {
       "files": ["apps/web/src/client/components/ui/combobox.tsx"],
       "rules": {
         "eslint/max-lines": [

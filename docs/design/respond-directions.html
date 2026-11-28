@@ -1,0 +1,743 @@
+<!doctype html>
+<html lang="en" data-center="on">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Answer page directions</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geologica:wght@300;330;400;500;600&display=swap">
+<style>
+:root {
+  --canvas: oklch(0.974 0.003 67.8); --plate: oklch(1 0 0); --well: oklch(0.956 0.006 84.6); --track: oklch(0.941 0.007 80.7);
+  --hover: oklch(0.2 0.01 53.5 / 0.055); --edge: oklch(0.2 0.029 60.5 / 0.1); --edge-2: oklch(0.2 0.029 60.5 / 0.14); --edge-3: oklch(0.2 0.029 60.5 / 0.26);
+  --divider: oklch(0.2 0.029 60.5 / 0.08);
+  --float: 0 0 0 1px oklch(0.2 0.029 60.5 / 0.12), 0 12px 32px -12px oklch(0.2 0.029 60.5 / 0.28);
+  --ink: oklch(0.2 0.016 53.5); --ink-2: oklch(0.379 0.016 55.9); --muted: oklch(0.495 0.019 52.3); --faint: oklch(0.604 0.017 54.8);
+  --primary: oklch(0.426 0.134 337.6); --primary-hover: oklch(0.38 0.125 337.6); --on-primary: oklch(1 0 0);
+  --tint: oklch(0.929 0.028 334.9); --tint-ink: oklch(0.347 0.113 337.5); --focus: oklch(0.426 0.134 337.6);
+  --plum: oklch(0.426 0.134 337.6); --soft-pink: oklch(0.793 0.122 343); --pink: oklch(0.628 0.196 349.5);
+  --answered: oklch(0.932 0.027 148.8); --answered-ink: oklch(0.401 0.083 157.9); --answered-dot: oklch(0.515 0.11 156.8);
+  --waiting: oklch(0.944 0.049 86.4); --waiting-ink: oklch(0.434 0.09 79.3); --waiting-dot: oklch(0.6 0.13 70);
+  --closed: var(--well); --closed-ink: var(--ink-2); --closed-dot: var(--muted);
+  --danger: oklch(0.932 0.028 25.9); --danger-ink: oklch(0.424 0.149 28.5);
+  --avatar-1: oklch(0.916 0.034 262); --avatar-1-ink: oklch(0.365 0.115 263);
+  --avatar-2: oklch(0.927 0.035 52); --avatar-2-ink: oklch(0.414 0.109 42.7);
+  --avatar-4: oklch(0.932 0.027 148.8); --avatar-4-ink: oklch(0.401 0.083 157.9);
+  --illo-grid: var(--edge-2); --illo-object: var(--plate); --illo-bar: oklch(0.912 0.009 72); --illo-line: oklch(0.2 0.029 60.5 / 0.3);
+  --illo-warning: var(--waiting); --illo-warning-ink: var(--waiting-ink);
+  --weight-body: 300;
+  --font: "Geologica", ui-sans-serif, system-ui, sans-serif;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+}
+:root[data-theme="dark"] {
+  color-scheme: dark; --weight-body: 330;
+  --canvas: oklch(0.187 0.013 338.6); --plate: oklch(0.232 0.019 334.1); --well: oklch(0.287 0.025 337.8); --track: oklch(0.3 0.025 337.8);
+  --hover: oklch(1 0 0 / 0.07); --edge: oklch(1 0 0 / 0.08); --edge-2: oklch(1 0 0 / 0.16); --edge-3: oklch(1 0 0 / 0.28); --divider: oklch(1 0 0 / 0.07);
+  --float: 0 0 0 1px oklch(1 0 0 / 0.12), 0 18px 40px -16px oklch(0 0 0 / 0.6);
+  --ink: oklch(0.954 0.007 340.4); --ink-2: oklch(0.86 0.012 338); --muted: oklch(0.762 0.017 335.2); --faint: oklch(0.55 0.017 335);
+  --primary: oklch(0.793 0.122 343); --primary-hover: oklch(0.83 0.11 343); --on-primary: oklch(0.266 0.081 337.9);
+  --tint: oklch(0.33 0.07 338); --tint-ink: oklch(0.89 0.06 343); --focus: oklch(0.793 0.122 343);
+  --answered: oklch(0.3 0.04 155); --answered-ink: oklch(0.87 0.08 155); --answered-dot: oklch(0.72 0.13 156);
+  --waiting: oklch(0.32 0.045 80); --waiting-ink: oklch(0.89 0.09 85); --waiting-dot: oklch(0.78 0.14 78);
+  --closed: var(--well); --closed-ink: var(--ink-2); --closed-dot: var(--muted);
+  --danger: oklch(0.31 0.06 28); --danger-ink: oklch(0.87 0.07 28);
+  --avatar-1: oklch(0.34 0.06 262); --avatar-1-ink: oklch(0.88 0.05 262);
+  --avatar-2: oklch(0.34 0.05 52); --avatar-2-ink: oklch(0.89 0.05 52);
+  --avatar-4: oklch(0.33 0.045 150); --avatar-4-ink: oklch(0.88 0.06 150);
+  --illo-grid: oklch(1 0 0 / 0.16); --illo-object: oklch(0.355 0.024 338); --illo-bar: oklch(0.47 0.026 338); --illo-line: oklch(1 0 0 / 0.24);
+  --illo-warning: oklch(0.55 0.1 75); --illo-warning-ink: oklch(0.95 0.05 85);
+}
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--canvas); color: var(--ink); font-family: var(--font); font-weight: var(--weight-body); font-size: 15px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+::selection { background: var(--tint); color: var(--tint-ink); }
+button, input, textarea { font: inherit; color: inherit; font-weight: inherit; }
+button { cursor: pointer; background: none; border: 0; padding: 0; text-align: inherit; }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+svg.i { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.tabular { font-variant-numeric: tabular-nums; }
+h1, h2, h3, p { margin: 0; }
+a { color: var(--primary); text-underline-offset: 3px; }
+
+/* The review page around the phones */
+.top { max-width: 1240px; margin: 0 auto; padding: 32px 16px 8px; display: flex; flex-wrap: wrap; gap: 16px 24px; align-items: end; justify-content: space-between; }
+.top h1 { font-size: 27px; font-weight: 400; letter-spacing: -0.025em; }
+.top p { color: var(--ink-2); max-width: 70ch; margin-top: 6px; }
+.seg { display: inline-flex; background: var(--track); border-radius: 10px; padding: 3px; gap: 2px; }
+.seg button { height: 32px; padding: 0 14px; border-radius: 8px; color: var(--ink-2); font-size: 13.5px; font-weight: 400; }
+.seg button[aria-pressed="true"] { background: var(--plate); color: var(--ink); box-shadow: 0 0 0 1px var(--edge); }
+.dir { max-width: 1240px; margin: 0 auto; padding: 36px 16px 8px; }
+.dir + .dir { border-top: 1px solid var(--divider); margin-top: 28px; }
+.dir-head { display: grid; gap: 6px; max-width: 76ch; }
+.dir-head h2 { font-size: 21px; font-weight: 400; letter-spacing: -0.02em; display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.dir-head h2 .pick { font-size: 12px; font-weight: 400; color: var(--tint-ink); background: var(--tint); border-radius: 999px; padding: 2px 10px; letter-spacing: 0; }
+.dir-head p { color: var(--ink-2); }
+.dir-head dl { display: grid; grid-template-columns: max-content 1fr; gap: 2px 12px; margin: 6px 0 0; font-size: 13.5px; }
+.dir-head dt { color: var(--muted); }
+.dir-head dd { margin: 0; color: var(--ink-2); }
+.switches { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 12px; font-size: 13.5px; color: var(--muted); }
+.switches .seg + span { margin-inline-start: 8px; }
+.frames { display: flex; gap: 20px; overflow-x: auto; padding: 20px 2px 16px; scroll-snap-type: x proximity; }
+figure { margin: 0; flex: none; scroll-snap-align: start; display: grid; gap: 10px; }
+figcaption { font-size: 13.5px; color: var(--muted); max-width: 375px; }
+figcaption b { color: var(--ink); font-weight: 400; }
+.phone { width: 375px; height: 760px; overflow-y: auto; overflow-x: hidden; border-radius: 28px; background: var(--canvas); box-shadow: 0 0 0 1px var(--edge-2), 0 0 0 7px var(--plate), 0 0 0 8px var(--edge-2); position: relative; scrollbar-width: thin; }
+.replay { justify-self: start; font-size: 13.5px; color: var(--primary); text-decoration: underline; text-underline-offset: 3px; }
+
+/* Shared pieces, drawn as the editor draws them */
+.logo { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; letter-spacing: -0.035em; font-size: 19px; color: var(--ink); }
+.logo svg { width: 26px; height: 26px; }
+.avatar { display: inline-grid; place-items: center; border-radius: 999px; flex: none; font-weight: 400; }
+.av-1 { background: var(--avatar-1); color: var(--avatar-1-ink); }
+.av-2 { background: var(--avatar-2); color: var(--avatar-2-ink); }
+.av-4 { background: var(--avatar-4); color: var(--avatar-4-ink); }
+.title { font-size: 27px; font-weight: 400; letter-spacing: -0.025em; line-height: 1.2; text-wrap: balance; }
+.desc { color: var(--ink-2); text-wrap: pretty; }
+.desc b { font-weight: 400; color: var(--ink); }
+.meta { display: flex; flex-wrap: wrap; gap: 4px 14px; color: var(--muted); font-size: 13.5px; }
+.meta span { display: inline-flex; align-items: center; gap: 6px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 10px; border-radius: 999px; background: var(--tint); color: var(--tint-ink); font-size: 12px; font-weight: 400; }
+.chip svg.i { width: 14px; height: 14px; }
+.anon { color: var(--muted); font-size: 13.5px; }
+.prompt { font-size: 17px; font-weight: 400; line-height: 1.35; text-wrap: pretty; }
+.sub { display: grid; gap: 2px; color: var(--muted); font-size: 13.5px; margin-top: 4px; }
+.problem { display: flex; gap: 6px; align-items: flex-start; color: var(--danger-ink); font-size: 13.5px; }
+.problem svg.i { width: 14px; height: 14px; margin-top: 3px; }
+.opt-label { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; }
+.optional { color: var(--muted); font-size: 13.5px; flex: none; }
+.controls { display: grid; gap: 6px; margin-top: 12px; }
+.opt { display: flex; align-items: center; gap: 10px; min-height: 44px; width: 100%; padding: 8px 12px; border-radius: 10px; background: var(--plate); box-shadow: inset 0 0 0 1px var(--edge-2); transition: box-shadow 150ms var(--ease-out), background-color 150ms var(--ease-out), opacity 150ms; }
+.opt:hover { box-shadow: inset 0 0 0 1px var(--edge-3); }
+.opt[aria-checked="true"] { box-shadow: inset 0 0 0 1.5px var(--primary); }
+.opt[aria-disabled="true"] { opacity: 0.45; cursor: default; }
+.opt[aria-disabled="true"]:hover { box-shadow: inset 0 0 0 1px var(--edge-2); }
+.mark { width: 16px; height: 16px; flex: none; border-radius: 999px; box-shadow: inset 0 0 0 1.5px var(--faint); display: grid; place-items: center; transition: background-color 150ms, box-shadow 150ms; }
+.mark.sq { border-radius: 4px; }
+[aria-checked="true"] > .mark { background: var(--primary); box-shadow: none; }
+[aria-checked="true"] > .mark::after { content: ""; width: 6px; height: 6px; border-radius: 999px; background: var(--on-primary); animation: land 260ms cubic-bezier(.34,1.56,.64,1); }
+[aria-checked="true"] > .mark.sq::after { width: 9px; height: 5px; border-radius: 0; background: none; border-left: 2px solid var(--on-primary); border-bottom: 2px solid var(--on-primary); transform: translateY(-1px) rotate(-45deg); }
+@keyframes land { from { transform: scale(0.3); } }
+.opt.other-on { padding: 0 12px 0 0; gap: 0; cursor: text; }
+.other-mark { align-self: stretch; display: grid; place-items: center; padding: 0 10px 0 12px; }
+.other-mark[aria-checked="true"] > .mark { background: var(--primary); box-shadow: none; }
+.other-mark[aria-checked="true"] > .mark::after { content: ""; width: 6px; height: 6px; border-radius: 999px; background: var(--on-primary); }
+.other-input { flex: 1; min-width: 0; min-height: 42px; border: 0; background: none; padding: 0; font-size: 16px; outline: none; }
+.other-input::placeholder { color: var(--muted); }
+.opt.other-on:focus-within { box-shadow: inset 0 0 0 1.5px var(--primary), 0 0 0 3px var(--tint); }
+.input { display: block; width: 100%; min-height: 44px; padding: 10px 12px; border-radius: 10px; border: 0; background: var(--plate); box-shadow: inset 0 0 0 1px var(--edge-2); font-size: 16px; line-height: 1.5; }
+.input::placeholder { color: var(--muted); }
+textarea.input { min-height: 96px; resize: vertical; }
+.scale { display: grid; gap: 6px; }
+.tile { min-height: 44px; border-radius: 10px; background: var(--plate); box-shadow: inset 0 0 0 1px var(--edge-2); display: flex; align-items: center; justify-content: center; gap: 8px; padding: 8px 10px; text-align: center; line-height: 1.3; transition: background-color 150ms var(--ease-out), color 150ms, box-shadow 150ms, scale 150ms; }
+.tile:hover { box-shadow: inset 0 0 0 1px var(--edge-3); }
+.tile:active { scale: 0.97; }
+.tile[aria-checked="true"] { background: var(--primary); color: var(--on-primary); box-shadow: none; }
+.ends { display: flex; justify-content: space-between; gap: 16px; color: var(--muted); font-size: 13.5px; }
+.people { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-height: 44px; padding: 6px 8px 6px 6px; border-radius: 10px; background: var(--plate); box-shadow: inset 0 0 0 1px var(--edge-2); }
+.person { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 6px 0 4px; border-radius: 999px; background: var(--well); font-size: 14px; }
+.person .x { color: var(--muted); display: grid; place-items: center; width: 20px; height: 20px; }
+.people .ph { color: var(--muted); padding-inline-start: 6px; flex: 1; display: inline-flex; align-items: center; gap: 8px; }
+.people .chev { margin-inline-start: auto; color: var(--muted); }
+.note { margin-top: 4px; border-radius: 10px; background: var(--well); padding: 12px; display: grid; gap: 10px; }
+.note label { display: flex; gap: 8px; align-items: flex-start; justify-content: space-between; }
+.note label span:first-child { display: inline-flex; gap: 8px; align-items: flex-start; }
+.note svg.i { color: var(--muted); margin-top: 3px; }
+.note textarea.input { min-height: 72px; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 44px; padding: 0 18px; border-radius: 10px; font-weight: 500; background: var(--plate); box-shadow: inset 0 0 0 1px var(--edge-2); color: var(--ink); }
+.btn.primary { background: var(--primary); color: var(--on-primary); box-shadow: none; }
+.btn.primary:hover { background: var(--primary-hover); }
+.btn.lg { height: 48px; }
+.track { height: 4px; border-radius: 999px; background: var(--track); overflow: hidden; }
+.track i { display: block; height: 100%; background: var(--primary); border-radius: inherit; transition: width 250ms var(--ease-out); }
+.keep { color: var(--muted); font-size: 13.5px; }
+
+/* The thank-you: the one moment Holler celebrates */
+.glyph { position: relative; width: 56px; height: 56px; display: grid; place-items: center; }
+.glyph .disc { position: relative; width: 56px; height: 56px; border-radius: 999px; display: grid; place-items: center; }
+.glyph .disc svg.i { width: 24px; height: 24px; }
+.glyph .ring { position: absolute; inset: 0; border-radius: 999px; opacity: 0; }
+.glyph .spark { position: absolute; left: 50%; top: 50%; width: 8px; height: 8px; margin: -4px 0 0 -4px; border-radius: 999px; opacity: 0; }
+.t-answered { background: var(--answered); color: var(--answered-ink); }
+.t-closed { background: var(--closed); color: var(--closed-ink); }
+.play .disc { animation: pop 620ms cubic-bezier(.34,1.56,.64,1) both; }
+.play .ring { animation: ring 700ms var(--ease-out) both; }
+.play .spark { animation: spark 760ms var(--ease-out) both; }
+.play .rise { animation: rise 420ms var(--ease-out) both; }
+@keyframes pop { from { transform: scale(0.4); opacity: 0; } }
+@keyframes ring { 0% { transform: scale(1); opacity: .7; } 100% { transform: scale(2.1); opacity: 0; } }
+@keyframes spark { 0% { transform: translate(0,0) scale(.4); opacity: 0; } 40% { opacity: 1; transform: translate(calc(var(--x) * .7), calc(var(--y) * .7)) scale(1); } 100% { transform: translate(var(--x), var(--y)) scale(.2); opacity: 0; } }
+@keyframes rise { from { opacity: 0; transform: translateY(8px); } }
+@media (prefers-reduced-motion: reduce) { .play .disc, .play .ring, .play .spark, .play .rise { animation: none; } .play .spark, .play .ring { display: none; } }
+.illo { width: 96px; height: 96px; }
+.illo .object { fill: var(--illo-object); stroke: var(--illo-line); stroke-width: 1.25; vector-effect: non-scaling-stroke; }
+.illo .bar { fill: var(--illo-bar); }
+.illo .subject { fill: var(--illo-warning); stroke: var(--illo-warning-ink); stroke-width: 1.25; vector-effect: non-scaling-stroke; }
+.illo .line { fill: none; stroke: var(--illo-warning-ink); stroke-width: 2.25; stroke-linecap: round; }
+.illo .accent { fill: var(--illo-warning-ink); }
+.illo .grid { stroke: var(--illo-grid); stroke-width: 1; vector-effect: non-scaling-stroke; }
+
+/* Direction A: the reply */
+.a { padding: 16px 12px 16px; display: grid; gap: 14px; align-content: start; min-height: 100%; }
+.a .logo { padding: 4px 6px 0; }
+.a .sheet { background: var(--plate); border-radius: 16px; box-shadow: 0 0 0 1px var(--edge); }
+.a .msg { display: grid; grid-template-columns: 36px 1fr; gap: 0 12px; padding: 18px 16px 18px; }
+.a .msg .who { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+.a .msg .who b { font-weight: 400; }
+.a .msg .who span { color: var(--muted); font-size: 13.5px; }
+.a .msg .body { display: grid; gap: 10px; }
+.a .msg .title { font-size: 24px; margin-top: 4px; }
+.a .q { display: grid; grid-template-columns: 36px 1fr; gap: 0 12px; padding: 20px 16px 22px; border-top: 1px solid var(--divider); }
+.a .gut { display: flex; justify-content: center; padding-top: 1px; }
+.a .num { width: 26px; height: 26px; border-radius: 999px; display: grid; place-items: center; background: var(--well); color: var(--muted); font-size: 12px; font-weight: 400; transition: background-color 200ms, color 200ms; }
+.a .num.done { background: var(--answered); color: var(--answered-ink); }
+.a .num.done svg.i { width: 14px; height: 14px; stroke-width: 2.5; }
+.a .num.bad { background: var(--danger); color: var(--danger-ink); }
+.a .dock { position: sticky; bottom: 12px; margin-top: auto; background: var(--plate); border-radius: 16px; box-shadow: var(--float); padding: 12px 12px 12px 16px; display: flex; align-items: center; gap: 14px; z-index: 2; }
+.a .dock .count { flex: 1; display: grid; gap: 7px; min-width: 0; font-size: 14px; }
+.a .dock .count b { font-weight: 400; }
+.a .after { display: grid; justify-items: center; text-align: center; padding: 28px 20px 30px; border-top: 1px solid var(--divider); gap: 0; }
+.a .after h1 { font-size: 24px; font-weight: 400; letter-spacing: -0.025em; margin-top: 16px; }
+.a .after p { color: var(--ink-2); margin-top: 6px; max-width: 34ch; text-wrap: pretty; }
+.a .after .btn { margin-top: 20px; }
+.a .msg.small { padding-bottom: 16px; }
+.a .msg.small .title { font-size: 17px; margin-top: 2px; }
+
+/* Direction B: the letter */
+.b { padding: 20px 20px 28px; display: grid; gap: 0; align-content: start; }
+.b .head { display: grid; gap: 12px; padding: 22px 0 26px; }
+.b .who { display: flex; align-items: center; gap: 8px; color: var(--ink-2); font-size: 14px; }
+.b .head .title { font-size: 30px; }
+.b .q { padding: 26px 0 28px; border-top: 1px solid var(--divider); }
+.b .q .prompt { font-size: 19px; letter-spacing: -0.01em; }
+.b .q .n { color: var(--muted); font-variant-numeric: tabular-nums; margin-inline-end: 6px; }
+.b .q .controls { margin-top: 14px; }
+.b .end { border-top: 1px solid var(--divider); padding-top: 22px; display: grid; gap: 12px; }
+.b .end .line { color: var(--ink-2); }
+.b .end .btn { width: 100%; }
+.b .center { min-height: 640px; display: grid; justify-items: center; align-content: center; text-align: center; gap: 0; padding: 0 8px; }
+.b .center h1 { font-size: 27px; font-weight: 400; letter-spacing: -0.025em; margin-top: 18px; text-wrap: balance; }
+.b .center p { color: var(--ink-2); margin-top: 8px; max-width: 32ch; text-wrap: pretty; }
+.b .center .btn { margin-top: 22px; }
+.b .center .about { margin-top: 26px; color: var(--muted); font-size: 13.5px; }
+.b .center .about b { color: var(--ink); font-weight: 400; }
+
+/* Direction A, polished: the controls take the sheet's full width; the number sits beside the prompt only. */
+.a2 { padding: 12px 8px 12px; display: grid; gap: 12px; align-content: start; min-height: 100%; }
+.a2 .logo { padding: 6px 10px 0; }
+.a2 .sheet { background: var(--plate); border-radius: 16px; box-shadow: 0 0 0 1px var(--edge); }
+.a2 .msg { display: grid; gap: 12px; padding: 26px 12px 18px; }
+.a2 .msg.small { gap: 6px; padding: 22px 12px 8px; }
+.a2 .who { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+.a2 .who span { color: var(--muted); }
+.a2 .msg .title { font-size: 24px; }
+.a2 .facts { color: var(--muted); font-size: 13.5px; display: flex; gap: 6px; align-items: flex-start; }
+.a2 .facts svg.i { width: 14px; height: 14px; margin-top: 3px; }
+.a2 .sheet { display: grid; gap: 56px; padding: 28px 18px 32px; }
+[data-dividers="on"] .a2 .sheet { gap: 0; padding-block: 4px; }
+[data-dividers="on"] .a2 .q { padding: 28px 0 32px; }
+[data-dividers="on"] .a2 .q + .q { border-top: 1px solid var(--divider); }
+.a2 .sheet-head { margin: -28px -18px 0; padding: 0 6px; border-bottom: 1px solid var(--divider); }
+.a2 .anon-strip { display: flex; gap: 8px; align-items: flex-start; justify-content: center; background: var(--tint); color: var(--tint-ink); border-radius: 10px; padding: 10px 14px; font-size: 14px; margin: -6px 0 4px; }
+.a2 .anon-strip b { font-weight: 400; }
+.a2 .anon-strip svg.i { margin-top: 2px; }
+.a2 .sheet-head:has(.anon-strip) { border-bottom: 0; }
+.a2 .sheet-head .anon-strip { margin: 0 -6px; border-radius: 0; padding-inline: 18px; }
+.a2 .sheet-head .msg { padding: 24px 12px 24px; }
+[data-center="on"] .a2 .msg { justify-items: center; text-align: center; padding-top: 32px; padding-bottom: 24px; }
+[data-center="on"] .a2 .msg .who { flex-direction: column; gap: 8px; }
+[data-center="on"] .a2 .msg .who .avatar { width: 44px !important; height: 44px !important; font-size: 16px !important; }
+[data-center="on"] .a2 .msg .desc { max-width: 52ch; }
+[data-center="on"] .a2 .facts { justify-content: center; text-align: start; max-width: 46ch; }
+[data-center="on"] .a2 > .logo { justify-self: center; }
+.a2 .controls { margin-top: 16px; gap: 8px; }
+.a2 .hint { color: var(--muted); font-size: 13.5px; margin-top: 10px; }
+.a2 .qhead { display: grid; grid-template-columns: 24px 1fr; gap: 0 10px; align-items: start; }
+.a2 .num { width: 24px; height: 24px; margin-top: 1px; border-radius: 999px; display: grid; place-items: center; background: var(--well); color: var(--muted); font-size: 12px; font-weight: 400; transition: background-color 200ms, color 200ms; }
+.a2 .num.done { background: var(--tint); color: var(--tint-ink); }
+.a2 .num.bad { background: var(--danger-ink); color: var(--plate); }
+.a2 .why { color: var(--danger-ink); font-size: 13.5px; margin-top: 2px; }
+.a2 .sub { margin-top: 2px; }
+.a2 .note { background: none; padding: 0; margin-top: 10px; gap: 8px; }
+.a2 .note label { color: var(--ink-2); }
+.a2 .dock { position: sticky; bottom: 10px; margin-top: auto; background: var(--plate); border-radius: 16px; box-shadow: var(--float); padding: 12px 12px 12px 16px; display: flex; align-items: center; gap: 14px; z-index: 2; transition: background-color 200ms var(--ease-out), box-shadow 200ms var(--ease-out), border-radius 200ms var(--ease-out); }
+.a2 .dock.resting { background: transparent; box-shadow: inset 0 1px 0 var(--divider); border-radius: 0; }
+.a2 .end { height: 1px; margin-top: -12px; }
+.phone { container-type: inline-size; }
+.a2 { width: 100%; max-width: 720px; margin-inline: auto; }
+@container (min-width: 600px) {
+  .a2 { padding: 28px 24px 24px; gap: 16px; }
+  .a2 .msg { padding: 32px 8px 20px; }
+  .a2 .msg .title { font-size: 30px; }
+  .a2 .sheet { padding: 44px 44px 48px; gap: 64px; }
+  .a2 .sheet-head { margin: -44px -44px 0; padding: 0 36px; }
+  .a2 .sheet-head .msg { padding: 36px 8px 32px; }
+  .a2 .sheet-head .anon-strip { margin: 0 -36px; }
+  [data-dividers="on"] .a2 .sheet { gap: 0; padding-block: 8px; }
+  [data-dividers="on"] .a2 .q { padding: 36px 0 40px; }
+  .a2 .scale.words:not(.stack) { display: flex; }
+  .a2 .scale.words:not(.stack) .tile { flex: 1 1 auto; white-space: nowrap; padding: 8px 14px; }
+  .a2 .number-input { max-width: 160px; }
+}
+.desk { width: min(1208px, calc(100vw - 32px)); height: 760px; border-radius: 14px; }
+.desk-row { padding-top: 4px; }
+.a2 .dock .count { flex: 1; display: grid; gap: 7px; min-width: 0; font-size: 14px; }
+.a2 .dock .count.bad { color: var(--danger-ink); }
+.a2 .after { display: grid; justify-items: center; text-align: center; padding: 28px 20px 30px; border-top: 1px solid var(--divider); }
+.a2 .after h1 { font-size: 24px; font-weight: 400; letter-spacing: -0.025em; margin-top: 16px; }
+.a2 .after p { color: var(--ink-2); margin-top: 6px; max-width: 34ch; text-wrap: pretty; }
+.a2 .after .btn { margin-top: 20px; }
+
+/* Direction D: the letter, with the count and Send box */
+.d { padding: 16px 20px 28px; display: grid; align-content: start; }
+.d .head { display: grid; gap: 10px; padding: 26px 0 18px; }
+.d .who { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--ink-2); }
+.d .head .title { font-size: 24px; }
+.d .facts { color: var(--muted); font-size: 13.5px; display: flex; gap: 6px; align-items: flex-start; }
+.d .facts svg.i { width: 14px; height: 14px; margin-top: 3px; }
+.d .bar { position: sticky; top: 0; z-index: 2; margin: 0 -20px; padding: 10px 20px 0; background: var(--canvas); display: grid; grid-template-columns: 1fr auto; gap: 8px 12px; align-items: center; }
+.d .bar .t { font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--ink-2); }
+.d .bar .pill { font-size: 12px; background: var(--tint); color: var(--tint-ink); padding: 2px 9px; border-radius: 999px; }
+.d .bar .track { grid-column: 1 / -1; height: 3px; margin: 0 -20px; border-radius: 0; }
+.d .qs { display: grid; gap: 44px; padding: 28px 0 40px; }
+.d .q .prompt { font-size: 18px; letter-spacing: -0.01em; }
+.d .q .n { color: var(--muted); font-variant-numeric: tabular-nums; margin-inline-end: 6px; }
+.d .q.bad .n { color: var(--danger-ink); }
+.d .flag { display: flex; gap: 8px; align-items: flex-start; margin-top: 8px; padding: 8px 12px; border-radius: 10px; background: var(--danger); color: var(--danger-ink); font-size: 14px; }
+.d .flag svg.i { margin-top: 2px; }
+.d .note { background: none; padding: 0; margin-top: 10px; gap: 8px; }
+.d .note label { color: var(--ink-2); }
+.d .box { background: var(--plate); border-radius: 16px; box-shadow: 0 0 0 1px var(--edge); padding: 14px 14px 14px 16px; display: flex; align-items: center; gap: 14px; }
+.d .box .count { flex: 1; min-width: 0; display: grid; gap: 8px; font-size: 14px; }
+.d .box .count.bad { color: var(--danger-ink); gap: 6px; }
+.d .jumps { display: flex; gap: 6px; flex-wrap: wrap; }
+.d .jumps button { min-width: 32px; height: 32px; padding: 0 8px; border-radius: 8px; background: var(--danger); color: var(--danger-ink); font-size: 13.5px; font-variant-numeric: tabular-nums; position: relative; }
+.d .jumps button::before { content: ""; position: absolute; inset: -6px -3px; }
+.d .keep { margin-top: 10px; padding: 0 4px; }
+
+/* Direction C: the cards */
+.c { padding: 16px 12px 20px; display: grid; gap: 10px; align-content: start; }
+.c .logo { padding: 4px 6px 0; }
+.c .head { display: grid; gap: 10px; padding: 18px 6px 12px; }
+.c .mode { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; color: var(--ink); }
+.c .mode .g { width: 24px; height: 24px; border-radius: 7px; background: var(--tint); color: var(--tint-ink); display: grid; place-items: center; }
+.c .mode .g svg.i { width: 14px; height: 14px; }
+.c .who { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 13.5px; }
+.c .bar { position: sticky; top: 0; z-index: 2; margin: 0 -12px; padding: 10px 18px; background: var(--canvas); border-bottom: 1px solid var(--divider); display: grid; grid-template-columns: 1fr auto; gap: 8px 12px; align-items: center; }
+.c .bar .t { font-size: 14px; font-weight: 400; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.c .bar .pill { font-size: 12px; background: var(--tint); color: var(--tint-ink); padding: 2px 9px; border-radius: 999px; }
+.c .bar .track { grid-column: 1 / -1; height: 3px; }
+.c .card { background: var(--plate); border-radius: 16px; box-shadow: 0 0 0 1px var(--edge); padding: 14px 16px 18px; }
+.c .card-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; color: var(--muted); font-size: 13.5px; }
+.c .tile-n { width: 26px; height: 26px; border-radius: 7px; background: var(--well); color: var(--muted); display: grid; place-items: center; font-size: 12.5px; font-weight: 400; }
+.c .tile-n.done { background: var(--tint); color: var(--tint-ink); }
+.c .tile-n.done svg.i { width: 14px; height: 14px; stroke-width: 2.5; }
+.c .tile-n.bad { background: var(--danger); color: var(--danger-ink); }
+.c .card-head .rest { margin-inline-start: auto; }
+.c .send { margin-top: 6px; }
+.c .send .plate { background: var(--plate); border-radius: 16px; box-shadow: 0 0 0 1px var(--edge); padding: 14px 14px 14px 16px; display: flex; align-items: center; gap: 12px; position: relative; z-index: 1; }
+.c .send .plate .count { flex: 1; font-size: 14px; }
+.c .send .under { background: var(--well); border-radius: 0 0 16px 16px; margin-top: -16px; padding: 24px 16px 10px; }
+.c .state { background: var(--plate); border-radius: 16px; box-shadow: 0 0 0 1px var(--edge); padding: 36px 20px 30px; display: grid; justify-items: center; text-align: center; }
+.c .state h1 { font-size: 24px; font-weight: 400; letter-spacing: -0.025em; margin-top: 18px; text-wrap: balance; }
+.c .state p { color: var(--ink-2); margin-top: 6px; max-width: 32ch; text-wrap: pretty; }
+.c .state .btn { margin-top: 22px; }
+.c .state .pillrow { margin-top: 20px; display: inline-flex; align-items: center; gap: 8px; max-width: 100%; background: var(--canvas); border-radius: 999px; padding: 5px 14px 5px 5px; font-size: 13.5px; }
+.c .state .pillrow b { font-weight: 400; }
+.c .state .pillrow span { color: var(--muted); }
+</style>
+</head>
+<body>
+<header class="top">
+  <div>
+    <h1>Answer page, three directions</h1>
+    <p>The page a recipient reaches from the DM for a Holler too big for Slack. Phone first. Every control is drawn as the editor draws it, so a question looks like itself in both places. Tap the answers; the counts follow.</p>
+  </div>
+  <div class="seg" role="group" aria-label="Theme">
+    <button type="button" data-theme-pick="light" aria-pressed="true">Day</button>
+    <button type="button" data-theme-pick="dark" aria-pressed="false">Night</button>
+  </div>
+</header>
+<main id="dirs"></main>
+
+<script>
+const icons = {
+  check: '<path d="M20 6 9 17l-5-5"/>',
+  x: '<path d="M18 6 6 18M6 6l12 12"/>',
+  corner: '<path d="m15 10 5 5-5 5"/><path d="M4 4v7a4 4 0 0 0 4 4h12"/>',
+  alert: '<circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/>',
+  user: '<circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 0 0-16 0"/>',
+  clock: '<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>',
+  survey: '<path d="m3 17 2 2 4-4M3 7l2 2 4-4M13 6h8M13 12h8M13 18h8"/>',
+  list: '<path d="M10 12h11M10 18h11M10 6h11M4 10h2M4 6h1v4M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"/>',
+  lock: '<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+  chev: '<path d="m6 9 6 6 6-6"/>',
+  eyeoff: '<path d="M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49M14.084 14.158a3 3 0 0 1-4.242-4.242M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143M2 2l20 20"/>',
+  checks: '<path d="m3 17 2 2 4-4M3 7l2 2 4-4M13 6h8M13 12h8M13 18h8"/>',
+};
+const ic = (n, extra = "") => `<svg class="i" viewBox="0 0 24 24" aria-hidden="true" ${extra}>${icons[n]}</svg>`;
+const logo = `<span class="logo"><svg viewBox="0 0 48 48" aria-hidden="true"><rect width="48" height="48" rx="13.4" fill="var(--plum)"/><path d="M13 9v30M13 28c0-5.5 4-9 9-9s9 3.5 9 9v11" fill="none" stroke="#fff" stroke-width="6.5" stroke-linecap="round"/><path d="M33 12a8 8 0 0 1 6 6M36 5a15 15 0 0 1 9 9" fill="none" stroke="var(--soft-pink)" stroke-width="3.6" stroke-linecap="round"/></svg>holler</span>`;
+const av = (initials, tone, size) => `<span class="avatar av-${tone}" style="width:${size}px;height:${size}px;font-size:${Math.round(size * 0.4)}px" aria-hidden="true">${initials}</span>`;
+
+const holler = {
+  sender: "Mira Novak", title: "Offsite planning",
+  desc: 'Two minutes, so we can <b>book the place</b> this week. The <a href="#">agenda draft</a> is up.',
+  closes: "Closes Monday at 18:00",
+};
+
+const Q = [
+  { id: "where", type: "single", prompt: "Where would you rather go?", options: ["Lisbon", "Tallinn", "Riga"], other: true, note: { prompt: "What makes it the right place?", after: ["Tallinn", "Other"] } },
+  { id: "weeks", type: "multi", prompt: "Which weeks work for you?", desc: "All in spring 2027.", options: ["8 March", "15 March", "22 March", "29 March"], max: 3 },
+  { id: "tired", type: "number-scale", prompt: "How tired are you of offsites?", options: ["1", "2", "3", "4", "5"], low: "Not at all", high: "Very" },
+  { id: "good", type: "word-scale", prompt: "The last offsite was a good use of time.", options: ["Strongly disagree", "Disagree", "Neither", "Agree", "Strongly agree"] },
+  { id: "fly", type: "yes-no", prompt: "Will you fly?", options: ["Yes", "No"] },
+  { id: "nights", type: "number", prompt: "How many nights can you stay?", hint: "A whole number from 1 to 7." },
+  { id: "who", type: "person", prompt: "Who should plan it?", hint: "Pick up to 2 people." },
+  { id: "else", type: "text", prompt: "Anything else we should know?", optional: true },
+];
+
+const filled = () => ({
+  where: ["Other"], whereOther: "Vilnius", whereNote: "Cheap flights from everywhere we live.",
+  weeks: ["8 March", "15 March", "29 March"], tired: ["2"], good: [], fly: ["Yes"], nights: "3",
+  who: [["AL", "Ana Lee", 2], ["TB", "Tom Berg", 4]], else: "",
+});
+const partial = () => ({
+  where: ["Lisbon"], whereOther: "", whereNote: "", weeks: [], tired: ["4"], good: [], fly: [], nights: "12",
+  who: [["AL", "Ana Lee", 2]], else: "",
+});
+const problemsFor = { weeks: "This question needs an answer.", good: "This question needs an answer.", fly: "This question needs an answer.", nights: "Enter a whole number from 1 to 7." };
+
+function answered(q, s) {
+  const v = s[q.id];
+  if (q.type === "text") return v.trim() !== "";
+  if (q.type === "number") return v.trim() !== "";
+  if (q.type === "person") return v.length > 0;
+  return v.length > 0;
+}
+const required = Q.filter((q) => !q.optional);
+const countOf = (s) => required.filter((q) => answered(q, s)).length;
+
+function hintOf(q) {
+  if (q.type === "multi") return `Pick up to ${q.max}.`;
+  return q.hint ?? null;
+}
+
+function sub(q, problem) {
+  const lines = [];
+  if (problem) lines.push(`<p class="problem" id="p-${q.id}">${ic("alert")}<span>${problem}</span></p>`);
+  if (q.desc) lines.push(`<p>${q.desc}</p>`);
+  const h = hintOf(q);
+  if (h) lines.push(`<p>${h}</p>`);
+  return lines.length ? `<div class="sub">${lines.join("")}</div>` : "";
+}
+
+function controls(q, s) {
+  const v = s[q.id];
+  const role = (on, extra = "") => `role="${q.type === "multi" ? "checkbox" : "radio"}" aria-checked="${on}" ${extra}`;
+  if (q.type === "single" || q.type === "multi") {
+    const full = q.type === "multi" && q.max && v.length >= q.max;
+    const all = [...q.options, ...(q.other ? ["Other"] : [])];
+    let html = all.map((o) => {
+      const on = v.includes(o);
+      const off = full && !on;
+      const mark = `<span class="mark${q.type === "multi" ? " sq" : ""}"></span>`;
+      if (o === "Other" && on) {
+        return `<div class="opt other-on" aria-checked="true"><button type="button" class="other-mark" data-pick="${q.id}" data-val="Other" role="radio" aria-checked="true" aria-label="Other">${mark}</button><input class="other-input" aria-label="Other, your answer" placeholder="Other, type your answer" value="${s[q.id + "Other"] ?? ""}"></div>`;
+      }
+      return `<button type="button" class="opt" data-pick="${q.id}" data-val="${o}" ${role(on, off ? 'aria-disabled="true"' : "")}>${mark}${o}</button>`;
+    }).join("");
+    if (q.note && v.some((x) => q.note.after.includes(x))) html += `<div class="note"><label><span>${ic("corner")}${q.note.prompt}</span><span class="optional">Optional</span></label><textarea class="input">${s[q.id + "Note"] ?? ""}</textarea></div>`;
+    return `<div class="controls" role="${q.type === "multi" ? "group" : "radiogroup"}">${html}</div>`;
+  }
+  if (q.type === "number-scale") {
+    return `<div class="controls"><div class="scale" role="radiogroup" style="grid-template-columns:repeat(${q.options.length},1fr)">${q.options.map((o) => `<button type="button" class="tile tabular" data-pick="${q.id}" data-val="${o}" role="radio" aria-checked="${v.includes(o)}">${o}</button>`).join("")}</div><div class="ends" aria-hidden="true"><span>${q.low}</span><span>${q.high}</span></div></div>`;
+  }
+  if (q.type === "word-scale") {
+    return `<div class="controls"><div class="scale words" role="radiogroup">${q.options.map((o) => `<button type="button" class="tile" data-pick="${q.id}" data-val="${o}" role="radio" aria-checked="${v.includes(o)}">${o}</button>`).join("")}</div></div>`;
+  }
+  if (q.type === "yes-no") {
+    return `<div class="controls"><div class="scale" role="radiogroup" style="grid-template-columns:1fr 1fr">${q.options.map((o, i) => `<button type="button" class="tile" data-pick="${q.id}" data-val="${o}" role="radio" aria-checked="${v.includes(o)}">${ic(i === 0 ? "check" : "x")}${o}</button>`).join("")}</div></div>`;
+  }
+  if (q.type === "number") return `<div class="controls"><input class="input tabular" inputmode="numeric" style="max-width:140px" value="${v}" aria-label="${q.prompt}"></div>`;
+  if (q.type === "text") return `<div class="controls"><textarea class="input" aria-label="${q.prompt}">${v}</textarea></div>`;
+  if (q.type === "person") {
+    const chips = v.map(([ini, name, tone]) => `<span class="person">${av(ini, tone, 22)}${name}<button type="button" class="x" aria-label="Remove ${name}">${ic("x", 'style="width:14px;height:14px"')}</button></span>`).join("");
+    return `<div class="controls"><div class="people">${chips || `<span class="ph">${ic("user")}Choose people</span>`}<span class="chev">${ic("chev")}</span></div></div>`;
+  }
+  return "";
+}
+
+function promptRow(q, number) {
+  return `<div class="opt-label"><h2 class="prompt">${number ?? ""}${q.prompt}</h2>${q.optional ? '<span class="optional">Optional</span>' : ""}</div>`;
+}
+
+const glyph = (tone, icon, play) => {
+  const sparks = tone === "answered" ? Array.from({ length: 10 }, (_, i) => {
+    const a = (i / 10) * Math.PI * 2 - Math.PI / 2, r = i % 2 ? 40 : 50;
+    return `<span class="spark" style="--x:${(Math.cos(a) * r).toFixed(1)}px;--y:${(Math.sin(a) * r).toFixed(1)}px;background:var(${i % 2 ? "--pink" : "--answered-dot"});animation-delay:60ms"></span>`;
+  }).join("") : "";
+  return `<span class="glyph${play ? " play" : ""}" aria-hidden="true"><span class="ring t-${tone}"></span>${sparks}<span class="disc t-${tone}">${ic(icon)}</span></span>`;
+};
+
+function illo() {
+  const grid = Array.from({ length: 9 }, (_, i) => `<path class="grid" d="M${i * 8} 0V64M0 ${i * 8}H64"/>`).join("");
+  return `<svg class="illo" viewBox="0 0 64 64" aria-hidden="true"><defs><radialGradient id="f"><stop offset=".35" stop-color="#fff"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient><mask id="m"><rect width="64" height="64" fill="url(#f)"/></mask></defs><g mask="url(#m)">${grid}</g>
+  <rect class="object" x="2" y="32" width="46" height="22" rx="6"/><rect class="bar" x="8" y="38" width="18" height="3.2" rx="1.6"/><rect class="bar" x="8" y="44.5" width="26" height="2.6" rx="1.3"/>
+  <path class="subject" d="M39.5 26v-7.5a7.5 7.5 0 0 1 15 0V26h-4.5v-7.5a3 3 0 0 0-6 0V26z"/><rect class="subject" x="34" y="24" width="26" height="22" rx="5.5"/><circle class="accent" cx="47" cy="33" r="2.6"/><path class="line" d="M47 35v4.5"/></svg>`;
+}
+
+const meta = (icon) => `<div class="meta">${icon ? `<span>${ic("survey")}Survey</span>` : ""}<span>${ic("list")}8 questions</span><span>${ic("clock")}${holler.closes}</span></div>`;
+const anonLine = `<p class="anon">Your name is not kept with your answers. Mira sees how many people answered, never who said what.</p>`;
+
+/* Direction A: the reply. One plate shaped like the message, numbers in its gutter, a dock that keeps the count. */
+const A = {
+  form(s, opts = {}) {
+    const n = countOf(s);
+    const qs = Q.map((q, i) => {
+      const problem = opts.problems?.[q.id];
+      const done = answered(q, s) && !problem;
+      return `<section class="q" aria-labelledby="h-${q.id}"><div class="gut"><span class="num tabular${done ? " done" : problem ? " bad" : ""}">${done ? ic("check") : i + 1}</span></div><div>${promptRow(q)}${sub(q, problem)}${controls(q, s)}</div></section>`;
+    }).join("");
+    const msg = opts.problems
+      ? `<span class="problem" style="font-size:14px">${ic("alert")}<span>4 questions still need your answer.</span></span>`
+      : `<b class="tabular">${n} of ${required.length} answered</b>`;
+    return `<div class="a">${logo}<div class="sheet"><div class="msg">${av("MN", 1, 36)}<div class="body"><div class="who"><b>${holler.sender}</b><span>sent you a Holler</span></div><h1 class="title">${holler.title}</h1><p class="desc">${holler.desc}</p>${meta(true)}${opts.anon ? `<div style="display:grid;gap:8px"><span><span class="chip">Anonymous</span></span>${anonLine}</div>` : ""}</div></div>${qs}</div>
+      <div class="dock"><div class="count">${msg}<div class="track"><i style="width:${(n / required.length) * 100}%"></i></div></div><button class="btn primary" type="button">Send answers</button></div></div>`;
+  },
+  state(kind, play) {
+    const head = `<div class="msg small">${av("MN", 1, 36)}<div class="body"><div class="who"><b>${holler.sender}</b><span>sent you a Holler</span></div><p class="title">${holler.title}</p></div></div>`;
+    if (kind === "broken") return `<div class="a">${logo}<div class="sheet"><div class="after" style="border:0;padding-top:36px">${illo()}<h1>This link does not work</h1><p>It may have been changed on the way. Open the Holler again from your message in Slack.</p></div></div></div>`;
+    const body = kind === "sent"
+      ? `${glyph("answered", "check", play)}<h1 class="rise" style="animation-delay:220ms">Your answers are in</h1><p class="rise" style="animation-delay:280ms">Thank you. Mira sees them with everyone else’s.</p><span class="rise" style="animation-delay:340ms"><button class="btn" type="button">${ic("checks")}See my answers</button></span>`
+      : `${glyph("closed", "lock", false)}<h1>This Holler has closed</h1><p>It stopped taking answers on Monday at 18:00.</p>`;
+    return `<div class="a">${logo}<div class="sheet">${head}<div class="after">${body}</div></div></div>`;
+  },
+};
+
+/* Direction B: the letter. No plates around questions; they read down the canvas like a note from Mira. */
+const B = {
+  form(s, opts = {}) {
+    const n = countOf(s);
+    const qs = Q.map((q, i) => {
+      const problem = opts.problems?.[q.id];
+      return `<section class="q">${promptRow(q, `<span class="n">${i + 1}.</span>`)}${sub(q, problem)}${controls(q, s)}</section>`;
+    }).join("");
+    const left = required.length - n;
+    const line = opts.problems
+      ? `<p class="problem" style="font-size:15px">${ic("alert")}<span>Questions 2, 4, 5 and 6 still need your answer.</span></p>`
+      : `<p class="line tabular">${n} of ${required.length} answered.${left ? ` ${left === 1 ? "One question" : `${left} questions`} to go.` : ""}</p>`;
+    return `<div class="b">${logo}<header class="head"><div class="who">${av("MN", 1, 24)}${holler.sender} sent you a Holler</div><h1 class="title">${holler.title}</h1><p class="desc">${holler.desc}</p>${meta(true)}${opts.anon ? `<div style="display:grid;gap:8px"><span><span class="chip">Anonymous</span></span>${anonLine}</div>` : ""}</header>${qs}
+      <div class="end">${line}<button class="btn primary lg" type="button">Send answers</button><p class="keep">Your answers stay on this phone until you send them.</p></div></div>`;
+  },
+  state(kind, play) {
+    const about = `<p class="about rise" style="animation-delay:340ms"><b>${holler.title}</b> from ${holler.sender}</p>`;
+    if (kind === "broken") return `<div class="b">${logo}<div class="center">${illo()}<h1>This link does not work</h1><p>It may have been changed on the way. Open the Holler again from your message in Slack.</p></div></div>`;
+    if (kind === "sent") return `<div class="b">${logo}<div class="center">${glyph("answered", "check", play)}<h1 class="rise" style="animation-delay:220ms">Your answers are in</h1><p class="rise" style="animation-delay:280ms">Thank you. Mira sees them with everyone else’s.</p><span class="rise" style="animation-delay:320ms"><button class="btn" type="button">${ic("checks")}See my answers</button></span>${about}</div></div>`;
+    return `<div class="b">${logo}<div class="center">${glyph("closed", "lock", false)}<h1>This Holler has closed</h1><p>It stopped taking answers on Monday at 18:00.</p>${about}</div></div>`;
+  },
+};
+
+/* Direction A, polished. */
+const view = { onSheet: false };
+const A2 = {
+  head(opts = {}) {
+    const anon = opts.anon ? `<p class="anon-strip">${ic("eyeoff")}<span><b>Anonymous.</b> Mira sees how many people answered, never who said what.</span></p>` : "";
+    return `<div class="msg"><div class="who">${av("MN", 1, 28)}<span class="by">${holler.sender} <span>sent you a Holler</span></span></div><h1 class="title">${holler.title}</h1><p class="desc">${holler.desc}</p><p class="facts">${holler.closes}</p></div>${anon}`;
+  },
+  form(s, opts = {}) {
+    const n = countOf(s);
+    const bad = Object.keys(opts.problems ?? {}).length;
+    const qs = Q.map((q, i) => {
+      const problem = opts.problems?.[q.id];
+      const done = answered(q, s) && !problem;
+      const hint = hintOf(q);
+      const num = `<span class="num tabular${problem ? " bad" : done ? " done" : ""}">${i + 1}</span>`;
+      return `<section class="q" id="a2-${q.id}"><div class="qhead">${num}<div>${promptRow(q)}${problem ? `<p class="why">${problem}</p>` : ""}${q.desc ? `<div class="sub"><p>${q.desc}</p></div>` : ""}</div></div>${controls(q, s)}${hint ? `<p class="hint">${hint}</p>` : ""}</section>`;
+    }).join("");
+    const count = bad
+      ? `<div class="count bad">${bad === 1 ? "One question needs" : `${bad} questions need`} an answer</div>`
+      : `<div class="count"><span class="tabular">${n} of ${required.length} answered</span><div class="track"><i style="width:${(n / required.length) * 100}%"></i></div></div>`;
+    const head = A2.head(opts);
+    return `<div class="a2">${logo}${view.onSheet ? "" : head}<div class="sheet">${view.onSheet ? `<div class="sheet-head">${head}</div>` : ""}${qs}</div><div class="dock">${count}<button class="btn primary" type="button">Send answers</button></div><div class="end" aria-hidden="true"></div></div>`;
+  },
+  state(kind, play) {
+    const small = `<div class="msg small"><div class="who">${av("MN", 1, 28)}<span class="by">${holler.sender} <span>sent you a Holler</span></span></div><p class="prompt">${holler.title}</p></div>`;
+    if (kind === "broken") return `<div class="a2">${logo}<div class="sheet"><div class="after" style="border:0;padding-top:36px">${illo()}<h1>This link does not work</h1><p>It may have been changed on the way. Open the Holler again from your message in Slack.</p></div></div></div>`;
+    const body = kind === "sent"
+      ? `${glyph("answered", "check", play)}<h1 class="rise" style="animation-delay:220ms">Your answers are in</h1><p class="rise" style="animation-delay:280ms">Thank you. Mira sees them with everyone else’s.</p><span class="rise" style="animation-delay:340ms"><button class="btn" type="button">${ic("checks")}See my answers</button></span>`
+      : `${glyph("closed", "lock", false)}<h1>This Holler has closed</h1><p>It stopped taking answers on Monday at 18:00.</p>`;
+    return view.onSheet
+      ? `<div class="a2">${logo}<div class="sheet"><div class="sheet-head">${small}</div><div class="after" style="border:0;padding-top:8px">${body}</div></div></div>`
+      : `<div class="a2">${logo}${small}<div class="sheet"><div class="after" style="border:0">${body}</div></div></div>`;
+  },
+};
+
+/* Direction D: the letter with the count. Calm header, no dividers, a progress bar that sticks, a box that closes the page. */
+const D = {
+  form(s, opts = {}) {
+    const n = countOf(s);
+    const bad = Object.keys(opts.problems ?? {});
+    const qs = Q.map((q, i) => {
+      const problem = opts.problems?.[q.id];
+      const lines = [q.desc, hintOf(q)].filter(Boolean).map((t) => `<p>${t}</p>`).join("");
+      return `<section class="q${problem ? " bad" : ""}" id="d-${q.id}">${promptRow(q, `<span class="n">${i + 1}.</span>`)}${problem ? `<p class="flag">${ic("alert")}<span>${problem}</span></p>` : ""}${lines ? `<div class="sub">${lines}</div>` : ""}${controls(q, s)}</section>`;
+    }).join("");
+    const count = bad.length
+      ? `<div class="count bad"><span>${bad.length === 1 ? "One question needs" : `${bad.length} questions need`} an answer</span><span class="jumps">${bad.map((id) => `<button type="button" data-jump="d-${id}" aria-label="Go to question ${Q.findIndex((q) => q.id === id) + 1}">${Q.findIndex((q) => q.id === id) + 1}</button>`).join("")}</span></div>`
+      : `<div class="count"><span class="tabular">${n} of ${required.length} answered</span><div class="track"><i style="width:${(n / required.length) * 100}%"></i></div></div>`;
+    const anon = opts.anon ? `<p class="facts">${ic("eyeoff")}<span>Anonymous. Mira sees how many people answered, never who said what.</span></p>` : "";
+    return `<div class="d">${logo}<header class="head"><div class="who">${av("MN", 1, 24)}From ${holler.sender}</div><h1 class="title">${holler.title}</h1><p class="desc">${holler.desc}</p><p class="facts">8 questions · ${holler.closes}</p>${anon}</header>
+      <div class="bar"><span class="t">${holler.title}</span><span class="pill tabular">${n} of ${required.length}</span><div class="track"><i style="width:${(n / required.length) * 100}%"></i></div></div>
+      <div class="qs">${qs}</div><div class="box">${count}<button class="btn primary" type="button">Send answers</button></div><p class="keep">Your answers stay on this phone until you send them.</p></div>`;
+  },
+  state: (kind, play) => B.state(kind, play),
+};
+
+/* Direction C: the cards. Each question is the card the sender wrote; a slim bar keeps the count while you scroll. */
+const C = {
+  form(s, opts = {}) {
+    const n = countOf(s);
+    const qs = Q.map((q, i) => {
+      const problem = opts.problems?.[q.id];
+      const done = answered(q, s) && !problem;
+      return `<section class="card"><div class="card-head"><span class="tile-n tabular${done ? " done" : problem ? " bad" : ""}">${done ? ic("check") : i + 1}</span>${q.optional ? '<span class="rest">Optional</span>' : ""}</div><h2 class="prompt">${q.prompt}</h2>${sub(q, problem)}${controls(q, s)}</section>`;
+    }).join("");
+    const left = opts.problems
+      ? `<span class="problem" style="font-size:14px">${ic("alert")}<span>4 questions still need your answer.</span></span>`
+      : `<span class="tabular">${n} of ${required.length} answered</span>`;
+    return `<div class="c">${logo}<header class="head"><span class="mode"><span class="g">${ic("survey")}</span>Survey</span><h1 class="title">${holler.title}</h1><p class="desc">${holler.desc}</p><div class="who">${av("MN", 1, 22)}From ${holler.sender} · ${holler.closes}</div>${opts.anon ? `<div style="display:grid;gap:8px"><span><span class="chip">Anonymous</span></span>${anonLine}</div>` : ""}</header>
+      <div class="bar"><span class="t">${holler.title}</span><span class="pill tabular">${n} of ${required.length}</span><div class="track"><i style="width:${(n / required.length) * 100}%"></i></div></div>${qs}
+      <div class="send"><div class="plate"><div class="count">${left}</div><button class="btn primary" type="button">Send answers</button></div><div class="under"><p class="keep">Your answers stay on this phone until you send them.</p></div></div></div>`;
+  },
+  state(kind, play) {
+    const pill = `<p class="pillrow rise" style="animation-delay:340ms">${av("MN", 1, 22)}<b>${holler.title}</b><span>from ${holler.sender}</span></p>`;
+    if (kind === "broken") return `<div class="c">${logo}<div class="state" style="margin-top:12px">${illo()}<h1>This link does not work</h1><p>It may have been changed on the way. Open the Holler again from your message in Slack.</p></div></div>`;
+    if (kind === "sent") return `<div class="c">${logo}<div class="state" style="margin-top:12px">${glyph("answered", "check", play)}<h1 class="rise" style="animation-delay:220ms">Your answers are in</h1><p class="rise" style="animation-delay:280ms">Thank you. Mira sees them with everyone else’s.</p>${pill}<span class="rise" style="animation-delay:400ms"><button class="btn" type="button">${ic("checks")}See my answers</button></span></div></div>`;
+    return `<div class="c">${logo}<div class="state" style="margin-top:12px">${glyph("closed", "lock", false)}<h1>This Holler has closed</h1><p>It stopped taking answers on Monday at 18:00.</p>${pill}</div></div>`;
+  },
+};
+
+const directions = [
+  { key: "a2", d: A2, name: "A, polished", lead: true, desktop: true, toggles: true,
+    about: "The reply, with room to breathe. What it is about sits on the canvas: who sent it, the title, the note and one line of facts. Only the questions are on the sheet, with space between them and no dividers. The answers take the sheet’s full width; the number sits beside the prompt and fills in once it is answered. Hints such as Pick up to 3 close each question. The count and Send float over the page while there is more to read and lie flat once you reach the end, as in the editor.",
+    easier: "Answering on a phone: every control is 46 px wider than in A. An answered question’s number turns plum; a problem turns it red, with the words in small red type under the prompt, and the dock says how many are left. On desktop a worded scale runs in one row, each word on one line; when the row cannot hold them, it stacks as on a phone. Try the switches for dividers and a centred header.",
+    costs: "The dock still covers the last lines of the page until you reach the end." },
+  { key: "d", d: D, name: "D. The letter, with the count",
+    about: "B, with your notes. A quieter header: who it is from, the title, the note, one line of facts. No dividers; space separates the questions. Other turns into its own box, and the follow-up note is a plain field under the answers. A thin progress bar sticks to the top once the title scrolls away, and the page closes on a box with the count and Send.",
+    easier: "Reading, as in B, while still knowing how far you are. A problem is a tinted line under its prompt and its number turns red; the box at the end lists the questions to go back to, and each number jumps there.",
+    costs: "Send is still at the end of the page, not floating. The sticky bar spends about 40 px at the top of a phone screen." },
+  { key: "a", d: A, name: "A. The reply",
+    about: "The page continues the DM. One plate holds Mira’s message and every question under it, numbered down a gutter like replies in a thread; a number turns into a tick once it is answered. A dock floats at the bottom with the count and Send, as the editor’s dock does.",
+    easier: "Knowing how far you are and sending from anywhere on a long survey. The jump from Slack feels like the same conversation.",
+    costs: "The gutter takes 48 px from every control on a phone, and the floating dock covers the last lines of the page until you reach the end." },
+  { key: "b", d: B, name: "B. The letter",
+    about: "Nothing but the words and the answers. Mira’s note opens the page at a large size, the questions run down the canvas between hairlines, and only the controls are white. Send sits at the end with what is left to answer.",
+    easier: "Reading. Prompts are larger, the page is calm, and nothing floats over it, so a short Holler feels like a short note.",
+    costs: "No running count: on a long survey you learn what is missing only at the end, and Send is always a scroll away." },
+  { key: "c", d: C, name: "C. The cards",
+    about: "Each question is the card the sender wrote in the editor, with its number tile. A slim bar sticks to the top once the title scrolls away, with the count; Send closes the stack on its own plate, with an underplate saying the answers stay on this phone.",
+    easier: "Seeing where one question ends and the next begins, especially next to the follow-up note and Other. Sender and recipient see the same card.",
+    costs: "The most chrome of the three: eight plates and their edges. The sticky bar spends 50 px at the top of a phone screen." },
+];
+
+const frames = [
+  { key: "form", cap: "<b>Answering.</b> Other picked: its row becomes the box you type in, with the follow-up note under it; three weeks picked, so the fourth waits; a person picked from the workspace.", render: (d) => d.form(filled()) },
+  { key: "problems", cap: "<b>Send with problems.</b> Each problem is one line under its prompt in <code>answerProblem</code>’s words; no control turns red. This one is anonymous, so the header says what Mira sees.", render: (d) => d.form(partial(), { problems: problemsFor, anon: true }) },
+  { key: "sent", cap: "<b>Sent.</b> The one animation Holler plays for its own sake, once, right after Send. A second visit shows the same page, still.", render: (d) => d.state("sent", true), replay: true },
+  { key: "closed", cap: "<b>Closed.</b> The Holler closed before they answered.", render: (d) => d.state("closed") },
+  { key: "broken", cap: "<b>The link does not work.</b> An error gets a drawing from the set, as every error in Holler does. A deleted Holler reads the same way.", render: (d) => d.state("broken") },
+];
+
+const states = new Map();
+const host = document.getElementById("dirs");
+host.innerHTML = directions.map((dir) => `<section class="dir" id="dir-${dir.key}"><div class="dir-head"><h2>${dir.name}${dir.lead ? '<span class="pick">New</span>' : ""}</h2><p>${dir.about}</p><dl><dt>Easier</dt><dd>${dir.easier}</dd><dt>Costs</dt><dd>${dir.costs}</dd></dl>${dir.toggles ? `<div class="switches"><span>Dividers</span><div class="seg" role="group" aria-label="Dividers"><button type="button" data-set="dividers" data-to="off" aria-pressed="true">Off</button><button type="button" data-set="dividers" data-to="on" aria-pressed="false">On</button></div><span>Header on</span><div class="seg" role="group" aria-label="Header on"><button type="button" data-set="sheet" data-to="off" aria-pressed="true">Canvas</button><button type="button" data-set="sheet" data-to="on" aria-pressed="false">Sheet</button></div><span>Header</span><div class="seg" role="group" aria-label="Header"><button type="button" data-set="center" data-to="off" aria-pressed="false">Left</button><button type="button" data-set="center" data-to="on" aria-pressed="true">Centred</button></div></div>` : ""}</div>
+  <div class="frames">${frames.map((f) => `<figure><div class="phone" data-dir="${dir.key}" data-frame="${f.key}"></div><figcaption>${f.cap}</figcaption>${f.replay ? `<button class="replay" type="button" data-replay="${dir.key}">Play it again</button>` : ""}</figure>`).join("")}</div>${dir.desktop ? `<div class="frames desk-row">${frames.filter((f) => f.key === "form" || f.key === "problems").map((f) => `<figure><div class="phone desk" data-dir="${dir.key}" data-frame="${f.key}"></div><figcaption><b>Desktop.</b> ${f.key === "form" ? "The same column, at most 720 px wide, with more room inside the sheet." : "Send with problems, at desktop width."}</figcaption></figure>`).join("")}</div>` : ""}</section>`).join("");
+
+function draw(phone) {
+  const dir = directions.find((d) => d.key === phone.dataset.dir);
+  const f = frames.find((x) => x.key === phone.dataset.frame);
+  const id = `${dir.key}-${f.key}`;
+  const top = phone.scrollTop;
+  if (states.has(id)) {
+    const { s, opts } = states.get(id);
+    phone.innerHTML = dir.d.form(s, opts);
+  } else phone.innerHTML = f.render(dir.d);
+  phone.scrollTop = top;
+  watchDock(phone);
+  phone.querySelectorAll(".a2 .scale.words").forEach((row) => {
+    row.classList.remove("stack");
+    if (row.scrollWidth > row.clientWidth + 1) row.classList.add("stack");
+  });
+}
+function watchDock(phone) {
+  const end = phone.querySelector(".a2 .end");
+  const dock = phone.querySelector(".a2 .dock");
+  phone._watch?.disconnect();
+  if (!end || !dock) return;
+  phone._watch = new IntersectionObserver(([entry]) => dock.classList.toggle("resting", entry.isIntersecting), { root: phone });
+  phone._watch.observe(end);
+}
+const redraw = (phone) => document.querySelectorAll(`.phone[data-dir="${phone.dataset.dir}"][data-frame="${phone.dataset.frame}"]`).forEach(draw);
+document.querySelectorAll(".phone").forEach((p) => {
+  const f = p.dataset.frame;
+  if (f === "form") states.set(`${p.dataset.dir}-form`, { s: filled(), opts: {} });
+  if (f === "problems") states.set(`${p.dataset.dir}-problems`, { s: partial(), opts: { problems: { ...problemsFor }, anon: true } });
+  draw(p);
+});
+document.addEventListener("click", (e) => {
+  const t = e.target.closest("[data-pick]");
+  if (t && t.getAttribute("aria-disabled") !== "true") {
+    const phone = t.closest(".phone");
+    const st = states.get(`${phone.dataset.dir}-${phone.dataset.frame}`);
+    if (!st) return;
+    const q = Q.find((x) => x.id === t.dataset.pick);
+    const v = st.s[q.id];
+    const val = t.dataset.val;
+    if (q.type === "multi") st.s[q.id] = v.includes(val) ? v.filter((x) => x !== val) : [...v, val];
+    else st.s[q.id] = v[0] === val ? [] : [val];
+    if (st.opts.problems) delete st.opts.problems[q.id];
+    if (st.opts.problems && Object.keys(st.opts.problems).length === 0) delete st.opts.problems;
+    redraw(phone);
+    if (val === "Other" && st.s[q.id].includes("Other")) phone.querySelector(".other-input")?.focus({ preventScroll: true });
+    return;
+  }
+  const j = e.target.closest("[data-jump]");
+  if (j) {
+    const phone = j.closest(".phone");
+    const target = phone.querySelector(`#${j.dataset.jump}`);
+    phone.scrollTo({ top: target.offsetTop - 60, behavior: "smooth" });
+    return;
+  }
+  const sw = e.target.closest("[data-set]");
+  if (sw) {
+    document.documentElement.dataset[sw.dataset.set] = sw.dataset.to;
+    if (sw.dataset.set === "sheet") {
+      view.onSheet = sw.dataset.to === "on";
+      document.querySelectorAll('.phone[data-dir="a2"]').forEach(draw);
+    }
+    document.querySelectorAll(`[data-set="${sw.dataset.set}"]`).forEach((b) => b.setAttribute("aria-pressed", String(b === sw)));
+    return;
+  }
+  const r = e.target.closest("[data-replay]");
+  if (r) draw(document.querySelector(`.phone[data-dir="${r.dataset.replay}"][data-frame="sent"]`));
+  const th = e.target.closest("[data-theme-pick]");
+  if (th) {
+    document.documentElement.dataset.theme = th.dataset.themePick;
+    document.querySelectorAll("[data-theme-pick]").forEach((b) => b.setAttribute("aria-pressed", String(b === th)));
+  }
+});
+document.addEventListener("change", (e) => {
+  const phone = e.target.closest(".phone");
+  const st = phone && states.get(`${phone.dataset.dir}-${phone.dataset.frame}`);
+  if (st && e.target.classList.contains("other-input")) {
+    st.s[e.target.previousElementSibling.dataset.pick + "Other"] = e.target.value;
+    return;
+  }
+  const q = st && Q.find((x) => x.prompt === e.target.getAttribute("aria-label"));
+  if (!q || !(q.type === "text" || q.type === "number")) return;
+  st.s[q.id] = e.target.value;
+  if (st.opts.problems) delete st.opts.problems[q.id];
+  draw(phone);
+});
+</script>
+</body>
+</html>

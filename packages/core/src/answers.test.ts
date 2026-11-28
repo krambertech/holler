@@ -45,7 +45,7 @@ describe("answerProblem", () => {
   });
 
   it("wants Other's text exactly when Other is picked", () => {
-    expect(answerProblem(choice(), { optionIds: ["oo"] })).toBe("Write your answer beside Other.");
+    expect(answerProblem(choice(), { optionIds: ["oo"] })).toBe("Write your own answer.");
     expect(answerProblem(choice(), { optionIds: ["o0"], otherText: "x" })).toBe(
       "Pick Other to add your own answer, or clear what you wrote.",
     );

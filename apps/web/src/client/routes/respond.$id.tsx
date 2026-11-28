@@ -1,38 +1,23 @@
-import {
-  modeLabels,
-  type RespondForm,
-  type RespondPerson,
-  type RespondQuestion,
-} from "@holler/core";
+import type { RespondForm, RespondPerson, RespondQuestion } from "@holler/core";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import {
-  Check,
-  Clock,
-  ExternalLink,
-  ListChecks,
-  EyeOff,
-  Link2Off,
-  ListOrdered,
-  Lock,
-  Trash2,
-} from "lucide-react";
+import { Check, ExternalLink, ListChecks, Lock } from "lucide-react";
 import { type FormEvent, useEffect, useRef, useState } from "react";
 import { z } from "zod";
+import { SendBar } from "@/components/editor/send/send-bar";
 import { ErrorState } from "@/components/error-state";
 import { Logo } from "@/components/logo";
-import { modeIcons } from "@/components/mode-glyph";
 import { AnswerQuestion } from "@/components/respond/answer-question";
+import { AnonymousNote, RespondHeader } from "@/components/respond/respond-header";
 import { RespondState } from "@/components/respond/respond-state";
 import { Skeleton } from "@/components/skeleton";
-import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Chip } from "@/components/ui/chip";
 import { Plate, PlateRow } from "@/components/ui/plate";
+import { ProgressBar } from "@/components/ui/progress";
 import { ApiError, api } from "@/lib/api";
-import { closesIn, count, questionsLabel } from "@/lib/format";
-import { markdown } from "@/lib/markdown";
-import { type Drafts, draftOf, problemsOf, toResponse } from "@/lib/respond";
+import { cn } from "@/lib/cn";
+import { closesIn, count } from "@/lib/format";
+import { answeredCount, type Drafts, draftOf, problemsOf, toResponse } from "@/lib/respond";
 
 export const Route = createFileRoute("/respond/$id")({
   validateSearch: z.object({
@@ -56,8 +41,8 @@ function RespondPage() {
   });
 
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-[680px] flex-col gap-5 px-4 pt-6 pb-16 sm:px-6 sm:pt-10">
-      <div className="px-1">
+    <main className="mx-auto flex min-h-dvh w-full max-w-[720px] flex-col px-2 pt-5 sm:px-6 sm:pt-8">
+      <div className="mb-4 self-center sm:mb-6">
         <Logo size={28} />
       </div>
       <Body form={form} id={id} link={{ u, s }} sent={sent} onSent={() => setSent(true)} />
@@ -80,7 +65,8 @@ function Body({ form, id, link, sent, onSent }: BodyProps) {
     if (error instanceof ApiError && (error.status === 403 || error.status === 400)) {
       return (
         <RespondState
-          icon={<Link2Off strokeWidth={2} />}
+          className="mb-10"
+          drawing="locked"
           title="This link does not work"
           description="It may have been changed on the way. Open the Holler again from your message in Slack."
         />
@@ -89,7 +75,8 @@ function Body({ form, id, link, sent, onSent }: BodyProps) {
     if (error instanceof ApiError && error.status === 404) {
       return (
         <RespondState
-          icon={<Trash2 strokeWidth={2} />}
+          className="mb-10"
+          drawing="search"
           title="This Holler is gone"
           description="Whoever sent it deleted it, so there is nothing to answer."
         />
@@ -117,6 +104,7 @@ function Answered({ holler, arrive }: { holler: HollerInfo; arrive: boolean }) {
   }, []);
   return (
     <RespondState
+      className="mb-10"
       tone="answered"
       icon={<Check strokeWidth={2.5} />}
       title="Your answers are in"
@@ -140,6 +128,7 @@ function Answered({ holler, arrive }: { holler: HollerInfo; arrive: boolean }) {
 function Closed({ holler }: { holler: HollerInfo }) {
   return (
     <RespondState
+      className="mb-10"
       tone="closed"
       icon={<Lock strokeWidth={2} />}
       title="This Holler has closed"
@@ -212,7 +201,6 @@ interface OpenFormProps {
 
 function OpenForm({ form, id, link, onSent }: OpenFormProps) {
   const { holler, questions } = form;
-  const ModeIcon = modeIcons[holler.mode];
   const queryClient = useQueryClient();
   const [drafts, setDrafts, forgetDrafts] = useDrafts(`holler:respond:${id}:${link.u}`);
   const [problems, setProblems] = useState<Record<string, string>>({});
@@ -272,62 +260,20 @@ function OpenForm({ form, id, link, onSent }: OpenFormProps) {
     send.isError && !(send.error instanceof ApiError && send.error.field)
       ? send.error.message
       : null;
+  const chase = holler.mode === "chase";
 
   return (
-    <form noValidate onSubmit={submit} className="flex flex-col gap-5">
+    <form noValidate onSubmit={submit} className="flex flex-1 flex-col">
       <Plate>
-        <PlateRow className="flex flex-col gap-3 px-6 py-6 sm:px-8 sm:py-7">
-          <p className="flex items-center gap-2 text-muted text-sm">
-            <Avatar
-              size="md"
-              name={holler.senderName}
-              seed={holler.senderSlackUserId}
-              src={holler.senderAvatarUrl}
-            />
-            {holler.senderName} sent you a Holler
-          </p>
-          <h1 className="text-balance text-4xl tracking-title">{holler.title}</h1>
-          {holler.description.trim() && (
-            <div className="flex flex-col gap-3 text-pretty text-ink-2">
-              {markdown(holler.description)}
-            </div>
-          )}
-          <ul className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-muted text-sm [&_svg]:size-4 [&_svg]:shrink-0">
-            <li className="flex items-center gap-1.5">
-              <ModeIcon aria-hidden strokeWidth={2} />
-              {modeLabels[holler.mode]}
-            </li>
-            {questions.length > 0 && (
-              <li className="flex items-center gap-1.5">
-                <ListOrdered aria-hidden strokeWidth={2} />
-                {questionsLabel(questions.length)}
-              </li>
-            )}
-            {holler.closesAt && (
-              <li className="flex items-center gap-1.5">
-                <Clock aria-hidden strokeWidth={2} />
-                <ClosesIn at={holler.closesAt} />
-              </li>
-            )}
-            {holler.anonymous && (
-              <li>
-                <Chip variant="tint">
-                  <EyeOff aria-hidden strokeWidth={2} />
-                  Anonymous
-                </Chip>
-              </li>
-            )}
-          </ul>
-          {holler.anonymous && (
-            <p className="text-muted text-sm">
-              Your name is not kept with your answers. {holler.senderName} sees how many people
-              answered, never who said what.
-            </p>
-          )}
-        </PlateRow>
-        {holler.mode === "chase" && holler.externalUrl && (
-          <PlateRow className="flex flex-col items-start gap-3 px-6 py-6 sm:px-8">
-            <p className="text-ink-2">
+        <RespondHeader
+          holler={holler}
+          description={holler.description}
+          closes={holler.closesAt ? <ClosesIn at={holler.closesAt} /> : undefined}
+        />
+        {holler.anonymous && <AnonymousNote senderName={holler.senderName} />}
+        {chase && holler.externalUrl && (
+          <PlateRow className="flex flex-col items-center gap-4 px-6 py-8 text-center sm:px-12">
+            <p className="max-w-[44ch] text-pretty text-ink-2">
               The form lives somewhere else. Fill it in there, then come back and say you did.
             </p>
             <Button render={<a href={holler.externalUrl} target="_blank" rel="noreferrer" />}>
@@ -336,77 +282,81 @@ function OpenForm({ form, id, link, onSent }: OpenFormProps) {
             </Button>
           </PlateRow>
         )}
-        <PlateRow className="flex flex-col gap-10 px-6 py-7 sm:px-8 sm:py-8">
-          {questions.map((question, index) => (
-            <AnswerQuestion
-              key={question.id}
-              number={questions.length > 1 ? index + 1 : undefined}
-              ref={(el) => {
-                if (el) refs.current.set(question.id, el);
-                else refs.current.delete(question.id);
-              }}
-              tabIndex={-1}
-              className="outline-none"
-              question={question}
-              value={draftOf(drafts, question.id)}
-              onValueChange={(next) => setDrafts((all) => ({ ...all, [question.id]: next }))}
-              error={problems[question.id]}
-              searchPeople={searchPeople}
-            />
-          ))}
-        </PlateRow>
-        <SendBar
-          pending={send.isPending}
-          chase={holler.mode === "chase"}
-          message={failed ?? (waiting > 0 ? problemsLine(waiting, questions) : null)}
-        />
+        {questions.length > 0 && (
+          <PlateRow
+            className={cn(
+              "flex flex-col gap-14 px-5 pt-8 pb-9 sm:gap-16 sm:px-11 sm:pt-11 sm:pb-12",
+              holler.anonymous && "border-t-0",
+            )}
+          >
+            {questions.map((question, index) => (
+              <AnswerQuestion
+                key={question.id}
+                number={questions.length > 1 ? index + 1 : undefined}
+                ref={(el) => {
+                  if (el) refs.current.set(question.id, el);
+                  else refs.current.delete(question.id);
+                }}
+                tabIndex={-1}
+                className="scroll-mt-24 outline-none"
+                question={question}
+                value={draftOf(drafts, question.id)}
+                onValueChange={(next) => setDrafts((all) => ({ ...all, [question.id]: next }))}
+                error={problems[question.id]}
+                searchPeople={searchPeople}
+              />
+            ))}
+          </PlateRow>
+        )}
       </Plate>
+      <SendBar
+        className="mt-3"
+        tone={failed || waiting > 0 ? "danger" : "neutral"}
+        description={
+          failed || waiting > 0 || questions.length === 0 ? undefined : (
+            <ProgressBar
+              className="mt-2 max-w-64"
+              value={answeredCount(questions, drafts) / questions.length}
+            />
+          )
+        }
+        action={
+          <Button type="submit" variant="primary" pending={send.isPending}>
+            {chase ? "I submitted it" : "Send answers"}
+          </Button>
+        }
+      >
+        {failed ?? (waiting > 0 ? problemsLine(waiting, questions) : countLine(questions, drafts))}
+      </SendBar>
     </form>
   );
 }
 
-function problemsLine(n: number, questions: readonly RespondQuestion[]): string {
-  if (questions.length === 1) return "Answer the question above to send.";
-  if (n === 1) return "One question above still needs your answer.";
-  return `${count(n)} questions above still need your answer.`;
+function countLine(questions: readonly RespondQuestion[], drafts: Drafts): string {
+  if (questions.length === 0) return "Filled in the form?";
+  return `${count(answeredCount(questions, drafts))} of ${count(questions.length)} answered`;
 }
 
-function SendBar({
-  pending,
-  chase,
-  message,
-}: {
-  pending: boolean;
-  chase: boolean;
-  message: string | null;
-}) {
-  return (
-    <PlateRow className="flex flex-col-reverse items-stretch gap-3 bg-canvas/60 px-6 py-5 sm:flex-row sm:items-center sm:justify-end sm:px-8">
-      {message && (
-        <p role="alert" className="text-center text-danger-ink text-sm sm:me-auto sm:text-start">
-          {message}
-        </p>
-      )}
-      <Button type="submit" variant="primary" size="lg" pending={pending} className="sm:min-w-48">
-        {chase ? "I submitted it" : "Send answers"}
-      </Button>
-    </PlateRow>
-  );
+function problemsLine(n: number, questions: readonly RespondQuestion[]): string {
+  if (questions.length === 1) return "Answer the question to send.";
+  if (n === 1) return "One question still needs an answer.";
+  return `${count(n)} questions still need an answer.`;
 }
 
 function FormSkeleton() {
   return (
     <Plate>
-      <PlateRow className="flex flex-col gap-3 px-6 py-7 sm:px-8">
+      <div className="flex flex-col items-center gap-3 px-6 pt-8 pb-7">
+        <Skeleton className="size-12 rounded-full" />
         <Skeleton className="h-4 w-40" />
-        <Skeleton className="h-8 w-3/4" />
-        <Skeleton className="h-4 w-56" />
-      </PlateRow>
+        <Skeleton className="h-8 w-3/5" />
+        <Skeleton className="h-4 w-48" />
+      </div>
       {[0, 1].map((n) => (
-        <PlateRow key={n} className="flex flex-col gap-3 px-6 py-6 sm:px-8">
+        <PlateRow key={n} className="flex flex-col gap-3 px-5 py-8 sm:px-11">
           <Skeleton className="h-5 w-1/2" />
-          <Skeleton className="h-10 w-full" />
-          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-11 w-full" />
+          <Skeleton className="h-11 w-full" />
         </PlateRow>
       ))}
     </Plate>

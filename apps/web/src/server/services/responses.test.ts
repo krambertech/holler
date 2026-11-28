@@ -231,7 +231,7 @@ describe("Other and follow-up notes", () => {
     ).rejects.toMatchObject({ field: multi.id });
     await expect(
       answer("UA", { multi: { questionId: multi.id, optionIds: [option("Other")] } }),
-    ).rejects.toMatchObject({ message: "Write your answer beside Other." });
+    ).rejects.toMatchObject({ message: "Write your own answer." });
     await answer("UA", {
       multi: { questionId: multi.id, optionIds: [option("Other")], otherText: "Team lunch" },
     });

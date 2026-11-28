@@ -1,10 +1,18 @@
-import { ARRIVE_POP, ARRIVE_RISE, ARRIVE_RING, ARRIVE_SPARK, CHOICE_FADE } from "@holler/design";
+import {
+  ARRIVE_POP,
+  ARRIVE_RISE,
+  ARRIVE_RING,
+  ARRIVE_SPARK,
+  CHOICE_FADE,
+  type IllustrationName,
+} from "@holler/design";
 import { motion } from "motion/react";
 import type { ComponentProps, ReactNode } from "react";
-import { Avatar } from "@/components/ui/avatar";
+import { Illustration } from "@/components/illustration";
 import { Plate, PlateRow } from "@/components/ui/plate";
 import { cn } from "@/lib/cn";
 import { useReduceMotion } from "@/lib/use-reduce-motion";
+import { type RespondAbout, RespondHeader } from "./respond-header";
 
 type Tone = "answered" | "closed" | "neutral";
 
@@ -20,22 +28,17 @@ const sparks: Record<Tone, readonly string[]> = {
   neutral: ["bg-pink"],
 };
 
-interface About {
-  title: string;
-  senderName: string;
-  senderSlackUserId: string;
-  senderAvatarUrl: string | null;
-}
+type Mark = { icon: ReactNode; drawing?: never } | { drawing: IllustrationName; icon?: never };
 
-interface Props extends Omit<ComponentProps<"div">, "title"> {
-  title: string;
-  description?: ReactNode | undefined;
-  icon: ReactNode;
-  tone?: Tone | undefined;
-  holler?: About | undefined;
-  action?: ReactNode | undefined;
-  arrive?: boolean | undefined;
-}
+type Props = Omit<ComponentProps<"div">, "title"> &
+  Mark & {
+    title: string;
+    description?: ReactNode | undefined;
+    tone?: Tone | undefined;
+    holler?: RespondAbout | undefined;
+    action?: ReactNode | undefined;
+    arrive?: boolean | undefined;
+  };
 
 const sparkCount = 10;
 
@@ -110,6 +113,7 @@ function RespondState({
   title,
   description,
   icon,
+  drawing,
   tone = "neutral",
   holler,
   action,
@@ -129,8 +133,13 @@ function RespondState({
       : { initial: false as const };
   return (
     <Plate data-slot="respond-state" className={className} {...props}>
-      <PlateRow className="flex flex-col items-center px-6 pt-10 pb-9 text-center sm:px-10">
-        <Glyph icon={icon} tone={tone} play={arrive} reduce={reduce} />
+      {holler && <RespondHeader compact holler={holler} />}
+      <PlateRow className="flex flex-col items-center px-6 pt-10 pb-10 text-center sm:px-10">
+        {drawing ? (
+          <Illustration name={drawing} size="lg" />
+        ) : (
+          <Glyph icon={icon} tone={tone} play={arrive} reduce={reduce} />
+        )}
         <motion.h1 className="mt-5 text-balance text-3xl tracking-title" {...rise(0)}>
           {title}
         </motion.h1>
@@ -142,25 +151,8 @@ function RespondState({
             {description}
           </motion.div>
         )}
-        {holler && (
-          <motion.p
-            className="mt-6 inline-flex max-w-full items-center gap-2.5 rounded-full bg-canvas py-1.5 ps-1.5 pe-4 text-sm"
-            {...rise(2)}
-          >
-            <Avatar
-              size="md"
-              name={holler.senderName}
-              seed={holler.senderSlackUserId}
-              src={holler.senderAvatarUrl}
-            />
-            <span className="min-w-0 truncate">
-              <span className="text-ink">{holler.title}</span>
-              <span className="text-muted"> from {holler.senderName}</span>
-            </span>
-          </motion.p>
-        )}
         {action && (
-          <motion.div className="mt-7 flex w-full justify-center" {...rise(3)}>
+          <motion.div className="mt-7 flex w-full justify-center" {...rise(2)}>
             {action}
           </motion.div>
         )}

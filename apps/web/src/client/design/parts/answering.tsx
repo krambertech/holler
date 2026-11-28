@@ -1,7 +1,8 @@
 import type { RespondPerson, RespondQuestion } from "@holler/core";
-import { Check, Link2Off, ListChecks, Lock, RotateCcw } from "lucide-react";
+import { Check, ListChecks, Lock, RotateCcw } from "lucide-react";
 import { useState } from "react";
 import { AnswerQuestion } from "@/components/respond/answer-question";
+import { AnonymousNote, RespondHeader } from "@/components/respond/respond-header";
 import { RespondState } from "@/components/respond/respond-state";
 import { Button } from "@/components/ui/button";
 import { Plate } from "@/components/ui/plate";
@@ -88,6 +89,29 @@ const examples: { label: string; note?: string; question: RespondQuestion }[] = 
     },
   },
   {
+    label: "Worded scale",
+    note: "One row while every step fits on one line; otherwise the steps stack, as on a phone.",
+    question: {
+      ...base,
+      id: "good",
+      type: "single",
+      style: "scale",
+      prompt: "The last offsite was a good use of time.",
+      options: options(["Strongly disagree", "Disagree", "Neither", "Agree", "Strongly agree"]),
+    },
+  },
+  {
+    label: "Short worded scale",
+    question: {
+      ...base,
+      id: "often",
+      type: "single",
+      style: "scale",
+      prompt: "How often do you work from the office?",
+      options: options(["Never", "Sometimes", "Often"]),
+    },
+  },
+  {
     label: "Yes or no",
     question: {
       ...base,
@@ -161,9 +185,10 @@ const searchPeople = async (query: string) =>
 function Demo({ question, error }: { question: RespondQuestion; error?: string | undefined }) {
   const [value, setValue] = useState<DraftAnswer>(emptyAnswer);
   return (
-    <Plate className="w-full max-w-xl px-6 py-6">
+    <Plate className="w-full max-w-2xl px-5 py-8 sm:px-11">
       <AnswerQuestion
         question={question}
+        number={2}
         value={value}
         onValueChange={setValue}
         error={error}
@@ -210,7 +235,18 @@ export const answering: Group = {
       slug: "answer-question",
       name: "AnswerQuestion",
       source: "components/respond/answer-question.tsx",
-      note: "One question on the web form. Errors arrive on send, beside the question, in the words recordResponse uses.",
+      covers: [
+        "OptionRadios",
+        "OptionChecks",
+        "OtherText",
+        "Reveal",
+        "OptionSearch",
+        "PeoplePicker",
+        "NumberScale",
+        "WordScale",
+        "YesNo",
+      ],
+      note: "One question on the web form, drawn as the editor draws it. The number fills plum once answered and red when Send finds a problem, which is said in recordResponse's words under the prompt; no control turns red. Picking Other turns its row into the box for their own answer. Hints such as Pick up to 3 close the question. A worded scale runs in one row only while every word fits on one line.",
       Demo: () => (
         <Variants
           stack
@@ -223,6 +259,48 @@ export const answering: Group = {
             {
               label: "Needs an answer",
               render: () => <Demo question={weeks} error="This question needs an answer." />,
+            },
+          ]}
+        />
+      ),
+    },
+    {
+      slug: "respond-header",
+      name: "RespondHeader, AnonymousNote",
+      source: "components/respond/respond-header.tsx",
+      note: "The top of the sheet: who sent it, the title, their note and when it closes, centred like an invitation. An anonymous Holler adds a tinted line saying what the sender sees. Compact above the thank-you and closed states.",
+      Demo: () => (
+        <Variants
+          stack
+          items={[
+            {
+              label: "Open",
+              render: () => (
+                <Plate className="w-full max-w-2xl">
+                  <RespondHeader
+                    holler={about}
+                    description="Two minutes, so we can **book the place** this week."
+                    closes="Closes Friday at 18:00"
+                  />
+                </Plate>
+              ),
+            },
+            {
+              label: "Anonymous",
+              render: () => (
+                <Plate className="w-full max-w-2xl">
+                  <RespondHeader holler={about} closes="Closes Friday at 18:00" />
+                  <AnonymousNote senderName={about.senderName} />
+                </Plate>
+              ),
+            },
+            {
+              label: "Compact",
+              render: () => (
+                <Plate className="w-full max-w-xl">
+                  <RespondHeader compact holler={about} />
+                </Plate>
+              ),
             },
           ]}
         />
@@ -257,12 +335,24 @@ export const answering: Group = {
             },
             {
               label: "A link that does not work",
+              note: "No Holler to name, so no header: a drawing from the set instead of the glyph.",
               render: () => (
                 <RespondState
                   className="w-full max-w-xl"
-                  icon={<Link2Off strokeWidth={2} />}
+                  drawing="locked"
                   title="This link does not work"
                   description="It may have been changed on the way. Open the Holler again from your message in Slack."
+                />
+              ),
+            },
+            {
+              label: "A Holler that was deleted",
+              render: () => (
+                <RespondState
+                  className="w-full max-w-xl"
+                  drawing="search"
+                  title="This Holler is gone"
+                  description="Whoever sent it deleted it, so there is nothing to answer."
                 />
               ),
             },
