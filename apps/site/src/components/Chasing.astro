@@ -1,0 +1,111 @@
+---
+import Mark from "./Mark.astro";
+
+const rows = [
+  { when: "Mon 09:00", who: "You", what: "Sent the weekly pulse to 12 people", kind: "you" },
+  { when: "Mon 09:00", who: "Holler", what: "Sent 12 direct messages, each at 09:00 in the person's own time zone", kind: "holler" },
+  { when: "Mon 11:40", who: "Holler", what: "Counted 6 answers as they came in", kind: "holler" },
+  { when: "Tue 10:00", who: "Holler", what: "Sent a gentle reminder to the 6 still waiting", kind: "holler" },
+  { when: "Tue 10:05", who: "Kai", what: "Asked to be reminded later. Holler moved only Kai's reminder", kind: "person" },
+  { when: "Thu 10:00", who: "Holler", what: "Sent a nudge to the 2 still waiting", kind: "holler" },
+  { when: "Fri 09:00", who: "Holler", what: "Sent a last reminder to Lena, before the 18:00 close", kind: "holler" },
+  { when: "Fri 09:12", who: "Holler", what: "12 of 12 answered. Stopped reminding and told you the results were ready", kind: "done" },
+] as const;
+---
+
+<section class="border-t border-divider py-20 sm:py-28" aria-labelledby="chasing-title">
+  <div class="mx-auto grid max-w-[1160px] items-center gap-12 px-4 sm:px-8 lg:grid-cols-[0.8fr_1.2fr]">
+    <div class="flex flex-col gap-4">
+      <span class="text-base text-primary">The busywork</span>
+      <h2 id="chasing-title" class="text-6xl tracking-[-0.04em] sm:text-7xl">You ask once. Holler does the rest.</h2>
+      <p class="max-w-[44ch] text-lg text-ink-2">
+        This is one week of a weekly pulse. You wrote the first line. Holler did every other one, and you never had to think about it.
+      </p>
+      <dl class="mt-4 grid max-w-[420px] grid-cols-3 gap-4">
+        <div><dt class="text-sm text-muted">Sent for you</dt><dd class="text-5xl tabular">21</dd></div>
+        <div><dt class="text-sm text-muted">Chases by hand</dt><dd class="text-5xl tabular">0</dd></div>
+        <div><dt class="text-sm text-muted">Your time</dt><dd class="text-5xl tabular">2 min</dd></div>
+      </dl>
+    </div>
+
+    <div class="rounded-[22px] bg-well p-4 sm:p-7">
+      <div class="floating overflow-hidden rounded-plate">
+        <div class="flex items-center justify-between gap-3 border-b border-divider px-5 py-4">
+          <div class="flex flex-col">
+            <span class="text-lg">Weekly pulse</span>
+            <span class="text-sm text-muted">Activity</span>
+          </div>
+          <span class="rounded-full bg-answered px-2.5 py-0.5 text-xs text-answered-ink" data-chase-chip hidden>Closed</span>
+          <span class="flex items-center gap-1.5 rounded-full bg-live px-2.5 py-0.5 text-xs text-live-ink" data-chase-live><span class="size-1.5 rounded-full bg-live-dot"></span>Live</span>
+        </div>
+        <ol class="flex flex-col" data-chase>
+          {
+            rows.map((row) => (
+              <li class="chase-row grid grid-cols-[76px_minmax(0,1fr)] gap-3 border-b border-divider px-5 py-3 text-sm last:border-b-0 sm:grid-cols-[92px_minmax(0,1fr)] sm:text-base" data-kind={row.kind}>
+                <span class="text-muted tabular">{row.when}</span>
+                <span class="flex items-start gap-2.5">
+                  {row.kind === "holler" || row.kind === "done" ? <span class="mt-[3px]"><Mark size={16} /></span> : <span class="face mt-[3px]" style="--face:16px" aria-hidden="true" />}
+                  <span><span class={row.kind === "holler" || row.kind === "done" ? "text-primary" : "text-ink"}>{row.who}</span> <span class="text-ink-2">{row.what}</span></span>
+                </span>
+              </li>
+            ))
+          }
+        </ol>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .chase-row {
+    transition:
+      opacity 400ms var(--ease-out),
+      translate 400ms var(--ease-out);
+  }
+  [data-chase][data-playing] .chase-row:not([data-shown]) {
+    opacity: 0;
+    translate: 0 8px;
+  }
+  .chase-row[data-kind="you"] {
+    background: var(--well);
+  }
+</style>
+
+<script>
+  import { prefersReducedMotion } from "../scripts/faces";
+
+  const list = document.querySelector<HTMLElement>("[data-chase]");
+  const live = document.querySelector<HTMLElement>("[data-chase-live]");
+  const closed = document.querySelector<HTMLElement>("[data-chase-chip]");
+  if (list && live && closed && !prefersReducedMotion()) {
+    const rows = [...list.querySelectorAll<HTMLElement>(".chase-row")];
+    let played = false;
+    const play = () => {
+      list.dataset.playing = "";
+      live.hidden = false;
+      closed.hidden = true;
+      rows.forEach((row, i) => {
+        delete row.dataset.shown;
+        window.setTimeout(() => {
+          row.dataset.shown = "";
+          if (i === rows.length - 1) {
+            live.hidden = true;
+            closed.hidden = false;
+          }
+        }, 300 + i * 650);
+      });
+    };
+    new IntersectionObserver(
+      ([entry]) => {
+        if (entry?.isIntersecting && !played) {
+          played = true;
+          play();
+        }
+      },
+      { threshold: 0.35 },
+    ).observe(list);
+  } else if (live && closed) {
+    live.hidden = true;
+    closed.hidden = false;
+  }
+</script>

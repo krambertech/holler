@@ -1,0 +1,172 @@
+---
+import { plans } from "@holler/core";
+import { PRODUCT_URL } from "../urls";
+---
+
+<section class="relative" aria-labelledby="hero-title">
+  <div class="mx-auto grid max-w-[1160px] px-4 sm:px-8 lg:min-h-[620px] lg:grid-cols-[0.92fr_1.08fr]">
+    <div class="relative z-10 flex flex-col justify-center gap-6 pt-12 pb-4 lg:py-20">
+      <h1 id="hero-title" class="text-6xl tracking-[-0.045em] sm:text-7xl lg:text-8xl">Ask once. Hear from everyone.</h1>
+      <p class="max-w-[38ch] text-lg text-ink-2 sm:text-xl">
+        Quick questions for your team, right in Slack. Holler sends them, follows up, and counts the answers, so you don't have to.
+      </p>
+      <div class="flex flex-wrap items-center gap-4 text-sm text-muted">
+        <a href={`${PRODUCT_URL}/sign-in`} class="inline-flex h-11 items-center rounded-control bg-primary px-5 text-base font-medium text-on-primary hoverable:bg-primary-hover">
+          Add Holler to Slack
+        </a>
+        <span>Free for {plans.free.monthlyHollers} hollers a month. No card needed.</span>
+      </div>
+    </div>
+    <div class="relative min-h-[400px] sm:min-h-[480px]" data-call>
+      <canvas class="absolute inset-0 size-full" aria-hidden="true"></canvas>
+      <p class="absolute end-2 bottom-7 z-10 flex items-center gap-2 rounded-md bg-plate px-3 py-2 text-sm tabular-nums shadow-float" role="status" data-call-status>
+        <span class="size-2 rounded-full bg-live-dot" data-call-dot></span>
+        <span data-call-text>Sending to your team</span>
+      </p>
+    </div>
+  </div>
+</section>
+
+<script>
+  import { SOUND_ARC, SOUND_CENTRE, canvasScene, drawFace, drawMark, easeOut, faceColours, lookAt, token, type FaceState } from "../scripts/faces";
+
+  interface Tile {
+    x: number;
+    y: number;
+    r: number;
+    wave: number;
+    jitter: number;
+    rotate: number;
+    blinkAt: number;
+  }
+
+  const root = document.querySelector<HTMLElement>("[data-call]");
+  const canvas = root?.querySelector("canvas");
+  const text = root?.querySelector<HTMLElement>("[data-call-text]");
+  const dot = root?.querySelector<HTMLElement>("[data-call-dot]");
+
+  if (root && canvas && text && dot) {
+    let size = 24;
+    let markSize = 72;
+    let origin = { x: 0, y: 0 };
+    let sound = { x: 0, y: 0 };
+    let maxR = 0;
+    let speed = 1;
+    let tiles: Tile[] = [];
+    const waves = [900, 4300, 7200];
+    let cycle = 14000;
+    const pointer = { x: -1e4, y: -1e4, active: false };
+    let lastText = "";
+
+    const say = (message: string, done: boolean) => {
+      if (message === lastText) return;
+      lastText = message;
+      text.textContent = message;
+      dot.classList.toggle("bg-live-dot", !done);
+      dot.classList.toggle("bg-answered-dot", done);
+    };
+
+    root.addEventListener("pointermove", (event) => {
+      const box = canvas.getBoundingClientRect();
+      pointer.x = event.clientX - box.left;
+      pointer.y = event.clientY - box.top;
+      pointer.active = true;
+    });
+    root.addEventListener("pointerleave", () => {
+      pointer.active = false;
+    });
+
+    canvasScene(canvas, {
+      setup(w, h) {
+        size = Math.max(17, Math.min(30, w / 20));
+        markSize = Math.max(56, Math.min(92, w * 0.14));
+        origin = { x: Math.max(markSize * 0.75, w * 0.1), y: h - markSize * 0.85 - 30 };
+        sound = {
+          x: origin.x - markSize / 2 + (SOUND_CENTRE.x * markSize) / 48,
+          y: origin.y - markSize / 2 + (SOUND_CENTRE.y * markSize) / 48,
+        };
+        maxR = Math.hypot(w - sound.x, sound.y) * 1.02;
+        speed = maxR / 2.4;
+        tiles = [];
+        const gap = size * 1.8;
+        const a0 = -Math.PI * 0.52;
+        const a1 = 0.05;
+        let ring = 0;
+        for (let r = markSize * 0.95 + size; r < maxR; r += gap, ring++) {
+          const n = Math.max(1, Math.floor(((a1 - a0) * r) / gap));
+          for (let i = 0; i <= n; i++) {
+            const a = a0 + (a1 - a0) * ((i + (ring % 2) * 0.5) / (n + 0.5));
+            const x = sound.x + Math.cos(a) * r;
+            const y = sound.y + Math.sin(a) * r;
+            if (x < size || x > w - size * 0.8 || y < size * 0.8 || y > h - size) continue;
+            const roll = Math.random();
+            tiles.push({ x, y, r, wave: roll < 0.56 ? 0 : roll < 0.87 ? 1 : 2, jitter: 200 + Math.random() * 1000, rotate: (Math.random() - 0.5) * 0.14, blinkAt: Math.random() * 4000 });
+          }
+        }
+        const last = waves[2] ?? 0;
+        cycle = last + (maxR / speed) * 1000 + 1300 + 3200;
+      },
+      draw(ctx, raw) {
+        const t = Number.isFinite(raw) ? raw % cycle : cycle - 1200;
+        const colours = faceColours();
+        const wave = token("--live-dot");
+        const r0 = (markSize * SOUND_CENTRE.outer) / 48;
+        const step = (markSize * (SOUND_CENTRE.outer - SOUND_CENTRE.inner)) / 48;
+        waves.forEach((start, i) => {
+          const r = r0 + ((t - start) / 1000) * speed;
+          if (t < start || r > maxR + 60) return;
+          const grow = Math.min(1, (r - r0) / (markSize * 2.4));
+          const from = SOUND_ARC.start - 0.38 * grow;
+          const to = SOUND_ARC.end + 0.2 * grow;
+          const fade = 1 - r / (maxR + 60);
+          const width = (([3.6, 2.8, 2][i] ?? 2) * markSize) / 48 * (1 + 0.35 * grow);
+          ctx.lineCap = "round";
+          ctx.strokeStyle = wave;
+          for (const [radius, strength] of [[r, 1], [r - step * (1 + grow * 1.5), 0.7]] as const) {
+            if (radius < (markSize * SOUND_CENTRE.inner) / 48) continue;
+            ctx.globalAlpha = fade * strength * ([1, 0.8, 0.6][i] ?? 0.6);
+            ctx.lineWidth = width * (strength === 1 ? 1 : 0.8);
+            ctx.beginPath();
+            ctx.arc(sound.x, sound.y, radius, from, to);
+            ctx.stroke();
+          }
+        });
+        ctx.globalAlpha = 1;
+
+        let answered = 0;
+        const fadeOut = Number.isFinite(raw) && t > cycle - 900 ? easeOut((t - (cycle - 900)) / 900) : 0;
+        for (const tile of tiles) {
+          const at = (waves[tile.wave] ?? 0) + (tile.r / speed) * 1000 + tile.jitter;
+          const since = t - at;
+          if (since >= 0) answered++;
+          const done = since >= 0 && fadeOut < 0.5;
+          let state: FaceState = done ? "answered" : "waiting";
+          if (!done) {
+            for (const start of waves) {
+              const pass = start + (tile.r / speed) * 1000;
+              if (t > pass && t < pass + 900) state = "awake";
+            }
+          }
+          const near = pointer.active ? Math.hypot(pointer.x - tile.x, pointer.y - tile.y) : Number.POSITIVE_INFINITY;
+          const curious = near < 170;
+          if (curious && state === "waiting") state = "awake";
+          const look = curious ? lookAt(tile.x, tile.y, pointer.x, pointer.y) : state === "waiting" ? ([0, 0.6] as [number, number]) : lookAt(tile.x, tile.y, sound.x, sound.y);
+          const pop = done && since < 420 ? 1 + 0.22 * Math.sin((Math.PI * since) / 420) : 1;
+          const lean = curious ? 1 + 0.12 * (1 - near / 170) : 1;
+          drawFace(ctx, { x: tile.x, y: tile.y, size, state, look, rotate: tile.rotate, scale: pop * lean, blink: done && (t + tile.blinkAt) % 4200 < 130 }, colours);
+        }
+
+        let strength = 1;
+        for (const start of waves) {
+          const k = (t - start) / 700;
+          if (k > 0 && k < 1) strength = Math.min(strength, k < 0.3 ? 0 : (k - 0.3) / 0.7);
+        }
+        drawMark(ctx, origin.x, origin.y, markSize, strength);
+
+        if (t < (waves[0] ?? 0)) say(`Sending to ${tiles.length} people`, false);
+        else if (answered >= tiles.length) say("Everyone answered. Reminders stopped.", true);
+        else say(`${answered} of ${tiles.length} answered`, false);
+      },
+    });
+  }
+</script>
