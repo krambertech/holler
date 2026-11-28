@@ -64,7 +64,7 @@ function AnswerQuestion({
           <span
             data-tone={tone}
             className={cn(
-              "mt-px grid size-6 shrink-0 place-items-center rounded-full text-xs tabular transition-colors duration-200",
+              "mt-px grid size-6 shrink-0 place-items-center rounded-sm text-xs tabular transition-colors duration-200",
               numberTone[tone],
             )}
           >

@@ -17,7 +17,8 @@ const rowClassName = cn(
   "has-[[data-checked]]:shadow-[0_0_0_1.5px_var(--primary)]",
 );
 
-const labelClassName = "flex min-h-11 flex-1 items-center py-2 text-base text-ink md:min-h-10";
+const labelClassName =
+  "flex min-h-11 flex-1 items-center py-2 font-(--weight-body) text-base text-ink md:min-h-10";
 
 const ownAnswer = "Your own answer";
 
